@@ -10,12 +10,12 @@ function setup() {
     background(255);
 }
 
-function draw() {
+function mouseIsPressed() {
 	if(keyIsDown(82) && mouseIsPressed && mouseButton === LEFT){
-    	rect(40, 120, 120, 40);
+    	rect(mouseX, mouseY, 120, 40);
     }
   	if(mouseIsPressed && mouseButton === LEFT && keyIsDown(69)){
-    	ellipse(width/2, height/2, 50, 100);
+    	ellipse(mouseX, mouseY, 50, 100);
     }
   	if(keyIsDown(87)){
       background(255);
