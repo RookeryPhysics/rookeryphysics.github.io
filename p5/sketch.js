@@ -23,7 +23,8 @@ function draw() {
 	let paddleX = mouseX;
 	let paddleY = mouseY;
 	let ballPosY = 400;
-	if(abs(paddleY - ballPosY) > 100){
+	//check if hitting left paddle
+	if(abs(paddleY - ballPosY) <= 100 && abs(50 - ballPosX) <= 20){
 		paddleCollision()
 	}
   //move rectangle
