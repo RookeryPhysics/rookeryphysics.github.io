@@ -7,20 +7,21 @@
 
 function setup() {
     createCanvas(400, 400);
-    background(255);
+    background(0);
 }
-
-function mouseIsPressed() {
-	if(keyIsDown(82) && mouseIsPressed && mouseButton === LEFT){
-    	rect(mouseX, mouseY, 120, 40);
-    }
-  	if(mouseIsPressed && mouseButton === LEFT && keyIsDown(69)){
-    	ellipse(mouseX, mouseY, 50, 100);
-    }
-  	if(keyIsDown(87)){
-      background(255);
-    }
-  	if(keyIsDown(66)){
-      background(0);
-    }
+function draw(){
+  if(mouseIsPressed){
+	   if(keyIsDown(82) && mouseIsPressed && mouseButton === LEFT){
+    	  rect(mouseX, mouseY, 120, 40);
+     }
+  	   if(mouseIsPressed && mouseButton === LEFT && keyIsDown(69)){
+    	    ellipse(mouseX, mouseY, 50, 100);
+       }
+  	     if(keyIsDown(87)){
+           background(255);
+         }
+  	     if(keyIsDown(66)){
+            background(0);
+         }
+       }
 }
