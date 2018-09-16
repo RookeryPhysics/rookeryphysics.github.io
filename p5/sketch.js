@@ -15,6 +15,7 @@ let rightPaddlePos;
 let leftScore;
 let rightScore;
 let lastHitter;
+let ballWidth;
 
 //setup function
 function setup() {
@@ -33,6 +34,10 @@ function setup() {
 function draw() {
   background(0,255,255); //prevents screen from being layered in shapes
 	let paddleY = mouseY;
+  fill(0,0,0);
+  textSize(20);
+  text("CANARY ISLAND DATE PALM: "+ str(rightScore), 1400, 100, 400, 200);
+  text("CHINESE WINDMILL PALM: " + str(leftScore), 200, 100, 400, 200);
 	//check if hitting left or right paddle
 	if(abs(paddleY - ballPosY) <= 100 && abs(50 - ballPosX) <= 20){
 		paddleCollision()
@@ -52,12 +57,12 @@ function draw() {
     dx = dx * -1;
 		if(ballPosX < 100){
       rightScore += 1;
-      console.log("Right score is " + rightScore);
+      console.log("Right(Canary Island Date Palm) score is " + rightScore);
       background(0,255,0);
     }
     if(ballPosX > 200){
       leftScore +=1;
-      console.log("Left score is" + leftScore);
+      console.log("Left(Chinese Windmill Palm) score is" + leftScore);
       background(0,0,255);
     }
   }
@@ -73,7 +78,7 @@ function draw() {
       rotate(PI/5);
     }
   }
-  //display rectangle
+  //display coconut ball
   fill(139,69,19);
   ellipse(ballPosX, ballPosY, ballWidth, ballWidth);
 
@@ -81,17 +86,20 @@ function draw() {
   fill(139,69,19);
   rect(50, mouseY, 20, 150);
   fill(0,255,0);
-  ellipse(60, paddleY - 40, 75, 75);
+  triangle(12, mouseY-60, 112, mouseY-60, 62, mouseY+10);
+  triangle(70, mouseY+10, 140, mouseY+55, 140, mouseY-30);
+  triangle(50, mouseY+10, 0, mouseY+40, 0, mouseY-30);
+
 
   //display and control right paddle
   if(keyIsDown(38)){
-    rightPaddlePos = rightPaddlePos - 20;
+    rightPaddlePos = rightPaddlePos - 25;
   }
   if(keyIsDown(40)){
-    rightPaddlePos += 20;
+    rightPaddlePos += 25;
   }
   fill(139,69,19);
-  rect(distFromLeft, rightPaddlePos, 20, 150)
+  rect(distFromLeft, rightPaddlePos, 20, 150);
   fill(0,255,0);
   //rect(distFromLeft - 15, rightPaddlePos - 60, 55, 55);
   drawFrondsRight(distFromLeft + 15, rightPaddlePos - 30);
