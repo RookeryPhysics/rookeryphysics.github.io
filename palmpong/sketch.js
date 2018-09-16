@@ -14,6 +14,8 @@ let distFromLeft;
 let rightPaddlePos;
 let leftScore;
 let rightScore;
+let leftWins;
+let rightWins;
 let lastHitter;
 let ballWidth;
 
@@ -21,12 +23,14 @@ let ballWidth;
 function setup() {
   createCanvas(windowWidth, windowHeight);
   ballPosX = width/2;
-  dx = 30;
+  dx = 33;
   ballWidth = 50;
   distFromLeft = windowWidth - 90;
   rightPaddlePos = 50;
   leftScore=0;
   rightScore=0;
+  leftWins=0;
+  rightWins=0;
   ballPosY = 400;
   lastHitter = 0;
 }
@@ -36,8 +40,11 @@ function draw() {
 	let paddleY = mouseY;
   fill(0,0,0);
   textSize(20);
-  text("CANARY ISLAND DATE PALM: "+ str(rightScore), 1400, 100, 400, 200);
   text("CHINESE WINDMILL PALM: " + str(leftScore), 200, 100, 400, 200);
+  text("CANARY ISLAND DATE PALM: "+ str(rightScore), 1400, 100, 400, 200);
+  textSize(30);
+  text("WINS: " + str(leftWins), 275, 60, 400, 200);
+  text("WINS: " + str(rightWins), 1490, 60, 400, 200);
 	//check if hitting left or right paddle
 	if(abs(paddleY - ballPosY) <= 100 && abs(50 - ballPosX) <= 20){
 		paddleCollision()
@@ -58,11 +65,21 @@ function draw() {
 		if(ballPosX < 100){
       rightScore += 1;
       console.log("Right(Canary Island Date Palm) score is " + rightScore);
+      if(rightScore===10){
+        rightScore = 0;
+        leftScore = 0;
+        rightWins += 1;
+      }
       background(0,255,0);
     }
     if(ballPosX > 200){
       leftScore +=1;
       console.log("Left(Chinese Windmill Palm) score is" + leftScore);
+      if(leftScore===10){
+        leftScore = 0;
+        rightScore = 0;
+        leftWins += 1;
+      }
       background(0,0,255);
     }
   }
