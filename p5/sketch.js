@@ -14,6 +14,7 @@ let distFromLeft;
 let rightPaddlePos;
 let leftScore;
 let rightScore;
+let lastHitter;
 
 //setup function
 function setup() {
@@ -26,20 +27,22 @@ function setup() {
   leftScore=0;
   rightScore=0;
   ballPosY = 400;
+  lastHitter = 0;
 }
 
 function draw() {
-  background(0,255,255);
-	let paddleX = mouseX;
+  background(0,255,255); //prevents screen from being layered in shapes
 	let paddleY = mouseY;
 	//check if hitting left or right paddle
 	if(abs(paddleY - ballPosY) <= 100 && abs(50 - ballPosX) <= 20){
 		paddleCollision()
     ballPosY = random(800);
+    lastHitter = 1;
 	}
   if(abs(rightPaddlePos - ballPosY) <= 100 && abs(distFromLeft - ballPosX) <= 20){
     paddleCollision()
     ballPosY = random(800);
+    lastHitter = 2;
   }
   //move rectangle
   ballPosX += dx;
