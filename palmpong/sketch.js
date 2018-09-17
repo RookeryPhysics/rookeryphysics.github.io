@@ -31,7 +31,7 @@ function setup() {
   rightScore=0;
   leftWins=0;
   rightWins=0;
-  ballPosY = 400;
+  ballPosY = 100;
   lastHitter = 0;
 }
 
