@@ -23,7 +23,7 @@ let ballWidth;
 function setup() {
   createCanvas(1600, 900);
   ballPosX = width/2;
-  dx = 33;
+  dx = 27;
   ballWidth = 50;
   distFromLeft = windowWidth - 90;
   rightPaddlePos = 50;
@@ -110,10 +110,10 @@ function draw() {
 
   //display and control right paddle
   if(keyIsDown(38)){
-    rightPaddlePos = rightPaddlePos - 25;
+    rightPaddlePos = rightPaddlePos - 22;
   }
   if(keyIsDown(40)){
-    rightPaddlePos += 25;
+    rightPaddlePos += 22;
   }
   fill(139,69,19);
   rect(distFromLeft, rightPaddlePos, 20, 150);
