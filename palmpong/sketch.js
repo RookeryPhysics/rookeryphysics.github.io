@@ -21,7 +21,7 @@ let ballWidth;
 
 //setup function
 function setup() {
-  createCanvas(windowWidth, windowHeight);
+  createCanvas(1600, 900);
   ballPosX = width/2;
   dx = 33;
   ballWidth = 50;
@@ -41,19 +41,19 @@ function draw() {
   fill(0,0,0);
   textSize(20);
   text("CHINESE WINDMILL PALM: " + str(leftScore), 200, 100, 400, 200);
-  text("CANARY ISLAND DATE PALM: "+ str(rightScore), 1400, 100, 400, 200);
+  text("CANARY ISLAND DATE PALM: "+ str(rightScore), 1100, 100, 400, 200);
   textSize(30);
   text("WINS: " + str(leftWins), 275, 60, 400, 200);
-  text("WINS: " + str(rightWins), 1490, 60, 400, 200);
+  text("WINS: " + str(rightWins), 1190, 60, 400, 200);
 	//check if hitting left or right paddle
 	if(abs(paddleY - ballPosY) <= 100 && abs(50 - ballPosX) <= 20){
 		paddleCollision()
-    ballPosY = random(800);
+    ballPosY = random(700);
     lastHitter = 1;
 	}
   if(abs(rightPaddlePos - ballPosY) <= 100 && abs(distFromLeft - ballPosX) <= 20){
     paddleCollision()
-    ballPosY = random(800);
+    ballPosY = random(700);
     lastHitter = 2;
   }
   //move rectangle
@@ -123,7 +123,7 @@ function draw() {
   if(rightPaddlePos < 0){
     rightPaddlePos = 0;
   }
-  if(rightPaddlePos > 850){
-    rightPaddlePos = 850;
+  if(rightPaddlePos > 700){
+    rightPaddlePos = 700;
   }
 }
