@@ -21,7 +21,7 @@ let ballWidth;
 
 //setup function
 function setup() {
-  createCanvas(1600, 900);
+  createCanvas(windowWidth, windowHeight);
   ballPosX = width/2;
   dx = 27;
   ballWidth = 50;
@@ -124,7 +124,7 @@ function draw() {
   if(rightPaddlePos < 0){
     rightPaddlePos = 0;
   }
-  if(rightPaddlePos > 700){
-    rightPaddlePos = 700;
+  if(rightPaddlePos > 800){
+    rightPaddlePos = 800;
   }
 }
