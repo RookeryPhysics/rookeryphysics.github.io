@@ -6,6 +6,7 @@
 // - describe what you did to take this project "above and beyond"
 
 let obama;
+let scalar;
 
 function preload(){
   obama = loadImage("assets/obama.png");
@@ -17,8 +18,19 @@ function setup() {
   scalar = 1.0;
 }
 
+function switchCheck(){
+  if(keyIsDown(83)){
+    obama = loadImage("assets/shia.png");
+  }
+
+  if(keyIsDown(79)){
+    obama = loadImage("assets/obama.png");
+  }
+}
+
 function draw() {
   image(obama, mouseX, mouseY, obama.width * scalar, obama.height * scalar);
+  switchCheck();
 }
 
 function mouseWheel(event){
@@ -28,5 +40,4 @@ function mouseWheel(event){
   else{
     scalar *= 0.9;
   }
-  console.log(event);
 }

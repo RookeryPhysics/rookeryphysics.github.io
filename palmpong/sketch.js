@@ -22,9 +22,9 @@ let ballWidth;
 //setup function
 function setup() {
   createCanvas(windowWidth, windowHeight);
-  ballPosX = width/2;
-  dx = 27;
-  ballWidth = 50;
+  ballPosX = width/2; //starts ball in middle of screen
+  dx = 27; //speed of ball
+  ballWidth = 50; //size of ball
   distFromLeft = windowWidth - 90;
   rightPaddlePos = 50;
   leftScore=0;
@@ -36,9 +36,7 @@ function setup() {
   alert("Use mouse to control left palm. \nUse up/down arrow keys to control right palm. \nHit the coconut with the palm fronds. \nScore on the opposing side to get points. \nPress F11 to enter fullscreen.");
 }
 
-function draw() {
-  background(0,255,255); //prevents screen from being layered in shapes
-	let paddleY = mouseY;
+function scoreDisplay(){
   fill(0,0,0);
   textSize(20);
   text("CHINESE WINDMILL PALM: " + str(leftScore), 200, 100, 400, 200);
@@ -46,24 +44,39 @@ function draw() {
   textSize(30);
   text("WINS: " + str(leftWins), 275, 60, 400, 200);
   text("WINS: " + str(rightWins), 1190, 60, 400, 200);
-	//check if hitting left or right paddle
-	if(abs(paddleY - ballPosY) <= 100 && abs(50 - ballPosX) <= 20){
-		paddleCollision()
+}
+
+function paddleCollisionCheck(){
+  let paddleY = mouseY;
+  if(abs(paddleY - ballPosY) <= 100 && abs(50 - ballPosX) <= 20){
+    paddleCollision();
     ballPosY = random(700);
     lastHitter = 1;
-	}
+  }
   if(abs(rightPaddlePos - ballPosY) <= 100 && abs(distFromLeft - ballPosX) <= 20){
-    paddleCollision()
+    paddleCollision();
     ballPosY = random(700);
     lastHitter = 2;
   }
-  //move rectangle
-  ballPosX += dx;
+}
 
-  //check if hitting wall
+function paddleCollision() {
+  dx = dx * -1;
+}
+
+function drawFrondsRight(xPos, yPos){
+  translate(xPos, yPos);
+  noStroke();
+  for (let i = 0; i < 10; i ++) {
+    ellipse(5, 35, 10, 50);
+    rotate(PI/5);
+  }
+}
+
+function wallCollisionCheck(){
   if(ballPosX > width - 50|| ballPosX < 0 || ballPosX === mouseX && ballPosX === mouseY) {
     dx = dx * -1;
-		if(ballPosX < 100){
+    if(ballPosX < 100){
       rightScore += 1;
       console.log("Right(Canary Island Date Palm) score is " + rightScore);
       if(rightScore===10){
@@ -84,32 +97,18 @@ function draw() {
       background(0,0,255);
     }
   }
-	function paddleCollision() {
-		dx = dx * -1;
-	}
-
-  function drawFrondsRight(xPos, yPos){
-    translate(xPos, yPos);
-    noStroke();
-    for (var i = 0; i < 10; i ++) {
-      ellipse(5, 35, 10, 50);
-      rotate(PI/5);
-    }
-  }
-  //display coconut ball
-  fill(139,69,19);
-  ellipse(ballPosX, ballPosY, ballWidth, ballWidth);
-
-  //display and control left paddle
+}
+function leftPaddle(){
   fill(139,69,19);
   rect(50, mouseY, 20, 150);
   fill(0,255,0);
   triangle(12, mouseY-60, 112, mouseY-60, 62, mouseY+10);
   triangle(70, mouseY+10, 140, mouseY+55, 140, mouseY-30);
   triangle(50, mouseY+10, 0, mouseY+40, 0, mouseY-30);
+}
 
 
-  //display and control right paddle
+function rightPaddle(){
   if(keyIsDown(38)){
     rightPaddlePos = rightPaddlePos - 22;
   }
@@ -119,7 +118,6 @@ function draw() {
   fill(139,69,19);
   rect(distFromLeft, rightPaddlePos, 20, 150);
   fill(0,255,0);
-  //rect(distFromLeft - 15, rightPaddlePos - 60, 55, 55);
   drawFrondsRight(distFromLeft + 15, rightPaddlePos - 30);
   if(rightPaddlePos < 0){
     rightPaddlePos = 0;
@@ -127,4 +125,19 @@ function draw() {
   if(rightPaddlePos > 800){
     rightPaddlePos = 800;
   }
+}
+function draw() {
+  background(0,255,255); //prevents screen from being layered in shapes
+  scoreDisplay();
+  paddleCollisionCheck();
+  //display coconut ball
+  fill(139,69,19);
+  ellipse(ballPosX, ballPosY, ballWidth, ballWidth);
+  //move ball
+  ballPosX += dx;
+
+  wallCollisionCheck();
+
+  leftPaddle();
+  rightPaddle();
 }
