@@ -33,7 +33,7 @@ function setup() {
   rightWins=0;
   ballPosY = 100;
   lastHitter = 0;
-  alert("Use mouse to control left palm. \nUse up/down arrow keys to control right palm. \nHit the coconut with the palm fronds. \nScore on the opposing side to get points. \nPress F11 to enter fullscreen.");
+  alert("Use mouse to control left palm. \nUse up/down arrow keys to control right palm. \nHit the coconut with the palm fronds. \nScore on the opposing side to get points. \nPress F11 to enter fullscreen. \nFunctional on 1600x900 and 1920x1080.");
 }
 
 function scoreDisplay(){

@@ -16,6 +16,7 @@ function setup() {
   createCanvas(windowWidth, windowHeight);
   imageMode(CENTER);
   scalar = 1.0;
+  alert("Press S for Shia and O for Obama.\nUse scroll wheel to alter size.");
 }
 
 function switchCheck(){
