@@ -127,7 +127,7 @@ function rightPaddle(){
   }
 }
 function draw() {
-  background(0,255,255); //prevents screen from being layered in shapes
+   //prevents screen from being layered in shapes
   scoreDisplay();
   paddleCollisionCheck();
   //display coconut ball
