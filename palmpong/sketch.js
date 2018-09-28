@@ -3,7 +3,12 @@
 // 13/09/2018
 //
 // Extra for Experts:
-// - describe what you did to take this project "above and beyond"
+// -Made palm tree fronds with p5js shapes, a loop, and ellipses
+// -Created a score display on screen
+// -Made game run fluidly
+// -Made it functional for multiple screen sizes
+// -Made the contents of the draw loop contain clean and basic functions
+// -Added a back button to return to main project page
 
 //variables
 let ballPosX;
