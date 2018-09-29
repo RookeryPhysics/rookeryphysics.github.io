@@ -1,4 +1,4 @@
-// Palm Tree Palm
+// Palm Tree Pong
 // Michael McGee
 // 13/09/2018
 //
@@ -21,7 +21,6 @@ let leftScore;
 let rightScore;
 let leftWins;
 let rightWins;
-let lastHitter;
 let ballWidth;
 
 //setup function
@@ -37,10 +36,10 @@ function setup() {
   leftWins=0;
   rightWins=0;
   ballPosY = 100;
-  lastHitter = 0;
   alert("Use mouse to control left palm. \nUse up/down arrow keys to control right palm. \nHit the coconut with the palm fronds. \nScore on the opposing side to get points. \nPress F11 to enter fullscreen. \nFunctional on 1600x900 and 1920x1080.");
 }
 
+//displays the score and wins
 function scoreDisplay(){
   fill(0,0,0);
   textSize(20);
@@ -51,24 +50,25 @@ function scoreDisplay(){
   text("WINS: " + str(rightWins), 1190, 60, 400, 200);
 }
 
+//checks if ball is colliding with paddle and sends ball to random y position if so
 function paddleCollisionCheck(){
   let paddleY = mouseY;
   if(abs(paddleY - ballPosY) <= 100 && abs(50 - ballPosX) <= 20){
     paddleCollision();
     ballPosY = random(700);
-    lastHitter = 1;
   }
   if(abs(rightPaddlePos - ballPosY) <= 100 && abs(distFromLeft - ballPosX) <= 20){
     paddleCollision();
     ballPosY = random(700);
-    lastHitter = 2;
   }
 }
 
+//changes ball direction on collision
 function paddleCollision() {
   dx = dx * -1;
 }
 
+//draws the date palm fronds
 function drawFrondsRight(xPos, yPos){
   translate(xPos, yPos);
   noStroke();
@@ -78,6 +78,7 @@ function drawFrondsRight(xPos, yPos){
   }
 }
 
+//checks if colliding with wall and changes ball direction if so
 function wallCollisionCheck(){
   if(ballPosX > width - 50|| ballPosX < 0 || ballPosX === mouseX && ballPosX === mouseY) {
     dx = dx * -1;
@@ -103,6 +104,8 @@ function wallCollisionCheck(){
     }
   }
 }
+
+//draws left paddle and palm fronds
 function leftPaddle(){
   fill(139,69,19);
   rect(50, mouseY, 20, 150);
@@ -112,7 +115,7 @@ function leftPaddle(){
   triangle(50, mouseY+10, 0, mouseY+40, 0, mouseY-30);
 }
 
-
+//draws right paddle
 function rightPaddle(){
   if(keyIsDown(38)){
     rightPaddlePos = rightPaddlePos - 22;
@@ -131,8 +134,10 @@ function rightPaddle(){
     rightPaddlePos = 800;
   }
 }
+
+//makes the magic happen
 function draw() {
-   //prevents screen from being layered in shapes
+  background(0,255,255);
   scoreDisplay();
   paddleCollisionCheck();
   //display coconut ball
@@ -140,9 +145,7 @@ function draw() {
   ellipse(ballPosX, ballPosY, ballWidth, ballWidth);
   //move ball
   ballPosX += dx;
-
   wallCollisionCheck();
-
   leftPaddle();
   rightPaddle();
 }
