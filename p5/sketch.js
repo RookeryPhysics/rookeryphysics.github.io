@@ -1,6 +1,6 @@
-// Project Title
-// Your Name
-// Date
+// Pirate Game
+// Michael McGee
+// 2018-09-29
 //
 // Extra for Experts:
 // - describe what you did to take this project "above and beyond"
@@ -21,10 +21,12 @@ let discoveredStateFive;
 let discoveredStateSix;
 let discoveredStateSeven;
 let discoveredStateEight;
+let lastStateDiscovered;
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
   boat = loadImage("assets/goodship.png");
+  redBoat = loadImage("assets/evilship");
   shipX = width/2;
   shipY = height/2;
   state = 1;
@@ -38,6 +40,8 @@ function setup() {
   isWaveBHit = false;
   jumped = false;
   currentTooStrong = false;
+  //discovered vars could be turned into a single numerical variable called lastStateDiscovered
+  lastStateDiscovered = 1;
   discoveredStateTwo = false;
   discoveredStateThree = false;
   discoveredStateFour = false;
@@ -58,51 +62,68 @@ function loadState(){
     stateLord();
     createWaveS();
     encloseRightState();
+    displayGUI();
   }
+
   if(state === 2){
     controlShip();
     stateLord();
     encloseLeftState();
+    showIsland();
+    displayGUI();
     discoveredStateTwo = true;
   }
+
   if(state === 3){
     controlShip();
     stateLord();
     encloseLeftState();
+    displayGUI();
     discoveredStateThree = true;
   }
+
   if(state === 4){
     controlShip();
     stateLord();
     encloseLeftState();
+    displayGUI();
     discoveredStateFour = true;
   }
+
   if(state === 5){
     controlShip();
     stateLord();
     encloseLeftState();
+    displayGUI();
     discoveredStateFive = true;
   }
+
   if(state === 6){
     controlShip();
     stateLord();
     encloseLeftState();
+    displayGUI();
     discoveredStateSix = true;
   }
+
   if(state === 7){
     controlShip();
     stateLord();
     encloseLeftState();
+    displayGUI();
     discoveredStateSeven = true;
   }
+
   if(state === 8){
     controlShip();
     stateLord();
     encloseLeftState();
+    displayGUI();
     discoveredStateEight = true;
   }
 }
 
+//determines what state should be entered
 function stateLord(){
   if(state === 1 && shipX < 0 && waveHit < 11){
     state = 2;
@@ -160,6 +181,21 @@ function encloseLeftState(){
   }
   if(shipX < 0){
     shipX = 0;
+  }
+}
+
+function showIsland(){
+  distFromIsland =
+  fill(96,90,70);
+  noStroke();
+  ellipse(windowWidth / 2, windowHeight / 2, windowWidth / 3, windowHeight / 3);
+  fill(0,255,0);
+  textSize(40);
+  text("🌵Home Island🌵", windowWidth / 2.3, 0.1 * windowHeight);
+  fill(78,46,40);
+  rect(windowWidth / 2 + 80, windowHeight / 2 - 60, windowWidth / 5, windowHeight / 10);
+  if(shipX < width / 2 + 300 && keyIsDown(37)){
+    shipX +=4;
   }
 }
 
