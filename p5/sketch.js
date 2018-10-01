@@ -5,13 +5,12 @@
 // Extra for Experts:
 // - describe what you did to take this project "above and beyond"
 
-let shipX;
-let shipY;
+let shipX, shipY;
 let state;
-let waveSpeed;
-let wavePos;
+let waveSpeed, wavePos, wavePosB
 let waveHit;
 let isWaveHit;
+let isWaveBHit;
 let jumped;
 let currentTooStrong;
 let discoveredStateTwo;
@@ -22,11 +21,24 @@ let discoveredStateSix;
 let discoveredStateSeven;
 let discoveredStateEight;
 let lastStateDiscovered;
+let boat;
+let redBoat;
+let lineY1A;
+let lineY1B;
+let lineX1A;
+let lineX2A;
+let lineY2A;
+let lineX1B;
+let lineX2B;
+let lineY2B;
+let distFromIsland;
+let yourFriendlyNeighborhoodVariable;
+let goingForward;
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
   boat = loadImage("assets/goodship.png");
-  redBoat = loadImage("assets/evilship");
+  redBoat = loadImage("assets/evilship.png");
   shipX = width/2;
   shipY = height/2;
   state = 1;
@@ -49,6 +61,7 @@ function setup() {
   discoveredStateSix = false;
   discoveredStateSeven = false;
   discoveredStateEight = false;
+  goingForward = true;
 }
 
 function draw() {
@@ -60,6 +73,7 @@ function loadState(){
   if(state === 1){
     controlShip();
     stateLord();
+    keepWaveHitPositive();
     createWaveS();
     encloseRightState();
     displayGUI();
@@ -121,6 +135,29 @@ function loadState(){
     displayGUI();
     discoveredStateEight = true;
   }
+}
+
+function keepWaveHitPositive(){
+  if(waveHit < 0){
+    waveHit = 0;
+    console.log("THIS CODE ACTUALLY DOES SOMETHING");
+  }
+}
+
+function mouseClicked(){
+  if(mouseX < 100 && mouseY < 100){
+    if(goingForward){
+      goingForward = false;
+    }
+    else if(!goingForward){
+      goingForward = true;
+    }
+  }
+}
+//displays GUI
+function displayGUI(){
+  fill(255,0,0);
+  rect(0,0,100,100);
 }
 
 //determines what state should be entered
@@ -185,7 +222,6 @@ function encloseLeftState(){
 }
 
 function showIsland(){
-  distFromIsland =
   fill(96,90,70);
   noStroke();
   ellipse(windowWidth / 2, windowHeight / 2, windowWidth / 3, windowHeight / 3);
@@ -194,8 +230,12 @@ function showIsland(){
   text("🌵Home Island🌵", windowWidth / 2.3, 0.1 * windowHeight);
   fill(78,46,40);
   rect(windowWidth / 2 + 80, windowHeight / 2 - 60, windowWidth / 5, windowHeight / 10);
+  encloseIsland();
+}
+
+function encloseIsland(){
   if(shipX < width / 2 + 300 && keyIsDown(37)){
-    shipX +=4;
+    shipX += 4;
   }
 }
 
@@ -218,12 +258,15 @@ function controlShip(){
     image(boat, shipX, shipY);
   }
   else if(keyIsDown(40) && !keyIsDown(37) && !keyIsDown(39)){
-    shipY += 3;
-    waveSpeed = 1;
+    shipY += 2;
+    waveSpeed = 1.5;
     image(boat, shipX, shipY);
   }
   else{
     waveSpeed = 2;
+  }
+  if(state === 1){
+    shipY += 0.35;
   }
 }
 
@@ -247,7 +290,12 @@ function createWaveS(){
   if(shipX + 20 < lineX2A && shipX + 20 > lineX1A && shipY > lineY1A - 20 && shipY < lineY1A + 20 && !isWaveHit){
     console.log("WAVEHITA");
     if(!currentTooStrong){
-      waveHit += 1;
+      if(goingForward){
+        waveHit += 1;
+      }
+      else if(!goingForward){
+        waveHit -= 1;
+      }
     }
     isWaveHit = true;
     console.log(str(waveHit));
@@ -257,7 +305,12 @@ function createWaveS(){
   if(shipX + 20 < lineX2B && shipX + 20 > lineX1B && shipY > lineY1B - 20 && shipY < lineY1B + 20 && !isWaveBHit){
     console.log("WAVEHITB");
     if(!currentTooStrong){
-      waveHit += 1;
+      if(goingForward){
+        waveHit += 1;
+      }
+      else if(!goingForward){
+        waveHit -= 1;
+      }
     }
     isWaveBHit = true;
     console.log(str(waveHit));
@@ -323,7 +376,7 @@ function determineIfCurrentStrong(){
 function respawnWave(){
   if(lineY1A > height){
     lineY1A -= height;
-    wavePos = pickLineX();;
+    wavePos = pickLineX();
     isWaveHit = false;
   }
   if(lineY1B > height){
