@@ -77,14 +77,17 @@ function loadState(){
     createWaveS();
     encloseRightState();
     displayGUI();
+    arrowChange();
   }
 
   if(state === 2){
     controlShip();
     stateLord();
+    portal();
     encloseLeftState();
     showIsland();
     displayGUI();
+    arrowChange();
     discoveredStateTwo = true;
   }
 
@@ -93,6 +96,7 @@ function loadState(){
     stateLord();
     encloseLeftState();
     displayGUI();
+    arrowChange();
     discoveredStateThree = true;
   }
 
@@ -101,6 +105,7 @@ function loadState(){
     stateLord();
     encloseLeftState();
     displayGUI();
+    arrowChange();
     discoveredStateFour = true;
   }
 
@@ -109,6 +114,7 @@ function loadState(){
     stateLord();
     encloseLeftState();
     displayGUI();
+    arrowChange();
     discoveredStateFive = true;
   }
 
@@ -117,6 +123,7 @@ function loadState(){
     stateLord();
     encloseLeftState();
     displayGUI();
+    arrowChange();
     discoveredStateSix = true;
   }
 
@@ -125,6 +132,7 @@ function loadState(){
     stateLord();
     encloseLeftState();
     displayGUI();
+    arrowChange();
     discoveredStateSeven = true;
   }
 
@@ -133,6 +141,7 @@ function loadState(){
     stateLord();
     encloseLeftState();
     displayGUI();
+    arrowChange();
     discoveredStateEight = true;
   }
 }
@@ -154,10 +163,34 @@ function mouseClicked(){
     }
   }
 }
+
+function arrowChange(){
+  if(goingForward === true){
+    //image("uparrow.png", 200, 0);//100x100 picture
+    fill(255);
+    rect(200,200,100,100);
+  }
+  else if(goingForward === false){
+    //image("downarrow.png", 200, 0);
+    fill(0);
+    rect(200,200,100,100);
+  }
+}
+
 //displays GUI
 function displayGUI(){
   fill(255,0,0);
   rect(0,0,100,100);
+}
+
+function portal(){
+  for (let i=100; i<200; i+= 5) {
+    for (let j=100; j<200; j+=5) {
+      fill(int(random(180)), int(random(180)), int(random(255)));
+      noStroke();
+      rect(i,j,5,5);
+    }
+  }
 }
 
 //determines what state should be entered
