@@ -77,7 +77,6 @@ function loadState(){
     createWaveS();
     encloseRightState();
     displayGUI();
-    arrowChange();
   }
 
   if(state === 2){
@@ -87,7 +86,6 @@ function loadState(){
     encloseLeftState();
     showIsland();
     displayGUI();
-    arrowChange();
     discoveredStateTwo = true;
   }
 
@@ -95,8 +93,8 @@ function loadState(){
     controlShip();
     stateLord();
     encloseLeftState();
+    showRig();
     displayGUI();
-    arrowChange();
     discoveredStateThree = true;
   }
 
@@ -105,7 +103,6 @@ function loadState(){
     stateLord();
     encloseLeftState();
     displayGUI();
-    arrowChange();
     discoveredStateFour = true;
   }
 
@@ -114,7 +111,6 @@ function loadState(){
     stateLord();
     encloseLeftState();
     displayGUI();
-    arrowChange();
     discoveredStateFive = true;
   }
 
@@ -123,7 +119,6 @@ function loadState(){
     stateLord();
     encloseLeftState();
     displayGUI();
-    arrowChange();
     discoveredStateSix = true;
   }
 
@@ -132,7 +127,6 @@ function loadState(){
     stateLord();
     encloseLeftState();
     displayGUI();
-    arrowChange();
     discoveredStateSeven = true;
   }
 
@@ -141,7 +135,6 @@ function loadState(){
     stateLord();
     encloseLeftState();
     displayGUI();
-    arrowChange();
     discoveredStateEight = true;
   }
 }
@@ -149,10 +142,10 @@ function loadState(){
 function keepWaveHitPositive(){
   if(waveHit < 0){
     waveHit = 0;
-    console.log("THIS CODE ACTUALLY DOES SOMETHING");
   }
 }
 
+//called when mouse is clicked, performs a variety of functions
 function mouseClicked(){
   if(mouseX < 100 && mouseY < 100){
     if(goingForward){
@@ -162,18 +155,20 @@ function mouseClicked(){
       goingForward = true;
     }
   }
+  //if(clicking){get gold from object;}
 }
 
+//changes the travelling direction indicator
 function arrowChange(){
   if(goingForward === true){
-    //image("uparrow.png", 200, 0);//100x100 picture
+    //image("uparrow.png", 100, 0);//100x100 picture
     fill(255);
-    rect(200,200,100,100);
+    rect(100,0,100,100);
   }
   else if(goingForward === false){
-    //image("downarrow.png", 200, 0);
+    //image("downarrow.png", 100, 0);//100x100picture
     fill(0);
-    rect(200,200,100,100);
+    rect(100,0,100,100);
   }
 }
 
@@ -181,8 +176,10 @@ function arrowChange(){
 function displayGUI(){
   fill(255,0,0);
   rect(0,0,100,100);
+  arrowChange();
 }
 
+//creates a blue tinted portal
 function portal(){
   for (let i=100; i<200; i+= 5) {
     for (let j=100; j<200; j+=5) {
@@ -272,6 +269,23 @@ function encloseIsland(){
   }
 }
 
+function showRig(){
+  fill(150);
+  rect(windowWidth/3, windowHeight / 3, 200, 250);
+  fill(random(255));
+  rect(windowWidth/2 - 80 ,windowHeight/2, 50, 50);
+  fill(255,0,0);
+  textSize(40);
+  text("⛽OIL RIG⛽", windowWidth / 2.3, 0.1 * windowHeight);
+  encloseRig();
+}
+
+function encloseRig(){
+  if(shipX < width / 3 + 200 && keyIsDown(37)){
+    shipX+=4;
+  }
+}
+
 function controlShip(){
   fill(255,0,0);
   if(!keyIsDown(37) && !keyIsDown(39)){
@@ -355,54 +369,40 @@ function createWaveS(){
 }
 
 function determineIfCurrentStrong(){
-  if(waveHit === 10){
-    if(!discoveredStateTwo){
-      currentTooStrong = true;
-      textSize(30);
-      text("Cureent is too strong. Pull to the left to stop.", width/2, height - 100);
-    }
+  if(waveHit === 10 && !discoveredStateTwo){
+    currentTooStrong = true;
+    textSize(30);
+    text("Current is too strong. Pull to the left to stop.", width/2, height - 100);
   }
-  if(waveHit === 20){
-    if(!discoveredStateThree){
-      currentTooStrong = true;
-      textSize(30);
-      text("Cureent is too strong. Pull to the left to stop.", width/2, height - 100);
-    }
+  if(waveHit === 20 && !discoveredStateThree){
+    currentTooStrong = true;
+    textSize(30);
+    text("Current is too strong. Pull to the left to stop.", width/2, height - 100);
   }
-  if(waveHit === 30){
-    if(!discoveredStateFour){
-      currentTooStrong = true;
-      textSize(30);
-      text("Cureent is too strong. Pull to the left to stop.", width/2, height - 100);
-    }
+  if(waveHit === 30 && !discoveredStateFour){
+    currentTooStrong = true;
+    textSize(30);
+    text("Current is too strong. Pull to the left to stop.", width/2, height - 100);
   }
-  if(waveHit === 40){
-    if(!discoveredStateFive){
-      currentTooStrong = true;
-      textSize(30);
-      text("Cureent is too strong. Pull to the left to stop.", width/2, height - 100);
-    }
+  if(waveHit === 40 && !discoveredStateFive){
+    currentTooStrong = true;
+    textSize(30);
+    text("Current is too strong. Pull to the left to stop.", width/2, height - 100);
   }
-  if(waveHit === 50){
-    if(!discoveredStateSix){
-      currentTooStrong = true;
-      textSize(30);
-      text("Cureent is too strong. Pull to the left to stop.", width/2, height - 100);
-    }
+  if(waveHit === 50 && !discoveredStateSix){
+    currentTooStrong = true;
+    textSize(30);
+    text("Current is too strong. Pull to the left to stop.", width/2, height - 100);
   }
-  if(waveHit === 55){
-    if(!discoveredStateSeven){
-      currentTooStrong = true;
-      textSize(30);
-      text("Cureent is too strong. Pull to the left to stop.", width/2, height - 100);
-    }
+  if(waveHit === 55 && !discoveredStateSeven){
+    currentTooStrong = true;
+    textSize(30);
+    text("Current is too strong. Pull to the left to stop.", width/2, height - 100);
   }
-  if(waveHit === 60){
-    if(!discoveredStateEight){
-      currentTooStrong = true;
-      textSize(30);
-      text("WOW", width/2, height - 100);
-    }
+  if(waveHit === 60 && !discoveredStateEight){
+    currentTooStrong = true;
+    textSize(30);
+    text("WOW", width/2, height - 100);
   }
 }
 
