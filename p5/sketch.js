@@ -19,14 +19,17 @@ let redBoat;
 let lineY1A, lineY1B, lineX1A, lineX2A, lineY2A, lineX1B, lineX2B, lineY2B;
 let yourFriendlyNeighborhoodVariable;
 let goingForward;
-let money;
 let turnButton;
+let resource;
+let pirateX;
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
   boat = loadImage("assets/goodship.png");
   redBoat = loadImage("assets/evilship.png");
   turnButton = loadImage("assets/turn.png");
+  upArrow = loadImage("assets/uparrow.png");
+  downArrow = loadImage("assets/downarrow.png");
   shipX = width/2;
   shipY = height/2;
   state = 1;
@@ -41,6 +44,7 @@ function setup() {
     isWaveBHit:false,
   };
   waveSpeed = 2;
+  pirateX = windowWidth / 2 + 50;
   wavePos = pickLineX();
   wavePosB = pickLineX();
   waveHit = 0;
@@ -57,7 +61,10 @@ function setup() {
     eight: false
   };
   goingForward = true;
-  money = 0;
+  resource = {
+    money: 0,
+    oil:0
+  };
 }
 
 function draw() {
@@ -73,6 +80,7 @@ function loadState(){
     createWaveS();
     encloseRightState();
     displayGUI();
+    showPirates();
   }
 
   if(state === 2){
@@ -99,6 +107,7 @@ function loadState(){
     stateLord();
     encloseLeftState();
     displayGUI();
+    showPirates();
     discoveredState.four = true;
   }
 
@@ -141,8 +150,16 @@ function keepWaveHitPositive(){
   }
 }
 
+function showPirates(){
+  image(redBoat, pirateX, 200);
+  pirateX += 1;
+}
+
 //called when mouse is clicked, performs a variety of functions
 function mouseClicked(){
+  if(state === 3){
+    resource.oil = resource.oil + 10;
+  }
   if(mouseX < 100 && mouseY < 100){
     if(goingForward){
       goingForward = false;
@@ -151,22 +168,15 @@ function mouseClicked(){
       goingForward = true;
     }
   }
-  //if(clicking){get gold from object;}
 }
 
 //changes the travelling direction indicator
 function arrowChange(){
   if(goingForward === true){
-    //image(upArrow, 100, 0);//100x100 picture
-    fill(255);
-    noStroke();
-    rect(100,0,100,100);
+    image(upArrow, 100, 0, 100, 100);
   }
   else if(goingForward === false){
-    //image(downArrow, 100, 0);//100x100picture
-    fill(0);
-    noStroke();
-    rect(100,0,100,100);
+    image(downArrow, 100, 0, 100, 100);
   }
 }
 
@@ -180,7 +190,7 @@ function displayGUI(){
 function displayMoney(){
   textSize(50);
   fill(0, 255, 0);
-  text("$ " + str(money), 200, 70);
+  text("$ " + str(resource.money), 200, 70);
 }
 
 //creates a blue tinted portal
@@ -343,11 +353,11 @@ function createWaveS(){
     if(!currentTooStrong){
       if(goingForward){
         waveHit++;
-        money = money + 299792458;
+        resource.money = resource.money + 299792458;
       }
       else if(!goingForward){
         waveHit--;
-        money = money + 299792458;
+        resource.money = resource.money + 299792458;
       }
     }
     isWaveHit = true;
@@ -360,11 +370,11 @@ function createWaveS(){
     if(!currentTooStrong){
       if(goingForward){
         waveHit ++;
-        money = money + 299792458;
+        resource.money = resource.money + 299792458;
       }
       else if(!goingForward){
         waveHit --;
-        money = money + 299792458;
+        resource.money = resource.money + 299792458;
       }
     }
     isWaveBHit = true;
