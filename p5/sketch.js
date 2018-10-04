@@ -7,61 +7,55 @@
 
 let shipX, shipY;
 let state;
+let waves;
 let waveSpeed, wavePos, wavePosB;
 let waveHit;
 let isWaveHit;
 let isWaveBHit;
-let jumped;
 let currentTooStrong;
-let discoveredStateTwo;
-let discoveredStateThree;
-let discoveredStateFour;
-let discoveredStateFive;
-let discoveredStateSix;
-let discoveredStateSeven;
-let discoveredStateEight;
-let lastStateDiscovered;
+let discoveredState;
 let boat;
 let redBoat;
-let lineY1A;
-let lineY1B;
-let lineX1A;
-let lineX2A;
-let lineY2A;
-let lineX1B;
-let lineX2B;
-let lineY2B;
-let distFromIsland;
+let lineY1A, lineY1B, lineX1A, lineX2A, lineY2A, lineX1B, lineX2B, lineY2B;
 let yourFriendlyNeighborhoodVariable;
 let goingForward;
 let money;
+let turnButton;
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
   boat = loadImage("assets/goodship.png");
   redBoat = loadImage("assets/evilship.png");
+  turnButton = loadImage("assets/turn.png");
   shipX = width/2;
   shipY = height/2;
   state = 1;
   lineY1A = 0.2*height;
   lineY1B = 0.2*height;
+  waves = {
+    waveSpeed:2,
+    wavePos: pickLineX(),
+    wavePosB: pickLineX(),
+    waveHit: 0,
+    isWaveHit: false,
+    isWaveBHit:false,
+  };
   waveSpeed = 2;
   wavePos = pickLineX();
   wavePosB = pickLineX();
   waveHit = 0;
   isWaveHit = false;
   isWaveBHit = false;
-  jumped = false;
   currentTooStrong = false;
-  //discovered vars could be turned into a single numerical variable called lastStateDiscovered
-  lastStateDiscovered = 1;
-  discoveredStateTwo = false;
-  discoveredStateThree = false;
-  discoveredStateFour = false;
-  discoveredStateFive = false;
-  discoveredStateSix = false;
-  discoveredStateSeven = false;
-  discoveredStateEight = false;
+  discoveredState = {
+    two: false,
+    three: false,
+    four: false,
+    five: false,
+    six: false,
+    seven: false,
+    eight: false
+  };
   goingForward = true;
   money = 0;
 }
@@ -88,7 +82,7 @@ function loadState(){
     encloseLeftState();
     showIsland();
     displayGUI();
-    discoveredStateTwo = true;
+    discoveredState.two = true;
   }
 
   if(state === 3){
@@ -97,7 +91,7 @@ function loadState(){
     encloseLeftState();
     showRig();
     displayGUI();
-    discoveredStateThree = true;
+    discoveredState.three = true;
   }
 
   if(state === 4){
@@ -105,7 +99,7 @@ function loadState(){
     stateLord();
     encloseLeftState();
     displayGUI();
-    discoveredStateFour = true;
+    discoveredState.four = true;
   }
 
   if(state === 5){
@@ -113,7 +107,7 @@ function loadState(){
     stateLord();
     encloseLeftState();
     displayGUI();
-    discoveredStateFive = true;
+    discoveredState.five = true;
   }
 
   if(state === 6){
@@ -121,7 +115,7 @@ function loadState(){
     stateLord();
     encloseLeftState();
     displayGUI();
-    discoveredStateSix = true;
+    discoveredState.six = true;
   }
 
   if(state === 7){
@@ -129,7 +123,7 @@ function loadState(){
     stateLord();
     encloseLeftState();
     displayGUI();
-    discoveredStateSeven = true;
+    discoveredState.seven = true;
   }
 
   if(state === 8){
@@ -137,7 +131,7 @@ function loadState(){
     stateLord();
     encloseLeftState();
     displayGUI();
-    discoveredStateEight = true;
+    discoveredState.eight = true;
   }
 }
 
@@ -163,27 +157,29 @@ function mouseClicked(){
 //changes the travelling direction indicator
 function arrowChange(){
   if(goingForward === true){
-    //image("uparrow.png", 100, 0);//100x100 picture
+    //image(upArrow, 100, 0);//100x100 picture
     fill(255);
+    noStroke();
     rect(100,0,100,100);
   }
   else if(goingForward === false){
-    //image("downarrow.png", 100, 0);//100x100picture
+    //image(downArrow, 100, 0);//100x100picture
     fill(0);
+    noStroke();
     rect(100,0,100,100);
   }
 }
 
 //displays GUI
 function displayGUI(){
-  fill(255,0,0);
-  rect(0,0,100,100);
+  image(turnButton, 0, 0, 100, 100);
   arrowChange();
   displayMoney();
 }
 
 function displayMoney(){
   textSize(50);
+  fill(0, 255, 0);
   text("$ " + str(money), 200, 70);
 }
 
@@ -381,37 +377,37 @@ function createWaveS(){
 }
 
 function determineIfCurrentStrong(){
-  if(waveHit === 10 && !discoveredStateTwo){
+  if(waveHit === 10 && !discoveredState.two){
     currentTooStrong = true;
     textSize(30);
     text("Current is too strong. Pull to the left to stop.", width/2, height - 100);
   }
-  if(waveHit === 20 && !discoveredStateThree){
+  if(waveHit === 20 && !discoveredState.three){
     currentTooStrong = true;
     textSize(30);
     text("Current is too strong. Pull to the left to stop.", width/2, height - 100);
   }
-  if(waveHit === 30 && !discoveredStateFour){
+  if(waveHit === 30 && !discoveredState.four){
     currentTooStrong = true;
     textSize(30);
     text("Current is too strong. Pull to the left to stop.", width/2, height - 100);
   }
-  if(waveHit === 40 && !discoveredStateFive){
+  if(waveHit === 40 && !discoveredState.five){
     currentTooStrong = true;
     textSize(30);
     text("Current is too strong. Pull to the left to stop.", width/2, height - 100);
   }
-  if(waveHit === 50 && !discoveredStateSix){
+  if(waveHit === 50 && !discoveredState.six){
     currentTooStrong = true;
     textSize(30);
     text("Current is too strong. Pull to the left to stop.", width/2, height - 100);
   }
-  if(waveHit === 55 && !discoveredStateSeven){
+  if(waveHit === 55 && !discoveredState.seven){
     currentTooStrong = true;
     textSize(30);
     text("Current is too strong. Pull to the left to stop.", width/2, height - 100);
   }
-  if(waveHit === 60 && !discoveredStateEight){
+  if(waveHit === 60 && !discoveredState.eight){
     currentTooStrong = true;
     textSize(30);
     text("WOW", width/2, height - 100);
