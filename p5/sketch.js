@@ -7,7 +7,7 @@
 
 let shipX, shipY;
 let state;
-let waveSpeed, wavePos, wavePosB
+let waveSpeed, wavePos, wavePosB;
 let waveHit;
 let isWaveHit;
 let isWaveBHit;
@@ -34,6 +34,7 @@ let lineY2B;
 let distFromIsland;
 let yourFriendlyNeighborhoodVariable;
 let goingForward;
+let money;
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
@@ -62,6 +63,7 @@ function setup() {
   discoveredStateSeven = false;
   discoveredStateEight = false;
   goingForward = true;
+  money = 0;
 }
 
 function draw() {
@@ -177,6 +179,12 @@ function displayGUI(){
   fill(255,0,0);
   rect(0,0,100,100);
   arrowChange();
+  displayMoney();
+}
+
+function displayMoney(){
+  textSize(50);
+  text("$ " + str(money), 200, 70);
 }
 
 //creates a blue tinted portal
@@ -338,10 +346,12 @@ function createWaveS(){
     console.log("WAVEHITA");
     if(!currentTooStrong){
       if(goingForward){
-        waveHit += 1;
+        waveHit++;
+        money = money + 299792458;
       }
       else if(!goingForward){
-        waveHit -= 1;
+        waveHit--;
+        money = money + 299792458;
       }
     }
     isWaveHit = true;
@@ -353,10 +363,12 @@ function createWaveS(){
     console.log("WAVEHITB");
     if(!currentTooStrong){
       if(goingForward){
-        waveHit += 1;
+        waveHit ++;
+        money = money + 299792458;
       }
       else if(!goingForward){
-        waveHit -= 1;
+        waveHit --;
+        money = money + 299792458;
       }
     }
     isWaveBHit = true;
