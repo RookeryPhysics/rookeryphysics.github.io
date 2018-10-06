@@ -15,6 +15,7 @@ let isWaveBHit;
 let currentTooStrong;
 let discoveredState;
 let boat;
+let boatDown;
 let redBoat;
 let lineY1A, lineY1B, lineX1A, lineX2A, lineY2A, lineX1B, lineX2B, lineY2B;
 let yourFriendlyNeighborhoodVariable;
@@ -22,10 +23,12 @@ let goingForward;
 let turnButton;
 let resource;
 let pirateX;
+let level;
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
   boat = loadImage("assets/goodship.png");
+  boatDown = loadImage("assets/goodshipdown.png");
   redBoat = loadImage("assets/evilship.png");
   turnButton = loadImage("assets/turn.png");
   upArrow = loadImage("assets/uparrow.png");
@@ -33,6 +36,7 @@ function setup() {
   shipX = width/2;
   shipY = height/2;
   state = 1;
+  level = 1;
   lineY1A = 0.2*height;
   lineY1B = 0.2*height;
   waves = {
@@ -73,11 +77,20 @@ function draw() {
 }
 
 function loadState(){
+  if(state === 0){
+    controlShipDown();
+    stateLord();
+    keepWaveHitPositive();
+    createWaves();
+    encloseRightState();
+    displayGUI();
+  }
+
   if(state === 1){
     controlShip();
     stateLord();
     keepWaveHitPositive();
-    createWaveS();
+    createWaves();
     encloseRightState();
     displayGUI();
     showPirates();
@@ -157,15 +170,21 @@ function showPirates(){
 
 //called when mouse is clicked, performs a variety of functions
 function mouseClicked(){
-  if(state === 3){
+  if(state === 3 && resource.oil < 500){
     resource.oil = resource.oil + 10;
   }
   if(mouseX < 100 && mouseY < 100){
     if(goingForward){
       goingForward = false;
+      if(state === 1){
+        state = 0;
+      }
     }
     else if(!goingForward){
       goingForward = true;
+      if(state === 0){
+        state = 1;
+      }
     }
   }
 }
@@ -185,12 +204,55 @@ function displayGUI(){
   image(turnButton, 0, 0, 100, 100);
   arrowChange();
   displayMoney();
+  displayOil();
+  displayLevel();
 }
 
+//shows player funds
 function displayMoney(){
   textSize(50);
   fill(0, 255, 0);
   text("$ " + str(resource.money), 200, 70);
+}
+
+//shows player oil
+function displayOil(){
+  textSize(50);
+  fill(0);
+  text(str(resource.oil) + " OIL", windowWidth - 200, 70);
+}
+
+//shows level or where you will be when you go to the left
+function displayLevel(){
+  textSize(50);
+  fill(0,0,255);
+  level = getLevel();
+  text("Level " + str(level), windowWidth - 400, 70);
+}
+
+//computes the level to be displayed
+function getLevel(){
+  if(state === 2 || waveHit < 11){
+    return 1;
+  }
+  else if(state === 3 || waveHit < 21 && waveHit > 10){
+    return 2;
+  }
+  else if(state === 4 || waveHit < 31 && waveHIt > 20){
+    return 3;
+  }
+  else if(state === 5 || waveHit < 41 && waveHit > 30){
+    return 4;
+  }
+  else if(state === 6 || waveHit < 51 && waveHit > 40){
+    return 5;
+  }
+  else if(state === 7 || waveHit < 56 && waveHit > 50){
+    return 6;
+  }
+  else if(state === 8 || waveHit > 55){
+    return 7;
+  }
 }
 
 //creates a blue tinted portal
@@ -206,41 +268,47 @@ function portal(){
 
 //determines what state should be entered
 function stateLord(){
-  if(state === 1 && shipX < 0 && waveHit < 11){
+  if(state === 1 && shipX < 0 && waveHit < 11 || state === 0 && shipX < 0 && waveHit < 11){
     state = 2;
     shipX = width - 100;
+  }
+  else if(state === 2 && shipX > width || state === 3 && shipX > width || state === 4 && shipX > width || state === 5 && shipX > width || state === 6 && shipX > width || state === 7 && shipX > width || state === 8 && shipX > width){
+    state = 0;
+    shipX = 100;
+    currentTooStrong = false;
   }
   else if(state === 2 && shipX > width || state === 3 && shipX > width || state === 4 && shipX > width || state === 5 && shipX > width || state === 6 && shipX > width || state === 7 && shipX > width || state === 8 && shipX > width){
     state = 1;
     shipX = 100;
     currentTooStrong = false;
   }
-  else if(state === 1 && shipX < 0 && waveHit > 10 && waveHit < 21){
+  else if(state === 1 && shipX < 0 && waveHit > 10 && waveHit < 21 || state === 0 && shipX < 0 && waveHit > 55){
     state = 3;
     shipX = width - 100;
   }
-  else if(state === 1 && shipX < 0 && waveHit > 20 && waveHit < 31){
+  else if(state === 1 && shipX < 0 && waveHit > 20 && waveHit < 31 || state === 0 && shipX < 0 && waveHit > 55){
     state = 4;
     shipX = width - 100;
   }
-  else if(state === 1 && shipX < 0 && waveHit > 30 && waveHit < 41){
+  else if(state === 1 && shipX < 0 && waveHit > 30 && waveHit < 41 || state === 0 && shipX < 0 && waveHit > 55){
     state = 5;
     shipX = width - 100;
   }
-  else if(state === 1 && shipX < 0 && waveHit > 40 && waveHit < 51){
+  else if(state === 1 && shipX < 0 && waveHit > 40 && waveHit < 51 || state === 0 && shipX < 0 && waveHit > 55){
     state = 6;
     shipX = width - 100;
   }
-  else if(state === 1 && shipX < 0 && waveHit > 50 && waveHit < 56){
+  else if(state === 1 && shipX < 0 && waveHit > 50 && waveHit < 56 || state === 0 && shipX < 0 && waveHit > 55){
     state = 7;
     shipX = width - 100;
   }
-  else if(state === 1 && shipX < 0 && waveHit > 55){
+  else if(state === 1 && shipX < 0 && waveHit > 55 || state === 0 && shipX < 0 && waveHit > 55){
     state = 8;
     shipX = width - 100;
   }
 }
 
+//closes right states to prevent ship from leaving screen
 function encloseRightState(){
   if(shipY < 0){
     shipY = 0;
@@ -253,6 +321,7 @@ function encloseRightState(){
   }
 }
 
+//closes left states to prevent ship from leaving screen
 function encloseLeftState(){
   if(shipY < 0){
     shipY = 0;
@@ -265,6 +334,7 @@ function encloseLeftState(){
   }
 }
 
+//shows island
 function showIsland(){
   fill(96,90,70);
   noStroke();
@@ -277,12 +347,14 @@ function showIsland(){
   encloseIsland();
 }
 
+//prevents player from boating on island
 function encloseIsland(){
   if(shipX < width / 2 + 300 && keyIsDown(37)){
     shipX += 4;
   }
 }
 
+//shows oil rig
 function showRig(){
   fill(150);
   rect(windowWidth/3, windowHeight / 3, 200, 250);
@@ -294,14 +366,15 @@ function showRig(){
   encloseRig();
 }
 
+//prevents player from boating on oil rig
 function encloseRig(){
   if(shipX < width / 3 + 200 && keyIsDown(37)){
     shipX+=4;
   }
 }
 
+//displays and controls ship
 function controlShip(){
-  fill(255,0,0);
   if(!keyIsDown(37) && !keyIsDown(39)){
     image(boat, shipX, shipY);
   }
@@ -331,7 +404,42 @@ function controlShip(){
   }
 }
 
-function createWaveS(){
+//displays and controls ship in state 0 or while going backwards
+function controlShipDown(){
+  if(!keyIsDown(37) && !keyIsDown(39)){
+    image(boatDown, shipX, shipY);
+  }
+  else if(keyIsDown(37)){
+    shipX -= 4;
+    image(boatDown, shipX, shipY);
+  }
+  else if(keyIsDown(39)){
+    shipX += 4;
+    image(boatDown, shipX, shipY);
+  }
+  if(keyIsDown(38) && !keyIsDown(37) && !keyIsDown(39)){
+    shipY -= 2;
+    waveSpeed = 1;
+    image(boatDown, shipX, shipY);
+  }
+  else if(keyIsDown(40) && !keyIsDown(37) && !keyIsDown(39)){
+    shipY += 2;
+    waveSpeed = + 3;
+    image(boatDown, shipX, shipY);
+  }
+  else{
+    waveSpeed = 2;
+  }
+  if(state === 0){
+    shipY -= 0.35;
+  }
+}
+
+//spawns waves
+function createWaves(){
+  if(state === 0){
+    waveSpeed = waveSpeed * -1;
+  }
   lineX1A = wavePos;
   lineY1A += waveSpeed;
   lineX2A = lineX1A + 50;
@@ -382,11 +490,47 @@ function createWaveS(){
     shipY -= 100;
     lineY1A += 100;
   }
-  respawnWave();
-  determineIfCurrentStrong();
+  if(state === 1){
+    respawnWave();
+    determineIfCurrentStrong();
+  }
+  if(state === 0 && lineY1A < height || state === 0 && lineY1B < height){
+    respawnWaveDown();
+  }
 }
 
+
+//respawns wave when it hits bottom of screen
+function respawnWave(){
+  if(lineY1A > height){
+    lineY1A -= height;
+    wavePos = pickLineX();
+    isWaveHit = false;
+  }
+  if(lineY1B > height){
+    lineY1B -= height;
+    wavePosB = pickLineX();
+    isWaveBHit = false;
+  }
+}
+
+//respawns wave when it leaves top of screen
+function respawnWaveDown(){
+  if(lineY1A < 0){
+    lineY1A = height - 100;
+    wavePos = pickLineX();
+    isWaveHit = false;
+  }
+  if(lineY1B < 0){
+    lineY1B = height - 100;
+    wavePosB = pickLineX();
+    isWaveBHit = false;
+  }
+}
+
+//determines if player can continue going forward based on if they have visited the level they are at
 function determineIfCurrentStrong(){
+  fill(255,0,0);
   if(waveHit === 10 && !discoveredState.two){
     currentTooStrong = true;
     textSize(30);
@@ -424,19 +568,7 @@ function determineIfCurrentStrong(){
   }
 }
 
-function respawnWave(){
-  if(lineY1A > height){
-    lineY1A -= height;
-    wavePos = pickLineX();
-    isWaveHit = false;
-  }
-  if(lineY1B > height){
-    lineY1B -= height;
-    wavePosB = pickLineX();
-    isWaveBHit = false;
-  }
-}
-
+//picks a random X position for waves
 function pickLineX(){
   yourFriendlyNeighborhoodVariable = random(width);
   return yourFriendlyNeighborhoodVariable;
