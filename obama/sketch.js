@@ -16,7 +16,7 @@ function setup() {
   createCanvas(windowWidth, windowHeight);
   imageMode(CENTER);
   scalar = 1.0;
-  alert("Press S for Shia and O for Obama.\nUse scroll wheel to alter size.");
+  alert("Press S for Shia and O for Obama.\nUse scroll wheel to alter size.\nHold mouse to draw.");
 }
 
 function switchCheck(){
@@ -30,8 +30,11 @@ function switchCheck(){
 }
 
 function draw() {
-  image(obama, mouseX, mouseY, obama.width * scalar, obama.height * scalar);
   switchCheck();
+}
+
+function mouseDragged(){
+    image(obama, mouseX, mouseY, obama.width * scalar, obama.height * scalar);
 }
 
 function mouseWheel(event){

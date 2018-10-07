@@ -273,7 +273,12 @@ function stateLord(){
     shipX = width - 100;
   }
   else if(state === 2 && shipX > width || state === 3 && shipX > width || state === 4 && shipX > width || state === 5 && shipX > width || state === 6 && shipX > width || state === 7 && shipX > width || state === 8 && shipX > width){
-    state = 0;
+    if(goingForward){
+      state = 1;
+    }
+    else if(!goingForward){
+      state = 0;
+    }
     shipX = 100;
     currentTooStrong = false;
   }
