@@ -24,15 +24,23 @@ let turnButton;
 let resource;
 let pirateX;
 let level;
+let pirateMovingRight;
+let upArrow, downArrow;
+let pirateCounter;
+let ballPosX, ballPosY;
+const cannonBallSize = 20;
 
-function setup() {
-  createCanvas(windowWidth, windowHeight);
+function preload(){
   boat = loadImage("assets/goodship.png");
   boatDown = loadImage("assets/goodshipdown.png");
   redBoat = loadImage("assets/evilship.png");
   turnButton = loadImage("assets/turn.png");
   upArrow = loadImage("assets/uparrow.png");
   downArrow = loadImage("assets/downarrow.png");
+}
+
+function setup() {
+  createCanvas(windowWidth, windowHeight);
   shipX = width/2;
   shipY = height/2;
   state = 1;
@@ -49,10 +57,13 @@ function setup() {
   };
   waveSpeed = 2;
   pirateX = windowWidth / 2 + 50;
+  pirateMovingRight = true;
   wavePos = pickLineX();
   wavePosB = pickLineX();
   waveHit = 0;
   isWaveHit = false;
+  pirateCounter = 0;
+  ballPosY = 200;
   isWaveBHit = false;
   currentTooStrong = false;
   discoveredState = {
@@ -120,6 +131,7 @@ function loadState(){
     stateLord();
     encloseLeftState();
     displayGUI();
+    pirateAttack();
     showPirates();
     discoveredState.four = true;
   }
@@ -163,9 +175,38 @@ function keepWaveHitPositive(){
   }
 }
 
+function pirateAttack(){
+  showPirates();
+  //showOtherPirates();
+}
+
 function showPirates(){
   image(redBoat, pirateX, 200);
-  pirateX += 1;
+  if(pirateX < width && pirateMovingRight){
+    pirateX += 1;
+    pirateCounter +=1;
+  }
+  else if(pirateX >= width || !pirateMovingRight){
+    pirateMovingRight = false;
+    pirateX -= 1;
+    pirateCounter +=1;
+    if(pirateX <= 0){
+      pirateMovingRight = true;
+    }
+  }
+  //if(pirateCounter % 200 === 0){
+    //pirateCannonFire();
+  //}
+}
+
+//fires a cannon from the current position of the pirate ship when the pirate counter is a multiple of 200
+function pirateCannonFire(){
+  ballPosX = pirateX;
+  ballPosY = 200;
+  while (ballPosY < height){
+    ellipse(ballPosX, ballPosY, cannonBallSize, cannonBallSize);
+    ballPosY += cannonBallSize / 2;
+  }
 }
 
 //called when mouse is clicked, performs a variety of functions
