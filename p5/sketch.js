@@ -24,11 +24,9 @@ let turnButton;
 let resource;
 let pirateX;
 let level;
+let smile;
 let pirateMovingRight;
 let upArrow, downArrow;
-let pirateCounter;
-let ballPosX, ballPosY;
-const cannonBallSize = 20;
 
 function preload(){
   boat = loadImage("assets/goodship.png");
@@ -37,6 +35,7 @@ function preload(){
   turnButton = loadImage("assets/turn.png");
   upArrow = loadImage("assets/uparrow.png");
   downArrow = loadImage("assets/downarrow.png");
+  smile = loadImage("assets/smile.jpg");
 }
 
 function setup() {
@@ -62,8 +61,6 @@ function setup() {
   wavePosB = pickLineX();
   waveHit = 0;
   isWaveHit = false;
-  pirateCounter = 0;
-  ballPosY = 200;
   isWaveBHit = false;
   currentTooStrong = false;
   discoveredState = {
@@ -95,9 +92,11 @@ function loadState(){
     createWaves();
     encloseRightState();
     displayGUI();
+    jumpScare();
   }
 
   if(state === 1){
+    tint(255);
     controlShip();
     stateLord();
     keepWaveHitPositive();
@@ -108,6 +107,7 @@ function loadState(){
   }
 
   if(state === 2){
+    tint(255);
     controlShip();
     stateLord();
     portal();
@@ -118,6 +118,7 @@ function loadState(){
   }
 
   if(state === 3){
+    tint(255);
     controlShip();
     stateLord();
     encloseLeftState();
@@ -127,16 +128,17 @@ function loadState(){
   }
 
   if(state === 4){
+    tint(255);
     controlShip();
     stateLord();
     encloseLeftState();
     displayGUI();
-    pirateAttack();
     showPirates();
     discoveredState.four = true;
   }
 
   if(state === 5){
+    tint(255);
     controlShip();
     stateLord();
     encloseLeftState();
@@ -145,6 +147,7 @@ function loadState(){
   }
 
   if(state === 6){
+    tint(255);
     controlShip();
     stateLord();
     encloseLeftState();
@@ -153,6 +156,7 @@ function loadState(){
   }
 
   if(state === 7){
+    tint(255);
     controlShip();
     stateLord();
     encloseLeftState();
@@ -161,6 +165,7 @@ function loadState(){
   }
 
   if(state === 8){
+    tint(255);
     controlShip();
     stateLord();
     encloseLeftState();
@@ -175,37 +180,17 @@ function keepWaveHitPositive(){
   }
 }
 
-function pirateAttack(){
-  showPirates();
-  //showOtherPirates();
-}
-
 function showPirates(){
   image(redBoat, pirateX, 200);
   if(pirateX < width && pirateMovingRight){
     pirateX += 1;
-    pirateCounter +=1;
   }
   else if(pirateX >= width || !pirateMovingRight){
     pirateMovingRight = false;
     pirateX -= 1;
-    pirateCounter +=1;
     if(pirateX <= 0){
       pirateMovingRight = true;
     }
-  }
-  //if(pirateCounter % 200 === 0){
-    //pirateCannonFire();
-  //}
-}
-
-//fires a cannon from the current position of the pirate ship when the pirate counter is a multiple of 200
-function pirateCannonFire(){
-  ballPosX = pirateX;
-  ballPosY = 200;
-  while (ballPosY < height){
-    ellipse(ballPosX, ballPosY, cannonBallSize, cannonBallSize);
-    ballPosY += cannonBallSize / 2;
   }
 }
 
@@ -279,7 +264,7 @@ function getLevel(){
   else if(state === 3 || waveHit < 21 && waveHit > 10){
     return 2;
   }
-  else if(state === 4 || waveHit < 31 && waveHIt > 20){
+  else if(state === 4 || waveHit < 31 && waveHit > 20){
     return 3;
   }
   else if(state === 5 || waveHit < 41 && waveHit > 30){
@@ -618,4 +603,9 @@ function determineIfCurrentStrong(){
 function pickLineX(){
   yourFriendlyNeighborhoodVariable = random(width);
   return yourFriendlyNeighborhoodVariable;
+}
+
+function jumpScare(){
+  tint(255, 127);
+  image(smile, 0, 0, windowWidth, windowHeight);
 }
