@@ -25,8 +25,14 @@ let resource;
 let pirateX;
 let level;
 let smile;
+let attackDone;
 let pirateMovingRight;
 let upArrow, downArrow;
+let pirateBMovingRight, pirateCMovingRight, pirateDMovingRight, pirateEMovingRight, pirateFMovingRight;
+let pirateXB, pirateXC, pirateXD, pirateXE, pirateXF;
+
+const pirateSpeed = 1;
+const pirateSpeedFast = 2;
 
 function preload(){
   boat = loadImage("assets/goodship.png");
@@ -56,7 +62,17 @@ function setup() {
   };
   waveSpeed = 2;
   pirateX = windowWidth / 2 + 50;
+  pirateXB = windowWidth / 2 - 50;
+  pirateXC = windowWidth / 2 - 200;
+  pirateXD = windowWidth / 2 + 100;
+  pirateXE = windowWidth / 2 + 150;
+  pirateXF = windowWidth / 2 - 300;
   pirateMovingRight = true;
+  pirateBMovingRight = false;
+  pirateCMovingRight = false;
+  pirateDMovingRight = true;
+  pirateEMovingRight = false;
+  pirateFMovingRight = true;
   wavePos = pickLineX();
   wavePosB = pickLineX();
   waveHit = 0;
@@ -88,7 +104,7 @@ function loadState(){
   if(state === 0){
     controlShipDown();
     stateLord();
-    keepWaveHitPositive();
+    keepWaveHitPositve();
     createWaves();
     encloseRightState();
     displayGUI();
@@ -99,11 +115,11 @@ function loadState(){
     tint(255);
     controlShip();
     stateLord();
-    keepWaveHitPositive();
+    keepWaveHitPositve();
     createWaves();
     encloseRightState();
     displayGUI();
-    showPirates();
+    showPirateA();
   }
 
   if(state === 2){
@@ -133,7 +149,12 @@ function loadState(){
     stateLord();
     encloseLeftState();
     displayGUI();
-    showPirates();
+    showPirateA();
+    showPirateB();
+    showPirateC();
+    showPirateD();
+    showPirateE();
+    showPirateF();
     discoveredState.four = true;
   }
 
@@ -172,30 +193,110 @@ function loadState(){
     displayGUI();
     discoveredState.eight = true;
   }
+  if(state === 9){
+    tint(255);
+    textSize(40);
+    text("Your ship sank.", width/2 - 75, height/2);
+  }
 }
 
-function keepWaveHitPositive(){
+//does exactly what one might expect it to do(allegedly)
+function keepWaveHitPositve(){
   if(waveHit < 0){
     waveHit = 0;
   }
 }
 
-function showPirates(){
+//displays and controls pirate ship
+function showPirateA(){
   image(redBoat, pirateX, 200);
   if(pirateX < width && pirateMovingRight){
-    pirateX += 1;
+    pirateX += pirateSpeed;
   }
   else if(pirateX >= width || !pirateMovingRight){
     pirateMovingRight = false;
-    pirateX -= 1;
+    pirateX -= pirateSpeed;
     if(pirateX <= 0){
       pirateMovingRight = true;
     }
   }
 }
 
+function showPirateB(){
+  image(redBoat, pirateXB, 300);
+  if(pirateXB < width && pirateBMovingRight){
+    pirateXB += pirateSpeed;
+  }
+  else if(pirateXB >= width || !pirateBMovingRight){
+    pirateBMovingRight = false;
+    pirateXB -= pirateSpeedFast;
+    if(pirateXB <= 0){
+      pirateBMovingRight = true;
+    }
+  }
+}
+
+function showPirateC(){
+  image(redBoat, pirateXC, 400);
+  if(pirateXC < width && pirateCMovingRight){
+    pirateXC += pirateSpeedFast;
+  }
+  else if(pirateXC >= width || !pirateCMovingRight){
+    pirateCMovingRight = false;
+    pirateXC -= pirateSpeed;
+    if(pirateXC <= 0){
+      pirateCMovingRight = true;
+    }
+  }
+}
+
+function showPirateD(){
+  image(redBoat, pirateXD, 500);
+  if(pirateXD < width && pirateDMovingRight){
+    pirateXD += pirateSpeed;
+  }
+  else if(pirateXD >= width || !pirateDMovingRight){
+    pirateDMovingRight = false;
+    pirateXD -= pirateSpeed;
+    if(pirateXD <= 0){
+      pirateDMovingRight = true;
+    }
+  }
+}
+
+function showPirateE(){
+  image(redBoat, pirateXE, 350);
+  if(pirateXE < width && pirateEMovingRight){
+    pirateXE += pirateSpeed;
+  }
+  else if (pirateXE >= width || !pirateEMovingRight){
+    pirateEMovingRight = false;
+    pirateXE -= pirateSpeedFast;
+    if(pirateXE <= 0){
+      pirateEMovingRight = true;
+    }
+  }
+}
+
+function showPirateF(){
+  image(redBoat, pirateXF, 600);
+  if(pirateXF < width && pirateFMovingRight){
+    pirateXF += pirateSpeedFast;
+  }
+  else if (pirateXF >= width || !pirateFMovingRight){
+    pirateFMovingRight = false;
+    pirateXF -= pirateSpeedFast;
+    if(pirateXF <= 0){
+      pirateFMovingRight = true;
+    }
+  }
+}
+
 //called when mouse is clicked, performs a variety of functions
 function mouseClicked(){
+  if(mouseX < shipX + 50 && mouseX > shipX && mouseY < shipY && mouseY > shipY + 50){
+    state = 9;
+  }
   if(state === 3 && resource.oil < 500){
     resource.oil = resource.oil + 10;
   }
