@@ -30,6 +30,7 @@ let pirateMovingRight;
 let upArrow, downArrow;
 let pirateBMovingRight, pirateCMovingRight, pirateDMovingRight, pirateEMovingRight, pirateFMovingRight;
 let pirateXB, pirateXC, pirateXD, pirateXE, pirateXF;
+let killPlayer;
 
 const pirateSpeed = 1;
 const pirateSpeedFast = 2;
@@ -79,6 +80,7 @@ function setup() {
   isWaveHit = false;
   isWaveBHit = false;
   currentTooStrong = false;
+  killPlayer = false;
   discoveredState = {
     two: false,
     three: false,
@@ -97,7 +99,19 @@ function setup() {
 
 function draw() {
   background(0,140,140);
-  loadState();
+  if(killPlayer === true){
+    sad();
+  }
+  else {
+    loadState();
+  }
+}
+
+function sad(){
+  background(255);
+  fill(0);
+  textSize(40);
+  text("You died a sad death.", 400, 400);
 }
 
 function loadState(){
@@ -149,6 +163,7 @@ function loadState(){
     stateLord();
     encloseLeftState();
     displayGUI();
+    pirateMath();
     showPirateA();
     showPirateB();
     showPirateC();
@@ -181,6 +196,7 @@ function loadState(){
     controlShip();
     stateLord();
     encloseLeftState();
+    showPalmIsland();
     displayGUI();
     discoveredState.seven = true;
   }
@@ -204,6 +220,27 @@ function loadState(){
 function keepWaveHitPositve(){
   if(waveHit < 0){
     waveHit = 0;
+  }
+}
+
+function pirateMath(){
+  if(abs(pirateX - shipX) < 5 && abs(200 - shipY) < 5){
+    killPlayer = true;
+  }
+  if(abs(pirateXB - shipX) < 3 && abs(300 - shipY) < 3){
+    killPlayer = true;
+  }
+  if(abs(pirateXC - shipX) < 3 && abs(400 - shipY) < 3){
+    killPlayer = true;
+  }
+  if(abs(pirateXD - shipX) < 3 && abs(500 - shipY) < 3){
+    killPlayer = true;
+  }
+  if(abs(pirateXE - shipX) < 3 && abs(350 - shipY) < 3){
+    killPlayer = true;
+  }
+  if(abs(pirateXF - shipX) < 3 && abs(600 - shipY) < 3){
+    killPlayer = true;
   }
 }
 
@@ -294,6 +331,9 @@ function showPirateF(){
 
 //called when mouse is clicked, performs a variety of functions
 function mouseClicked(){
+  if(state === 7 && mouseX < 400 && mouseX > 200 && mouseY < 400 && mouseY > 200){
+    window.open("https://rookeryphysics.github.io/palmpong/index.html");
+  }
   if(mouseX < shipX + 50 && mouseX > shipX && mouseY < shipY && mouseY > shipY + 50){
     state = 9;
   }
@@ -503,6 +543,15 @@ function encloseRig(){
   if(shipX < width / 3 + 200 && keyIsDown(37)){
     shipX+=4;
   }
+}
+
+function showPalmIsland(){
+  fill(237, 201, 175);
+  ellipse(300, 300, 400, 400);
+  textSize(100);
+  text("🌴", 320, 320);
+  textSize(30);
+  text("CLICK CENTER OF ISLAND TO PLAY PALM TREE PONG", windowWidth/2.2, windowHeight * 0.2);
 }
 
 //displays and controls ship
