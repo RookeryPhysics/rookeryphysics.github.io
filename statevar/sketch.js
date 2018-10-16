@@ -2,6 +2,8 @@
 // Michael McGee
 // 2018-09-29
 //
+// -state variable required to control what level the player is on and if player is travelling
+//
 // Extra for Experts:
 // -made the game work upside down, created a gui
 
