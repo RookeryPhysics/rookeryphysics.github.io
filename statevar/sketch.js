@@ -3,7 +3,7 @@
 // 2018-09-29
 //
 // Extra for Experts:
-// - describe what you did to take this project "above and beyond"
+// -made the game work upside down, created a gui
 
 let shipX, shipY;
 let state;
