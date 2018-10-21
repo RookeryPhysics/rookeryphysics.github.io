@@ -14,7 +14,7 @@ let rectWidth;
 function setup() {
   createCanvas(windowWidth, windowHeight);
   time = 0;
-  rectNumber = 100;
+  rectNumber = 400;
   rectWidth = windowWidth / rectNumber;
   generateRectangles();
 }
