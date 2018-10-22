@@ -20,9 +20,14 @@ function setup() {
 }
 
 function draw() {
-  background(255);
-  fill(0);
+  background(0,255,255);
+  fill(255);
+  noStroke();
   displayRects();
+}
+
+function mousePressed(){
+  location.href = self.location;
 }
 
 function displayRects() {
