@@ -8,10 +8,24 @@
 let anArray = [];
 let division;
 let difficulty;
+let next = [];
+
+function setup() {
+  createCanvas(750,750);
+  division = 32;
+  difficulty = 0.9;//between 0 and 1(easy and impossible)
+  for(let t = 0; t < division; t++){
+    anArray[t] = [];
+  }
+  for(let e = 0; e < division; e++){
+    next[e] = [];
+  }
+  generate();
+}
 
 function mousePressed(){
-  let x = floor(mouseX / (600 / division));
-  let y = floor(mouseY / (600 / division));
+  let x = floor(mouseX / (width / division));
+  let y = floor(mouseY / (height / division));
   if (anArray[x][y] === 1){
     anArray[x][y] = 0;
   }
@@ -20,15 +34,15 @@ function mousePressed(){
   }
 }
 
-function setup() {
-  createCanvas(600,600);
-  division = 10;
-  difficulty = 0.1;//between 0 and 1(easy and impossible)
-  for(let t = 0; t < division; t++){
-    anArray[t] = [];
+function keyTyped(){
+  if(key === "r"){
+    generate();
   }
-  generate();
+  if(key === " "){
+    nextGen();
+  }
 }
+
 
 function generate(){
   for(let i = 0; i < division; i++){
@@ -45,52 +59,59 @@ function generate(){
 }
 
 function nextGen(){
-  for(let i = 1; i < division + 1; i++){
-    for(let j = 1; j < division + 1; j++){
+  let next = [];
+  for (let g = 0; g < division; g++){
+    next[g] = [];
+  }
+
+  //loop through grid
+  for(let y = 0; y < division; y++){
+    for(let x = 0; x < division; x++){
+
       let friends = 0;
-      let life;
-      if(anArray[i][j] === anArray[i + 1][j] && anArray[i][j] === 1){
-        friends++;
+
+      for (let p = -1; p <= 1; p++) {
+        for (let o = -1; o <= 1; o++){
+          if(x+p >= 0 && x+p < division && y+o >= 0 && y+o < division){
+            friends += anArray[y + o][x + p];
+          }
+        }
       }
-      if(anArray[i][j] === anArray[i + 1][j + 1] && anArray[i][j] === 1){
-        friends++;
+
+      friends -= anArray[y][x];
+
+      //apply rules
+      if(anArray[y][x] === 1){ //alive
+        if(friends === 2 || friends === 3){
+          next[y][x] = 1;
+        }
+        else {
+          next[y][x] = 0;
+        }
       }
-      if(anArray[i][j] === anArray[i+1][j-1] && anArray[i][j] === 1){
-        friends++;
-      }
-      if(anArray[i][j] === anArray[i][j+1] && anArray[i][j] === 1){
-        friends++;
-      }
-      if(anArray[i][j] === anArray[i][j-1] && anArray[i][j] === 1){
-        friends++;
-      }
-      if(anArray[i][j] === anArray[i - 1][j + 1] && anArray[i][j] === 1){
-        friends++;
-      }
-      if(anArray[i][j] === anArray[i-1][j] && anArray[i][j] === 1){
-        friends++;
-      }
-      if(anArray[i][j] === anArray[i-1][j-1] && anArray[i][j] === 1){
-        friends++;
-      }
-      if(friends < 2){
-        anArray[i][j] = 0;
-      }
-      else if(friends > 1 && friends < 4){
-        anArray[i][j] = 1;
-      }
-      else if(friends > 3){
-        anArray[i][j] = 0;
+      if(anArray[y][x] === 0){//dead
+        if(friends === 3 || friends === 5 || friends === 6){
+          next[y][x] = 1;
+        }
+        else {
+          next[y][x] = 0;
+        }
       }
     }
   }
+  anArray = next;
 }
 
 function draw() {
   for(let i = 0; i < division; i++){
     for(let j = 0; j < division ; j++){
       noStroke();
-      fill(anArray[i][j] * 255);
+      if(anArray[i][j] === 1){
+        fill(0,255,0);
+      }
+      else{
+        fill(37,14,3);
+      }
       rect(i*(width/division),j*(height/division),width/division,height/division);
     }
   }
