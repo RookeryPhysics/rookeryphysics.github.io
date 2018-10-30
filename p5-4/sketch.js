@@ -11,17 +11,14 @@ let randomArray = [];
 let newArray = [];
 let division;
 let randomness;
-let message;
-let hasNotStarted;
-let time;
+let count;
 
 function setup() {
   createCanvas(600, 600);
   division = 4;
   randomness = 0.5;
   state = 0;
-  hasNotStarted = true;
-  message = true;
+  count = 0;
   for(let i = 0; i < division; i++){
     randomArray[i] = [];
     newArray[i] = [];
@@ -41,9 +38,13 @@ function keyTyped(){
 
 function draw() {
   loadState();
+  count += 0.001;
 }
 
 function mousePressed(){
+  if(state === 0){
+    state = 1;
+  }
   if(state === 2){
     let x = floor(mouseX / (width / division));
     let y = floor(mouseY / (height / division));
@@ -66,25 +67,18 @@ function createBlankArray(){
 
 function loadState(){
   if(state === 0){
-    hasNotStarted = true;
     startScreen();
   }
   if(state === 1){
-    if(hasNotStarted){
-      startTheClock();
+    if(count < 0.5){
+      displayRandomGrid();
     }
-    while(millis() < time + 5000){
-      displayRandomGrid(); //FIND A WAY TO DO THIS FOR A CERTAIN AMOUNT OF TIME
+    else if(count >= 1){
+      state = 2;
     }
   }
   if(state === 2){
-    if(message){
-      alert("Press enter to submit.");
-    }
-    message = false;
     displayNewArray();
-    //LOAD AN EMPTY NEW GRID HERE AND DISPLAY IT UNTIL PLAYER SUBMITS
-    //LET THEM DRAW ON IT TO TRY AND REPLICATE ORIGINAL
   }
   if(state === 3){
     //SCORE THE PLAYER IN THIS STATE
@@ -93,12 +87,11 @@ function loadState(){
 
 //displays the start screen, options, and explains how to play the game
 function startScreen(){
-
-}
-
-function startTheClock(){
-  time = millis();
-  hasNotStarted = false;
+  background(0,255,255);
+  textSize(20);
+  text("Click to begin", 20, 40);
+  text("Memorize the grid then recreate it.", 20, 70);
+  text("Press enter to submit grid.", 20, 100);
 }
 
 function generate(){
