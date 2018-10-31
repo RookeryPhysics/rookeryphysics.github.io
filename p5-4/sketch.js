@@ -12,12 +12,14 @@ let newArray = [];
 let division;
 let randomness;
 let count;
+let numberCorrect;
 
 function setup() {
   createCanvas(600, 600);
-  division = 4;
+  division = 6;
   randomness = 0.5;
   state = 0;
+  numberCorrect = 0;
   count = 0;
   for(let i = 0; i < division; i++){
     randomArray[i] = [];
@@ -28,11 +30,14 @@ function setup() {
 }
 
 function keyTyped(){
-  if(state === 2 && keyCode === 13){
+  if(state === 2 && keyCode === 13 && count > 1.3){
     state = 3;
   }
   if(state === 0 && keyCode === 13){
     state = 1;
+  }
+  if(state === 3 && keyCode === 32){
+    location = self.location;
   }
 }
 
@@ -82,6 +87,7 @@ function loadState(){
   }
   if(state === 3){
     //SCORE THE PLAYER IN THIS STATE
+    score();
   }
 }
 
@@ -134,4 +140,32 @@ function displayNewArray(){
       rect(w*(width/division), e*(height/division), width/division, height/division);
     }
   }
+}
+
+function score(){
+  for(let w = 0; w < division; w++){
+    for(let e = 0; e < division; e++){
+      if(newArray[w][e] === randomArray[w][e]){
+        numberCorrect++;
+      }
+    }
+  }
+  if(numberCorrect === division*division){
+    maxScore();
+  }
+  else if(numberCorrect < division*division){
+    showScore();
+  }
+}
+
+function maxScore(){
+  fill(255,0,0);
+  text("YOU GOT THE MAXIMUM SCORE!", 20, 20);
+}
+
+function showScore(){
+  fill(255,0,0);
+  text("YOU FAILED!", 20, 20);
+  text("SCORE WAS " + str(numberCorrect) + "/" + str(division*division), 20, 50);
+  text("PRESS SPACE TO RESTART.", 20, 80);
 }
