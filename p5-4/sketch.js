@@ -13,18 +13,23 @@ let division;
 let randomness;
 let count;
 let numberCorrect;
+let roundOver;
+let secretArray = [];
 
 function setup() {
   createCanvas(600, 600);
   division = 6;
   randomness = 0.5;
   state = 0;
+  roundOver = false;
   numberCorrect = 0;
   count = 0;
   for(let i = 0; i < division; i++){
     randomArray[i] = [];
     newArray[i] = [];
+    secretArray[i] = [];
   }
+  secretArray = [[1,1,0,1,1,1],[1,1,0,1,0,0],[0,0,0,0,0,1],[0,0,0,0,1,0],[1,0,1,1,1,1],[1,1,1,1,0,0]];
   createBlankArray();
   generate();
 }
@@ -35,6 +40,9 @@ function keyTyped(){
   }
   if(state === 0 && keyCode === 13){
     state = 1;
+  }
+  if(state === 0 && keyCode === 32){
+    randomArray = secretArray;
   }
   if(state === 3 && keyCode === 32){
     location = self.location;
@@ -150,22 +158,25 @@ function score(){
       }
     }
   }
-  if(numberCorrect === division*division){
+  if(numberCorrect === division*division && !roundOver){
     maxScore();
   }
-  else if(numberCorrect < division*division){
-    showScore();
+  else if(numberCorrect < division*division && !roundOver){
+    showScore(numberCorrect);
   }
 }
 
 function maxScore(){
   fill(255,0,0);
   text("YOU GOT THE MAXIMUM SCORE!", 20, 20);
+  text("PRESS SPACE TO RESTART.", 20, 50);
+  roundOver = true;
 }
 
-function showScore(){
+function showScore(numberCorrect){
   fill(255,0,0);
   text("YOU FAILED!", 20, 20);
   text("SCORE WAS " + str(numberCorrect) + "/" + str(division*division), 20, 50);
   text("PRESS SPACE TO RESTART.", 20, 80);
+  roundOver = true;
 }
