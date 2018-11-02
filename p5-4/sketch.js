@@ -3,8 +3,8 @@
 // 29/10/2018
 //
 // Extra for Experts:
-// - describe what you did to take this project "above and beyond"
-// do this ^^^
+// - I really just took this project to "the next level".
+//
 
 let state;
 let randomArray = [];
@@ -15,6 +15,14 @@ let count;
 let numberCorrect;
 let roundOver;
 let secretArray = [];
+let otherSecretArray = [];
+let happy;
+let sad;
+
+function preload(){
+  happy = loadImage("assets/laugh.jpg");
+  sad = loadImage("assets/cry.jpg");
+}
 
 function setup() {
   createCanvas(600, 600);
@@ -28,8 +36,10 @@ function setup() {
     randomArray[i] = [];
     newArray[i] = [];
     secretArray[i] = [];
+    otherSecretArray[i] = [];
   }
   secretArray = [[1,1,0,1,1,1],[1,1,0,1,0,0],[0,0,0,0,0,1],[0,0,0,0,1,0],[1,0,1,1,1,1],[1,1,1,1,0,0]];
+  otherSecretArray = [[1,0,1,1,0,0],[1,0,0,1,0,0],[1,1,1,1,1,1],[0,1,0,1,0,1],[0,1,1,1,1,1],[0,0,0,0,1,0]];
   createBlankArray();
   generate();
 }
@@ -40,6 +50,9 @@ function keyTyped(){
   }
   if(state === 0 && keyCode === 13){
     state = 1;
+  }
+  if(state === 0 && keyCode === 79){
+    randomArray = otherSecretArray;
   }
   if(state === 0 && keyCode === 32){
     randomArray = secretArray;
@@ -126,12 +139,12 @@ function displayRandomGrid(){
   for(let w = 0; w < division; w++){
     for(let e = 0; e < division; e++){
       if(randomArray[w][e] === 1){
-        fill(0,255,0);
+        image(happy, w*(width/division), e*(height/division), width/division, height/division);
       }
       else{
-        fill(37,14,3);
+        fill(0,255,255);
+        rect(w*(width/division), e*(height/division), width/division, height/division);
       }
-      rect(w*(width/division),e*(height/division),width/division,height/division);
     }
   }
 }
@@ -140,12 +153,12 @@ function displayNewArray(){
   for(let w = 0; w < division; w++){
     for(let e = 0; e < division; e++){
       if(newArray[w][e] === 1){
-        fill(0,255,0);
+        image(happy, w*(width/division), e*(height/division), width/division, height/division);
       }
       else{
-        fill(37,14,3);
+        fill(0,255,255);
+        rect(w*(width/division), e*(height/division), width/division, height/division);
       }
-      rect(w*(width/division), e*(height/division), width/division, height/division);
     }
   }
 }
