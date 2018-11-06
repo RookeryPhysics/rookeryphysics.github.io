@@ -3,7 +3,7 @@
 // 29/10/2018
 //
 // Extra for Experts:
-// - I really just took this project to "the next level".
+// Really just took this project to "the next level".
 //
 
 let state;
@@ -16,12 +16,12 @@ let numberCorrect;
 let roundOver;
 let secretArray = [];
 let otherSecretArray = [];
-let happy;
-let sad;
+let dead;
+let danger;
 
 function preload(){
-  happy = loadImage("assets/laugh.jpg");
-  sad = loadImage("assets/cry.jpg");
+  dead = loadImage("assets/dead.jpg");
+  danger = loadImage("assets/danger.jpg");
 }
 
 function setup() {
@@ -97,6 +97,7 @@ function loadState(){
   }
   if(state === 1){
     if(count < 0.5){
+      background(0,255,255);
       displayRandomGrid();
     }
     else if(count >= 1){
@@ -104,10 +105,10 @@ function loadState(){
     }
   }
   if(state === 2){
+    background(0,255,255);
     displayNewArray();
   }
   if(state === 3){
-    //SCORE THE PLAYER IN THIS STATE
     score();
   }
 }
@@ -116,9 +117,12 @@ function loadState(){
 function startScreen(){
   background(0,255,255);
   textSize(20);
-  text("Click to begin", 20, 40);
-  text("Memorize the grid then recreate it.", 20, 70);
-  text("Press enter to submit grid.", 20, 100);
+  text("Click anywhere to begin.", 20, 40);
+  text("Memorize the grid in the given time.", 20, 70);
+  text("Next recreate the original grid.", 20, 100)
+  text("Press enter to submit the completed grid.", 20, 130);
+  image(dead, 100, 300, width/division, height/division);
+  image(danger, 400, 300, width/division, height/division);
 }
 
 function generate(){
@@ -139,11 +143,10 @@ function displayRandomGrid(){
   for(let w = 0; w < division; w++){
     for(let e = 0; e < division; e++){
       if(randomArray[w][e] === 1){
-        image(happy, w*(width/division), e*(height/division), width/division, height/division);
+        image(danger, w*(width/division), e*(height/division), width/division, height/division);
       }
       else{
-        fill(0,255,255);
-        rect(w*(width/division), e*(height/division), width/division, height/division);
+        image(dead, w*(width/division), e*(height/division), width/division, height/division);
       }
     }
   }
@@ -153,11 +156,10 @@ function displayNewArray(){
   for(let w = 0; w < division; w++){
     for(let e = 0; e < division; e++){
       if(newArray[w][e] === 1){
-        image(happy, w*(width/division), e*(height/division), width/division, height/division);
+        image(danger, w*(width/division), e*(height/division), width/division, height/division);
       }
       else{
-        fill(0,255,255);
-        rect(w*(width/division), e*(height/division), width/division, height/division);
+        image(dead, w*(width/division), e*(height/division), width/division, height/division);
       }
     }
   }
@@ -180,14 +182,20 @@ function score(){
 }
 
 function maxScore(){
-  fill(255,0,0);
+  fill(0,255,0);
+  rect(0, 0, 420, 150);
+  fill(148,0,211);
+  textSize(25);
   text("YOU GOT THE MAXIMUM SCORE!", 20, 20);
   text("PRESS SPACE TO RESTART.", 20, 50);
   roundOver = true;
 }
 
 function showScore(numberCorrect){
-  fill(255,0,0);
+  fill(0,255,0);
+  rect(0, 0, 420, 150);
+  fill(148,0,211);
+  textSize(25);
   text("YOU FAILED!", 20, 20);
   text("SCORE WAS " + str(numberCorrect) + "/" + str(division*division), 20, 50);
   text("PRESS SPACE TO RESTART.", 20, 80);
