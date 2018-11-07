@@ -1,6 +1,6 @@
 // Memory Tile Game
 // Michael McGee
-// 29/10/2018
+// 7/11/2018
 //
 // Extra for Experts:
 // Really just took this project to "the next level".
@@ -16,6 +16,7 @@ let numberCorrect;
 let roundOver;
 let secretArray = [];
 let otherSecretArray = [];
+let illegalArray = [];
 let dead;
 let danger;
 
@@ -37,13 +38,16 @@ function setup() {
     newArray[i] = [];
     secretArray[i] = [];
     otherSecretArray[i] = [];
+    illegalArray[i] = [];
   }
   secretArray = [[1,1,0,1,1,1],[1,1,0,1,0,0],[0,0,0,0,0,1],[0,0,0,0,1,0],[1,0,1,1,1,1],[1,1,1,1,0,0]];
   otherSecretArray = [[1,0,1,1,0,0],[1,0,0,1,0,0],[1,1,1,1,1,1],[0,1,0,1,0,1],[0,1,1,1,1,1],[0,0,0,0,1,0]];
+  illegalArray = [[0, 1, 0, 1, 1, 1],[0, 1, 0, 1, 0, 0],[0, 1, 1, 1, 1, 1],[0, 0, 0, 1, 0, 1],[0, 1, 1, 1, 0, 1],[0, 0, 0, 0, 0, 0]];
   createBlankArray();
   generate();
 }
 
+//called when a key is typed
 function keyTyped(){
   if(state === 2 && keyCode === 13 && count > 1.3){
     state = 3;
@@ -64,9 +68,10 @@ function keyTyped(){
 
 function draw() {
   loadState();
-  count += 0.001;
+  count += 0.001; //counts the time
 }
 
+//called when the mouse is pressed
 function mousePressed(){
   if(state === 0){
     state = 1;
@@ -83,6 +88,7 @@ function mousePressed(){
   }
 }
 
+//creates a blank array for player to draw on
 function createBlankArray(){
   for(let x = 0; x < division; x++){
     for(let y = 0; y < division; y++){
@@ -91,6 +97,7 @@ function createBlankArray(){
   }
 }
 
+//calls the functions required to operate each state
 function loadState(){
   if(state === 0){
     startScreen();
@@ -107,9 +114,13 @@ function loadState(){
   if(state === 2){
     background(0,255,255);
     displayNewArray();
+    stopNazis();
   }
   if(state === 3){
     score();
+  }
+  if(state === 4){
+    kickPlayer();
   }
 }
 
@@ -119,12 +130,13 @@ function startScreen(){
   textSize(20);
   text("Click anywhere to begin.", 20, 40);
   text("Memorize the grid in the given time.", 20, 70);
-  text("Next recreate the original grid.", 20, 100)
+  text("Next recreate the original grid.", 20, 100);
   text("Press enter to submit the completed grid.", 20, 130);
   image(dead, 100, 300, width/division, height/division);
   image(danger, 400, 300, width/division, height/division);
 }
 
+//generates a random grid
 function generate(){
   for(let x = 0; x < division; x++){
     for (let y = 0; y < division; y++){
@@ -139,6 +151,7 @@ function generate(){
   }
 }
 
+//displays the randomly generated grid
 function displayRandomGrid(){
   for(let w = 0; w < division; w++){
     for(let e = 0; e < division; e++){
@@ -152,6 +165,7 @@ function displayRandomGrid(){
   }
 }
 
+//displays the newArray which the player is able to edit
 function displayNewArray(){
   for(let w = 0; w < division; w++){
     for(let e = 0; e < division; e++){
@@ -165,9 +179,14 @@ function displayNewArray(){
   }
 }
 
+//determines what is displayed at end of game, checks if player has even tried
 function score(){
+  let zeros = 0;
   for(let w = 0; w < division; w++){
     for(let e = 0; e < division; e++){
+      if(newArray[w][e] === 0){
+        zeros++;
+      }
       if(newArray[w][e] === randomArray[w][e]){
         numberCorrect++;
       }
@@ -176,11 +195,15 @@ function score(){
   if(numberCorrect === division*division && !roundOver){
     maxScore();
   }
+  else if(zeros === division*division && !roundOver){
+    youSuck();
+  }
   else if(numberCorrect < division*division && !roundOver){
     showScore(numberCorrect);
   }
 }
 
+//informs player that they have gotten the maximum score
 function maxScore(){
   fill(0,255,0);
   rect(0, 0, 420, 150);
@@ -191,6 +214,7 @@ function maxScore(){
   roundOver = true;
 }
 
+//shows player their score if they failed
 function showScore(numberCorrect){
   fill(0,255,0);
   rect(0, 0, 420, 150);
@@ -200,4 +224,41 @@ function showScore(numberCorrect){
   text("SCORE WAS " + str(numberCorrect) + "/" + str(division*division), 20, 50);
   text("PRESS SPACE TO RESTART.", 20, 80);
   roundOver = true;
+}
+
+//tells player that they suck if they don't try
+function youSuck(){
+  fill(0,255,0);
+  rect(0, 0, 420, 150);
+  fill(148, 0, 211);
+  textSize(25);
+  text("WOW YOU REALLY SUCK!", 20, 20);
+  text("PRESS SPACE TO RESTART.", 20, 50);
+  roundOver = true;
+}
+
+//informs player they have been kicked out of game
+function kickPlayer(){
+  fill(0,255,0);
+  rect(0,0,420,150);
+  fill(148,0,211);
+  textSize(25);
+  text("GO AWAY NAZI!", 20, 20);
+  text("YOU ARE BANNED.", 20, 50);
+  text("WE DON'T WANT YOU HERE.", 20, 80);
+}
+
+//detects if player has drawn a swastika
+function stopNazis(){
+  let badThingsDone = 0;
+  for(let i = 0; i < division; i++){
+    for(let t = 0; t < division; t++){
+      if(newArray[i][t] === illegalArray[i][t]){
+        badThingsDone++;
+      }
+    }
+  }
+  if(badThingsDone === division*division){
+    state = 4; //runs kickPlayer function
+  }
 }
