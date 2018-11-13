@@ -1,15 +1,15 @@
-// Memory Tile Game
+// Memory Tiles
 // Michael McGee
 // 7/11/2018
 //
 // Extra for Experts:
-// Really just took this project to "the next level".
+// -Added a function to detect whether player has drawn an innaproriate shape
+// -I really just took this project to "the next level".
 //
 
 let state;
 let randomArray = [];
 let newArray = [];
-let division;
 let randomness;
 let count;
 let numberCorrect;
@@ -28,6 +28,8 @@ let illegalArrayNine = [];
 let dead;
 let danger;
 
+const division = 6; //square root of the number of tiles
+
 function preload() {
   dead = loadImage("assets/dead.jpg");
   danger = loadImage("assets/danger.jpg");
@@ -35,12 +37,13 @@ function preload() {
 
 function setup() {
   createCanvas(600, 600);
-  division = 6;
-  randomness = 0.5;
+  randomness = 0.5; //how difficult the game is
   state = 0;
   roundOver = false;
   numberCorrect = 0;
   count = 0;
+  
+  //turns arrays into 2D arrays
   for (let i = 0; i < division; i++) {
     randomArray[i] = [];
     newArray[i] = [];
@@ -56,6 +59,8 @@ function setup() {
     illegalArrayEight[i] = [];
     illegalArrayNine[i] = [];
   }
+
+  //dont worry about these
   secretArray = [
     [1, 1, 0, 1, 1, 1],
     [1, 1, 0, 1, 0, 0],
