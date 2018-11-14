@@ -4,7 +4,7 @@
 //
 // Extra for Experts:
 // -Added a function to detect whether player has drawn an innaproriate shape
-// -I really just took this project to "the next level".
+// -I really just took this project to "the next level" or "above and beyond".
 //
 
 let state;
@@ -42,7 +42,7 @@ function setup() {
   roundOver = false;
   numberCorrect = 0;
   count = 0;
-  
+
   //turns arrays into 2D arrays
   for (let i = 0; i < division; i++) {
     randomArray[i] = [];
