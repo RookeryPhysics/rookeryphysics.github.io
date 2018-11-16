@@ -1,67 +1,119 @@
-// Gold Dust
-// Mike McGee
-// Today
+// Project Title
+// Your Name
+// Date
 //
 // Extra for Experts:
 // - describe what you did to take this project "above and beyond"
 
-class Particle {
-  constructor(x, y) {
+class Ball{
+  constructor(x,y,dx,dy){
     this.x = x;
     this.y = y;
-    this.size = 20;
-    this.dx = random(-10, 10);
-    this.dy = random(-10, 10);
-    this.transparency = 255;
-    let which;
-    if(which === 0){
-      this.color = color(212, 175, 55, this.transparency);
-    }
-    else if(which === 1){
-      this.color = color(255, 215, 0, this.transparency);
-    }
-    else if(which === 2){
-      this.color = color(240, 230, 140, this.transparency);
-    }
-    else{
-      this.color = color(218, 165, 32, this.transparency);
-    }
+    this.dx = dx;
+    this.dy = dy;
+    this.radius = 5;
   }
-  display(){
-    fill(this.color);
-    ellipse(this.x, this.y, this.size, this.size);
+  show(){
+    ellipse(this.x, this.y, this.radius, this.radius);
   }
   update(){
-    this.transparency -= 5;
-    this.color.setAlpha(this.transparency);
     this.x += this.dx;
     this.y += this.dy;
   }
 }
 
-let someParticle;
-let fireworks = [];
+let state;
 
 function setup() {
-  createCanvas(windowWidth, windowHeight);
-  someParticle = new Particle(width/2, height/2);
-
+  createCanvas(700, 700);
+  state = 0;
 }
 
-function mousePressed() {
-  for (let i=0; i<100; i++){
-    let which = random(0,3);
-    let someParticle = new Particle(mouseX, mouseY);
-    fireworks.push(someParticle);
+//state relationships
+//0,1,2,4,
+//0,1,3,5,
+
+function mousePressed(){
+  if(state === 0){
+    state = 1;
+  }
+  else if(state === 1 && mouseX < width/2){
+    state = 2;
+  }
+  else if(state === 1 && mouseX > width/2){
+    state = 3;
+  }
+  else if(state === 2){
+    state = 4;
+  }
+  else if(state === 3){
+    state = 5;
+  }
+  else if(state === 5){
+    let someBall = new Ball(mouseX, mouseY);
   }
 }
 
 function draw() {
-  background(0);
-  for (let i=0; i<fireworks.length; i++){
-    fireworks[i].update();
-    fireworks[i].display();
+  stateLord();
+}
+
+function stateLord(){
+  if(state === 0){
+    //startScreen
+    startScreen();
   }
-  fireworks.update();
-  fireworks.display();
+  else if(state === 1){
+    //pick gamemode
+    pickMode();
+  }
+  else if(state === 2){
+    //topview instructions
+    instructions();
+  }
+  else if(state === 3){
+    //terrain view instructions
+    otherInstructions();
+  }
+  else if(state === 4){
+    //topview start
+    topView();
+  }
+  else if(state === 5){
+    //terrain start
+    terrain();
+  }
+}
+
+function startScreen(){
+  background(107,142,35);
+}
+
+//display to pick gamemode
+function pickMode(){
+  background(255,255,255);
+  fill(0,0,255);
+  rect(100,100,200,200);
+  fill(255,0,0);
+  rect(400,100,200,200);
+}
+
+//instructions for topview mode
+function instructions(){
+  background(255,255,255);
+}
+
+//instructions for terrain mode
+function otherInstructions(){
+  background(0,255,0);
+}
+
+function topView(){
+  background(100,100,100);
+  //
+}
+
+function terrain(){
+  background(200,200,200);
+  //
 }
