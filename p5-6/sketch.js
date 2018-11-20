@@ -21,7 +21,11 @@ class Ball{
   update(){
     this.x += this.dx;
     this.y += this.dy;
-    //decrease speed
+    //decrease speed KEEP WORKING ON THIS
+    if(this.dx < 0 && this.dy < 0){
+      this.dx = this.dx + 0.05;
+      this.dy = this.dy + 0.05;
+    }
   }
 }
 
