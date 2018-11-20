@@ -6,25 +6,60 @@
 // - describe what you did to take this project "above and beyond"
 
 class Ball{
-  constructor(x,y){
+  constructor(x,y,power,aim){
     this.x = x;
     this.y = y;
-    this.dx = -5;
-    this.dy = -5;
+    this.dx = aim;
+    this.dy = power;
     this.radius = 15;
     this.color = color(255,255,255,255);
+    this.done = false;
   }
   show(){
     fill(this.color);
     ellipse(this.x, this.y, this.radius, this.radius);
   }
   update(){
-    this.x += this.dx;
-    this.y += this.dy;
-    //decrease speed KEEP WORKING ON THIS
-    if(this.dx < 0 && this.dy < 0){
-      this.dx = this.dx + 0.05;
-      this.dy = this.dy + 0.05;
+    if(!this.done){
+      this.x += this.dx;
+      this.y += this.dy;
+      //decrease speed KEEP WORKING ON THIS
+      if(aim > 0){
+        if(this.dx < 0){
+          this.dx = this.dx + 0.03;
+        }
+        else if(this.dx < 0){
+          this.dx = this.dx - 0.03;
+        }
+        if(this.dy < 0 && !this.done){
+          this.dy = this.dy + 0.03;
+        }
+        if(this.dy > 0){
+          this.dy = 0;
+          this.done = true;
+        }
+      }
+      if(aim === 0){
+        if(this.dy < 0 && !this.done){
+          this.dy = this.dy + 0.03;
+        }
+        if(this.dy > 0){
+          this.dy = 0;
+          this.done = true;
+        }
+      }
+      if(aim < 0){
+        if(this.dx < 0){
+          this.dx = this.dx + 0.03;
+        }
+        if(this.dy < 0 && !this.done){
+          this.dy = this.dy + 0.03;
+        }
+        if(this.dy > 0){
+          this.dy = 0;
+          this.done = true;
+        }
+      }
     }
   }
 }
@@ -36,8 +71,8 @@ let startMusic;
 //just for topview
 let ballArray = [];
 let golfBall;
-let aim;
-let power;
+let aim = -1;
+let power = -5;
 
 //just for terrain
 
@@ -70,14 +105,18 @@ function mousePressed(){
   else if(state === 3){
     state = 5;
   }
-  else if(state === 4){
+  else if(state === 4 && mouseY > 600 && mouseX > 250 && mouseX < 450){
     //
-    let someBall = new Ball(mouseX,mouseY);
+    let someBall = new Ball(350,650,power,aim);
     ballArray.push(someBall);
   }
   else if(state === 5){
     //
   }
+}
+
+function keyPressed(){
+  //if(state === 4 && keyCode)
 }
 
 function draw() {

@@ -43,11 +43,12 @@ class Ball {
     if (dist(this.x,this.y,otherBall.x,otherBall.y) <= this.radius + otherBall.radius){
       this.isCollide = true;
       otherBall.isCollide = true;
-      time = 0;
-    }
-    else if(time > 50) {
-      this.isCollide = false;
-      otherBall.isCollide = false;
+      let tempDx = this.dx;
+      let tempDy = this.dy;
+      this.dx = otherBall.dx;
+      this.dy = otherBall.dy;
+      otherBall.dx = tempDx;
+      otherBall.dy = tempDy;
     }
   }
 }
@@ -68,6 +69,7 @@ function draw() {
   background(0);
   time = time + 0.01;
   for (let i=ballArray.length-1; i >= 0; i--){
+    ballArray[i].isCollide = false;
     for (let j=ballArray.length-1; j >= 0; j--){
       if(i !== j){
         //dont check collision against itself
