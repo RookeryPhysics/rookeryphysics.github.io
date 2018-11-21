@@ -160,7 +160,7 @@ function stateLord(){
 }
 
 function startScreen(){
-  background (0,255,0);
+  image()
 }
 
 //display to pick gamemode
