@@ -1,9 +1,15 @@
-// Project Title
-// Your Name
-// Date
+// World Star Golf
+// Ethan & Mike
+// November 21, 2018
 //
 // Extra for Experts:
 // - describe what you did to take this project "above and beyond"
+
+function preload(){
+  homeScreen = loadImage("assets/golfhomescreen.png");
+  startButton = loadImage("assets/golfballlogo.png");
+  startButtonDown = loadImage("assets/golfballlogodown.png");
+}
 
 class Ball{
   constructor(x,y,power,aim){
@@ -67,6 +73,8 @@ class Ball{
 //variables
 let state;
 let startMusic;
+let homeScreen;
+let startButton, startButtonDown;
 
 //just for topview
 let ballArray = [];
@@ -152,7 +160,7 @@ function stateLord(){
 }
 
 function startScreen(){
-  background(107,142,35);
+  background (0,255,0);
 }
 
 //display to pick gamemode
