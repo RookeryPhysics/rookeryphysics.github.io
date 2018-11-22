@@ -11,13 +11,13 @@ class Ball{
     this.y = y;
     this.dx = aim;
     this.dy = power;
-    this.radius = 15;
+    this.radius = 7;
     this.color = color(255,255,255,255);
     this.done = false;
   }
   show(){
     fill(this.color);
-    ellipse(this.x, this.y, this.radius, this.radius);
+    ellipse(this.x, this.y, this.radius*2, this.radius*2);
   }
   update(){
     if(!this.done){
@@ -49,7 +49,7 @@ class Ball{
         }
       }
       if(aim < 0){
-        if(this.dx < 0){
+        if(this.dx > 0){
           this.dx = this.dx + 0.03;
         }
         if(this.dy < 0 && !this.done){
@@ -68,6 +68,9 @@ class Ball{
 let state;
 let startMusic;
 let ballLogo;
+let homeScreen;
+let startButton;
+let startButtonDown;
 
 //just for topview
 let ballArray = [];
@@ -79,7 +82,9 @@ let power = -5;
 
 function preload(){
   //startMusic = loadSound(assets/nameofsonghere);
-  ballLogo = loadImage("assets/golfballlogo.png");
+  homeScreen = loadImage("assets/golfhomescreen.png");
+  startButton = loadImage("assets/golfballlogo.png");
+  startButtonDown = loadImage("assets/golfballlogodown.png");
 }
 
 function setup() {
@@ -92,7 +97,7 @@ function setup() {
 //0,1,3,5,
 
 function mousePressed(){
-  if(state === 0 && mouseX >= 250 && mouseY < 360 && mouseX >= 450 && mouseY >= 570){
+  if(state === 0){
     state = 1;
   }
   else if(state === 1 && mouseX < width/2){
@@ -112,13 +117,34 @@ function mousePressed(){
     let someBall = new Ball(350,650,power,aim);
     ballArray.push(someBall);
   }
+  else if(state === 4 && mouseX < 100 && aim > -5){
+    aim = aim - 0.25;
+  }
+  else if(state === 4 && mouseX > 600 && aim < 5){
+    aim = aim + 0.25;
+  }
   else if(state === 5){
     //
   }
 }
 
 function keyPressed(){
-  //if(state === 4 && keyCode)
+  if(state === 4 && keyCode === 32){
+    let someBall = new Ball(350,650,power,aim);
+    ballArray.push(someBall);
+  }
+  else if(state === 4 && keyCode === 37 && aim > -5){
+    aim = aim - 0.25;
+  }
+  else if(state === 4 && keyCode === 39 && aim < 5){
+    aim = aim + 0.25;
+  }
+  else if(state === 4 && keyCode === 38 && power > -7){
+    power = power - 0.2;
+  }
+  else if(state === 4 && keyCode === 40 && power < -0.5){
+    power = power + 0.2;
+  }
 }
 
 function draw() {
@@ -154,7 +180,13 @@ function stateLord(){
 }
 
 function startScreen(){
-  background(107,142,35);
+  image(homeScreen, 0, 0, 700, 700);
+  if (state === 0 && mouseX > 250 && mouseX < 500 && mouseY < 650 && mouseY > 300){
+    image(startButtonDown, 250, 360, 200, 210);
+  }
+  else {
+    image(startButton, 250, 360, 200, 210);
+  }
 }
 
 //display to pick gamemode
@@ -184,6 +216,8 @@ function otherInstructions(){
 
 function topView(){
   background(50,205,50);
+  let tee = new Ball(350, 650, 0, 0);
+  tee.show();
   for (let i=ballArray.length-1; i >= 0; i--){
     ballArray[i].update();
     ballArray[i].show();
