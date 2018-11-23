@@ -1,5 +1,5 @@
-// Project Title
-// Your Name
+// World Star Golf
+// Ethan Church and Mike McGee
 // Date
 //
 // Extra for Experts:
@@ -62,6 +62,30 @@ class Ball{
       }
     }
   }
+  vanish(){
+    this.color = color(255,255,255,0);
+  }
+}
+
+class Timer {
+  constructor(waitTime) {
+    this.beginTime = millis();
+    this.length = waitTime;
+  }
+
+  isDone() {
+    if (millis() >= this.beginTime + this.length) {
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+
+  reset(waitTime) {
+    this.beginTime = millis();
+    this.length = waitTime;
+  }
 }
 
 //variables
@@ -71,12 +95,17 @@ let ballLogo;
 let homeScreen;
 let startButton;
 let startButtonDown;
+let altitudeMode;
+let godMode;
+let modeSwitcher;
 
 //just for topview
 let ballArray = [];
+let timeArray = [];
 let golfBall;
 let aim = -1;
 let power = -5;
+let leftB, rightB, topB, botB;
 
 //just for terrain
 
@@ -85,6 +114,14 @@ function preload(){
   homeScreen = loadImage("assets/golfhomescreen.png");
   startButton = loadImage("assets/golfballlogo.png");
   startButtonDown = loadImage("assets/golfballlogodown.png");
+  altitudeMode = loadImage("assets/altitudeButton.png");
+  godMode = loadImage("assets/godModeClicked.png");
+  modeSwitcher = loadImage("assets/modeSwitcher.png");
+  //for the buttons when ethan makes them
+  //leftB = loadImage("assets/");
+  //rightB = loadImage("assets/");
+  //topB = loadImage("assets/");
+  //botB = loadImage("assets/");
 }
 
 function setup() {
@@ -97,13 +134,13 @@ function setup() {
 //0,1,3,5,
 
 function mousePressed(){
-  if(state === 0){
+  if(state === 0 && mouseX > 250 && mouseX < 500 && mouseY < 650 && mouseY > 300){
     state = 1;
   }
-  else if(state === 1 && mouseX < width/2){
+  else if(state === 1 && mouseX >= 50 && mouseY >= 100 && mouseX <= 650 && mouseY <= 350){
     state = 2;
   }
-  else if(state === 1 && mouseX > width/2){
+  else if(state === 1 && mouseX >= 50 && mouseY >= 450 && mouseX <= 650 && mouseY <= 650){
     state = 3;
   }
   else if(state === 2){
@@ -111,11 +148,6 @@ function mousePressed(){
   }
   else if(state === 3){
     state = 5;
-  }
-  else if(state === 4 && mouseY > 600 && mouseX > 250 && mouseX < 450){
-    //
-    let someBall = new Ball(350,650,power,aim);
-    ballArray.push(someBall);
   }
   else if(state === 4 && mouseX < 100 && aim > -5){
     aim = aim - 0.25;
@@ -132,6 +164,8 @@ function keyPressed(){
   if(state === 4 && keyCode === 32){
     let someBall = new Ball(350,650,power,aim);
     ballArray.push(someBall);
+    let someTimer = new Timer(4000);
+    timeArray.push(someTimer);
   }
   else if(state === 4 && keyCode === 37 && aim > -5){
     aim = aim - 0.25;
@@ -172,10 +206,12 @@ function stateLord(){
   else if(state === 4){
     //topview start
     topView();
+    //displayGUI();
   }
   else if(state === 5){
     //terrain start
     terrain();
+    //displayGUI();
   }
 }
 
@@ -191,17 +227,13 @@ function startScreen(){
 
 //display to pick gamemode
 function pickMode(){
-  background(255,255,255);
-  fill(0,0,255);
-  rect(100,100,200,200);
-  fill(0,255,0);
-  textSize(25);
-  text("TOPVIEW", 100, 70);
-  fill(255,0,0);
-  rect(400,100,200,200);
-  fill(0,255,0);
-  textSize(25);
-  text("TERRAIN", 400, 70);
+  image(modeSwitcher, 0, 0, 700, 700);
+  if (state === 1 && mouseX >= 50 && mouseY >= 450 && mouseX <= 650 && mouseY <= 650){
+    image(altitudeMode, 45, 445, 612, 211);
+  }
+  else  if (state === 1 && mouseX >= 50 && mouseY >= 100 && mouseX <= 650 && mouseY <= 350){
+    image(godMode, 45, 150, 612, 211);
+  }
 }
 
 //instructions for topview mode
@@ -221,6 +253,9 @@ function topView(){
   for (let i=ballArray.length-1; i >= 0; i--){
     ballArray[i].update();
     ballArray[i].show();
+    if(timeArray[i].isDone() === true){
+      ballArray[i].vanish();
+    }
   }
 }
 
@@ -232,3 +267,15 @@ function terrain(){
 function playStartMusic(){
   //plays the music at the beginning of the game
 }
+
+//function displayGUI(){
+  //if(state === 4){
+    //image(leftB,x,y,w,h);
+    //image(rightB,x,y,w,h);
+    //image(topB,x,y,w,h);
+    //image(botB,x,y,w,h);
+  //}
+  //else if(state === 5){
+    //other GUI here
+  //}
+//}
