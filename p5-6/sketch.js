@@ -103,8 +103,8 @@ let modeSwitcher;
 let ballArray = [];
 let timeArray = [];
 let golfBall;
-let aim = -1;
-let power = -5;
+let aim;
+let power;
 let leftB, rightB, topB, botB;
 
 //just for terrain
@@ -127,6 +127,8 @@ function preload(){
 function setup() {
   createCanvas(700, 700);
   state = 0;
+  aim = -1;
+  power = -5;
 }
 
 //state relationships
@@ -149,10 +151,10 @@ function mousePressed(){
   else if(state === 3){
     state = 5;
   }
-  else if(state === 4 && mouseX < 100 && aim > -5){
+  else if(state === 4 && mouseX < 100 && aim > -5){//to be replaced by ethans buttons
     aim = aim - 0.25;
   }
-  else if(state === 4 && mouseX > 600 && aim < 5){
+  else if(state === 4 && mouseX > 600 && aim < 5){//to be replaced by ethans buttons
     aim = aim + 0.25;
   }
   else if(state === 5){
@@ -173,7 +175,7 @@ function keyPressed(){
   else if(state === 4 && keyCode === 39 && aim < 5){
     aim = aim + 0.25;
   }
-  else if(state === 4 && keyCode === 38 && power > -7){
+  else if(state === 4 && keyCode === 38 && power > -6){
     power = power - 0.2;
   }
   else if(state === 4 && keyCode === 40 && power < -0.5){
@@ -206,6 +208,7 @@ function stateLord(){
   else if(state === 4){
     //topview start
     topView();
+    displayPowerBar();
     //displayGUI();
   }
   else if(state === 5){
@@ -266,6 +269,50 @@ function terrain(){
 
 function playStartMusic(){
   //plays the music at the beginning of the game
+}
+
+function displayPowerBar(){
+  noFill();
+  strokeWeight(5);
+  rect(30, 420, 20, 250);
+  strokeWeight(1);
+  if(power > -1){
+    //lowest power bar setting
+    //empty
+  }
+  else if(power > -1.7){
+    //second powerbar setting
+    fill(0,0,255);
+    rect(30,645,20,25);
+  }
+  else if(power > -2.4){
+    //third powerbar setting
+    fill(0,0,255);
+    rect(30,620,20,50);
+  }
+  else if(power > -3.1){
+    //fourth power bar setting
+    fill(0,0,255);
+    rect(30,595,20,75);
+  }
+  else if(power > -3.8){
+    //fifth
+    fill(0,0,255);
+    rect(30,570,20,100);
+  }
+  else if(power > -4.5){
+    //sixth
+    fill(0,0,255);
+    rect(30,545,20,125);
+  }
+  else if(power > -5.2){
+    fill(0,0,255);
+    rect(30,520,20,150);
+  }
+  else if(power > -6.1){
+    fill(255,0,0);
+    rect(30,420,20,250);
+  }
 }
 
 //function displayGUI(){
