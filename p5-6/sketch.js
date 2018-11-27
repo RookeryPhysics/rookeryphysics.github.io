@@ -106,6 +106,11 @@ let golfBall;
 let aim;
 let power;
 let leftB, rightB, topB, botB;
+let atHole;
+let allegedValueChanger;
+let allegedValueDeranger;
+let score;
+let golfBackground;
 
 //just for terrain
 
@@ -117,11 +122,7 @@ function preload(){
   altitudeMode = loadImage("assets/altitudeButton.png");
   godMode = loadImage("assets/godModeClicked.png");
   modeSwitcher = loadImage("assets/modeSwitcher.png");
-  //for the buttons when ethan makes them
-  //leftB = loadImage("assets/");
-  //rightB = loadImage("assets/");
-  //topB = loadImage("assets/");
-  //botB = loadImage("assets/");
+  golfBackground = loadImage("assets/golfBackground.png");
 }
 
 function setup() {
@@ -129,6 +130,9 @@ function setup() {
   state = 0;
   aim = -1;
   power = -5;
+  allegedValueChanger = random(-200,200);
+  allegedValueDeranger = random(-50, 70);
+  score = 0;
 }
 
 //state relationships
@@ -209,6 +213,7 @@ function stateLord(){
     //topview start
     topView();
     displayPowerBar();
+    destroyerOfBalls();
     //displayGUI();
   }
   else if(state === 5){
@@ -250,7 +255,16 @@ function otherInstructions(){
 }
 
 function topView(){
-  background(50,205,50);
+  image(golfBackground, 0, 0, 700, 700);
+  if (state === 4 && mouseX >= 0 && mouseY >= 270 && mouseX <= 25 && mouseY <= 430){
+    image(turnLeft, 0, 267.5, 28.5 ,162.5);
+  } else if (state === 4 && mouseX >= 674 && mouseY >= 270 && mouseX <= 700 && mouseY <= 430){
+    image(turnRight, 671, 269, 29 ,162.5);
+  } else if (state === 4 && mouseX >= 270 && mouseY >= 0 && mouseX <= 430 && mouseY <= 25){
+    image(speedUp, 267, 0,  162.5, 28.5);
+  } else if (state === 4 && mouseX >= 270 && mouseY >= 675 && mouseX <= 430 && mouseY <= 700){
+    image(slowDown, 267, 671, 162.5, 28.5);
+  }
   let tee = new Ball(350, 650, 0, 0);
   tee.show();
   for (let i=ballArray.length-1; i >= 0; i--){
@@ -282,36 +296,52 @@ function displayPowerBar(){
   }
   else if(power > -1.7){
     //second powerbar setting
-    fill(0,0,255);
+    fill(0,255,255);
     rect(30,645,20,25);
   }
   else if(power > -2.4){
     //third powerbar setting
-    fill(0,0,255);
+    fill(0,255,255);
     rect(30,620,20,50);
   }
   else if(power > -3.1){
     //fourth power bar setting
-    fill(0,0,255);
+    fill(255,255,0);
     rect(30,595,20,75);
   }
   else if(power > -3.8){
     //fifth
-    fill(0,0,255);
+    fill(255,255,0);
     rect(30,570,20,100);
   }
   else if(power > -4.5){
     //sixth
-    fill(0,0,255);
+    fill(255,255,0);
     rect(30,545,20,125);
   }
   else if(power > -5.2){
-    fill(0,0,255);
+    fill(255, 165, 0);
     rect(30,520,20,150);
   }
-  else if(power > -6.1){
+  else if(power > -5.9){
+    fill(255, 165, 0);
+    rect(30,470,20,200);
+  }
+  else if(power > -7.5){
     fill(255,0,0);
     rect(30,420,20,250);
+  }
+}
+
+function destroyerOfBalls(golfballs){
+  let xPos = 335 + allegedValueChanger;
+  let yPos = 100 + allegedValueDeranger;
+  fill(0,0,0);
+  ellipse(xPos,yPos,45,45);
+  for(let i = 0; i < ballArray.length; i++){
+    if(ballArray[i].isDone === true){
+      score++;
+    }
   }
 }
 
