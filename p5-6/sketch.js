@@ -111,6 +111,9 @@ let allegedValueChanger;
 let allegedValueDeranger;
 let score;
 let golfBackground;
+let turnRight,turnLeft,speedUp,slowDown;
+let slightRandomizer, slightRandomizerY;
+let howRandom;
 
 //just for terrain
 
@@ -123,6 +126,10 @@ function preload(){
   godMode = loadImage("assets/godModeClicked.png");
   modeSwitcher = loadImage("assets/modeSwitcher.png");
   golfBackground = loadImage("assets/golfBackground.png");
+  turnRight = loadImage("assets/turnRight.png");
+  turnLeft = loadImage("assets/turnLeft.png");
+  speedUp = loadImage("assets/speedUp.png");
+  slowDown = loadImage("assets/slowDown.png");
 }
 
 function setup() {
@@ -130,8 +137,11 @@ function setup() {
   state = 0;
   aim = -1;
   power = -5;
+  howRandom = 0.5;
   allegedValueChanger = random(-200,200);
   allegedValueDeranger = random(-50, 70);
+  slightRandomizer = random(-howRandom,howRandom);
+  slightRandomizerY = random(-howRandom,howRandom);
   score = 0;
 }
 
@@ -168,10 +178,16 @@ function mousePressed(){
 
 function keyPressed(){
   if(state === 4 && keyCode === 32){
+    aim = aim + slightRandomizer;
+    power = power + slightRandomizerY;
     let someBall = new Ball(350,650,power,aim);
     ballArray.push(someBall);
     let someTimer = new Timer(4000);
     timeArray.push(someTimer);
+    aim = aim - slightRandomizer;
+    power = power - slightRandomizerY;
+    slightRandomizer = random(-howRandom,howRandom);
+    slightRandomizerY = random(-howRandom,howRandom);
   }
   else if(state === 4 && keyCode === 37 && aim > -5){
     aim = aim - 0.25;
@@ -256,15 +272,7 @@ function otherInstructions(){
 
 function topView(){
   image(golfBackground, 0, 0, 700, 700);
-  if (state === 4 && mouseX >= 0 && mouseY >= 270 && mouseX <= 25 && mouseY <= 430){
-    image(turnLeft, 0, 267.5, 28.5 ,162.5);
-  } else if (state === 4 && mouseX >= 674 && mouseY >= 270 && mouseX <= 700 && mouseY <= 430){
-    image(turnRight, 671, 269, 29 ,162.5);
-  } else if (state === 4 && mouseX >= 270 && mouseY >= 0 && mouseX <= 430 && mouseY <= 25){
-    image(speedUp, 267, 0,  162.5, 28.5);
-  } else if (state === 4 && mouseX >= 270 && mouseY >= 675 && mouseX <= 430 && mouseY <= 700){
-    image(slowDown, 267, 671, 162.5, 28.5);
-  }
+  highlightButtons();
   let tee = new Ball(350, 650, 0, 0);
   tee.show();
   for (let i=ballArray.length-1; i >= 0; i--){
@@ -273,6 +281,21 @@ function topView(){
     if(timeArray[i].isDone() === true){
       ballArray[i].vanish();
     }
+  }
+}
+
+function highlightButtons(){
+  if (state === 4 && mouseX >= 0 && mouseY >= 270 && mouseX <= 25 && mouseY <= 430){
+    image(turnLeft, 0, 267.5, 28.5 ,162.5);
+  }
+  else if (state === 4 && mouseX >= 674 && mouseY >= 270 && mouseX <= 700 && mouseY <= 430){
+    image(turnRight, 671, 269, 29 ,162.5);
+  }
+  else if (state === 4 && mouseX >= 270 && mouseY >= 0 && mouseX <= 430 && mouseY <= 25){
+    image(speedUp, 267, 0,  162.5, 28.5);
+  }
+  else if (state === 4 && mouseX >= 270 && mouseY >= 675 && mouseX <= 430 && mouseY <= 700){
+    image(slowDown, 267, 671, 162.5, 28.5);
   }
 }
 
@@ -344,15 +367,3 @@ function destroyerOfBalls(golfballs){
     }
   }
 }
-
-//function displayGUI(){
-  //if(state === 4){
-    //image(leftB,x,y,w,h);
-    //image(rightB,x,y,w,h);
-    //image(topB,x,y,w,h);
-    //image(botB,x,y,w,h);
-  //}
-  //else if(state === 5){
-    //other GUI here
-  //}
-//}
