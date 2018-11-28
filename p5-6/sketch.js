@@ -3,10 +3,10 @@
 // Date
 //
 // Extra for Experts:
-// - describe what you did to take this project "above and beyond"
+// -used multiple classes
 
 class Ball{
-  constructor(x,y,power,aim){
+  constructor(x,y,power,aim,holeX,holeY){
     this.x = x;
     this.y = y;
     this.dx = aim;
@@ -62,6 +62,11 @@ class Ball{
       }
     }
   }
+  checkHole(){
+    if(this.x > holeX - 22 && this.x < holeX + 22 && this.y > holeY - 22 && this.y < holeY + 22){
+      //THIS SHOULD MAKE BALL OG INTO HOLE AND GIVE SCORE
+    }
+  }
   vanish(){
     this.color = color(255,255,255,0);
   }
@@ -114,6 +119,8 @@ let golfBackground;
 let turnRight,turnLeft,speedUp,slowDown;
 let slightRandomizer, slightRandomizerY;
 let howRandom;
+let xPos;
+let yPos;
 
 //just for terrain
 
@@ -143,6 +150,8 @@ function setup() {
   slightRandomizer = random(-howRandom,howRandom);
   slightRandomizerY = random(-howRandom,howRandom);
   score = 0;
+  xPos = 335 + allegedValueChanger;
+  yPos = 100 + allegedValueDeranger;
 }
 
 //state relationships
@@ -165,11 +174,17 @@ function mousePressed(){
   else if(state === 3){
     state = 5;
   }
-  else if(state === 4 && mouseX < 100 && aim > -5){//to be replaced by ethans buttons
+  else if(state === 4 && mouseX >= 0 && mouseY >= 270 && mouseX <= 25 && mouseY <= 430){
     aim = aim - 0.25;
   }
-  else if(state === 4 && mouseX > 600 && aim < 5){//to be replaced by ethans buttons
+  else if(state === 4 && mouseX >= 674 && mouseY >= 270 && mouseX <= 700 && mouseY <= 430){
     aim = aim + 0.25;
+  }
+  else if(state === 4 && mouseX >= 270 && mouseY >= 0 && mouseX <= 430 && mouseY <= 25){
+    power = power - 0.2;
+  }
+  else if(state === 4 && mouseX >= 270 && mouseY >= 675 && mouseX <= 430 && mouseY <= 700){
+    power = power + 0.2;
   }
   else if(state === 5){
     //
@@ -180,7 +195,7 @@ function keyPressed(){
   if(state === 4 && keyCode === 32){
     aim = aim + slightRandomizer;
     power = power + slightRandomizerY;
-    let someBall = new Ball(350,650,power,aim);
+    let someBall = new Ball(350,650,power,aim,xPos,yPos);
     ballArray.push(someBall);
     let someTimer = new Timer(4000);
     timeArray.push(someTimer);
@@ -273,7 +288,7 @@ function otherInstructions(){
 function topView(){
   image(golfBackground, 0, 0, 700, 700);
   highlightButtons();
-  let tee = new Ball(350, 650, 0, 0);
+  let tee = new Ball(350, 650, 0, 0,xPos,yPos);
   tee.show();
   for (let i=ballArray.length-1; i >= 0; i--){
     ballArray[i].update();
@@ -357,13 +372,6 @@ function displayPowerBar(){
 }
 
 function destroyerOfBalls(golfballs){
-  let xPos = 335 + allegedValueChanger;
-  let yPos = 100 + allegedValueDeranger;
   fill(0,0,0);
   ellipse(xPos,yPos,45,45);
-  for(let i = 0; i < ballArray.length; i++){
-    if(ballArray[i].isDone === true){
-      score++;
-    }
-  }
 }
