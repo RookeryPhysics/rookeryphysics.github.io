@@ -134,7 +134,7 @@ let yPos;
 //just for terrain
 
 function preload(){
-  //startMusic = loadSound(assets/nameofsonghere);
+  startMusic = loadSound("assets/gamebackgroundmusic.mp3");
   homeScreen = loadImage("assets/golfhomescreen.png");
   startButton = loadImage("assets/golfballlogo.png");
   startButtonDown = loadImage("assets/golfballlogodown.png");
