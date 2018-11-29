@@ -14,8 +14,17 @@ class Ball{
     this.radius = 7;
     this.color = color(255,255,255,255);
     this.done = false;
+    this.utterCompletion = false;
+    this.holeX = holeX;
+    this.holeY = holeY;
   }
   show(){
+    if(this.utterCompletion === true){
+      noStroke();
+    }
+    else{
+      stroke(0);
+    }
     fill(this.color);
     ellipse(this.x, this.y, this.radius*2, this.radius*2);
   }
@@ -63,11 +72,15 @@ class Ball{
     }
   }
   checkHole(){
-    if(this.x > holeX - 22 && this.x < holeX + 22 && this.y > holeY - 22 && this.y < holeY + 22){
-      //THIS SHOULD MAKE BALL OG INTO HOLE AND GIVE SCORE
+    if(this.done === false && this.x > this.holeX - 22 && this.x < this.holeX + 22 && this.y > this.holeY - 22 && this.y < this.holeY + 22){
+      this.dx = 0;
+      this.dy = 0;
+      this.done = true;
+      score++;
     }
   }
   vanish(){
+    this.utterCompletion = true;
     this.color = color(255,255,255,0);
   }
 }
@@ -98,8 +111,7 @@ let state;
 let startMusic;
 let ballLogo;
 let homeScreen;
-let startButton;
-let startButtonDown;
+let startButton, startButtonDown;
 let altitudeMode;
 let godMode;
 let modeSwitcher;
@@ -110,10 +122,7 @@ let timeArray = [];
 let golfBall;
 let aim;
 let power;
-let leftB, rightB, topB, botB;
-let atHole;
-let allegedValueChanger;
-let allegedValueDeranger;
+let allegedValueChanger, allegedValueDeranger;
 let score;
 let golfBackground;
 let turnRight,turnLeft,speedUp,slowDown;
@@ -204,6 +213,7 @@ function keyPressed(){
     slightRandomizer = random(-howRandom,howRandom);
     slightRandomizerY = random(-howRandom,howRandom);
   }
+  //allows for alternative control option utilizing the arrow keys
   else if(state === 4 && keyCode === 37 && aim > -5){
     aim = aim - 0.25;
   }
@@ -245,6 +255,7 @@ function stateLord(){
     topView();
     displayPowerBar();
     destroyerOfBalls();
+    displayScore();
     //displayGUI();
   }
   else if(state === 5){
@@ -293,6 +304,7 @@ function topView(){
   for (let i=ballArray.length-1; i >= 0; i--){
     ballArray[i].update();
     ballArray[i].show();
+    ballArray[i].checkHole();
     if(timeArray[i].isDone() === true){
       ballArray[i].vanish();
     }
@@ -325,6 +337,7 @@ function playStartMusic(){
 
 function displayPowerBar(){
   noFill();
+  stroke(0);
   strokeWeight(5);
   rect(30, 420, 20, 250);
   strokeWeight(1);
@@ -372,6 +385,13 @@ function displayPowerBar(){
 }
 
 function destroyerOfBalls(golfballs){
+  stroke(0);
   fill(0,0,0);
   ellipse(xPos,yPos,45,45);
+}
+
+function displayScore(){
+  //displays the score
+  textSize(40);
+  text(str(score),20,40);
 }
