@@ -23,6 +23,7 @@ class Ball{
       noStroke();
     }
     else{
+      strokeWeight(2);
       stroke(0);
     }
     fill(this.color);
@@ -77,6 +78,7 @@ class Ball{
       this.dy = 0;
       this.done = true;
       score++;
+      return true;
     }
   }
   vanish(){
@@ -115,6 +117,7 @@ let startButton, startButtonDown;
 let altitudeMode;
 let godMode;
 let modeSwitcher;
+let inSound;
 
 //just for topview
 let ballArray = [];
@@ -130,10 +133,14 @@ let slightRandomizer, slightRandomizerY;
 let howRandom;
 let xPos;
 let yPos;
+let aimIndicator;
+
+const maxAim = 4;
 
 //just for terrain
 
 function preload(){
+  inSound = loadSound("assets/fallsinhole.mp3");
   startMusic = loadSound("assets/gamebackgroundmusic.mp3");
   homeScreen = loadImage("assets/golfhomescreen.png");
   startButton = loadImage("assets/golfballlogo.png");
@@ -146,13 +153,14 @@ function preload(){
   turnLeft = loadImage("assets/turnLeft.png");
   speedUp = loadImage("assets/speedUp.png");
   slowDown = loadImage("assets/slowDown.png");
+  aimIndicator = loadImage("assets/protractor.png");
 }
 
 function setup() {
   createCanvas(700, 700);
   state = 0;
-  aim = -1;
-  power = -5;
+  aim = 0;
+  power = -4;
   howRandom = 0.5;
   allegedValueChanger = random(-200,200);
   allegedValueDeranger = random(-50, 70);
@@ -161,6 +169,7 @@ function setup() {
   score = 0;
   xPos = 335 + allegedValueChanger;
   yPos = 100 + allegedValueDeranger;
+  startMusic.play();
 }
 
 //state relationships
@@ -170,12 +179,15 @@ function setup() {
 function mousePressed(){
   if(state === 0 && mouseX > 250 && mouseX < 500 && mouseY < 650 && mouseY > 300){
     state = 1;
+    inSound.play();
   }
   else if(state === 1 && mouseX >= 50 && mouseY >= 100 && mouseX <= 650 && mouseY <= 350){
     state = 2;
+    inSound.play();
   }
   else if(state === 1 && mouseX >= 50 && mouseY >= 450 && mouseX <= 650 && mouseY <= 650){
     state = 3;
+    inSound.play();
   }
   else if(state === 2){
     state = 4;
@@ -183,16 +195,16 @@ function mousePressed(){
   else if(state === 3){
     state = 5;
   }
-  else if(state === 4 && mouseX >= 0 && mouseY >= 270 && mouseX <= 25 && mouseY <= 430){
+  else if(state === 4 && mouseX >= 0 && mouseY >= 270 && mouseX <= 25 && mouseY <= 430 && aim > -maxAim){
     aim = aim - 0.25;
   }
-  else if(state === 4 && mouseX >= 674 && mouseY >= 270 && mouseX <= 700 && mouseY <= 430){
+  else if(state === 4 && mouseX >= 674 && mouseY >= 270 && mouseX <= 700 && mouseY <= 430 && aim < maxAim){
     aim = aim + 0.25;
   }
-  else if(state === 4 && mouseX >= 270 && mouseY >= 0 && mouseX <= 430 && mouseY <= 25){
+  else if(state === 4 && mouseX >= 270 && mouseY >= 0 && mouseX <= 430 && mouseY <= 25 && power > -6){
     power = power - 0.2;
   }
-  else if(state === 4 && mouseX >= 270 && mouseY >= 675 && mouseX <= 430 && mouseY <= 700){
+  else if(state === 4 && mouseX >= 270 && mouseY >= 675 && mouseX <= 430 && mouseY <= 700 && power < -0.5){
     power = power + 0.2;
   }
   else if(state === 5){
@@ -214,10 +226,10 @@ function keyPressed(){
     slightRandomizerY = random(-howRandom,howRandom);
   }
   //allows for alternative control option utilizing the arrow keys
-  else if(state === 4 && keyCode === 37 && aim > -5){
+  else if(state === 4 && keyCode === 37 && aim > -maxAim){
     aim = aim - 0.25;
   }
-  else if(state === 4 && keyCode === 39 && aim < 5){
+  else if(state === 4 && keyCode === 39 && aim < maxAim){
     aim = aim + 0.25;
   }
   else if(state === 4 && keyCode === 38 && power > -6){
@@ -236,7 +248,6 @@ function stateLord(){
   if(state === 0){
     //startScreen
     startScreen();
-    playStartMusic();
   }
   else if(state === 1){
     //pick gamemode
@@ -254,14 +265,13 @@ function stateLord(){
     //topview start
     topView();
     displayPowerBar();
+    displayAimIndicator();
     destroyerOfBalls();
     displayScore();
-    //displayGUI();
   }
   else if(state === 5){
     //terrain start
     terrain();
-    //displayGUI();
   }
 }
 
@@ -289,6 +299,9 @@ function pickMode(){
 //instructions for topview mode
 function instructions(){
   background(255,255,255);
+  textSize(25);
+  text("This is where Ethan teaches you how to play the game\n(Allegedly).", 30, 100);
+  text("...But he is busy right now so just click to begin I suppose.", 30, 350);
 }
 
 //instructions for terrain mode
@@ -304,7 +317,9 @@ function topView(){
   for (let i=ballArray.length-1; i >= 0; i--){
     ballArray[i].update();
     ballArray[i].show();
-    ballArray[i].checkHole();
+    if(ballArray[i].checkHole() === true){
+      inSound.play();
+    }
     if(timeArray[i].isDone() === true){
       ballArray[i].vanish();
     }
@@ -329,10 +344,6 @@ function highlightButtons(){
 function terrain(){
   background(200,200,200);
   //
-}
-
-function playStartMusic(){
-  //plays the music at the beginning of the game
 }
 
 function displayPowerBar(){
@@ -381,6 +392,68 @@ function displayPowerBar(){
   else if(power > -7.5){
     fill(255,0,0);
     rect(30,420,20,250);
+  }
+}
+
+function displayAimIndicator(){
+  image(aimIndicator,475,575,200,100);
+  //middle aim
+  if(aim === 0 || aim < 0.5 && aim > -0.5){
+    strokeWeight(5);
+    stroke(255,0,0);
+    line(575,675,575,575);
+  }
+  //right aim
+  else if(aim > 0 && aim < 1){
+    strokeWeight(5);
+    stroke(255,0,0);
+    line(575,675,600,580);
+  }
+  else if(aim >= 1 && aim < 2){
+    strokeWeight(5);
+    stroke(255,0,0);
+    line(575,675,625,590);
+  }
+  else if(aim >= 2 && aim < 3){
+    strokeWeight(5);
+    stroke(255,0,0);
+    line(575,675,650,610);
+  }
+  else if(aim >= 3 && aim < 4){
+    strokeWeight(5);
+    stroke(255,0,0);
+    line(575,675,665,635);
+  }
+  else if(aim >= 4){
+    strokeWeight(5);
+    stroke(255,0,0);
+    line(575,675,670,650);
+  }
+  //left aim
+  else if(aim < 0 && aim > -1){
+    strokeWeight(5);
+    stroke(255,0,0);
+    line(575,675,550,580);
+  }
+  else if(aim <= -1 && aim > -2){
+    strokeWeight(5);
+    stroke(255,0,0);
+    line(575,675,525,590);
+  }
+  else if(aim <= -2 && aim > -3){
+    strokeWeight(5);
+    stroke(255,0,0);
+    line(575,675,500,610);
+  }
+  else if(aim <= -3 && aim > -4){
+    strokeWeight(5);
+    stroke(255,0,0);
+    line(575,675,485,635);
+  }
+  else if(aim <= -4){
+    strokeWeight(5);
+    stroke(255,0,0);
+    line(575,675,480,650);
   }
 }
 
