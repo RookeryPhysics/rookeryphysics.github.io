@@ -111,6 +111,7 @@ class Timer {
 //variables
 let state;
 let startMusic;
+let gameMusic;
 let ballLogo;
 let homeScreen;
 let startButton, startButtonDown;
@@ -118,6 +119,9 @@ let altitudeMode;
 let godMode;
 let modeSwitcher;
 let inSound;
+let soundState;
+let started;
+let gameStarted;
 
 //just for topview
 let ballArray = [];
@@ -128,6 +132,7 @@ let power;
 let allegedValueChanger, allegedValueDeranger;
 let score;
 let golfBackground;
+let instructionsScreen;
 let turnRight,turnLeft,speedUp,slowDown;
 let slightRandomizer, slightRandomizerY;
 let howRandom;
@@ -138,11 +143,18 @@ let aimIndicator;
 const maxAim = 4;
 
 //just for terrain
+let x;
+let time;
+let rects = [];
+let rectNumber;
+let rectWidth;
 
 function preload(){
   inSound = loadSound("assets/fallsinhole.mp3");
-  startMusic = loadSound("assets/gamebackgroundmusic.mp3");
+  startMusic = loadSound("assets/startscreen.mp3");
+  gameMusic = loadSound("assets/golfBackgroundMusic.mp3");
   homeScreen = loadImage("assets/golfhomescreen.png");
+  instructionsScreen = loadImage("assets/instructionsScreen.png");
   startButton = loadImage("assets/golfballlogo.png");
   startButtonDown = loadImage("assets/golfballlogodown.png");
   altitudeMode = loadImage("assets/altitudeButton.png");
@@ -158,7 +170,14 @@ function preload(){
 
 function setup() {
   createCanvas(700, 700);
+  time = 0;
+  rectNumber = 50;
+  rectWidth = 700 / rectNumber + 5;
+  generateRectangles();
   state = 0;
+  soundState = 0;
+  started = false;
+  gameStarted = false;
   aim = 0;
   power = -4;
   howRandom = 0.5;
@@ -169,7 +188,6 @@ function setup() {
   score = 0;
   xPos = 335 + allegedValueChanger;
   yPos = 100 + allegedValueDeranger;
-  startMusic.play();
 }
 
 //state relationships
@@ -180,6 +198,7 @@ function mousePressed(){
   if(state === 0 && mouseX > 250 && mouseX < 500 && mouseY < 650 && mouseY > 300){
     state = 1;
     inSound.play();
+    soundState = 1;
   }
   else if(state === 1 && mouseX >= 50 && mouseY >= 100 && mouseX <= 650 && mouseY <= 350){
     state = 2;
@@ -195,6 +214,18 @@ function mousePressed(){
   else if(state === 3){
     state = 5;
   }
+  else if(state === 4 && mouseX > 300 && mouseX < 400 && mouseY > 300 && mouseY < 400){
+    aim = aim + slightRandomizer;
+    power = power + slightRandomizerY;
+    let someBall = new Ball(350,650,power,aim,xPos,yPos);
+    ballArray.push(someBall);
+    let someTimer = new Timer(4000);
+    timeArray.push(someTimer);
+    aim = aim - slightRandomizer;
+    power = power - slightRandomizerY;
+    slightRandomizer = random(-howRandom,howRandom);
+    slightRandomizerY = random(-howRandom,howRandom);
+  }
   else if(state === 4 && mouseX >= 0 && mouseY >= 270 && mouseX <= 25 && mouseY <= 430 && aim > -maxAim){
     aim = aim - 0.25;
   }
@@ -208,7 +239,7 @@ function mousePressed(){
     power = power + 0.2;
   }
   else if(state === 5){
-    //
+    generateRectangles();
   }
 }
 
@@ -242,6 +273,23 @@ function keyPressed(){
 
 function draw() {
   stateLord();
+  musicalStateLord();
+}
+
+function musicalStateLord(){
+  if(soundState === 0){
+    if(!started){
+      startMusic.play();
+    }
+    started = true;
+  }
+  else if(soundState === 1){
+    if(!gameStarted){
+      startMusic.stop();
+      gameMusic.play();
+    }
+    gameStarted = true;
+  }
 }
 
 function stateLord(){
@@ -298,10 +346,7 @@ function pickMode(){
 
 //instructions for topview mode
 function instructions(){
-  background(255,255,255);
-  textSize(25);
-  text("This is where Ethan teaches you how to play the game\n(Allegedly).", 30, 100);
-  text("...But he is busy right now so just click to begin I suppose.", 30, 350);
+  image(instructionsScreen,0,0,700,700);
 }
 
 //instructions for terrain mode
@@ -342,8 +387,30 @@ function highlightButtons(){
 }
 
 function terrain(){
-  background(200,200,200);
-  //
+  background(0,255,255);
+  fill(255);
+  noStroke();
+  showTerrain();
+}
+
+function showTerrain() {
+  for(let i=0; i<rects.length; i++){
+    rect(rects[i].x, rects[i].y, rects[i].width, rects[i].height);
+  }
+}
+
+function generateRectangles(){
+  for(let i=0; i < rectNumber; i++){
+    let rectHeight = noise(time) * 700;
+    let someRect = {
+      x: i * rectWidth,
+      y: 700 - rectHeight,
+      width: rectWidth,
+      height: rectHeight
+    };
+    rects.push(someRect);
+    time += 0.01;
+  }
 }
 
 function displayPowerBar(){

@@ -12,10 +12,10 @@ let rectNumber;
 let rectWidth;
 
 function setup() {
-  createCanvas(windowWidth, windowHeight);
+  createCanvas(700, 700);
   time = 0;
-  rectNumber = 400;
-  rectWidth = windowWidth / rectNumber;
+  rectNumber = 65;
+  rectWidth = 700 / rectNumber;
   generateRectangles();
 }
 
@@ -38,10 +38,10 @@ function displayRects() {
 
 function generateRectangles(){
   for(let i=0; i < rectNumber; i++){
-    let rectHeight = noise(time) * height;
+    let rectHeight = noise(time) * 700;
     let someRect = {
       x: i * rectWidth,
-      y: height - rectHeight,
+      y: 700 - rectHeight,
       width: rectWidth,
       height: rectHeight
     };
