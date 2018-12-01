@@ -5,7 +5,7 @@
 // Extra for Experts:
 // -used multiple classes
 
-class Ball{
+class Ball {
   constructor(x,y,power,aim,holeX,holeY){
     this.x = x;
     this.y = y;
@@ -18,17 +18,20 @@ class Ball{
     this.holeX = holeX;
     this.holeY = holeY;
   }
+  //displays golf ball
   show(){
     if(this.utterCompletion === true){
       noStroke();
     }
     else{
-      strokeWeight(2);
+      strokeWeight(1);
       stroke(0);
     }
     fill(this.color);
     ellipse(this.x, this.y, this.radius*2, this.radius*2);
   }
+
+  //updates position of golf ball according to speed and friction
   update(){
     if(!this.done){
       this.x += this.dx;
@@ -72,8 +75,16 @@ class Ball{
       }
     }
   }
+
+  //altitudeModeUpdate(){
+  //  if(this.dx > 0 && this.y < 400){
+    //  this.dx = this.dx - 0.05;
+    //}
+  //}
+
+  //check if golfball is in the hole, add score, alert function call
   checkHole(){
-    if(this.done === false && this.x > this.holeX - 22 && this.x < this.holeX + 22 && this.y > this.holeY - 22 && this.y < this.holeY + 22){
+    if(this.done === false && this.utterCompletion === false && this.x > this.holeX - 22 && this.x < this.holeX + 22 && this.y > this.holeY - 22 && this.y < this.holeY + 22){
       this.dx = 0;
       this.dy = 0;
       this.done = true;
@@ -81,6 +92,7 @@ class Ball{
       return true;
     }
   }
+
   vanish(){
     this.utterCompletion = true;
     this.color = color(255,255,255,0);
@@ -122,6 +134,7 @@ let inSound;
 let soundState;
 let started;
 let gameStarted;
+let shopButton;
 
 //just for topview
 let ballArray = [];
@@ -165,6 +178,7 @@ function preload(){
   turnLeft = loadImage("assets/turnLeft.png");
   speedUp = loadImage("assets/speedUp.png");
   slowDown = loadImage("assets/slowDown.png");
+  shopButton = loadImage("assets/shopButton.png");
   aimIndicator = loadImage("assets/protractor.png");
 }
 
@@ -215,16 +229,7 @@ function mousePressed(){
     state = 5;
   }
   else if(state === 4 && mouseX > 300 && mouseX < 400 && mouseY > 300 && mouseY < 400){
-    aim = aim + slightRandomizer;
-    power = power + slightRandomizerY;
-    let someBall = new Ball(350,650,power,aim,xPos,yPos);
-    ballArray.push(someBall);
-    let someTimer = new Timer(4000);
-    timeArray.push(someTimer);
-    aim = aim - slightRandomizer;
-    power = power - slightRandomizerY;
-    slightRandomizer = random(-howRandom,howRandom);
-    slightRandomizerY = random(-howRandom,howRandom);
+    shootBall();
   }
   else if(state === 4 && mouseX >= 0 && mouseY >= 270 && mouseX <= 25 && mouseY <= 430 && aim > -maxAim){
     aim = aim - 0.25;
@@ -245,16 +250,7 @@ function mousePressed(){
 
 function keyPressed(){
   if(state === 4 && keyCode === 32){
-    aim = aim + slightRandomizer;
-    power = power + slightRandomizerY;
-    let someBall = new Ball(350,650,power,aim,xPos,yPos);
-    ballArray.push(someBall);
-    let someTimer = new Timer(4000);
-    timeArray.push(someTimer);
-    aim = aim - slightRandomizer;
-    power = power - slightRandomizerY;
-    slightRandomizer = random(-howRandom,howRandom);
-    slightRandomizerY = random(-howRandom,howRandom);
+    shootBall();
   }
   //allows for alternative control option utilizing the arrow keys
   else if(state === 4 && keyCode === 37 && aim > -maxAim){
@@ -364,6 +360,7 @@ function topView(){
     ballArray[i].show();
     if(ballArray[i].checkHole() === true){
       inSound.play();
+      changeHolePosition();
     }
     if(timeArray[i].isDone() === true){
       ballArray[i].vanish();
@@ -384,6 +381,19 @@ function highlightButtons(){
   else if (state === 4 && mouseX >= 270 && mouseY >= 675 && mouseX <= 430 && mouseY <= 700){
     image(slowDown, 267, 671, 162.5, 28.5);
   }
+}
+
+function shootBall(){
+  aim = aim + slightRandomizer;
+  power = power + slightRandomizerY;
+  let someBall = new Ball(350,650,power,aim,xPos,yPos);
+  ballArray.push(someBall);
+  let someTimer = new Timer(4000);
+  timeArray.push(someTimer);
+  aim = aim - slightRandomizer;
+  power = power - slightRandomizerY;
+  slightRandomizer = random(-howRandom,howRandom);
+  slightRandomizerY = random(-howRandom,howRandom);
 }
 
 function terrain(){
@@ -534,4 +544,11 @@ function displayScore(){
   //displays the score
   textSize(40);
   text(str(score),20,40);
+}
+
+function changeHolePosition(){
+  allegedValueChanger = random(-200,200);
+  allegedValueDeranger = random(-50, 70);
+  xPos = 335 + allegedValueChanger;
+  yPos = 100 + allegedValueDeranger;
 }
