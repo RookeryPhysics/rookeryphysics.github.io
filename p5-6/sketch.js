@@ -36,7 +36,6 @@ class Ball {
     if(!this.done){
       this.x += this.dx;
       this.y += this.dy;
-      //decrease speed KEEP WORKING ON THIS
       if(aim > 0){
         if(this.dx < 0){
           this.dx = this.dx + 0.03;
@@ -243,8 +242,14 @@ function mousePressed(){
   else if(state === 4 && mouseX >= 270 && mouseY >= 675 && mouseX <= 430 && mouseY <= 700 && power < -0.5){
     power = power + 0.2;
   }
+  else if(state === 4 && mouseX >= 453 && mouseY >= 0 && mouseX <= 613 && mouseY <= 25){
+    state = 6;
+  }
   else if(state === 5){
     generateRectangles();
+  }
+  else if(state === 6){
+    //
   }
 }
 
@@ -317,6 +322,9 @@ function stateLord(){
     //terrain start
     terrain();
   }
+  else if(state === 6){
+    shop();
+  }
 }
 
 function startScreen(){
@@ -368,12 +376,16 @@ function topView(){
   }
 }
 
+//shows shop button and highlights buttons when hovered over
 function highlightButtons(){
+  if(state === 4){
+    image(shopButton,450,0,162.5,28.5);
+  }
   if (state === 4 && mouseX >= 0 && mouseY >= 270 && mouseX <= 25 && mouseY <= 430){
     image(turnLeft, 0, 267.5, 28.5 ,162.5);
   }
   else if (state === 4 && mouseX >= 674 && mouseY >= 270 && mouseX <= 700 && mouseY <= 430){
-    image(turnRight, 671, 269, 29 ,162.5);
+    image(turnRight, 671, 269, 28.5 ,162.5);
   }
   else if (state === 4 && mouseX >= 270 && mouseY >= 0 && mouseX <= 430 && mouseY <= 25){
     image(speedUp, 267, 0,  162.5, 28.5);
@@ -383,6 +395,7 @@ function highlightButtons(){
   }
 }
 
+//shoots golf ball
 function shootBall(){
   aim = aim + slightRandomizer;
   power = power + slightRandomizerY;
@@ -472,6 +485,7 @@ function displayPowerBar(){
   }
 }
 
+//displays aim indicator
 function displayAimIndicator(){
   image(aimIndicator,475,575,200,100);
   //middle aim
@@ -551,4 +565,8 @@ function changeHolePosition(){
   allegedValueDeranger = random(-50, 70);
   xPos = 335 + allegedValueChanger;
   yPos = 100 + allegedValueDeranger;
+}
+
+function shop(){
+  background(255,255,255,255);
 }
