@@ -12,7 +12,7 @@ class Ball {
     this.dx = aim;
     this.dy = power;
     this.radius = 7;
-    this.color = color(255,255,255,255);
+    this.color = getColor();
     this.done = false;
     this.utterCompletion = false;
     this.holeX = holeX;
@@ -75,12 +75,6 @@ class Ball {
     }
   }
 
-  //altitudeModeUpdate(){
-  //  if(this.dx > 0 && this.y < 400){
-    //  this.dx = this.dx - 0.05;
-    //}
-  //}
-
   //check if golfball is in the hole, add score, alert function call
   checkHole(){
     if(this.done === false && this.utterCompletion === false && this.x > this.holeX - 22 && this.x < this.holeX + 22 && this.y > this.holeY - 22 && this.y < this.holeY + 22){
@@ -134,6 +128,9 @@ let soundState;
 let started;
 let gameStarted;
 let shopButton;
+let shop;
+let ballType;
+let holeType;
 
 //just for topview
 let ballArray = [];
@@ -160,6 +157,7 @@ let time;
 let rects = [];
 let rectNumber;
 let rectWidth;
+let toBeMade;
 
 function preload(){
   inSound = loadSound("assets/fallsinhole.mp3");
@@ -173,11 +171,13 @@ function preload(){
   godMode = loadImage("assets/godModeClicked.png");
   modeSwitcher = loadImage("assets/modeSwitcher.png");
   golfBackground = loadImage("assets/golfBackground.png");
+  toBeMade = loadImage("assets/tobecontinued.png");
   turnRight = loadImage("assets/turnRight.png");
   turnLeft = loadImage("assets/turnLeft.png");
   speedUp = loadImage("assets/speedUp.png");
   slowDown = loadImage("assets/slowDown.png");
   shopButton = loadImage("assets/shopButton.png");
+  shop = loadImage("assets/shop.png");
   aimIndicator = loadImage("assets/protractor.png");
 }
 
@@ -193,6 +193,8 @@ function setup() {
   gameStarted = false;
   aim = 0;
   power = -4;
+  ballType = 0;
+  holeType = 0;
   howRandom = 0.5;
   allegedValueChanger = random(-200,200);
   allegedValueDeranger = random(-50, 70);
@@ -248,8 +250,34 @@ function mousePressed(){
   else if(state === 5){
     generateRectangles();
   }
-  else if(state === 6){
-    //
+  else if(state === 6 && mouseX < 120 && mouseY < 120){
+    state = 4;
+  }
+  //first row of shop
+  else if(state === 6 && mouseX > 120 && mouseX < 217 && mouseY > 260 && mouseY < 355){
+    ballType = 0;
+  }
+  else if(state === 6 && mouseX > 241 && mouseX < 338 && mouseY > 260 && mouseY < 355){
+    ballType = 1;
+  }
+  else if(state === 6 && mouseX > 362 && mouseX < 459 && mouseY > 260 && mouseY < 355){
+    ballType = 2;
+  }
+  else if(state === 6 && mouseX > 483 && mouseX < 580 && mouseY > 260 && mouseY < 355){
+    ballType = 3;
+  }
+  //second row
+  else if(state === 6 && mouseX > 120 && mouseX < 217 && mouseY > 375 && mouseY < 470){
+    holeType = 0;
+  }
+  else if(state === 6 && mouseX > 241 && mouseX < 338 && mouseY > 375 && mouseY < 470){
+    holeType = 1;
+  }
+  else if(state === 6 && mouseX > 362 && mouseX < 459 && mouseY > 375 && mouseY < 470){
+    holeType = 2;
+  }
+  else if(state === 6 && mouseX > 483 && mouseX < 580 && mouseY > 375 && mouseY < 470){
+    holeType = 3;
   }
 }
 
@@ -293,6 +321,25 @@ function musicalStateLord(){
   }
 }
 
+function getColor(){
+  if(ballType === 0){
+    let x = color(255,255,255,255);
+    return x;
+  }
+  else if(ballType === 1){
+    let x = color(0,255,255,255);
+    return x;
+  }
+  else if(ballType === 2){
+    let x = color(255,0,0);
+    return x;
+  }
+  else if(ballType === 3){
+    let x = color(0);
+    return x;
+  }
+}
+
 function stateLord(){
   if(state === 0){
     //startScreen
@@ -308,7 +355,7 @@ function stateLord(){
   }
   else if(state === 3){
     //terrain view instructions
-    otherInstructions();
+    incomplete();
   }
   else if(state === 4){
     //topview start
@@ -323,7 +370,8 @@ function stateLord(){
     terrain();
   }
   else if(state === 6){
-    shop();
+    //shop
+    showShop();
   }
 }
 
@@ -348,16 +396,6 @@ function pickMode(){
   }
 }
 
-//instructions for topview mode
-function instructions(){
-  image(instructionsScreen,0,0,700,700);
-}
-
-//instructions for terrain mode
-function otherInstructions(){
-  background(0,255,0);
-}
-
 function topView(){
   image(golfBackground, 0, 0, 700, 700);
   highlightButtons();
@@ -369,6 +407,8 @@ function topView(){
     if(ballArray[i].checkHole() === true){
       inSound.play();
       changeHolePosition();
+      aim = 0;
+      power = -4;
     }
     if(timeArray[i].isDone() === true){
       ballArray[i].vanish();
@@ -550,7 +590,20 @@ function displayAimIndicator(){
 
 function destroyerOfBalls(golfballs){
   stroke(0);
-  fill(0,0,0);
+  let c;
+  if(holeType === 0){
+    c = color(0);
+  }
+  else if(holeType === 1){
+    c = color(255,255,255,255);
+  }
+  else if(holeType === 2){
+    c = color(0,255,255,255);
+  }
+  else if(holeType === 3){
+    c = color(150,0,150,255);
+  }
+  fill(c);
   ellipse(xPos,yPos,45,45);
 }
 
@@ -567,6 +620,17 @@ function changeHolePosition(){
   yPos = 100 + allegedValueDeranger;
 }
 
-function shop(){
-  background(255,255,255,255);
+//WORK ON THIS
+function showShop(){
+  image(shop,0,0,700,700);
+  fill(255);
+  ellipse(170,310,15,15);
+}
+
+function instructions(){
+  image(instructionsScreen,0,0,700,700);
+}
+
+function incomplete(){
+  image(toBeMade,0,0,700,700);
 }
