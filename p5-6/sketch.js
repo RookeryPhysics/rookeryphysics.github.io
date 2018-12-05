@@ -1,14 +1,23 @@
 // World Star Golf
 // Ethan Church and Mike McGee
-// Date
+// 5/12/2018
+//
+//Ethan did all of the graphics, compiled the music and assets, positioned graphics and buttons, made buttons highlighted when hovered over, game layout, indicators, and everything that looks aesthetic(with much input from Michael).
+//Michael did all of the collision detection and physics, some surprisingly forgiving mathematics(averages of the elements of arrays, rounding, basic addition, ect...), created the state system, wrote a variety of functions(with much input from Ethan).
 //
 // Extra for Experts:
-// -used multiple classes
+// -created a massive collection of amazing graphics
+// -used multiple classes which influence eachother
+// -created a basic shop/inventory system
+// -collision detection
+// -included an element of randomness in the gameplay
+
 
 class Ball {
   constructor(x,y,power,aim,holeX,holeY){
     this.x = x;
     this.y = y;
+    this.aim = aim;
     this.dx = aim;
     this.dy = power;
     this.radius = 7;
@@ -36,7 +45,7 @@ class Ball {
     if(!this.done){
       this.x += this.dx;
       this.y += this.dy;
-      if(aim > 0){
+      if(this.aim > 0){
         if(this.dx < 0){
           this.dx = this.dx + 0.03;
         }
@@ -51,7 +60,7 @@ class Ball {
           this.done = true;
         }
       }
-      if(aim === 0){
+      if(this.aim === 0){
         if(this.dy < 0 && !this.done){
           this.dy = this.dy + 0.03;
         }
@@ -60,7 +69,7 @@ class Ball {
           this.done = true;
         }
       }
-      if(aim < 0){
+      if(this.aim < 0){
         if(this.dx > 0){
           this.dx = this.dx + 0.03;
         }
@@ -131,6 +140,8 @@ let shopButton;
 let shop;
 let ballType;
 let holeType;
+let ballCount;
+let ballCountArray = [];
 
 //just for topview
 let ballArray = [];
@@ -196,6 +207,7 @@ function setup() {
   ballType = 0;
   holeType = 0;
   howRandom = 0.5;
+  ballCount = 0;
   allegedValueChanger = random(-200,200);
   allegedValueDeranger = random(-50, 70);
   slightRandomizer = random(-howRandom,howRandom);
@@ -209,6 +221,7 @@ function setup() {
 //0,1,2,4,
 //0,1,3,5,
 
+//runs when mouse is pressed
 function mousePressed(){
   if(state === 0 && mouseX > 250 && mouseX < 500 && mouseY < 650 && mouseY > 300){
     state = 1;
@@ -281,6 +294,7 @@ function mousePressed(){
   }
 }
 
+//runs when key is pressed
 function keyPressed(){
   if(state === 4 && keyCode === 32){
     shootBall();
@@ -305,6 +319,7 @@ function draw() {
   musicalStateLord();
 }
 
+//controls what music to play
 function musicalStateLord(){
   if(soundState === 0){
     if(!started){
@@ -321,6 +336,7 @@ function musicalStateLord(){
   }
 }
 
+//determines ball color based on ballType variable
 function getColor(){
   if(ballType === 0){
     let x = color(255,255,255,255);
@@ -340,6 +356,7 @@ function getColor(){
   }
 }
 
+//divides game into different states
 function stateLord(){
   if(state === 0){
     //startScreen
@@ -375,17 +392,20 @@ function stateLord(){
   }
 }
 
+//displays start screen and button
 function startScreen(){
   image(homeScreen, 0, 0, 700, 700);
   if (state === 0 && mouseX > 250 && mouseX < 500 && mouseY < 650 && mouseY > 300){
+    //changes look of button when hovered over
     image(startButtonDown, 250, 360, 200, 210);
   }
   else {
+    //displays default button
     image(startButton, 250, 360, 200, 210);
   }
 }
 
-//display to pick gamemode
+//display to pick gamemode/gamemode preview
 function pickMode(){
   image(modeSwitcher, 0, 0, 700, 700);
   if (state === 1 && mouseX >= 50 && mouseY >= 450 && mouseX <= 650 && mouseY <= 650){
@@ -396,6 +416,7 @@ function pickMode(){
   }
 }
 
+//runs godmode gamemode
 function topView(){
   image(golfBackground, 0, 0, 700, 700);
   highlightButtons();
@@ -407,6 +428,8 @@ function topView(){
     if(ballArray[i].checkHole() === true){
       inSound.play();
       changeHolePosition();
+      ballCountArray.push(ballCount);
+      ballCount = 0;
       aim = 0;
       power = -4;
     }
@@ -441,6 +464,7 @@ function shootBall(){
   power = power + slightRandomizerY;
   let someBall = new Ball(350,650,power,aim,xPos,yPos);
   ballArray.push(someBall);
+  ballCount++;
   let someTimer = new Timer(4000);
   timeArray.push(someTimer);
   aim = aim - slightRandomizer;
@@ -449,6 +473,7 @@ function shootBall(){
   slightRandomizerY = random(-howRandom,howRandom);
 }
 
+//colors and displays snowy terrain
 function terrain(){
   background(0,255,255);
   fill(255);
@@ -456,12 +481,14 @@ function terrain(){
   showTerrain();
 }
 
+//displays terrain
 function showTerrain() {
   for(let i=0; i<rects.length; i++){
     rect(rects[i].x, rects[i].y, rects[i].width, rects[i].height);
   }
 }
 
+//generates a terrain
 function generateRectangles(){
   for(let i=0; i < rectNumber; i++){
     let rectHeight = noise(time) * 700;
@@ -476,6 +503,7 @@ function generateRectangles(){
   }
 }
 
+//displays power bar indicator
 function displayPowerBar(){
   noFill();
   stroke(0);
@@ -487,27 +515,22 @@ function displayPowerBar(){
     //empty
   }
   else if(power > -1.7){
-    //second powerbar setting
     fill(0,255,255);
     rect(30,645,20,25);
   }
   else if(power > -2.4){
-    //third powerbar setting
     fill(0,255,255);
     rect(30,620,20,50);
   }
   else if(power > -3.1){
-    //fourth power bar setting
     fill(255,255,0);
     rect(30,595,20,75);
   }
   else if(power > -3.8){
-    //fifth
     fill(255,255,0);
     rect(30,570,20,100);
   }
   else if(power > -4.5){
-    //sixth
     fill(255,255,0);
     rect(30,545,20,125);
   }
@@ -588,6 +611,7 @@ function displayAimIndicator(){
   }
 }
 
+//displays hole
 function destroyerOfBalls(golfballs){
   stroke(0);
   let c;
@@ -607,12 +631,39 @@ function destroyerOfBalls(golfballs){
   ellipse(xPos,yPos,45,45);
 }
 
+//displays score
 function displayScore(){
-  //displays the score
+  //displays number of ball in hole
+  noStroke();
   textSize(40);
   text(str(score),20,40);
+  textSize(20);
+  text("Score",65,40);
+  //displays number of balls
+  textSize(40);
+  text(str(ballCount),20,90);
+  textSize(20);
+  text("Strokes",65,90);
+  //displays average strokes to hole
+  if(ballCountArray.length > 0){
+    textSize(40);
+    text(str(Math.round(ballCountAverage())),20,140);
+    textSize(20);
+    text("AVG Strokes",65,140);
+  }
 }
 
+//calculates and returns an average for all elements in the ballCountArray
+function ballCountAverage(){
+  let average = 0;
+  for(let c = 0; c < ballCountArray.length; c++){
+    average = average + ballCountArray[c];
+  }
+  average = average / ballCountArray.length;
+  return average;
+}
+
+//changes the hole position
 function changeHolePosition(){
   allegedValueChanger = random(-200,200);
   allegedValueDeranger = random(-50, 70);
@@ -620,17 +671,32 @@ function changeHolePosition(){
   yPos = 100 + allegedValueDeranger;
 }
 
-//WORK ON THIS
+//displays shop and shop options
 function showShop(){
   image(shop,0,0,700,700);
   fill(255);
   ellipse(170,310,15,15);
+  fill(0,255,255);
+  ellipse(291,310,15,15);
+  fill(255,0,0);
+  ellipse(412,310,15,15);
+  fill(0);
+  ellipse(533,310,15,15);
+  ellipse(170,428,40,40);
+  fill(255);
+  ellipse(291,428,40,40);
+  fill(0,255,255);
+  ellipse(412,428,40,40);
+  fill(150,0,150);
+  ellipse(533,428,40,40);
 }
 
+//displays instruction screen
 function instructions(){
   image(instructionsScreen,0,0,700,700);
 }
 
+//displays incomplete screen
 function incomplete(){
   image(toBeMade,0,0,700,700);
 }
