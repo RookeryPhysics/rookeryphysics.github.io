@@ -635,8 +635,8 @@ function preload(){
   pop = loadSound("assets/pop.mp3");
   leftArrow = loadImage("assets/leftarrow.png");
   rightArrow = loadImage("assets/rightarrow.png");
-  upArrow = loadImage("assets/upArrow.png");
-  downArrow = loadImage("assets/downArrow.png");
+  upArrow = loadImage("assets/uparrow.png");
+  downArrow = loadImage("assets/downarrow.png");
 }
 
 //SEE WHAT IS
