@@ -15,7 +15,7 @@ let micro;
 function preload(){
   leftArrow = loadImage("assets/leftarrow.png");
   rightArrow = loadImage("assets/rightarrow.png");
-  laser = loadImage("assets/laser.jpg");
+  laser = loadImage("assets/las.jpg");
   iPhone = loadImage("assets/iphone.jpg");
   micro = loadImage("assets/micro.jpg");
 }
