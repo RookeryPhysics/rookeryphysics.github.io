@@ -13,7 +13,7 @@ let iPhone;
 let micro;
 
 function preload(){
-  laser = loadImage("assets/lazer.jpg");
+  laser = loadImage("lazer.jpg");
   leftArrow = loadImage("assets/leftarrow.png");
   rightArrow = loadImage("assets/rightarrow.png");
   iPhone = loadImage("assets/iphone.jpg");
@@ -83,7 +83,7 @@ function rightArrowClick(){
 }
 
 function showTopProduct(){
-  image(laser,260,100);
+  image(laser,260,100,450,450);
   textSize(40);
   text("High Power Adjustable Green Laser",800,200);
   textSize(20);
