@@ -8,12 +8,12 @@
 let state;
 let leftArrow, rightArrow;
 let numberOfStates;
-let laser;
+let thing;
 let iPhone;
 let micro;
 
 function preload(){
-  laser = loadImage("lazer.jpg");
+  thing = loadImage("thing.jpg");
   leftArrow = loadImage("assets/leftarrow.png");
   rightArrow = loadImage("assets/rightarrow.png");
   iPhone = loadImage("assets/iphone.jpg");
@@ -83,7 +83,7 @@ function rightArrowClick(){
 }
 
 function showTopProduct(){
-  image(laser,260,100,450,450);
+  image(thing,260,100,450,450);
   textSize(40);
   text("High Power Adjustable Green Laser",800,200);
   textSize(20);
