@@ -31,6 +31,15 @@ function mousePressed(){
   else if(mouseX > windowWidth-160 && mouseY > 0 && mouseY < windowWidth){
     rightArrowClick();
   }
+  else if(state === 0 && mouseX > 160 && mouseX < windowWidth-160 && mouseY > 0 && mouseY < windowWidth){
+    state = "laser";
+  }
+  else if(state === 1 && mouseX > 160 && mouseX < windowWidth-160 && mouseY > 0 && mouseY < windowWidth){
+    iPhoneChargerPage();
+  }
+  else if(state === 2 && mosueX > 160 && mouseX < windowWidth-160 && mouseY > 0 && mouseY < windowWidth){
+    microPage();
+  }
 }
 
 function draw() {
@@ -54,6 +63,16 @@ function stateLord(){
     showArrows();
     showMicroProduct();
   }
+  //
+  else if(state === "laser"){
+    laserPage();
+  }
+  else if(state === "iphone"){
+    iPhoneChargerPage();
+  }
+  else if(state === "micro"){
+    microPage();
+  }
 }
 
 function showArrows(){
@@ -63,7 +82,7 @@ function showArrows(){
   if(state > 0){
     image(leftArrow,0,windowHeight/6,100,400);
   }
-  if(state !== numberOfStates){
+  if(state !== numberOfStates - 1){
     image(rightArrow,windowWidth-100,windowHeight/6,100,400);
   }
 }
@@ -110,4 +129,14 @@ function showMicroProduct(){
   text("High quality charging cable for Samsung and other devices.",1200,280);
   textSize(30);
   text("Starting at $5.49CAD",1200,400);
+}
+
+function laserPage(){
+  background(0);
+
+}
+
+function iPhoneChargerPage(){
+  background(0);
+  
 }
