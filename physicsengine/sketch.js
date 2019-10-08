@@ -5,6 +5,148 @@
 //
 //
 
+class Player{
+  constructor(x,y,width,height,dx,dy,color,g,mass,energyLoss){
+    this.x = x;
+    this.y = y;
+    this.width = width;
+    this.height = height;
+    this.dx = dx;
+    this.dy = dy;
+    this.color = color;
+    this.g = g;
+    this.mass = mass;
+    this.radius= width/2;
+    this.energyLoss = energyLoss;
+    this.explosive = false;
+    this.playerSpeed = 2.5;
+    this.secondJumped = false;
+    this.snaped = false;
+    this.bomb = 0;
+    this.floating = false;
+  }
+
+  show(character){
+    fill(this.color);
+    rect(this.x,this.y,this.width,this.height);
+  }
+
+  update(){
+    this.x = this.x + this.dx;
+    this.y = this.y + this.dy;
+  }
+
+  changeLittleG(g){
+    this.g = g;
+  }
+
+  surfaceGravity(){
+    if(this.mass > 0){
+      this.dy = this.dy + this.g/50;
+    }
+  }
+
+  suddenChangeInAttitude(){
+    if(this.y > windowHeight - 30 - this.height){
+      this.y = windowHeight - 30 - this.height;
+      this.secondJumped = false;//resets second jump upon touching ground
+      if(this.dy > 2 || this.dy < -2){
+        this.dy = this.dy * 0.5;
+      }
+      else if(this.dy > -2 || this.dy < 2){
+        this.dy = 0;
+        this.y = windowHeight - 30 - this.height;//wall height
+      }
+      this.dy = 0 - this.dy;
+    }
+  }
+
+  //float
+  buoyancy(){
+    this.floating = true;
+    if(this.y > 460 && !this.snaped){
+      this.snapDx = this.dx;
+      this.snapDy = this.dy;
+      this.snaped = true;
+    }
+    if(this.dy > -0.9 && this.y > 500 && this.mass/this.radius < 1){//apply buoyancy
+      this.dy = this.dy - g/30;
+    }
+    if(this.y > 500){//slow down x axis speed in water
+      if(this.dx > 0.1){
+        this.dx = this.dx - 0.1;
+      }
+      else if(this.dx < -0.1){
+        this.dx = this.dx + 0.1;
+      }
+    }
+  }
+
+  //causes user to jump into the air(also has double jump functionality)
+  jump(){//make the jumping work better
+    if(this.dy > -0.1 && this.dy < 0.1 || this.floating == true){
+      this.dy = -5;
+    }
+    else if(!this.secondJumped && this.y < windowHeight - this.height - 35){
+      this.dy = -5;
+      this.secondJumped = true;
+    }
+  }
+
+  //move user left
+  left(){
+    this.dx = -this.playerSpeed;
+  }
+
+  //move user right
+  right(){
+    this.dx = this.playerSpeed;
+  }
+
+  dig(){
+    this.bomb = new Sphere(this.x+this.width/2,this.y+this.height,10,0,10,determineColor(),g,5,energyLoss,airResistanceX,airResistanceY,true,true);
+    objectArray.push(this.bomb);
+  }
+
+  slow(){//slows down player after the motion key is no longer being held
+    if(this.dx > 0){
+      this.dx = this.dx * 0.98;
+    }
+    else if(this.dx < 0){
+      this.dx = this.dx * 0.98;
+    }
+  }
+
+  //user collision with static object
+  wallCollision(wall){
+    if(!wall.hit && this.dx > 0 && this.x + this.radius >= wall.x - wall.width/10 && this.x + this.radius <= wall.x + wall.width/4 && this.y + this.radius >= wall.y && this.y - this.radius*2 <= wall.y){
+      let tempVar = this.dx;
+      //tempVar = tempVar - this.energyLoss/100;
+      this.dx = 0 - tempVar;
+    }
+    else if(!wall.hit && this.dx < 0 && this.x - this.radius <= wall.x + wall.width + wall.width/10 && this.x - this.radius >= wall.x + wall.width*0.75 && this.y + this.radius >= wall.y && this.y - this.radius*2 <= wall.y){
+      let tempVar = this.dx;
+      //tempVar = tempVar - this.energyLoss/100;
+      this.dx = 0 - tempVar;
+    }
+    else if(!wall.hit && this.dy > 0 && this.y + this.height >= wall.y && this.y + this.height <= wall.y + wall.height && this.x + this.radius > wall.x && this.x - this.radius < wall.x + wall.width){
+      let tempVar = this.dy;
+      tempVar = tempVar * 0.5;
+      this.secondJumped = false;
+      //tempVar = tempVar - this.energyLoss/100;
+      this.dy = 0 - tempVar;
+    }
+    else if(!wall.hit && this.dy < 0 && this.y <= wall.y + wall.height && this.y >= wall.y &&this.x + this.radius > wall.x && this.x - this.radius < wall.x + wall.width){
+      let tempVar = this.dy;
+      tempVar = tempVar * 0.5;
+      this.secondJumped = false;
+      //tempVar = tempVar - this.energyLoss/100;
+      this.dy = 0 - tempVar;
+    }
+    return 0;
+  }
+}
+
 class Wall{
   constructor(x,y,width,height,color){
     this.x = x;
@@ -13,6 +155,7 @@ class Wall{
     this.height = height;
     this.color = color;
     this.hit = false;
+    this.area = this.width * this.height;
   }
 
   show(aparentObject){
@@ -57,6 +200,10 @@ class Block {
   update(){
     this.x = this.x + this.dx;
     this.y = this.y + this.dy;
+  }
+
+  checkDistance(player){//not applicable just here to prevent call error
+    //
   }
 
   //applies gravity
@@ -200,6 +347,7 @@ class Block {
       tempVar = tempVar - this.energyLoss/100;
       this.dy = 0 - tempVar;
     }
+    return 0;
   }
 
   //drag object with mouse
@@ -291,7 +439,7 @@ class Block {
 }
 
 class Sphere {
-  constructor(x,y,radius,dx,dy,color,g,mass,energyLoss,airResistanceX,airResistanceY,explosive){
+  constructor(x,y,radius,dx,dy,color,g,mass,energyLoss,airResistanceX,airResistanceY,explosive,minerBall){
     this.x = x;
     this.y = y;
     this.radius = radius;
@@ -311,18 +459,29 @@ class Sphere {
     this.snapDy = false;//
     this.hasHit = false;//
     this.snaped = false;//
+    this.minerBall = minerBall;
+    this.areaDestroyed = 0;
   }
 
   //displays sphere
   show(){
-    fill(this.color);
-    ellipse(this.x,this.y,this.radius*2,this.radius*2);
+    if(this.minerBall && this.explosive || !this.minerBall){
+      fill(this.color);
+      ellipse(this.x,this.y,this.radius*2,this.radius*2);
+    }
   }
 
   //updates position
   update(){
     this.x = this.x + this.dx;
     this.y = this.y + this.dy;
+  }
+
+//determines if the miner ball has gone too far from the user and triggers its deletion if so
+  checkDistance(player){
+    if(this.explosive && this.minerBall && this.y > player.y + player.height + 10 || this.explosive && this.minerBall && this.y < player.y || this.explosive && this.minerBall && this.x > player.x + player.width || this.explosive && this.minerBall && this.x < player.x){
+      this.explosive = false;
+    }
   }
 
   //applies gravitational acceleration at surface
@@ -532,7 +691,11 @@ class Sphere {
       tempVar = tempVar - this.energyLoss/100;
       this.dx = 0 - tempVar;
       if(this.explosive){
+        this.areaDestroyed = wall.area; //for sending destroyed area value
         wall.hit = true;
+        if(this.minerBall){
+          this.explosive = false;
+        }
       }
     }
     else if(!wall.hit && this.dx < 0 && this.x - this.radius <= wall.x + wall.width + wall.width/10 && this.x - this.radius >= wall.x + wall.width*0.75 && this.y + this.radius >= wall.y && this.y - this.radius*2 <= wall.y){
@@ -541,6 +704,10 @@ class Sphere {
       this.dx = 0 - tempVar;
       if(this.explosive){
         wall.hit = true;
+        this.areaDestroyed = wall.area;
+        if(this.minerBall){
+          this.explosive = false;
+        }
       }
     }
     else if(!wall.hit && this.dy > 0 && this.y + this.radius >= wall.y && this.y + this.radius <= wall.y + wall.height && this.x + this.radius > wall.x && this.x - this.radius < wall.x + wall.width){
@@ -549,6 +716,10 @@ class Sphere {
       this.dy = 0 - tempVar;
       if(this.explosive){
         wall.hit = true;
+        this.areaDestroyed = wall.area;
+        if(this.minerBall){
+          this.explosive = false;
+        }
       }
     }
     else if(!wall.hit && this.dy < 0 && this.y - this.radius <= wall.y + wall.height && this.y - this.radius >= wall.y && this.x + this.radius > wall.x && this.x - this.radius < wall.x + wall.width){
@@ -557,8 +728,15 @@ class Sphere {
       this.dy = 0 - tempVar;
       if(this.explosive){
         wall.hit = true;
+        if(this.minerBall){
+          this.areaDestroyed = wall.area;
+          this.explosive = false;
+        }
       }
     }
+    let value = this.areaDestroyed;
+    this.areaDestroyed = 0;
+    return value;
   }
 }
 
@@ -589,8 +767,13 @@ class Timer {
 //create the planet builder Interface
 //code in the calculation for gravitational acceleration based on planet mass and radius and bigG
 
+//PLATFORMER TO DO:
+//make resource boxes spawn
+//make it so you only get the resources in your inventory when you pick up the resource boxes
+
 let sphere;
 let wall;
+let user;//physical character
 let g;//gravitational acceleration
 let object;
 let objectArray = [];
@@ -607,6 +790,11 @@ let addX, addY, addOX, addOY;
 let totalSpeed, quarterSpeed;
 let airResistanceY;//coefficient of air resistance
 let airResistanceX;//wind
+let happened;
+
+//inventory
+let areaAdd;
+let stock;
 
 //determine the properties of the object users spawns
 let userRadius;
@@ -667,8 +855,10 @@ function setup() {
   energyLoss = 20;
   airResistanceY = 0;
   airResistanceX = 0.5;
+  happened = false; // has player spawn happened?
+  stock = 0;
   createCanvas(windowWidth, windowHeight);
-  alert("CLICK!");
+  //alert("CLICK!");
 }
 
 //checks if there is room to add a ball where the mouse is
@@ -686,7 +876,6 @@ function checkIfRoom(){
 
 //called when mouse is pressed
 function mousePressed(){
-  checkIfRoom();
   if(state !== "options" && mouseX > windowWidth - 100 && mouseY < 100 ){
     userState = state;
     state = "options";
@@ -695,93 +884,6 @@ function mousePressed(){
 
   else if(state === "options"){
     optionsMousePress();
-  }
-
-  else if(keyIsDown(49) && state === "surface" || keyIsDown(49) && state === "altitude" || keyIsDown(49) && state === "ocean"){
-    checkIfRoom();
-    if(allowed){
-      //creates a ball
-      sphere = new Sphere(mouseX, mouseY, 15, -8, 0, determineColor(), g, 10, energyLoss, airResistanceX, airResistanceY, false);
-      objectArray.push(sphere);
-      pop.play();
-    }
-  }
-
-  else if(keyIsDown(50) && state === "surface" || keyIsDown(50) && state === "altitude" || keyIsDown(50) && state === "ocean"){
-    checkIfRoom();
-    if(allowed){
-      //creates a ball
-      sphere = new Sphere(mouseX, mouseY, 15, -6, 0, determineColor(), g, 10, energyLoss, airResistanceX, airResistanceY, false);
-      objectArray.push(sphere);
-      pop.play();
-    }
-  }
-
-  else if(keyIsDown(51) && state === "surface" || keyIsDown(51) && state === "altitude" || keyIsDown(51) && state === "ocean"){
-    checkIfRoom();
-    if(allowed){
-      //creates a ball
-      sphere = new Sphere(mouseX, mouseY, 15, -4, 0, determineColor(), g, 10, energyLoss, airResistanceX, airResistanceY, false);
-      objectArray.push(sphere);
-      pop.play();
-    }
-  }
-
-  else if(keyIsDown(52) && state === "surface" || keyIsDown(52) && state === "altitude" || keyIsDown(52) && state === "ocean"){
-    checkIfRoom();
-    if(allowed){
-      //creates a ball
-      sphere = new Sphere(mouseX, mouseY, 15, -2, 0, determineColor(), g, 10, energyLoss, airResistanceX, airResistanceY, false);
-      objectArray.push(sphere);
-      pop.play();
-    }
-  }
-
-  else if(keyIsDown(53) && state === "surface" || keyIsDown(53) && state === "altitude" || keyIsDown(53) && state === "ocean"){
-    checkIfRoom();
-    if(allowed){
-      spawnBall();
-    }
-  }
-
-  else if(keyIsDown(54) && state === "surface" || keyIsDown(54) && state === "altitude" || keyIsDown(54) && state === "ocean"){
-    checkIfRoom();
-    if(allowed){
-      //creates a ball
-      sphere = new Sphere(mouseX, mouseY, 15, 2, 0, determineColor(), g, 10, energyLoss, airResistanceX, airResistanceY, false);
-      objectArray.push(sphere);
-      pop.play();
-    }
-  }
-
-  else if(keyIsDown(55) && state === "surface" || keyIsDown(55) && state === "altitude" || keyIsDown(55) && state === "ocean"){
-    checkIfRoom();
-    if(allowed){
-      //creates a ball
-      sphere = new Sphere(mouseX, mouseY, 15, 4, 0, determineColor(), g, 10, energyLoss, airResistanceX, airResistanceY, false);
-      objectArray.push(sphere);
-      pop.play();
-    }
-  }
-
-  else if(keyIsDown(56) && state === "surface" || keyIsDown(56) && state === "altitude" || keyIsDown(56) && state === "ocean"){
-    checkIfRoom();
-    if(allowed){
-      //creates a ball
-      sphere = new Sphere(mouseX, mouseY, 15, 6, 0, determineColor(), g, 10, energyLoss, airResistanceX, airResistanceY, false);
-      objectArray.push(sphere);
-      pop.play();
-    }
-  }
-
-  else if(keyIsDown(57) && state === "surface" || keyIsDown(57) && state === "altitude" || keyIsDown(57) && state === "ocean"){
-    checkIfRoom();
-    if(allowed){
-      //creates a ball
-      sphere = new Sphere(mouseX, mouseY, 15, 8, 0, determineColor(), g, 10, energyLoss, airResistanceX, airResistanceY, false);
-      objectArray.push(sphere);
-      pop.play();
-    }
   }
 
   else if(state === "surface" || state === "altitude" || state === "ocean"){
@@ -798,6 +900,7 @@ function mousePressed(){
     }
   }
 
+  //for the planet customization interface(not finished)
   else if(state === "custom" && customizationState === 0){
     if(mouseX > 850 && mouseX < 900 && mouseY > 100 && mouseY < 150){
       colorState = 0;
@@ -908,6 +1011,7 @@ function optionsMousePress(){
     planet = "Earth";
     state = "surface";
     g = 9.81;
+    user.changeLittleG(g);
     pop.play();
   }
 
@@ -915,6 +1019,7 @@ function optionsMousePress(){
     state = "surface";
     planet = "Mars";
     g = 3;
+    user.changeLittleG(g);
     pop.play();
   }
 
@@ -922,6 +1027,7 @@ function optionsMousePress(){
     state = "surface";
     planet = "Moon";
     g = 1;
+    user.changeLittleG(g);
     pop.play();
   }
 
@@ -1013,9 +1119,17 @@ function optionsMousePress(){
 
 //called when key pressed
 function keyPressed(){
+  if(state === "surface" || state === "ocean" || state === "altitide"){
+    if(keyIsDown(38)){
+      user.jump();
+    }
+    if(keyIsDown(40)){
+      user.dig();
+    }
+  }
   if(state === "surface" || state === "ocean" || state === "altitude" || state === "demo"){
     if(keyIsDown(87)){
-      wall = new Wall(mouseX,mouseY,userStaticObjectWidth,userStaticObjectHeight,determineColor());
+      wall = new Wall(mouseX-(0.5*userStaticObjectWidth),mouseY,userStaticObjectWidth,userStaticObjectHeight,determineColor());
       staticObjectArray.push(wall);
     }
     else if(keyIsDown(32) && state !== "demo"){
@@ -1055,6 +1169,15 @@ function spawnBox(){
 //executes divine plan
 function draw() {
   stateDiety();
+}
+
+function leftRightControl(){
+  if(keyIsDown(37)){
+    user.left();
+  }
+  else if(keyIsDown(39)){
+    user.right();
+  }
 }
 
 //blows things up
@@ -1120,6 +1243,46 @@ function determineColor(){
     return color(0,220,220,255);//cyan
   }
 
+  else if(colorState === 9){
+    return color(139,69,19,255);//brown, dirt
+  }
+
+  else if(colorState === 10){
+    return color(75,0,130,255);//indigo
+  }
+
+  else if(colorState === 11){
+    return color(160,160,160,255);//light grey
+  }
+
+  else if(colorState === 12){
+    return color(0,100,0,255);//dark green
+  }
+
+  else if(colorState === 13){
+    return color(204,255,255,100);//transparent, glass
+  }
+
+  else if(colorState === 14){
+    return color(255,102,178,255);//other pink
+  }
+
+  else if(colorState === 15){
+    return color(255,128,0,255);//orange
+  }
+
+  else if(colorState === 16){
+    return color(194,178,128,255);//tan, sand
+  }
+
+  else if(colorState === 17){
+    //return color();
+  }
+
+  else if(colorState === 18){
+    //return color();
+  }
+
   else{
     return color(100,100,100,255);//makes the game grey if user tries to mess with the color state variable
   }
@@ -1131,6 +1294,8 @@ function showSurface(){
     background(0,255,255,255);
     fill(0,200,0);
     rect(0,windowHeight-30,windowWidth,30);
+    g = 9.81;
+    user.changeLittleG(g);
   }
 
   else if(planet === "Moon"){
@@ -1138,28 +1303,41 @@ function showSurface(){
     fill(100,100,100,255);
     rect(0,windowHeight-30,windowWidth,30);
     g = 1;
+    user.changeLittleG(g);
   }
 
   else if(planet === "Mars"){
     background(0);
     fill(255,0,0,255);
-    rect(0,windowHeight-30,windowWidth,30);
+    rect(0,windowHeight-30,windowWidth,30);``
     g = 3;
+    user.changeLittleG(g);
+  }
+}
+
+function spawnPlayer(){
+  if(!happened){
+    user = new Player(100,700,30,60,0,0,determineColor(),g,10); //finish this line, it should spawn the player
+    happened = true;
   }
 }
 
 //runs code selected by state variable
 function stateDiety(){
   if(state === "surface"){
+    spawnPlayer();
     surface();
+    leftRightControl();
   }
 
   else if(state === "altitude"){
     altitude();
+    leftRightControl();
   }
 
   else if(state === "ocean"){
     ocean();
+    leftRightControl();
   }
 
   else if(state === "space"){
@@ -1183,10 +1361,12 @@ function stateDiety(){
 function altitude(){
   background(0,255,255,255);
   showOptionButton();
+  user.show();
+  user.update();
   for(let r = 0; r < staticObjectArray.length; r++){
     staticObjectArray[r].show();
     for(let e = 0; e < objectArray.length; e++){
-      objectArray[e].wallCollision(staticObjectArray[r]);
+      areaAdd = objectArray[e].wallCollision(staticObjectArray[r]);
     }
   }
   for(let f=objectArray.length-1; f>=0; f--){
@@ -1219,11 +1399,27 @@ function altitude(){
 function surface(){
   showSurface();
   showOptionButton();
+  user.show();
+  user.update();
+  user.surfaceGravity();
+  user.suddenChangeInAttitude();
+  user.slow();
+  let areaHere = 0;
+  for(let a = 0; a < staticObjectArray.length; a++){
+    user.wallCollision(staticObjectArray[a]);
+  }
   for(let r = 0; r < staticObjectArray.length; r++){
     staticObjectArray[r].show();
     for(let e = 0; e < objectArray.length; e++){
-      objectArray[e].wallCollision(staticObjectArray[r]);
+      areaAdd = objectArray[e].wallCollision(staticObjectArray[r]);
+      areaHere = areaHere + areaAdd;
+      areaAdd = 0;
     }
+  }
+  stock = stock + areaHere;
+  areaHere = 0;
+  for(let f = 0; f < objectArray.length; f++){
+    objectArray[f].checkDistance(user);
   }
   for (let i=objectArray.length-1; i >= 0; i--){
     objectArray[i].isCollide = false;
@@ -1257,6 +1453,8 @@ function pendulumSham(){
   background(0,255,255,255);
   //displayWater();
   showOptionButton();
+  user.show();
+  user.update();
   if(!pendulumBallSpawned){
     sphere = new Sphere(300, 400, 35, 7, 0, determineColor(), g, 10, energyLoss, airResistanceX, airResistanceY, false);
     objectArray.push(sphere);
@@ -1265,7 +1463,7 @@ function pendulumSham(){
   for(let r = 0; r < staticObjectArray.length; r++){
     staticObjectArray[r].show();
     for(let e = 0; e < objectArray.length; e++){
-      objectArray[e].wallCollision(staticObjectArray[r]);
+      areaAdd = objectArray[e].wallCollision(staticObjectArray[r]);
     }
   }
   for(let f = objectArray.length - 1; f >= 0; f--){
@@ -1298,11 +1496,26 @@ function ocean(){
   background(0,255,255,255);
   displayWater();
   showOptionButton();
+  user.show();
+  user.update();
+  user.surfaceGravity();
+  user.suddenChangeInAttitude();
+  user.slow();
+  user.buoyancy();
+  let areaHere = 0;
+  for(let a = 0; a < staticObjectArray.length; a++){
+    user.wallCollision(staticObjectArray[a]);
+  }
   for(let r = 0; r < staticObjectArray.length; r++){
     staticObjectArray[r].show();
     for(let e = 0; e < objectArray.length; e++){
-      objectArray[e].wallCollision(staticObjectArray[r]);
+      areaAdd = objectArray[e].wallCollision(staticObjectArray[r]);
     }
+  }
+  stock = stock + areaHere;
+  areaHere = 0;
+  for(let f = 0; f < objectArray.length; f++){
+    objectArray[f].checkDistance(user);
   }
   for(let f = objectArray.length - 1; f >= 0; f--){
     objectArray[f].isCollide = false;
