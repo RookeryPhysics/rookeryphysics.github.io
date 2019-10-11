@@ -42,7 +42,7 @@ function preload(){
 function setup() {
   createCanvas(windowWidth, windowHeight-160);
   state = 0;
-  numberOfStates = 21 + 1;
+  numberOfStates = 21;
 }
 
 function mousePressed(){
@@ -78,10 +78,6 @@ function draw() {
 }
 
 function stateLord(){
-  if(state === "contact"){
-    background(0);
-    text("Call (306)250-4250");
-  }
   if(state === 0){ //selection
     //
     background(0);
@@ -149,61 +145,61 @@ function stateLord(){
     showArrows();
     showProduct(papers,"Rolling Papers","6 packs of rolling papers.","$15.00");
   }
-  else if(state === 12){
+  else if(state === 11){
     //
     background(0);
     showArrows();
     showProduct(roller,"Joint Roller","Joint rolling machine.","$15.00");
   }
-  else if(state === 13){
+  else if(state === 12){
     //
     background(0);
     showArrows();
     showProduct(rollKit,"Rolling Kit","Multi-item rolling kit.","$35.00");
   }
-  else if(state === 14){
+  else if(state === 13){
     //
     background(0);
     showArrows();
     showProduct(wraps,"50 Wraps","50 strawberry hemp wraps.","$40.00");
   }
-  else if(state === 15){
+  else if(state === 14){
     //
     background(0);
     showArrows();
     showProduct(tray,"Tray","Rolling tray.","$20");
   }
-  else if(state === 16){
+  else if(state === 15){
     //
     background(0);
     showArrows();
     showProduct(silBong,"Silicon Water Pipe","Silicon water pipe + accesories","$40");
   }
-  else if(state === 17){
+  else if(state === 16){
     //
     background(0);
     showArrows();
     showProduct(grinder4,"Grinder","A herb grinder.","$35");
   }
-  else if(state === 18){
+  else if(state === 17){
     //
     background(0);
     showArrows();
     showProduct(grinder5,"Grinder","A herb grinder.","$35");
   }
-  else if(state === 19){
+  else if(state === 18){
     //
     background(0);
     showArrows();
     showProduct(grinder6,"Grinder","A herb grinder.","$25");
   }
-  else if(state === 20){
+  else if(state === 19){
     //
     background(0);
     showArrows();
     showProduct(airSeal,"Air Seal","Smell proof container.","$25");
   }
-  else if(state === 21){
+  else if(state === 20){
     //
     background(0);
     showArrows();
@@ -253,6 +249,7 @@ function showProduct(product,name,desc,price){
 }
 
 function contact(){
+  background(30);
   fill(0,225,0);
   textSize(40);
   text("Call (306)250-4250",800,500);
