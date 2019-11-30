@@ -118,6 +118,7 @@ class Player{
   }
 
   //user collision with static object
+  //optimize player collisions with static objects
   wallCollision(wall){
     if(!wall.hit && this.dx > 0 && this.x + this.radius >= wall.x - wall.width/10 && this.x + this.radius <= wall.x + wall.width/4 && this.y + this.radius >= wall.y && this.y - this.radius*2 <= wall.y){
       let tempVar = this.dx;
