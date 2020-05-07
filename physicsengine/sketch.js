@@ -440,7 +440,7 @@ class Block {
 }
 
 class Sphere {
-  constructor(x,y,radius,dx,dy,color,g,mass,energyLoss,airResistanceX,airResistanceY,explosive,minerBall){
+  constructor(x,y,radius,dx,dy,color,g,mass,energyLoss,airResistanceX,airResistanceY,explosive,minerBall,infected){
     this.x = x;
     this.y = y;
     this.radius = radius;
@@ -462,12 +462,18 @@ class Sphere {
     this.snaped = false;//
     this.minerBall = minerBall;
     this.areaDestroyed = 0;
+    this.infected = infected;
   }
 
   //displays sphere
   show(){
     if(this.minerBall && this.explosive || !this.minerBall){
-      fill(this.color);
+      if(this.infected == 9){
+        fill(255,0,0);
+      }
+      else{
+        fill(this.color);
+      }
       ellipse(this.x,this.y,this.radius*2,this.radius*2);
     }
   }
@@ -1356,6 +1362,28 @@ function stateDiety(){
   else if(state === "custom"){
     customizePlanet();
   }
+
+  else if(state === "infection"){
+    viral();
+  }
+}
+
+function viral(){
+  background(255,255,255);
+  fill(0,200,0);
+  //put in collision areas for these
+  rect(0,windowHeight-30,windowWidth,30);
+  rect(0,0,windowWidth,30);
+  rect(windowWidth-30,0,windowWidth,windowHeight);
+  rect(0,0,30,windowHeight);
+  //add some closed system boxes
+  //rect(0,windowHeight/2,windowWidth,windowHeight/2-30);
+
+  //set gravity to zero
+  //make sure balls never lose momentum
+  //have them travelling almost randomly
+  //make collisions cause infection events if one is infected
+  g = 0;
 }
 
 //runs altitude state
