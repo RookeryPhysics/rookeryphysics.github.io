@@ -15,6 +15,7 @@ class Ball {
     this.color = color(0,255,0,255);
     this.isCollide = false;
     this.infector = infector;
+    this.hits = 0;
   }
 
   display(){
@@ -65,6 +66,15 @@ class Ball {
     }
   }
 
+  check(){
+    if(this.infector == true){
+      return 1;
+    }
+    else{
+      return 0;
+    }
+  }
+
   collision(otherBall, time){
     if (dist(this.x,this.y,otherBall.x,otherBall.y) <= this.radius + otherBall.radius){
       this.isCollide = true;
@@ -75,8 +85,9 @@ class Ball {
       this.dy = otherBall.dy;
       otherBall.dx = tempDx;
       otherBall.dy = tempDy;
-      if(otherBall.infector == true){
+      if(otherBall.infector == true && otherBall.hits<5){
         this.infector = true;
+        otherBall.hits++;
       }
     }
   }
@@ -85,10 +96,16 @@ class Ball {
 let ballArray = [];
 let time;
 let state;
+let infected;
+let notInfected;
+let total;
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
-  state = 2;
+  state = 0;
+  infected = 0;
+  notInfected = 0;
+  total = 0;
 }
 
 function mousePressed(){
@@ -178,4 +195,20 @@ function displayWall(){
 function displayWallTwo(){
   fill(100);
   rect(0,windowHeight/2-15,windowWidth,10);
+}
+
+function sweep(){
+  infected = 0;
+  total = 0;
+  notInfected = 0;
+  for(let i=0;i<ballArray.length;i++){
+    if(ballArray[i].check() == 1){
+      infected++;
+      total++;
+    }
+    else if(ballArray[i].check() == 0){
+      notInfected++;
+      total++;
+    }
+  }
 }
