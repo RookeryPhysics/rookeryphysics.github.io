@@ -1,0 +1,1569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Infinite 3D World</title>
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            font-family: sans-serif; 
+            background-color: #000; 
+            cursor: none;
+        }
+        
+        /* Desktop cursor will be a crosshair */
+        @media (pointer: fine) {
+            body {
+                cursor: crosshair;
+            }
+        }
+
+        canvas { display: block; }
+        #info { position: absolute; top: 10px; left: 10px; padding: 10px 15px; background-color: rgba(0,0,0,0.5); border-radius: 8px; color: #fff; z-index: 10; }
+        #mode-selector { position: absolute; bottom: 10px; left: 10px; display: flex; flex-direction: column; gap: 8px; padding: 12px; background-color: rgba(40,40,40,0.85); border-radius: 8px; z-index: 100; }
+        #mode-selector button { background-color: #4f4f4f; color: white; border: 1px solid #666; padding: 8px 16px; border-radius: 6px; cursor: pointer; transition: background-color 0.2s; }
+        #mode-selector button:hover { background-color: #6a6a6a; }
+        #mode-selector button.active { background-color: #6a6a6a; }
+        #color-selector { position: absolute; bottom: 10px; left: 175px; display: none; flex-direction: column; gap: 8px; padding: 12px; background-color: rgba(40,40,40,0.85); border-radius: 8px; align-items: center; z-index: 100; }
+        #color-selector label { font-size: 14px; margin-bottom: 4px; color: #fff; }
+        #color-selector input[type="color"] { width: 50px; height: 30px; border: 1px solid #666; border-radius: 6px; cursor: pointer; }
+        
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 4px;
+            height: 4px;
+            background-color: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(0, 0, 0, 0.5);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 200;
+        }
+
+        /* --- Seed Input Overlay --- */
+        #seed-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            color: white;
+        }
+        #seed-box {
+            background: #2a2a2a;
+            padding: 25px 40px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.4);
+            max-width: 90%;
+        }
+        #seed-box h2 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+        #seed-box p {
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #ccc;
+        }
+        #seed-input {
+            padding: 12px;
+            width: 250px;
+            max-width: calc(100% - 24px);
+            border: 1px solid #555;
+            background: #333;
+            color: white;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        #start-game-btn {
+            padding: 12px 24px;
+            margin-top: 20px;
+            background-color: #4f4f4f;
+            color: white;
+            border: 1px solid #666;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-size: 16px;
+            width: 100%;
+        }
+        #start-game-btn:hover {
+            background-color: #6a6a6a;
+        }
+        /* --- Styles for Load/Save buttons --- */
+        #load-world-btn {
+            padding: 12px 24px;
+            margin-top: 10px;
+            background-color: #4f4f4f;
+            color: white;
+            border: 1px solid #666;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-size: 16px;
+            width: 100%;
+        }
+        #load-world-btn:hover {
+            background-color: #6a6a6a;
+        }
+        #save-world-btn {
+            background-color: #4f4f4f;
+            color: white;
+            border: 1px solid #666;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-top: 16px;
+        }
+        #ingame-load-world-btn {
+            background-color: #4f4f4f;
+            color: white;
+            border: 1px solid #666;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        #save-world-btn:hover, #ingame-load-world-btn:hover {
+            background-color: #6a6a6a;
+        }
+
+        /* --- NEW: Mobile Controls --- */
+        #mobile-controls-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: none;
+            z-index: 1000;
+        }
+
+        #mobile-controls-container.active {
+            display: block;
+        }
+
+        #joystick-container {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            width: 120px;
+            height: 120px;
+            background-color: rgba(80, 80, 80, 0.4);
+            border-radius: 50%;
+            pointer-events: auto;
+        }
+
+        #joystick-thumb {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 60px;
+            height: 60px;
+            background-color: rgba(180, 180, 180, 0.6);
+            border: 2px solid rgba(255, 255, 255, 0.7);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: transform 0.1s;
+        }
+
+        #action-buttons-container {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            display: grid;
+            grid-template-areas:
+                ". mode ."
+                "switch action jump";
+            gap: 15px;
+            pointer-events: auto;
+            color: white;
+            text-align: center;
+        }
+
+        #mobile-mode-display {
+            grid-area: mode;
+            background-color: rgba(0,0,0,0.5);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .action-btn {
+            width: 65px;
+            height: 65px;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            background-color: rgba(80, 80, 80, 0.5);
+            color: white;
+            border-radius: 50%;
+            font-size: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        #mobile-jump-btn { grid-area: jump; }
+        #mobile-action-btn { grid-area: action; }
+        #mobile-switch-mode-btn { grid-area: switch; }
+
+        .action-btn:active {
+            background-color: rgba(120, 120, 120, 0.7);
+        }
+    </style>
+</head>
+<body>
+    <div id="seed-overlay">
+        <div id="seed-box">
+            <h2>Enter World Seed</h2>
+            <p>Leave blank for a random world.</p>
+            <input type="text" id="seed-input" placeholder="e.g., 'mountainview' or '12345'">
+            <button id="start-game-btn">Generate World</button>
+            <button id="load-world-btn">Load World</button>
+        </div>
+    </div>
+    
+    <input type="file" id="load-file-input" accept=".json" style="display: none;">
+
+    <div id="info"><strong>Unreal</strong><br><br>Press 'F' to toggle fly mode.</div>
+    <div id="mode-selector">
+        <button id="add-mode-btn">Create(1)</button>
+        <button id="shoot-mode-btn">Shoot(2)</button>
+        <button id="missile-mode-btn">Explode(3)</button>
+        <button id="save-world-btn">Save World</button>
+        <button id="ingame-load-world-btn">Load World</button>
+    </div>
+    <div id="color-selector">
+        <label for="cube-color-picker">Color</label>
+        <input type="color" id="cube-color-picker" value="#999999">
+    </div>
+    <div id="crosshair"></div>
+
+    <div id="mobile-controls-container">
+        <div id="joystick-container">
+            <div id="joystick-thumb"></div>
+        </div>
+        <div id="action-buttons-container">
+            <div id="mobile-mode-display">Create</div>
+            <button id="mobile-jump-btn" class="action-btn">▲</button>
+            <button id="mobile-action-btn" class="action-btn">⦿</button>
+            <button id="mobile-switch-mode-btn" class="action-btn">⇄</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/noisejs@2.1.0/index.min.js"></script>
+
+    <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.157.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script type="module">
+import * as THREE from 'three';
+import Stats from 'three/addons/libs/stats.module.js';
+import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
+
+// --- Game State Variables ---
+let animationFrameId;
+let scene, camera, renderer, stats;
+let raycaster;
+let projectileRaycaster;
+let originalFog;
+let noise;
+let worldSeedString = ""; 
+let isMobileDevice = false;
+
+// --- Player State ---
+let playerCube;
+let rifle; 
+let playerSpawnPoint = new THREE.Vector3();
+const playerHeight = 1.6; // Player's height
+const playerWidth = 0.8;  // Player's width and depth
+const playerMoveSpeed = 6.0;
+const playerJumpHeight = 10.0;
+const gravity = -25;
+let playerVelocity = new THREE.Vector3();
+let playerOnGround = false;
+let playerJumpCount = 0;
+let isFlying = false;
+const flyingSpeed = 25.0;
+const keys = {};
+let spaceWasPressedLastFrame = false;
+const clock = new THREE.Clock();
+let isAiming = false;
+const hipRiflePosition = new THREE.Vector3(0.4, -0.25, -0.7);
+const adsRiflePosition = new THREE.Vector3(0, -0.2, -0.5); // Aim Down Sights position
+
+// --- Block/Mode State ---
+const modes = ['add', 'shoot', 'missile'];
+let currentModeIndex = 0;
+let currentMode = 'add';
+let currentColor = 0x999999;
+const modifiedBlocks = new Map();
+
+// --- Projectile State ---
+let projectiles = [];
+const PROJECTILE_SPEED = 160.0;
+let missiles = [];
+const MISSILE_SPEED = 40.0;
+const MISSILE_EXPLOSION_RADIUS = 3;
+const MISSILE_EXPLOSION_DURATION = 0.5;
+const MISSILE_KNOCKBACK_FORCE = 25.0; // <-- NEW: Force of the explosion knockback
+let explosions = [];
+let muzzleFlashes = [];
+const MUZZLE_FLASH_DURATION = 0.05;
+
+// --- World State ---
+const CHUNK_SIZE = 16;
+const RENDER_DISTANCE = 4;
+const TERRAIN_SCALE = 50;
+const TERRAIN_AMPLITUDE = 30;
+const loadedChunks = new Map();
+let currentPlayerChunkX, currentPlayerChunkZ;
+const BEDROCK_LEVEL = -30;
+
+// --- Colors ---
+const DIRT_COLOR_1 = new THREE.Color(0x8B4513);
+const DIRT_COLOR_2 = new THREE.Color(0x654321);
+const STONE_COLOR_1 = new THREE.Color(0x808080);
+const STONE_COLOR_2 = new THREE.Color(0x696969);
+const SNOW_COLOR = new THREE.Color(0xFFFFFF);
+const BEDROCK_COLOR_1 = new THREE.Color(0x303030);
+const BEDROCK_COLOR_2 = new THREE.Color(0x3a3a3a);
+
+
+// --- Utility Functions ---
+
+function isMobile() {
+    const regex = /Mobi|Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
+    return regex.test(navigator.userAgent);
+}
+
+function getTerrainHeight(worldX, worldZ) {
+	let height = noise.perlin2(worldX / TERRAIN_SCALE, worldZ / TERRAIN_SCALE); 
+	return Math.floor(height * TERRAIN_AMPLITUDE);
+}
+
+function getBlock(x, y, z) {
+	const blockKey = `${Math.round(x)},${Math.round(y)},${Math.round(z)}`;
+	if (modifiedBlocks.has(blockKey)) {
+		return modifiedBlocks.get(blockKey);
+	}
+    const roundedY = Math.round(y);
+    if (roundedY <= BEDROCK_LEVEL) {
+        const isEven = (Math.round(x) + Math.round(z)) % 2 === 0;
+        return { color: isEven ? BEDROCK_COLOR_1 : BEDROCK_COLOR_2, type: 'bedrock' };
+    }
+	const height = getTerrainHeight(x, z); 
+    if (roundedY > height) {
+        return null;
+    }
+	const isEven = (Math.round(x) + Math.round(z)) % 2 === 0;
+	let color;
+	if (roundedY === height) {
+		color = SNOW_COLOR;
+	} else if (roundedY > height - 4) {
+		color = isEven ? DIRT_COLOR_1 : DIRT_COLOR_2;
+	} else {
+		color = isEven ? STONE_COLOR_1 : STONE_COLOR_2;
+	}
+	return { color, type: 'normal' };
+}
+
+// --- World Generation/Manipulation ---
+
+function generateChunk(chunkX, chunkZ) {
+	const chunkKey = `${chunkX},${chunkZ}`;
+	if (loadedChunks.has(chunkKey)) {
+		const existing = loadedChunks.get(chunkKey);
+		if (!existing.needsRegeneration) return;
+		unloadChunk(chunkX, chunkZ, false);
+	}
+	const geometries = [];
+	const matrix = new THREE.Matrix4();
+    const boxGeometry = new THREE.BoxGeometry(0.9999, 0.9999, 0.9999);
+	const worldXStart = chunkX * CHUNK_SIZE;
+	const worldZStart = chunkZ * CHUNK_SIZE;
+	let maxHeight = -Infinity;
+	for (let x = 0; x < CHUNK_SIZE; x++) {
+		for (let z = 0; z < CHUNK_SIZE; z++) {
+			const worldX = worldXStart + x;
+			const worldZ = worldZStart + z;
+			const h = getTerrainHeight(worldX, worldZ); 
+			if (h > maxHeight) maxHeight = h;
+		}
+	}
+	const minY = BEDROCK_LEVEL;
+	const maxY = maxHeight + 40;
+	for (let x = 0; x < CHUNK_SIZE; x++) {
+		for (let z = 0; z < CHUNK_SIZE; z++) {
+			const worldX = worldXStart + x;
+			const worldZ = worldZStart + z;
+			for (let y = minY; y <= maxY; y++) {
+				const block = getBlock(worldX, y, worldZ); 
+				if (!block) continue;
+				if (getBlock(worldX + 1, y, worldZ) && getBlock(worldX - 1, y, worldZ) && getBlock(worldX, y + 1, worldZ) && getBlock(worldX, y - 1, worldZ) && getBlock(worldX, y, worldZ + 1) && getBlock(worldX, y, worldZ - 1)) {
+					continue;
+				}
+				const newGeo = boxGeometry.clone();
+				const colorAttr = new THREE.BufferAttribute(new Float32Array(newGeo.attributes.position.count * 3), 3);
+				for (let i = 0; i < colorAttr.count; i++) {
+					colorAttr.setXYZ(i, block.color.r, block.color.g, block.color.b);
+				}
+				newGeo.setAttribute('color', colorAttr);
+				matrix.setPosition(worldX + 0.5, y + 0.5, worldZ + 0.5);
+				newGeo.applyMatrix4(matrix);
+				geometries.push(newGeo);
+			}
+		}
+	}
+    boxGeometry.dispose();
+	if (geometries.length === 0) {
+		loadedChunks.set(chunkKey, { mesh: null, needsRegeneration: false });
+		return;
+	}
+	const mergedGeometry = BufferGeometryUtils.mergeGeometries(geometries, false);
+	const material = new THREE.MeshStandardMaterial({ vertexColors: true, metalness: 0, roughness: 1 });
+	const chunkMesh = new THREE.Mesh(mergedGeometry, material);
+	chunkMesh.userData.key = chunkKey;
+	scene.add(chunkMesh);
+	loadedChunks.set(chunkKey, { mesh: chunkMesh, needsRegeneration: false });
+}
+
+function unloadChunk(chunkX, chunkZ, removeFromMap = true) {
+	const chunkKey = `${chunkX},${chunkZ}`;
+	const chunkData = loadedChunks.get(chunkKey);
+	if (!chunkData || !chunkData.mesh) return;
+	scene.remove(chunkData.mesh);
+	chunkData.mesh.geometry.dispose();
+	chunkData.mesh.material.dispose();
+	if (removeFromMap) {
+		loadedChunks.delete(chunkKey);
+	}
+}
+
+function updateWorld() {
+    if (!playerCube) return;
+	const playerChunkX = Math.floor(playerCube.position.x / CHUNK_SIZE);
+	const playerChunkZ = Math.floor(playerCube.position.z / CHUNK_SIZE);
+
+	for (const [key, chunkData] of loadedChunks.entries()) {
+		if (chunkData.needsRegeneration) {
+			const [cx, cz] = key.split(',').map(Number);
+			generateChunk(cx, cz);
+		}
+	}
+	if (currentPlayerChunkX === playerChunkX && currentPlayerChunkZ === playerChunkZ) return;
+	currentPlayerChunkX = playerChunkX;
+	currentPlayerChunkZ = playerChunkZ;
+
+	for (let x = playerChunkX - RENDER_DISTANCE; x <= playerChunkX + RENDER_DISTANCE; x++) {
+		for (let z = playerChunkZ - RENDER_DISTANCE; z <= playerChunkZ + RENDER_DISTANCE; z++) {
+			generateChunk(x, z);
+		}
+	}
+	for (const [key] of loadedChunks.entries()) {
+		const [cx, cz] = key.split(',').map(Number);
+		if (Math.abs(cx - playerChunkX) > RENDER_DISTANCE + 1 || Math.abs(cz - playerChunkZ) > RENDER_DISTANCE + 1) {
+			unloadChunk(cx, cz);
+		}
+	}
+}
+
+function markChunkForRegeneration(worldX, worldZ) {
+    const chunkX = Math.floor(worldX / CHUNK_SIZE);
+    const chunkZ = Math.floor(worldZ / CHUNK_SIZE);
+    const chunk = loadedChunks.get(`${chunkX},${chunkZ}`);
+    if (chunk) chunk.needsRegeneration = true;
+    
+    const localX = worldX - chunkX * CHUNK_SIZE;
+    const localZ = worldZ - chunkZ * CHUNK_SIZE;
+
+    // Mark neighbor chunks if the change is on the boundary
+    if (localX === 0) {
+        const neighborChunk = loadedChunks.get(`${chunkX - 1},${chunkZ}`);
+        if (neighborChunk) neighborChunk.needsRegeneration = true;
+    } else if (localX === CHUNK_SIZE - 1) {
+        const neighborChunk = loadedChunks.get(`${chunkX + 1},${chunkZ}`);
+        if (neighborChunk) neighborChunk.needsRegeneration = true;
+    }
+    if (localZ === 0) {
+        const neighborChunk = loadedChunks.get(`${chunkX},${chunkZ - 1}`);
+        if (neighborChunk) neighborChunk.needsRegeneration = true;
+    } else if (localZ === CHUNK_SIZE - 1) {
+        const neighborChunk = loadedChunks.get(`${chunkX},${chunkZ + 1}`);
+        if (neighborChunk) neighborChunk.needsRegeneration = true;
+    }
+}
+
+
+// --- Core Game Actions ---
+
+function fireSphere() {
+    createMuzzleFlash(); 
+    const projectileGeometry = new THREE.SphereGeometry(0.2, 8, 8);
+    const projectileMaterial = new THREE.MeshStandardMaterial({ 
+        color: 0xffa500,
+        emissive: 0xffa500, 
+        emissiveIntensity: 1.0,
+        metalness: 0,
+        roughness: 0.5
+    });
+    const projectile = new THREE.Mesh(projectileGeometry, projectileMaterial);
+    const direction = new THREE.Vector3();
+    camera.getWorldDirection(direction);
+    const startPosition = new THREE.Vector3();
+    camera.getWorldPosition(startPosition);
+    projectile.position.copy(startPosition).add(direction.clone().multiplyScalar(0.5));
+    const velocity = direction.clone().multiplyScalar(PROJECTILE_SPEED);
+    projectiles.push({ mesh: projectile, velocity: velocity });
+    scene.add(projectile);
+}
+
+function fireMissile() {
+    const missileGroup = new THREE.Group();
+    const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.6, roughness: 0.4 });
+    const tipMaterial = new THREE.MeshStandardMaterial({ color: 0xcc3333, metalness: 0.4, roughness: 0.5 });
+    const finMaterial = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, metalness: 0.6, roughness: 0.4 });
+    const bodyLength = 0.7;
+    const bodyRadius = 0.08;
+    const bodyGeometry = new THREE.CylinderGeometry(bodyRadius, bodyRadius, bodyLength, 10);
+    const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+    body.position.y = 0;
+    missileGroup.add(body);
+    const tipHeight = 0.2;
+    const tipGeometry = new THREE.ConeGeometry(bodyRadius, tipHeight, 10);
+    const tip = new THREE.Mesh(tipGeometry, tipMaterial);
+    tip.position.y = (bodyLength / 2) + (tipHeight / 2);
+    missileGroup.add(tip);
+    const finWidth = 0.2; 
+    const finHeight = 0.15;
+    const finThickness = 0.02;
+    const finGeometry = new THREE.BoxGeometry(finWidth, finHeight, finThickness);
+    const fin1 = new THREE.Mesh(finGeometry, finMaterial);
+    fin1.rotation.y = Math.PI / 2;
+    fin1.position.set(bodyRadius + finHeight / 2, -bodyLength / 2 + finWidth / 2, 0);
+    missileGroup.add(fin1);
+    const fin2 = new THREE.Mesh(finGeometry, finMaterial);
+    fin2.rotation.y = Math.PI / 2;
+    fin2.position.set(-(bodyRadius + finHeight / 2), -bodyLength / 2 + finWidth / 2, 0);
+    missileGroup.add(fin2);
+    const fin3 = new THREE.Mesh(finGeometry, finMaterial);
+    fin3.position.set(0, -bodyLength / 2 + finWidth / 2, bodyRadius + finHeight / 2);
+    missileGroup.add(fin3);
+    const fin4 = new THREE.Mesh(finGeometry, finMaterial);
+    fin4.position.set(0, -bodyLength / 2 + finWidth / 2, -(bodyRadius + finHeight / 2));
+    missileGroup.add(fin4);
+    const direction = new THREE.Vector3();
+    camera.getWorldDirection(direction);
+    const startPosition = new THREE.Vector3();
+    camera.getWorldPosition(startPosition);
+    missileGroup.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
+    missileGroup.position.copy(startPosition).add(direction.clone().multiplyScalar(0.7));
+    const velocity = direction.clone().multiplyScalar(MISSILE_SPEED);
+    missiles.push({ mesh: missileGroup, velocity: velocity, lifetime: 0 });
+    scene.add(missileGroup);
+}
+
+// --- MODIFIED: A single function to perform the raycast action (desktop click or mobile tap) ---
+function performAction() {
+    if (currentMode === 'shoot') {
+        fireSphere();
+        return;
+    }
+    if (currentMode === 'missile') {
+        fireMissile();
+        return;
+    }
+
+    // --- Add/Remove Mode ---
+	const meshes = Array.from(loadedChunks.values()).map(c => c.mesh).filter(m => m);
+	if (meshes.length === 0) return;
+	
+    const mouse = new THREE.Vector2(0, 0);
+	raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects(meshes);
+
+	if (intersects.length > 0) {
+		const intersect = intersects[0];
+		let finalX, finalY, finalZ;
+		
+        if (currentMode === 'add') {
+			const adjacentBlockPos = intersect.point.clone().add(intersect.face.normal.clone().multiplyScalar(0.01));
+			[finalX, finalY, finalZ] = [Math.floor(adjacentBlockPos.x), Math.floor(adjacentBlockPos.y), Math.floor(adjacentBlockPos.z)];
+            
+            // Check if block intersects player (copied from original)
+            const halfWidth = playerWidth / 2;
+            const playerMinX = Math.floor(playerCube.position.x - halfWidth);
+            const playerMaxX = Math.floor(playerCube.position.x + halfWidth);
+            const playerMinY = Math.floor(playerCube.position.y);
+            const playerMaxY = Math.floor(playerCube.position.y + playerHeight);
+            const playerMinZ = Math.floor(playerCube.position.z - halfWidth);
+            const playerMaxZ = Math.floor(playerCube.position.z + halfWidth);
+            
+            if (finalX >= playerMinX && finalX <= playerMaxX && 
+                finalY >= playerMinY && finalY <= playerMaxY && 
+                finalZ >= playerMinZ && finalZ <= playerMaxZ) {
+                return; 
+            }
+            
+			modifiedBlocks.set(`${finalX},${finalY},${finalZ}`, { color: new THREE.Color(currentColor), type: 'normal' });
+            markChunkForRegeneration(finalX, finalZ);
+
+		} else if (currentMode === 'remove') { // Not explicitly in the UI, but was used implicitly via right-click (removed in refactor)
+            const blockPos = intersect.point.clone().sub(intersect.face.normal.clone().multiplyScalar(0.01));
+            [finalX, finalY, finalZ] = [Math.floor(blockPos.x), Math.floor(blockPos.y), Math.floor(blockPos.z)];
+
+            const block = getBlock(finalX, finalY, finalZ);
+            if (block && block.type !== 'bedrock') {
+                modifiedBlocks.set(`${finalX},${finalY},${finalZ}`, null);
+                markChunkForRegeneration(finalX, finalZ);
+            }
+        }
+	}
+}
+
+// --- MODIFIED: Simplified onMouseDown to only check pointer lock and call performAction ---
+function onMouseDown(event) {
+    if (!isMobileDevice && document.pointerLockElement !== renderer.domElement) return;
+    
+    if (event.preventDefault) event.preventDefault();
+
+    // event.button === 0 is left click
+    if (event.button === 0) {
+        performAction();
+    }
+    // event.button === 2 is right click
+    else if (event.button === 2) {
+        isAiming = true;
+    }
+}
+
+// --- NEW: Handle Right-Click Release ---
+function onMouseUp(event) {
+    if (isMobileDevice) return; // Not for mobile
+    
+    if (event.preventDefault) event.preventDefault();
+
+    // event.button === 2 is right click
+    if (event.button === 2) {
+        isAiming = false;
+    }
+}
+
+// --- Initialisation, Player, and Rifle Functions (Unchanged) ---
+
+function init(seedString) {
+    isMobileDevice = isMobile(); 
+
+    if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+    }
+    if (renderer) {
+        document.body.removeChild(renderer.domElement);
+        renderer.dispose();
+    }
+    if (stats) {
+        if (stats.dom.parentElement) {
+            document.body.removeChild(stats.dom);
+        }
+    }
+    if (scene) {
+        scene.traverse(object => {
+            if (object.isMesh) {
+                if (object.geometry) object.geometry.dispose();
+                if (object.material) {
+                    if (Array.isArray(object.material)) {
+                        object.material.forEach(material => material.dispose());
+                    } else {
+                        object.material.dispose();
+                    }
+                }
+            }
+        });
+        while(scene.children.length > 0){ 
+            scene.remove(scene.children[0]); 
+        }
+    }
+    loadedChunks.clear();
+    modifiedBlocks.clear(); 
+    projectiles = [];
+    missiles = [];
+    explosions = [];
+    muzzleFlashes = []; 
+    currentPlayerChunkX = undefined;
+    currentPlayerChunkZ = undefined;
+
+    worldSeedString = seedString;
+    let seedValue;
+    if (seedString && seedString.trim() !== "") {
+        seedValue = 0;
+        for (let i = 0; i < seedString.length; i++) {
+            let char = seedString.charCodeAt(i);
+            seedValue = ((seedValue << 5) - seedValue) + char;
+            seedValue = seedValue & seedValue;
+        }
+        console.log(`Using provided seed: "${seedString}" (Hashed: ${seedValue})`);
+    } else {
+        seedValue = Math.random();
+        worldSeedString = seedValue.toString();
+        console.log(`No seed provided, using random seed: ${seedValue}`);
+    }
+    noise = new Noise(seedValue);
+
+	scene = new THREE.Scene();
+	scene.background = new THREE.Color(0x87CEEB);
+	scene.fog = new THREE.Fog(0x87CEEB, RENDER_DISTANCE * CHUNK_SIZE / 2, RENDER_DISTANCE * CHUNK_SIZE);
+    originalFog = scene.fog;
+    
+	const farPlane = (RENDER_DISTANCE + 2) * CHUNK_SIZE;
+	camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, farPlane);
+
+	renderer = new THREE.WebGLRenderer({ antialias: true });
+	renderer.setSize(window.innerWidth, window.innerHeight);
+	document.body.appendChild(renderer.domElement);
+
+	stats = new Stats();
+    if (!isMobileDevice) {
+	    document.body.appendChild(stats.dom);
+	    stats.dom.style.position = 'absolute';
+	    stats.dom.style.top = '0px';
+	    stats.dom.style.right = '0px';
+	    stats.dom.style.left = 'auto';
+    }
+
+	const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+	scene.add(ambientLight);
+	const directionalLight = new THREE.DirectionalLight(0xffffff, 0.9);
+	directionalLight.position.set(50, 50, 25);
+	scene.add(directionalLight);
+
+	raycaster = new THREE.Raycaster();
+    projectileRaycaster = new THREE.Raycaster();
+
+	createPlayer(); 
+	updateWorld();
+
+	setupEventListeners();
+	animate(); 
+}
+
+function createPlayer() {
+	const startY = getTerrainHeight(0, 0) + 5; 
+	const geometry = new THREE.BoxGeometry(playerWidth, playerHeight, playerWidth);
+    geometry.translate(0, playerHeight / 2, 0); // Set origin to feet
+	const material = new THREE.MeshStandardMaterial({ color: 0x00ff00, visible: false });
+	playerCube = new THREE.Mesh(geometry, material);
+	playerCube.position.set(0, startY, 0);
+    playerSpawnPoint.copy(playerCube.position);
+	scene.add(playerCube);
+
+	camera.position.set(0, 1.4, 0); // MODIFIED: Was playerSize * 0.5. (0.8 * 0.5 = 0.4). New pos = 0.4 + 1.0 = 1.4
+	playerCube.add(camera);
+
+    rifle = createRifle(); 
+    rifle.position.copy(hipRiflePosition); // Use the defined hip position
+    rifle.rotation.y = Math.PI / 2;
+    rifle.scale.set(0.5, 0.5, 0.5);
+    camera.add(rifle);
+}
+
+function createRifle() {
+    const rifleGroup = new THREE.Group();
+    const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0x222228, metalness: 0.2, roughness: 0.6 });
+    const metalMaterial = new THREE.MeshStandardMaterial({ color: 0x555555, metalness: 0.9, roughness: 0.4 });
+    const emissiveMaterial = new THREE.MeshStandardMaterial({ color: 0x00ffff, emissive: 0x00ffff, emissiveIntensity: 1.5 });
+    const bodyGeo = new THREE.BoxGeometry(0.7, 0.2, 0.15);
+    const body = new THREE.Mesh(bodyGeo, bodyMaterial);
+    body.position.set(0, 0, 0);
+    rifleGroup.add(body);
+    const stockBarGeo = new THREE.BoxGeometry(0.4, 0.05, 0.05);
+    const stockBar = new THREE.Mesh(stockBarGeo, metalMaterial);
+    stockBar.position.set(-0.45, 0.05, 0);
+    rifleGroup.add(stockBar);
+    const stockPadGeo = new THREE.BoxGeometry(0.1, 0.2, 0.12);
+    const stockPad = new THREE.Mesh(stockPadGeo, bodyMaterial);
+    stockPad.position.set(-0.6, 0.0, 0);
+    rifleGroup.add(stockPad);
+    const barrelGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.9, 12);
+    const barrel = new THREE.Mesh(barrelGeo, metalMaterial);
+    barrel.rotation.z = Math.PI / 2;
+    barrel.position.set(0.8, 0.05, 0);
+    rifleGroup.add(barrel);
+    const muzzleGeo = new THREE.CylinderGeometry(0.07, 0.07, 0.15, 6);
+    const muzzle = new THREE.Mesh(muzzleGeo, metalMaterial);
+    muzzle.rotation.z = Math.PI / 2;
+    muzzle.position.set(1.3, 0.05, 0);
+    rifleGroup.add(muzzle);
+    const handguardShape = new THREE.Shape();
+    handguardShape.moveTo(0, 0);
+    handguardShape.lineTo(0.6, 0);
+    handguardShape.lineTo(0.6, -0.05);
+    handguardShape.lineTo(0.5, -0.15);
+    handguardShape.lineTo(0, -0.15);
+    handguardShape.lineTo(0, 0);
+    const extrudeSettings = { depth: 0.16, bevelEnabled: false };
+    const handguardGeo = new THREE.ExtrudeGeometry(handguardShape, extrudeSettings);
+    const handguard = new THREE.Mesh(handguardGeo, bodyMaterial);
+    handguard.position.set(0.35, 0.1, -0.08);
+    rifleGroup.add(handguard);
+    const gripGeo = new THREE.BoxGeometry(0.12, 0.4, 0.12);
+    const grip = new THREE.Mesh(gripGeo, bodyMaterial);
+    grip.position.set(-0.1, -0.2, 0);
+    grip.rotation.z = 0.2; 
+    rifleGroup.add(grip);
+    const magGeo = new THREE.BoxGeometry(0.15, 0.35, 0.12);
+    const mag = new THREE.Mesh(magGeo, bodyMaterial);
+    mag.position.set(0.15, -0.25, 0);
+    rifleGroup.add(mag);
+    const emissiveStripGeo = new THREE.BoxGeometry(0.02, 0.3, 0.13);
+    const emissiveStrip = new THREE.Mesh(emissiveStripGeo, emissiveMaterial);
+    emissiveStrip.position.set(0.23, -0.25, 0);
+    rifleGroup.add(emissiveStrip);
+    const sightBaseGeo = new THREE.BoxGeometry(0.25, 0.05, 0.12);
+    const sightBase = new THREE.Mesh(sightBaseGeo, metalMaterial);
+    sightBase.position.set(0.1, 0.2, 0);
+    rifleGroup.add(sightBase);
+    const sightHousingGeo = new THREE.BoxGeometry(0.05, 0.15, 0.1);
+    const sightHousing = new THREE.Mesh(sightHousingGeo, metalMaterial);
+    sightHousing.position.set(0.2, 0.25, 0);
+    rifleGroup.add(sightHousing);
+    const sightEmissiveGeo = new THREE.BoxGeometry(0.06, 0.02, 0.02);
+    const sightEmissive = new THREE.Mesh(sightEmissiveGeo, emissiveMaterial);
+    sightEmissive.position.set(0.2, 0.18, 0);
+    rifleGroup.add(sightEmissive);
+    return rifleGroup;
+}
+
+
+function createMuzzleFlash() {
+    if (!rifle) return; 
+    const flashGeo = new THREE.SphereGeometry(0.12, 8, 8);
+    const flashMat = new THREE.MeshBasicMaterial({ 
+        color: 0xFFFF99, 
+        transparent: true, 
+        opacity: 0.9, 
+        blending: THREE.AdditiveBlending 
+    });
+    const flashMesh = new THREE.Mesh(flashGeo, flashMat);
+    const flashLight = new THREE.PointLight(0xffa500, 6.0, 4.0, 2); 
+    const muzzleLocalPos = new THREE.Vector3(1.3, 0.05, 0);
+    flashMesh.position.copy(muzzleLocalPos);
+    flashLight.position.copy(muzzleLocalPos);
+    rifle.add(flashMesh);
+    rifle.add(flashLight);
+    muzzleFlashes.push({ mesh: flashMesh, light: flashLight, timer: MUZZLE_FLASH_DURATION });
+}
+
+function createExplosion(position) {
+    const geometry = new THREE.SphereGeometry(MISSILE_EXPLOSION_RADIUS, 16, 16);
+    const material = new THREE.MeshBasicMaterial({ color: 0xff8800, transparent: true, opacity: 0.8 });
+    const explosionMesh = new THREE.Mesh(geometry, material);
+    explosionMesh.position.copy(position);
+    scene.add(explosionMesh);
+    explosions.push({ mesh: explosionMesh, timer: MISSILE_EXPLOSION_DURATION });
+
+    // --- NEW: Explosion knockback logic ---
+    if (playerCube && !isFlying) {
+        const playerPos = playerCube.position.clone().add(new THREE.Vector3(0, playerHeight / 2, 0)); // Center of player
+        const explosionPos = position;
+        const distance = playerPos.distanceTo(explosionPos);
+        const radius = MISSILE_EXPLOSION_RADIUS + (playerWidth / 2); // Add player radius for better collision
+
+        if (distance < radius) {
+            const knockbackDir = playerPos.clone().sub(explosionPos).normalize();
+            
+            // Apply more force when closer
+            const forceFalloff = 1 - (distance / radius); // 1.0 at center, 0.0 at edge
+            const finalForce = MISSILE_KNOCKBACK_FORCE * forceFalloff;
+
+            // Give a minimum upward boost
+            if (knockbackDir.y < 0.3) {
+                knockbackDir.y = 0.3;
+                knockbackDir.normalize();
+            }
+
+            playerVelocity.add(knockbackDir.multiplyScalar(finalForce));
+            playerOnGround = false; // Player is knocked off the ground
+        }
+    }
+    // --- End of new logic ---
+
+
+    const chunksToUpdate = new Set();
+    const radius = MISSILE_EXPLOSION_RADIUS;
+    const cX = Math.floor(position.x);
+    const cY = Math.floor(position.y);
+    const cZ = Math.floor(position.z);
+    for (let x = -radius; x <= radius; x++) {
+        for (let y = -radius; y <= radius; y++) {
+            for (let z = -radius; z <= radius; z++) {
+                const pX = cX + x;
+                const pY = cY + y;
+                const pZ = cZ + z;
+                const distSq = x*x + y*y + z*z;
+                if (distSq <= radius * radius) {
+                    const block = getBlock(pX, pY, pZ);
+                    if (block && block.type !== 'bedrock') {
+                        modifiedBlocks.set(`${pX},${pY},${pZ}`, null);
+                        const chunkX = Math.floor(pX / CHUNK_SIZE);
+                        const chunkZ = Math.floor(pZ / CHUNK_SIZE);
+                        chunksToUpdate.add(`${chunkX},${chunkZ}`);
+                        
+                        const localX = pX - chunkX * CHUNK_SIZE;
+                        const localZ = pZ - chunkZ * CHUNK_SIZE;
+                        if (localX === 0) chunksToUpdate.add(`${chunkX - 1},${chunkZ}`);
+                        if (localX === CHUNK_SIZE - 1) chunksToUpdate.add(`${chunkX + 1},${chunkZ}`);
+                        if (localZ === 0) chunksToUpdate.add(`${chunkX},${chunkZ - 1}`);
+                        if (localZ === CHUNK_SIZE - 1) chunksToUpdate.add(`${chunkX},${chunkZ + 1}`);
+                    }
+                }
+            }
+        }
+    }
+    for (const chunkKey of chunksToUpdate) {
+        const chunk = loadedChunks.get(chunkKey);
+        if (chunk) {
+            chunk.needsRegeneration = true;
+        }
+    }
+}
+
+
+// --- Update Functions ---
+
+function updateProjectiles(deltaTime) {
+    const meshes = Array.from(loadedChunks.values()).map(c => c.mesh).filter(m => m);
+    for (let i = projectiles.length - 1; i >= 0; i--) {
+        const projectile = projectiles[i];
+        const pMesh = projectile.mesh;
+        const oldPosition = pMesh.position.clone();
+        pMesh.position.add(projectile.velocity.clone().multiplyScalar(deltaTime));
+        const newPosition = pMesh.position;
+        const distance = oldPosition.distanceTo(newPosition);
+        if (distance === 0) continue; 
+        const direction = newPosition.clone().sub(oldPosition).normalize();
+        projectileRaycaster.set(oldPosition, direction);
+        projectileRaycaster.far = distance;
+        const intersects = projectileRaycaster.intersectObjects(meshes);
+        let hit = false;
+        if (intersects.length > 0) {
+            const intersect = intersects[0]; 
+            const clickedBlockPos = intersect.point.clone().sub(intersect.face.normal.clone().multiplyScalar(0.01));
+            const pX = Math.floor(clickedBlockPos.x);
+            const pY = Math.floor(clickedBlockPos.y);
+            const pZ = Math.floor(clickedBlockPos.z);
+            const block = getBlock(pX, pY, pZ);
+            if (block && block.type !== 'bedrock') {
+                modifiedBlocks.set(`${pX},${pY},${pZ}`, null); 
+                markChunkForRegeneration(pX, pZ);
+                hit = true;
+            }
+        }
+        const playerDistance = pMesh.position.distanceTo(playerCube.position);
+        if (hit || playerDistance > RENDER_DISTANCE * CHUNK_SIZE) {
+            scene.remove(pMesh);
+            pMesh.geometry.dispose();
+            pMesh.material.dispose();
+            projectiles.splice(i, 1);
+        }
+    }
+}
+
+function updateMissiles(deltaTime) {
+    const meshes = Array.from(loadedChunks.values()).map(c => c.mesh).filter(m => m);
+    for (let i = missiles.length - 1; i >= 0; i--) {
+        const missile = missiles[i];
+        const mMesh = missile.mesh;
+        missile.lifetime += deltaTime;
+        const oldPosition = mMesh.position.clone();
+        mMesh.position.add(missile.velocity.clone().multiplyScalar(deltaTime));
+        const newPosition = mMesh.position;
+        const distance = oldPosition.distanceTo(newPosition);
+        if (distance === 0) continue; 
+        const direction = newPosition.clone().sub(oldPosition).normalize();
+        projectileRaycaster.set(oldPosition, direction);
+        projectileRaycaster.far = distance;
+        let hit = false;
+        let hitPosition = null;
+        if (meshes.length > 0) {
+            const intersects = projectileRaycaster.intersectObjects(meshes);
+            if (intersects.length > 0) {
+                hitPosition = intersects[0].point.clone();
+                hit = true;
+            }
+        }
+        if (hit || missile.lifetime > 10.0) {
+            createExplosion(hitPosition || newPosition);
+            scene.remove(mMesh);
+            mMesh.traverse((child) => {
+                if (child.isMesh) {
+                    child.geometry.dispose();
+                    if (child.material) {
+                        if (Array.isArray(child.material)) {
+                            child.material.forEach(material => material.dispose());
+                        } else {
+                            child.material.dispose();
+                        }
+                    }
+                }
+            });
+            missiles.splice(i, 1);
+        }
+    }
+}
+
+function updateExplosions(deltaTime) {
+    for (let i = explosions.length - 1; i >= 0; i--) {
+        const explosion = explosions[i];
+        explosion.timer -= deltaTime;
+        if (explosion.mesh.material.opacity > 0) {
+            explosion.mesh.material.opacity = (explosion.timer / MISSILE_EXPLOSION_DURATION) * 0.8;
+        }
+        if (explosion.timer <= 0) {
+            scene.remove(explosion.mesh);
+            explosion.mesh.geometry.dispose();
+            explosion.mesh.material.dispose();
+            explosions.splice(i, 1);
+        }
+    }
+}
+
+function updateMuzzleFlashes(deltaTime) {
+    for (let i = muzzleFlashes.length - 1; i >= 0; i--) {
+        const flash = muzzleFlashes[i];
+        flash.timer -= deltaTime;
+        
+        const fade = Math.max(0, flash.timer / MUZZLE_FLASH_DURATION);
+        flash.mesh.material.opacity = fade * 0.9;
+        flash.light.intensity = fade * 6.0;
+
+        if (flash.timer <= 0) {
+            if (rifle) {
+                rifle.remove(flash.mesh);
+                rifle.remove(flash.light);
+            }
+            flash.mesh.geometry.dispose();
+            flash.mesh.material.dispose();
+            flash.light.dispose();
+            muzzleFlashes.splice(i, 1);
+        }
+    }
+}
+
+function checkCollision(pos) {
+    if (isFlying) return false;
+	const halfWidth = playerWidth / 2;
+	const minX = Math.floor(pos.x - halfWidth);
+	const maxX = Math.floor(pos.x + halfWidth);
+	const minY = Math.floor(pos.y); 
+	const maxY = Math.floor(pos.y + playerHeight);
+	const minZ = Math.floor(pos.z - halfWidth);
+	const maxZ = Math.floor(pos.z + halfWidth);
+	for (let x = minX; x <= maxX; x++) {
+		for (let y = minY; y <= maxY; y++) {
+			for (let z = minZ; z <= maxZ; z++) {
+				if (getBlock(x, y, z)) return true;
+			}
+		}
+	}
+	return false;
+}
+
+// --- NEW: Smoothly move rifle position based on aiming state ---
+function updateRiflePosition(deltaTime) {
+    if (!rifle) return;
+
+    const targetPosition = isAiming ? adsRiflePosition : hipRiflePosition;
+    // Use a lerp (linear interpolation) for smooth movement
+    // Adjust the multiplier (10.0) to make the transition faster or slower
+    const lerpSpeed = 10.0 * deltaTime; 
+    
+    rifle.position.lerp(targetPosition, lerpSpeed);
+}
+
+function updatePlayer(deltaTime) {
+    if (!playerCube) return;
+	const moveVector = new THREE.Vector3(0, 0, 0);
+	if (keys['KeyS']) moveVector.z += 1;
+	if (keys['KeyW']) moveVector.z -= 1;
+	if (keys['KeyD']) moveVector.x += 1;
+	if (keys['KeyA']) moveVector.x -= 1;
+
+    if (isFlying) {
+        if (keys['Space']) moveVector.y += 1;
+        if (keys['ShiftLeft']) moveVector.y -= 1;
+
+        if (moveVector.lengthSq() > 0) moveVector.normalize();
+        
+        moveVector.applyQuaternion(playerCube.quaternion);
+        playerCube.position.add(moveVector.multiplyScalar(flyingSpeed * deltaTime));
+        playerOnGround = false;
+        playerVelocity.set(0, 0, 0);
+
+    } else {
+        if (moveVector.lengthSq() > 0) moveVector.normalize();
+        
+        moveVector.applyQuaternion(playerCube.quaternion);
+        const desiredMoveX = moveVector.x * playerMoveSpeed * deltaTime;
+        const desiredMoveZ = moveVector.z * playerMoveSpeed * deltaTime;
+
+        playerVelocity.y += gravity * deltaTime;
+
+        const isSpacePressed = !!keys['Space'];
+        const justPressedSpace = isSpacePressed && !spaceWasPressedLastFrame;
+        spaceWasPressedLastFrame = isSpacePressed;
+
+        if (justPressedSpace) {
+            if (playerOnGround) {
+                playerVelocity.y = playerJumpHeight;
+                playerOnGround = false;
+                playerJumpCount = 1;
+            } else if (playerJumpCount < 2) {
+                playerVelocity.y = playerJumpHeight * 0.9;
+                playerJumpCount++;
+            }
+        }
+        
+        // --- MODIFICATION: Apply explosion force separately ---
+        // We just add the knockback velocity, then let the collision detection handle the rest
+        const desiredMoveY = playerVelocity.y * deltaTime;
+        const desiredKnockbackX = playerVelocity.x * deltaTime;
+        const desiredKnockbackZ = playerVelocity.z * deltaTime;
+
+        playerCube.position.x += desiredMoveX + desiredKnockbackX;
+        if (checkCollision(playerCube.position)) {
+            playerCube.position.x -= (desiredMoveX + desiredKnockbackX);
+            playerVelocity.x = 0; // Stop horizontal knockback on collision
+        }
+        
+        playerCube.position.z += desiredMoveZ + desiredKnockbackZ;
+        if (checkCollision(playerCube.position)) {
+            playerCube.position.z -= (desiredMoveZ + desiredKnockbackZ);
+            playerVelocity.z = 0; // Stop horizontal knockback on collision
+        }
+        
+        playerCube.position.y += desiredMoveY;
+        if (checkCollision(playerCube.position)) {
+            playerCube.position.y -= desiredMoveY;
+            if (playerVelocity.y < 0) {
+                playerOnGround = true;
+                playerJumpCount = 0;
+            }
+            playerVelocity.y = 0;
+        } else {
+            playerOnGround = false;
+        }
+
+        // Dampen knockback velocity over time
+        playerVelocity.x *= 0.98;
+        playerVelocity.z *= 0.98;
+        if (Math.abs(playerVelocity.x) < 0.01) playerVelocity.x = 0;
+        if (Math.abs(playerVelocity.z) < 0.01) playerVelocity.z = 0;
+
+    }
+
+	if (playerCube.position.y < BEDROCK_LEVEL - 20) respawnPlayer();
+}
+
+function respawnPlayer() {
+    playerCube.position.copy(playerSpawnPoint);
+    playerVelocity.set(0, 0, 0);
+    isFlying = false;
+}
+
+// --- Main Loop ---
+
+function animate() {
+	animationFrameId = requestAnimationFrame(animate); 
+	if (!isMobileDevice) stats.begin();
+
+	const deltaTime = Math.min(0.05, clock.getDelta());
+    
+	updatePlayer(deltaTime);
+    updateRiflePosition(deltaTime); // Add call to update rifle position
+    updateProjectiles(deltaTime);
+    updateMissiles(deltaTime);
+    updateExplosions(deltaTime);
+    updateMuzzleFlashes(deltaTime); 
+	updateWorld();
+	renderer.render(scene, camera);
+	
+    if (!isMobileDevice) stats.end();
+}
+
+// --- Event Handlers & Setup ---
+
+const PI_2 = Math.PI / 2;
+function onMouseMove(event) {
+    if (!isMobileDevice && document.pointerLockElement !== renderer.domElement) return;
+
+    const movementX = event.movementX || 0;
+    const movementY = event.movementY || 0;
+    
+    const sensitivity = isMobileDevice ? 0.0025 : 0.0015;
+
+    playerCube.rotation.y -= movementX * sensitivity;
+    camera.rotation.x -= movementY * sensitivity;
+    camera.rotation.x = Math.max(-PI_2, Math.min(PI_2, camera.rotation.x));
+}
+
+function saveWorld() {
+    const serializableBlocks = {};
+    for (const [key, blockData] of modifiedBlocks.entries()) {
+        if (blockData) {
+            serializableBlocks[key] = { color: blockData.color.getHexString(), type: blockData.type };
+        } else {
+            serializableBlocks[key] = null; 
+        }
+    }
+
+    const worldData = {
+        seed: worldSeedString,
+        blocks: serializableBlocks
+    };
+
+    const jsonString = JSON.stringify(worldData, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const safeSeed = worldSeedString.length > 10 ? worldSeedString.substring(0, 10) : worldSeedString;
+    a.download = `world_seed_${safeSeed}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    console.log("World saved!");
+}
+
+function loadModifications(loadedBlocks) {
+    modifiedBlocks.clear();
+    for (const key in loadedBlocks) {
+        const blockData = loadedBlocks[key];
+        if (blockData) {
+            modifiedBlocks.set(key, { 
+                color: new THREE.Color("#" + blockData.color), 
+                type: blockData.type || 'normal'
+            });
+        } else {
+            modifiedBlocks.set(key, null);
+        }
+    }
+    for (const chunkData of loadedChunks.values()) {
+        chunkData.needsRegeneration = true;
+    }
+    console.log("World modifications loaded!");
+}
+
+function setupEventListeners() {
+	window.addEventListener('resize', () => {
+		camera.aspect = window.innerWidth / window.innerHeight;
+		camera.updateProjectionMatrix();
+		renderer.setSize(window.innerWidth, window.innerHeight);
+	}, false);
+
+    if (isMobileDevice) {
+        setupMobileControls();
+        document.getElementById('info').style.display = 'none';
+    } else {
+        setupDesktopControls();
+    }
+
+    // --- Shared Listeners ---
+	document.getElementById('add-mode-btn').addEventListener('click', () => { currentMode = 'add'; updateModeButtons(); });
+	document.getElementById('shoot-mode-btn').addEventListener('click', () => { currentMode = 'shoot'; updateModeButtons(); });
+    document.getElementById('missile-mode-btn').addEventListener('click', () => { currentMode = 'missile'; updateModeButtons(); });
+    document.getElementById('save-world-btn').addEventListener('click', saveWorld);
+    document.getElementById('ingame-load-world-btn').addEventListener('click', () => {
+        document.getElementById('load-file-input').click();
+    });
+
+	const colorPicker = document.getElementById('cube-color-picker');
+	colorPicker.addEventListener('input', (event) => { currentColor = parseInt(event.target.value.substring(1), 16); });
+	currentColor = parseInt(colorPicker.value.substring(1), 16);
+	updateModeButtons();
+}
+
+function setupDesktopControls() {
+    console.log("Setting up desktop controls.");
+    document.addEventListener('keydown', (event) => {
+        keys[event.code] = true;
+        if (event.code === 'Digit1') currentMode = 'add', updateModeButtons();
+        else if (event.code === 'Digit2') currentMode = 'shoot', updateModeButtons();
+        else if (event.code === 'Digit3') currentMode = 'missile', updateModeButtons();
+        else if (event.code === 'KeyF') {
+            isFlying = !isFlying;
+            playerJumpCount = isFlying ? 0 : playerJumpCount;
+        }
+    });
+	document.addEventListener('keyup', (event) => { keys[event.code] = false; });
+
+    renderer.domElement.addEventListener('click', () => {
+        if (document.getElementById('seed-overlay').style.display === 'none') {
+            renderer.domElement.requestPointerLock();
+        }
+    });
+	document.addEventListener('pointerlockchange', () => {
+        if (document.pointerLockElement === renderer.domElement) {
+            document.addEventListener("mousemove", onMouseMove, false);
+        } else {
+            document.removeEventListener("mousemove", onMouseMove, false);
+        }
+    });
+
+	document.addEventListener('mousedown', onMouseDown, false);
+    document.addEventListener('mouseup', onMouseUp, false); // Add mouseup listener
+    // Prevent context menu on right-click
+    document.addEventListener('contextmenu', (event) => {
+        if (!isMobileDevice) event.preventDefault();
+    }, false);
+}
+
+function setupMobileControls() {
+    console.log("Setting up mobile controls.");
+    document.getElementById('mobile-controls-container').classList.add('active');
+    document.getElementById('mode-selector').style.display = 'none';
+
+    // --- Joystick Controls ---
+    const joystick = document.getElementById('joystick-container');
+    const thumb = document.getElementById('joystick-thumb');
+    const maxRadius = joystick.offsetWidth / 2;
+    let joystickActive = false;
+    let joystickTouchId = null;
+    let startPos = { x: 0, y: 0 };
+
+    joystick.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        if (joystickActive) return;
+        const joystickRect = joystick.getBoundingClientRect();
+        joystickActive = true;
+        const touch = e.changedTouches[0];
+        joystickTouchId = touch.identifier;
+        startPos.x = joystickRect.left + maxRadius;
+        startPos.y = joystickRect.top + maxRadius;
+    }, { passive: false });
+
+    window.addEventListener('touchmove', (e) => {
+        if (!joystickActive) return;
+        
+        let foundTouch = null;
+        for (let touch of e.touches) {
+            if (touch.identifier === joystickTouchId) {
+                foundTouch = touch;
+                break;
+            }
+        }
+        if (!foundTouch) return;
+
+        e.preventDefault(); 
+
+        const currentX = foundTouch.clientX;
+        const currentY = foundTouch.clientY;
+        let deltaX = currentX - startPos.x;
+        let deltaY = currentY - startPos.y;
+        
+        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        const deadzone = maxRadius * 0.15;
+        if (distance < deadzone) {
+            deltaX = 0;
+            deltaY = 0;
+        }
+
+        if (distance > maxRadius) {
+            deltaX = (deltaX / distance) * maxRadius;
+            deltaY = (deltaY / distance) * maxRadius;
+        }
+
+        thumb.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px))`;
+        
+        const moveThreshold = maxRadius * 0.2;
+        keys['KeyW'] = deltaY < -moveThreshold;
+        keys['KeyS'] = deltaY > moveThreshold;
+        keys['KeyA'] = deltaX < -moveThreshold;
+        keys['KeyD'] = deltaX > moveThreshold;
+
+    }, { passive: false });
+
+    const endJoystick = (e) => {
+        if (!joystickActive) return;
+        
+        let foundTouch = false;
+        for (let touch of e.changedTouches) {
+            if (touch.identifier === joystickTouchId) {
+                foundTouch = true;
+                break;
+            }
+        }
+        if (!foundTouch) return;
+
+        joystickActive = false;
+        joystickTouchId = null;
+        thumb.style.transform = 'translate(-50%, -50%)';
+        keys['KeyW'] = keys['KeyS'] = keys['KeyA'] = keys['KeyD'] = false;
+    };
+    
+    window.addEventListener('touchend', endJoystick);
+    window.addEventListener('touchcancel', endJoystick);
+
+
+    // --- Action Button Controls ---
+    const jumpBtn = document.getElementById('mobile-jump-btn');
+    const actionBtn = document.getElementById('mobile-action-btn');
+    const switchModeBtn = document.getElementById('mobile-switch-mode-btn');
+
+    jumpBtn.addEventListener('touchstart', (e) => { e.preventDefault(); keys['Space'] = true; }, { passive: false });
+    jumpBtn.addEventListener('touchend', (e) => { e.preventDefault(); keys['Space'] = false; }, { passive: false });
+
+    // --- MODIFIED: Mobile action button calls performAction directly ---
+    actionBtn.addEventListener('touchstart', (e) => { e.preventDefault(); performAction(); }, { passive: false });
+
+    switchModeBtn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        currentModeIndex = (currentModeIndex + 1) % modes.length;
+        currentMode = modes[currentModeIndex];
+        updateModeButtons();
+    }, { passive: false });
+
+    // --- Camera Look Controls ---
+    let lookTouchId = null;
+    let lastLookPos = { x: 0, y: 0 };
+
+    renderer.domElement.addEventListener('touchstart', (e) => {
+        if (e.target.closest('#joystick-container, #action-buttons-container')) return;
+        if (lookTouchId === null) {
+            e.preventDefault();
+            const touch = e.changedTouches[0];
+            lookTouchId = touch.identifier;
+            lastLookPos.x = touch.clientX;
+            lastLookPos.y = touch.clientY;
+        }
+    }, { passive: false });
+
+    renderer.domElement.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        for (let touch of e.changedTouches) {
+            if (touch.identifier === lookTouchId) {
+                const movementX = touch.clientX - lastLookPos.x;
+                const movementY = touch.clientY - lastLookPos.y;
+                onMouseMove({ movementX, movementY });
+                lastLookPos.x = touch.clientX;
+                lastLookPos.y = touch.clientY;
+            }
+        }
+    }, { passive: false });
+
+    const endLookTouch = (e) => {
+        for (let touch of e.changedTouches) {
+            if (touch.identifier === lookTouchId) {
+                lookTouchId = null;
+            }
+        }
+    };
+    renderer.domElement.addEventListener('touchend', endLookTouch);
+    renderer.domElement.addEventListener('touchcancel', endLookTouch);
+}
+
+function updateModeButtons() {
+	document.getElementById('add-mode-btn').classList.toggle('active', currentMode === 'add');
+	document.getElementById('shoot-mode-btn').classList.toggle('active', currentMode === 'shoot');
+    document.getElementById('missile-mode-btn').classList.toggle('active', currentMode === 'missile');
+    
+	document.getElementById('color-selector').style.display = (currentMode === 'add' && !isMobileDevice) ? 'flex' : 'none';
+
+    if (isMobileDevice) {
+        const modeDisplay = document.getElementById('mobile-mode-display');
+        if (modeDisplay) {
+            let modeText = currentMode.charAt(0).toUpperCase() + currentMode.slice(1);
+            if (currentMode === 'add') {
+                modeText = `Create`;
+                modeDisplay.style.backgroundColor = `#${currentColor.toString(16).padStart(6, '0')}`;
+                if (currentColor > 0xAAAAAA) {
+                    modeDisplay.style.color = '#333333';
+                } else {
+                    modeDisplay.style.color = '#FFFFFF';
+                }
+            } else {
+                modeDisplay.textContent = modeText;
+                modeDisplay.style.backgroundColor = 'rgba(0,0,0,0.5)';
+                modeDisplay.style.color = '#FFFFFF';
+            }
+            modeDisplay.textContent = modeText;
+        }
+        if (currentMode === 'add') {
+             // On mobile, automatically open the color picker for the user
+             // We can't programmatically click() it reliably, so we'll just show the color
+        }
+    }
+}
+
+
+window.toggleFog = function() {
+    if (scene.fog) {
+        scene.fog = null;
+        console.log("Fog disabled.");
+    } else {
+        scene.fog = originalFog;
+        console.log("Fog enabled.");
+    }
+}
+
+document.getElementById('start-game-btn').addEventListener('click', () => {
+    const seed = document.getElementById('seed-input').value;
+    document.getElementById('seed-overlay').style.display = 'none';
+    init(seed); 
+});
+
+document.getElementById('load-world-btn').addEventListener('click', () => {
+    document.getElementById('load-file-input').click();
+});
+
+document.getElementById('load-file-input').addEventListener('change', (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const parsedData = JSON.parse(e.target.result);
+            if (parsedData.seed === undefined || !parsedData.blocks) {
+                throw new Error("Invalid world file format.");
+            }
+            document.getElementById('seed-overlay').style.display = 'none';
+            init(parsedData.seed); 
+            loadModifications(parsedData.blocks); 
+        } catch (error) {
+            console.error("Failed to load world:", error);
+            console.error("Failed to load world: Invalid file format.");
+        }
+        event.target.value = '';
+    };
+    reader.readAsText(file);
+});
+
+document.getElementById('seed-input').addEventListener('keypress', function (e) {
+    if (e.key === 'Enter') {
+        document.getElementById('start-game-btn').click();
+    }
+});
+
+</script>
+</body>
+</html>
