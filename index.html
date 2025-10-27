@@ -465,12 +465,20 @@ function updateWorld() {
 	const playerChunkX = Math.floor(playerCube.position.x / CHUNK_SIZE);
 	const playerChunkZ = Math.floor(playerCube.position.z / CHUNK_SIZE);
 
+    // --- MODIFICATION: Throttle chunk regeneration ---
+    // Process only one dirty chunk per frame to prevent stutter.
 	for (const [key, chunkData] of loadedChunks.entries()) {
 		if (chunkData.needsRegeneration) {
 			const [cx, cz] = key.split(',').map(Number);
 			generateChunk(cx, cz);
+            // Return immediately after regenerating one chunk.
+            // The rest of updateWorld (player movement check, new chunk loading)
+            // will run on the next frame if no more chunks need regeneration.
+            return; 
 		}
 	}
+    // --- End of modification ---
+
 	if (currentPlayerChunkX === playerChunkX && currentPlayerChunkZ === playerChunkZ) return;
 	currentPlayerChunkX = playerChunkX;
 	currentPlayerChunkZ = playerChunkZ;
@@ -864,13 +872,13 @@ function createMuzzleFlash() {
         blending: THREE.AdditiveBlending 
     });
     const flashMesh = new THREE.Mesh(flashGeo, flashMat);
-    const flashLight = new THREE.PointLight(0xffa500, 6.0, 4.0, 2); 
+    // const flashLight = new THREE.PointLight(0xffa500, 6.0, 4.0, 2); // <-- REMOVED
     const muzzleLocalPos = new THREE.Vector3(1.3, 0.05, 0);
     flashMesh.position.copy(muzzleLocalPos);
-    flashLight.position.copy(muzzleLocalPos);
+    // flashLight.position.copy(muzzleLocalPos); // <-- REMOVED
     rifle.add(flashMesh);
-    rifle.add(flashLight);
-    muzzleFlashes.push({ mesh: flashMesh, light: flashLight, timer: MUZZLE_FLASH_DURATION });
+    // rifle.add(flashLight); // <-- REMOVED
+    muzzleFlashes.push({ mesh: flashMesh, timer: MUZZLE_FLASH_DURATION }); // <-- EDITED
 }
 
 function createExplosion(position) {
@@ -1054,16 +1062,16 @@ function updateMuzzleFlashes(deltaTime) {
         
         const fade = Math.max(0, flash.timer / MUZZLE_FLASH_DURATION);
         flash.mesh.material.opacity = fade * 0.9;
-        flash.light.intensity = fade * 6.0;
+        // flash.light.intensity = fade * 6.0; // <-- REMOVED
 
         if (flash.timer <= 0) {
             if (rifle) {
                 rifle.remove(flash.mesh);
-                rifle.remove(flash.light);
+                // rifle.remove(flash.light); // <-- REMOVED
             }
             flash.mesh.geometry.dispose();
             flash.mesh.material.dispose();
-            flash.light.dispose();
+            // flash.light.dispose(); // <-- REMOVED
             muzzleFlashes.splice(i, 1);
         }
     }
@@ -1274,21 +1282,36 @@ function loadModifications(loadedBlocks) {
     console.log("World modifications loaded!");
 }
 
+let onWindowResize;
+// Desktop
+let onKeyDown, onKeyUp, onRendererClick, onPointerLockChange, onDocMouseDown, onDocMouseUp, onDocContextMenu;
+// Mobile
+let joystickStart, windowTouchMove, endJoystickHandler;
+let jumpStart, jumpEnd, actionStart, switchModeStart;
+let rendererTouchStart, rendererTouchMove, endLookTouchHandler;
+
+
 function setupEventListeners() {
-	window.addEventListener('resize', () => {
+    // --- Window Resize (Shared) ---
+    if (onWindowResize) window.removeEventListener('resize', onWindowResize, false);
+	onWindowResize = () => {
 		camera.aspect = window.innerWidth / window.innerHeight;
 		camera.updateProjectionMatrix();
 		renderer.setSize(window.innerWidth, window.innerHeight);
-	}, false);
+	};
+    window.addEventListener('resize', onWindowResize, false);
+
 
     if (isMobileDevice) {
+        cleanupDesktopControls(); // Remove any lingering desktop listeners
         setupMobileControls();
         document.getElementById('info').style.display = 'none';
     } else {
+        cleanupMobileControls(); // Remove any lingering mobile listeners
         setupDesktopControls();
     }
 
-    // --- Shared Listeners ---
+    // --- Shared Listeners (These are fine, they are on static DOM elements) ---
 	document.getElementById('add-mode-btn').addEventListener('click', () => { currentMode = 'add'; updateModeButtons(); });
 	document.getElementById('shoot-mode-btn').addEventListener('click', () => { currentMode = 'shoot'; updateModeButtons(); });
     document.getElementById('missile-mode-btn').addEventListener('click', () => { currentMode = 'missile'; updateModeButtons(); });
@@ -1303,9 +1326,24 @@ function setupEventListeners() {
 	updateModeButtons();
 }
 
+function cleanupDesktopControls() {
+    if (onKeyDown) document.removeEventListener('keydown', onKeyDown);
+    if (onKeyUp) document.removeEventListener('keyup', onKeyUp);
+    if (renderer && onRendererClick) renderer.domElement.removeEventListener('click', onRendererClick);
+    if (onPointerLockChange) document.removeEventListener('pointerlockchange', onPointerLockChange);
+    if (onDocMouseDown) document.removeEventListener('mousedown', onDocMouseDown, false);
+    if (onDocMouseUp) document.removeEventListener('mouseup', onDocMouseUp, false);
+    if (onDocContextMenu) document.removeEventListener('contextmenu', onDocContextMenu, false);
+    document.removeEventListener("mousemove", onMouseMove, false); // Always remove mousemove
+    
+    onKeyDown = onKeyUp = onRendererClick = onPointerLockChange = onDocMouseDown = onDocMouseUp = onDocContextMenu = null;
+}
+
 function setupDesktopControls() {
+    cleanupDesktopControls(); // Clean up just in case
     console.log("Setting up desktop controls.");
-    document.addEventListener('keydown', (event) => {
+    
+    onKeyDown = (event) => {
         keys[event.code] = true;
         if (event.code === 'Digit1') currentMode = 'add', updateModeButtons();
         else if (event.code === 'Digit2') currentMode = 'shoot', updateModeButtons();
@@ -1314,36 +1352,71 @@ function setupDesktopControls() {
             isFlying = !isFlying;
             playerJumpCount = isFlying ? 0 : playerJumpCount;
         }
-    });
-	document.addEventListener('keyup', (event) => { keys[event.code] = false; });
+    };
+	onKeyUp = (event) => { keys[event.code] = false; };
 
-    renderer.domElement.addEventListener('click', () => {
+    onRendererClick = () => {
         if (document.getElementById('seed-overlay').style.display === 'none') {
             renderer.domElement.requestPointerLock();
         }
-    });
-	document.addEventListener('pointerlockchange', () => {
+    };
+	onPointerLockChange = () => {
         if (document.pointerLockElement === renderer.domElement) {
             document.addEventListener("mousemove", onMouseMove, false);
         } else {
             document.removeEventListener("mousemove", onMouseMove, false);
         }
-    });
+    };
 
-	document.addEventListener('mousedown', onMouseDown, false);
-    document.addEventListener('mouseup', onMouseUp, false); // Add mouseup listener
-    // Prevent context menu on right-click
-    document.addEventListener('contextmenu', (event) => {
+	onDocMouseDown = onMouseDown; // This function is already defined globally
+    onDocMouseUp = onMouseUp; // This function is already defined globally
+    onDocContextMenu = (event) => {
         if (!isMobileDevice) event.preventDefault();
-    }, false);
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+	document.addEventListener('keyup', onKeyUp);
+    renderer.domElement.addEventListener('click', onRendererClick);
+	document.addEventListener('pointerlockchange', onPointerLockChange);
+	document.addEventListener('mousedown', onDocMouseDown, false);
+    document.addEventListener('mouseup', onDocMouseUp, false); 
+    document.addEventListener('contextmenu', onDocContextMenu, false);
+}
+
+function cleanupMobileControls() {
+    const joystick = document.getElementById('joystick-container');
+    if (joystickStart) joystick.removeEventListener('touchstart', joystickStart, { passive: false });
+    if (windowTouchMove) window.removeEventListener('touchmove', windowTouchMove, { passive: false });
+    if (endJoystickHandler) {
+        window.removeEventListener('touchend', endJoystickHandler);
+        window.removeEventListener('touchcancel', endJoystickHandler);
+    }
+
+    const jumpBtn = document.getElementById('mobile-jump-btn');
+    const actionBtn = document.getElementById('mobile-action-btn');
+    const switchModeBtn = document.getElementById('mobile-switch-mode-btn');
+
+    if (jumpStart) jumpBtn.removeEventListener('touchstart', jumpStart, { passive: false });
+    if (jumpEnd) jumpBtn.removeEventListener('touchend', jumpEnd, { passive: false });
+    if (actionStart) actionBtn.removeEventListener('touchstart', actionStart, { passive: false });
+    if (switchModeStart) switchModeBtn.removeEventListener('touchstart', switchModeStart, { passive: false });
+
+    if (renderer && rendererTouchStart) renderer.domElement.removeEventListener('touchstart', rendererTouchStart, { passive: false });
+    if (renderer && rendererTouchMove) renderer.domElement.removeEventListener('touchmove', rendererTouchMove, { passive: false });
+    if (renderer && endLookTouchHandler) {
+        renderer.domElement.removeEventListener('touchend', endLookTouchHandler);
+        renderer.domElement.removeEventListener('touchcancel', endLookTouchHandler);
+    }
+
+    joystickStart = windowTouchMove = endJoystickHandler = jumpStart = jumpEnd = actionStart = switchModeStart = rendererTouchStart = rendererTouchMove = endLookTouchHandler = null;
 }
 
 function setupMobileControls() {
+    cleanupMobileControls(); // Clean up just in case
     console.log("Setting up mobile controls.");
     document.getElementById('mobile-controls-container').classList.add('active');
     document.getElementById('mode-selector').style.display = 'none';
 
-    // --- Joystick Controls ---
     const joystick = document.getElementById('joystick-container');
     const thumb = document.getElementById('joystick-thumb');
     const maxRadius = joystick.offsetWidth / 2;
@@ -1351,7 +1424,7 @@ function setupMobileControls() {
     let joystickTouchId = null;
     let startPos = { x: 0, y: 0 };
 
-    joystick.addEventListener('touchstart', (e) => {
+    joystickStart = (e) => {
         e.preventDefault();
         if (joystickActive) return;
         const joystickRect = joystick.getBoundingClientRect();
@@ -1360,9 +1433,10 @@ function setupMobileControls() {
         joystickTouchId = touch.identifier;
         startPos.x = joystickRect.left + maxRadius;
         startPos.y = joystickRect.top + maxRadius;
-    }, { passive: false });
+    };
+    joystick.addEventListener('touchstart', joystickStart, { passive: false });
 
-    window.addEventListener('touchmove', (e) => {
+    windowTouchMove = (e) => {
         if (!joystickActive) return;
         
         let foundTouch = null;
@@ -1401,9 +1475,10 @@ function setupMobileControls() {
         keys['KeyA'] = deltaX < -moveThreshold;
         keys['KeyD'] = deltaX > moveThreshold;
 
-    }, { passive: false });
+    };
+    window.addEventListener('touchmove', windowTouchMove, { passive: false });
 
-    const endJoystick = (e) => {
+    endJoystickHandler = (e) => {
         if (!joystickActive) return;
         
         let foundTouch = false;
@@ -1421,8 +1496,8 @@ function setupMobileControls() {
         keys['KeyW'] = keys['KeyS'] = keys['KeyA'] = keys['KeyD'] = false;
     };
     
-    window.addEventListener('touchend', endJoystick);
-    window.addEventListener('touchcancel', endJoystick);
+    window.addEventListener('touchend', endJoystickHandler);
+    window.addEventListener('touchcancel', endJoystickHandler);
 
 
     // --- Action Button Controls ---
@@ -1430,24 +1505,27 @@ function setupMobileControls() {
     const actionBtn = document.getElementById('mobile-action-btn');
     const switchModeBtn = document.getElementById('mobile-switch-mode-btn');
 
-    jumpBtn.addEventListener('touchstart', (e) => { e.preventDefault(); keys['Space'] = true; }, { passive: false });
-    jumpBtn.addEventListener('touchend', (e) => { e.preventDefault(); keys['Space'] = false; }, { passive: false });
+    jumpStart = (e) => { e.preventDefault(); keys['Space'] = true; };
+    jumpEnd = (e) => { e.preventDefault(); keys['Space'] = false; };
+    jumpBtn.addEventListener('touchstart', jumpStart, { passive: false });
+    jumpBtn.addEventListener('touchend', jumpEnd, { passive: false });
 
-    // --- MODIFIED: Mobile action button calls performAction directly ---
-    actionBtn.addEventListener('touchstart', (e) => { e.preventDefault(); performAction(); }, { passive: false });
+    actionStart = (e) => { e.preventDefault(); performAction(); };
+    actionBtn.addEventListener('touchstart', actionStart, { passive: false });
 
-    switchModeBtn.addEventListener('touchstart', (e) => {
+    switchModeStart = (e) => {
         e.preventDefault();
         currentModeIndex = (currentModeIndex + 1) % modes.length;
         currentMode = modes[currentModeIndex];
         updateModeButtons();
-    }, { passive: false });
+    };
+    switchModeBtn.addEventListener('touchstart', switchModeStart, { passive: false });
 
     // --- Camera Look Controls ---
     let lookTouchId = null;
     let lastLookPos = { x: 0, y: 0 };
 
-    renderer.domElement.addEventListener('touchstart', (e) => {
+    rendererTouchStart = (e) => {
         if (e.target.closest('#joystick-container, #action-buttons-container')) return;
         if (lookTouchId === null) {
             e.preventDefault();
@@ -1456,9 +1534,10 @@ function setupMobileControls() {
             lastLookPos.x = touch.clientX;
             lastLookPos.y = touch.clientY;
         }
-    }, { passive: false });
+    };
+    renderer.domElement.addEventListener('touchstart', rendererTouchStart, { passive: false });
 
-    renderer.domElement.addEventListener('touchmove', (e) => {
+    rendererTouchMove = (e) => {
         e.preventDefault();
         for (let touch of e.changedTouches) {
             if (touch.identifier === lookTouchId) {
@@ -1469,17 +1548,18 @@ function setupMobileControls() {
                 lastLookPos.y = touch.clientY;
             }
         }
-    }, { passive: false });
+    };
+    renderer.domElement.addEventListener('touchmove', rendererTouchMove, { passive: false });
 
-    const endLookTouch = (e) => {
+    endLookTouchHandler = (e) => {
         for (let touch of e.changedTouches) {
             if (touch.identifier === lookTouchId) {
                 lookTouchId = null;
             }
         }
     };
-    renderer.domElement.addEventListener('touchend', endLookTouch);
-    renderer.domElement.addEventListener('touchcancel', endLookTouch);
+    renderer.domElement.addEventListener('touchend', endLookTouchHandler);
+    renderer.domElement.addEventListener('touchcancel', endLookTouchHandler);
 }
 
 function updateModeButtons() {
@@ -1567,3 +1647,5 @@ document.getElementById('seed-input').addEventListener('keypress', function (e) 
 </script>
 </body>
 </html>
+
+
