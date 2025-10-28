@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Play 0.13a</title>
+    <title>Play 0.14a</title>
     <style>
         body { 
             margin: 0; 
@@ -239,7 +239,7 @@
     
     <input type="file" id="load-file-input" accept=".json" style="display: none;">
 
-    <div id="info"><strong>0.13a</strong><br><br>Press 'F' to toggle fly mode.</div>
+    <div id="info"><strong>0.14a</strong><br><br>Press 'F' to toggle fly mode.</div>
     <div id="mode-selector">
         <button id="add-mode-btn">Create(1)</button>
         <button id="shoot-mode-btn">Shoot(2)</button>
@@ -336,6 +336,9 @@ const MISSILE_KNOCKBACK_FORCE = 25.0;
 let explosions = [];
 let muzzleFlashes = [];
 const MUZZLE_FLASH_DURATION = 0.05;
+let droppedBlocks = []; // --- NEW: Array for dropped blocks ---
+let snowflakes = []; // --- NEW: Array for snowflakes ---
+let lastPlayerPos = new THREE.Vector3(); // --- NEW: For snow velocity ---
 
 // --- World State ---
 const CHUNK_SIZE = 16;
@@ -387,24 +390,29 @@ function getTerrainHeight(worldX, worldZ) {
  * @returns {object|null} A block object { color, type } or null if the space is empty.
  */
 function getBlock(x, y, z) {
-	const blockKey = `${Math.round(x)},${Math.round(y)},${Math.round(z)}`;
+    // MODIFICATION: Use Math.floor for all coordinates to be consistent
+    const floorX = Math.floor(x);
+    const floorY = Math.floor(y);
+    const floorZ = Math.floor(z);
+
+	const blockKey = `${floorX},${floorY},${floorZ}`;
 	if (modifiedBlocks.has(blockKey)) {
 		return modifiedBlocks.get(blockKey);
 	}
-    const roundedY = Math.round(y);
-    if (roundedY <= BEDROCK_LEVEL) {
-        const isEven = (Math.round(x) + Math.round(z)) % 2 === 0;
+    
+    if (floorY <= BEDROCK_LEVEL) {
+        const isEven = (floorX + floorZ) % 2 === 0;
         return { color: isEven ? BEDROCK_COLOR_1 : BEDROCK_COLOR_2, type: 'bedrock' };
     }
-	const height = getTerrainHeight(x, z); 
-    if (roundedY > height) {
+	const height = getTerrainHeight(floorX, floorZ); 
+    if (floorY > height) {
         return null;
     }
-	const isEven = (Math.round(x) + Math.round(z)) % 2 === 0;
+	const isEven = (floorX + floorZ) % 2 === 0;
 	let color;
-	if (roundedY === height) {
+	if (floorY === height) {
 		color = SNOW_COLOR;
-	} else if (roundedY > height - 4) {
+	} else if (floorY > height - 4) {
 		color = isEven ? DIRT_COLOR_1 : DIRT_COLOR_2;
 	} else {
 		color = isEven ? STONE_COLOR_1 : STONE_COLOR_2;
@@ -713,6 +721,9 @@ function performAction() {
 
             const block = getBlock(finalX, finalY, finalZ);
             if (block && block.type !== 'bedrock') {
+                // --- NEW: Create dropped block ---
+                createDroppedBlock(new THREE.Vector3(finalX + 0.5, finalY + 0.5, finalZ + 0.5), block);
+                // --- End new ---
                 modifiedBlocks.set(`${finalX},${finalY},${finalZ}`, null);
                 markChunkForRegeneration(finalX, finalZ);
             }
@@ -833,6 +844,8 @@ function init(seedString) {
     missiles = [];
     explosions = [];
     muzzleFlashes = []; 
+    droppedBlocks = []; // --- NEW: Clear dropped blocks ---
+    snowflakes = []; // --- NEW: Clear snowflakes ---
     currentPlayerChunkX = undefined;
     currentPlayerChunkZ = undefined;
 
@@ -887,6 +900,7 @@ function init(seedString) {
 	updateWorld();
 
 	setupEventListeners();
+    lastPlayerPos.copy(playerCube.position); // --- NEW: Set initial player pos ---
 	animate(); 
 }
 
@@ -912,6 +926,9 @@ function createPlayer() {
     rifle.rotation.y = Math.PI / 2;
     rifle.scale.set(0.5, 0.5, 0.5);
     camera.add(rifle);
+
+    // --- NEW: Set lastPlayerPos after playerCube is created ---
+    lastPlayerPos.copy(playerCube.position);
 }
 
 /**
@@ -1059,6 +1076,9 @@ function createExplosion(position) {
                 if (distSq <= radius * radius) {
                     const block = getBlock(pX, pY, pZ);
                     if (block && block.type !== 'bedrock') {
+                        // --- NEW: Create dropped block ---
+                        createDroppedBlock(new THREE.Vector3(pX + 0.5, pY + 0.5, pZ + 0.5), block);
+                        // --- End new ---
                         modifiedBlocks.set(`${pX},${pY},${pZ}`, null);
                         const chunkX = Math.floor(pX / CHUNK_SIZE);
                         const chunkZ = Math.floor(pZ / CHUNK_SIZE);
@@ -1082,6 +1102,188 @@ function createExplosion(position) {
         }
     }
 }
+
+
+// --- NEW: Function to create a dropped block item ---
+/**
+ * Creates a spinning, translucent, smaller version of a block when it's destroyed.
+ * @param {THREE.Vector3} position - The world position where the block was.
+ * @param {object} blockData - The { color, type } data of the destroyed block.
+ */
+function createDroppedBlock(position, blockData) {
+    const dropGeo = new THREE.BoxGeometry(0.25, 0.25, 0.25);
+    const dropMat = new THREE.MeshStandardMaterial({
+        color: blockData.color,
+        transparent: true,
+        opacity: 0.7
+    });
+    const dropMesh = new THREE.Mesh(dropGeo, dropMat);
+    dropMesh.position.copy(position);
+
+    // Give it a small "pop" upwards and outwards
+    const velocity = new THREE.Vector3(
+        (Math.random() - 0.5) * 2, // -1 to +1 x
+        Math.random() * 2 + 1,   // +1 to +3 y
+        (Math.random() - 0.5) * 2  // -1 to +1 z
+    );
+
+    scene.add(dropMesh);
+    droppedBlocks.push({
+        mesh: dropMesh,
+        velocity: velocity,
+        lifetime: 5.0 // 5 seconds
+    });
+}
+// --- End new function ---
+
+
+// --- NEW: Functions for snowfall effect ---
+/**
+ * Creates a single snowflake particle.
+ * @param {THREE.Vector3} playerPos - The player's current position.
+ * @param {THREE.Vector3} playerVel - The player's current horizontal velocity.
+ */
+function createSnowflake(playerPos, playerVel) {
+    // MODIFIED: Double size
+    const snowGeo = new THREE.BoxGeometry(0.22, 0.22, 0.22);
+    const snowMat = new THREE.MeshStandardMaterial({
+        color: 0xFFFFFF,
+        transparent: true,
+        opacity: 0.0, // MODIFIED: Start at 0
+        metalness: 0,
+        roughness: 1
+    });
+    const snowMesh = new THREE.Mesh(snowGeo, snowMat);
+
+    // MODIFIED: Spawn in a 48x48 area around the player
+    const spawnX = playerPos.x + (Math.random() * 48 - 24);
+    const spawnZ = playerPos.z + (Math.random() * 48 - 24);
+    
+    const spawnY = playerPos.y + playerHeight + 5 + (Math.random() * 3); // 5-8 blocks above player
+    const spawnFloorX = Math.floor(spawnX);
+    const spawnFloorY = Math.floor(spawnY);
+    const spawnFloorZ = Math.floor(spawnZ);
+
+    // --- NEW: Check if spawn position is inside a block (using getBlock) ---
+    if (getBlock(spawnFloorX, spawnFloorY, spawnFloorZ)) {
+        snowMesh.geometry.dispose();
+        snowMat.dispose();
+        return; // Don't spawn inside a block
+    }
+    // --- End new check ---
+
+    // --- NEW: Check if a modified block is in the column below (snow shadow) ---
+    const playerHeadY = Math.floor(playerPos.y + playerHeight);
+    // MODIFICATION: Check from player head up to *just below* spawn
+    for (let y = playerHeadY; y < spawnFloorY; y++) {
+        if (modifiedBlocks.has(`${spawnFloorX},${y},${spawnFloorZ}`)) {
+            snowMesh.geometry.dispose();
+            snowMat.dispose();
+            return; // Don't spawn if a modified block is shadowing this column
+        }
+    }
+    // --- End new check ---
+
+
+    snowMesh.position.set(spawnX, spawnY, spawnZ);
+
+    const velocity = new THREE.Vector3(
+        -playerVel.x + (Math.random() - 0.5) * 0.5, // Opposite player vel + jitter
+        -Math.random() * 1.5 - 0.5, // Initial downward speed
+        -playerVel.z + (Math.random() - 0.5) * 0.5 // Opposite player vel + jitter
+    );
+
+    scene.add(snowMesh);
+    snowflakes.push({
+        mesh: snowMesh,
+        velocity: velocity,
+        lifetime: 8.0 // MODIFIED: 8 seconds
+    });
+}
+
+/**
+ * Updates all active snowflakes.
+ * Handles physics, spinning, player-relative velocity, and lifetime.
+ * @param {number} deltaTime - The time elapsed since the last frame.
+ * @param {THREE.Vector3} playerVel - The player's current horizontal velocity.
+ */
+function updateSnowflakes(deltaTime, playerVel) {
+    if (!playerCube) return;
+
+    // --- NEW: Check if player is under a block ---
+    let isPlayerUnderBlock = false;
+    const playerX = Math.floor(playerCube.position.x);
+    const playerZ = Math.floor(playerCube.position.z);
+    const playerHeadY = Math.floor(playerCube.position.y + playerHeight);
+    const checkMaxY = playerHeadY + 30; // Check 30 blocks up
+
+    for (let y = playerHeadY; y <= checkMaxY; y++) {
+        // Use getBlock, which checks both modified and generated blocks
+        if (getBlock(playerX, y, playerZ)) {
+            isPlayerUnderBlock = true;
+            break; // Found a block, no need to check higher
+        }
+    }
+    // --- End new check ---
+
+
+    // --- Spawn new snowflakes ---
+    if (!isPlayerUnderBlock) { // <-- NEW: Only spawn if player is not under a block
+        // MODIFIED: Spawn 10 particles per frame
+        for (let i = 0; i < 10; i++) {
+            createSnowflake(playerCube.position, playerVel);
+        }
+    }
+
+    const playerCenter = playerCube.position.clone().add(new THREE.Vector3(0, playerHeight / 2, 0));
+    
+    for (let i = snowflakes.length - 1; i >= 0; i--) {
+        const snow = snowflakes[i];
+        const mesh = snow.mesh;
+
+        snow.lifetime -= deltaTime;
+        
+        // Check for despawn (lifetime or too far)
+        // MODIFIED: Increased cull distance to 30
+        const distanceToPlayer = mesh.position.distanceTo(playerCenter);
+        if (snow.lifetime <= 0 || distanceToPlayer > 30.0) { // 30 block cull radius
+            scene.remove(mesh);
+            mesh.geometry.dispose();
+            mesh.material.dispose();
+            snowflakes.splice(i, 1);
+            continue;
+        }
+
+        // --- Update Velocity ---
+        // Target horizontal velocity is opposite player + jitter
+        const targetVelX = -playerVel.x + (Math.random() - 0.5) * 0.5;
+        const targetVelZ = -playerVel.z + (Math.random() - 0.5) * 0.5;
+
+        // Lerp towards target horizontal velocity (0.05 is a slow adjustment, feels floaty)
+        snow.velocity.x = THREE.MathUtils.lerp(snow.velocity.x, targetVelX, 0.05);
+        snow.velocity.z = THREE.MathUtils.lerp(snow.velocity.z, targetVelZ, 0.05);
+
+        // Apply floaty gravity (5% of normal gravity)
+        snow.velocity.y += (gravity * 0.05) * deltaTime;
+        
+        // Clamp falling speed
+        if (snow.velocity.y < -2.0) {
+            snow.velocity.y = -2.0;
+        }
+
+        // Apply velocity
+        mesh.position.add(snow.velocity.clone().multiplyScalar(deltaTime));
+
+        // Spinning
+        mesh.rotation.x += 1.0 * deltaTime;
+        mesh.rotation.y += 0.8 * deltaTime;
+
+        // MODIFIED: Lifetime & Fade (Fade IN)
+        // Opacity goes from 0.0 (at lifetime 8.0) to 0.9 (at lifetime 0.0)
+        mesh.material.opacity = (1.0 - (snow.lifetime / 8.0)) * 0.9;
+    }
+}
+// --- End new functions ---
 
 
 // --- Update Functions ---
@@ -1114,6 +1316,9 @@ function updateProjectiles(deltaTime) {
             const pZ = Math.floor(clickedBlockPos.z);
             const block = getBlock(pX, pY, pZ);
             if (block && block.type !== 'bedrock') {
+                // --- NEW: Create dropped block ---
+                createDroppedBlock(new THREE.Vector3(pX + 0.5, pY + 0.5, pZ + 0.5), block);
+                // --- End new ---
                 modifiedBlocks.set(`${pX},${pY},${pZ}`, null); 
                 markChunkForRegeneration(pX, pZ);
                 hit = true;
@@ -1219,6 +1424,65 @@ function updateMuzzleFlashes(deltaTime) {
         }
     }
 }
+
+// --- NEW: Function to update all dropped block items ---
+/**
+ * Updates all active dropped blocks.
+ * Handles physics, spinning, player attraction, and lifetime.
+ * @param {number} deltaTime - The time elapsed since the last frame.
+ */
+function updateDroppedBlocks(deltaTime) {
+    if (!playerCube) return;
+    const playerCenter = playerCube.position.clone().add(new THREE.Vector3(0, playerHeight / 2, 0));
+    const suckRadius = 2.0;
+    const collectRadius = 0.75;
+    
+    for (let i = droppedBlocks.length - 1; i >= 0; i--) {
+        const drop = droppedBlocks[i];
+        const mesh = drop.mesh;
+
+        // Check for collection
+        const distanceToPlayer = mesh.position.distanceTo(playerCenter);
+        if (distanceToPlayer < collectRadius) {
+            scene.remove(mesh);
+            mesh.geometry.dispose();
+            mesh.material.dispose();
+            droppedBlocks.splice(i, 1);
+            continue;
+        }
+
+        // Check for attraction
+        if (distanceToPlayer < suckRadius) {
+            const directionToPlayer = playerCenter.clone().sub(mesh.position).normalize();
+            // Accelerate towards player
+            drop.velocity.lerp(directionToPlayer.multiplyScalar(15.0), 0.1); 
+        } else {
+            // Normal physics
+            drop.velocity.y += (gravity * 0.2) * deltaTime; // Weaker gravity
+            drop.velocity.multiplyScalar(0.98); // Air drag
+        }
+
+        // Apply velocity
+        mesh.position.add(drop.velocity.clone().multiplyScalar(deltaTime));
+
+        // Spinning
+        mesh.rotation.x += 1.5 * deltaTime;
+        mesh.rotation.y += 1.0 * deltaTime;
+
+        // Lifetime & Fade
+        drop.lifetime -= deltaTime;
+        mesh.material.opacity = Math.max(0, (drop.lifetime / 5.0) * 0.7); // Fade out
+
+        if (drop.lifetime <= 0) {
+            scene.remove(mesh);
+            mesh.geometry.dispose();
+            mesh.material.dispose();
+            droppedBlocks.splice(i, 1);
+        }
+    }
+}
+// --- End new function ---
+
 
 /**
  * Checks if the player's bounding box at a given position is colliding with any world blocks.
@@ -1710,6 +1974,17 @@ function animate() {
 
 	const deltaTime = Math.min(0.05, clock.getDelta());
     
+    // --- NEW: Calculate player horizontal velocity from last frame ---
+    let playerHorizontalVelocity = new THREE.Vector3(0, 0, 0);
+    if (playerCube && deltaTime > 0) {
+         playerHorizontalVelocity.set(
+            (playerCube.position.x - lastPlayerPos.x) / deltaTime,
+            0,
+            (playerCube.position.z - lastPlayerPos.z) / deltaTime
+        );
+    }
+    // --- End new ---
+    
 	updatePlayer(deltaTime);
     updateRiflePosition(deltaTime);
     updateToolgun(deltaTime); // NEW: Update toolgun visuals
@@ -1717,8 +1992,14 @@ function animate() {
     updateMissiles(deltaTime);
     updateExplosions(deltaTime);
     updateMuzzleFlashes(deltaTime); 
+    updateDroppedBlocks(deltaTime); // --- NEW: Update dropped blocks ---
+    updateSnowflakes(deltaTime, playerHorizontalVelocity); // --- NEW: Update snowflakes ---
 	updateWorld();
 	renderer.render(scene, camera);
+
+    if (playerCube) {
+        lastPlayerPos.copy(playerCube.position); // --- NEW: Store position for next frame ---
+    }
 	
     if (!isMobileDevice) stats.end();
 }
@@ -1895,6 +2176,7 @@ function setupDesktopControls() {
             renderer.domElement.requestPointerLock();
         }
     };
+    // --- FIX: Corrected typo from ()A to () => ---
 	onPointerLockChange = () => {
         if (document.pointerLockElement === renderer.domElement) {
             document.addEventListener("mousemove", onMouseMove, false);
