@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Play 0.12a</title>
+    <title>Play 0.13a</title>
     <style>
         body { 
             margin: 0; 
@@ -239,7 +239,7 @@
     
     <input type="file" id="load-file-input" accept=".json" style="display: none;">
 
-    <div id="info"><strong>0.12a</strong><br><br>Press 'F' to toggle fly mode.</div>
+    <div id="info"><strong>0.13a</strong><br><br>Press 'F' to toggle fly mode.</div>
     <div id="mode-selector">
         <button id="add-mode-btn">Create(1)</button>
         <button id="shoot-mode-btn">Shoot(2)</button>
@@ -358,16 +358,34 @@ const BEDROCK_COLOR_2 = new THREE.Color(0x3a3a3a);
 
 // --- Utility Functions ---
 
+/**
+ * Checks the user agent string to determine if the device is mobile.
+ * @returns {boolean} True if the device is likely mobile, false otherwise.
+ */
 function isMobile() {
     const regex = /Mobi|Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
     return regex.test(navigator.userAgent);
 }
 
+/**
+ * Calculates the terrain height at a specific world (x, z) coordinate using Perlin noise.
+ * @param {number} worldX - The world X coordinate.
+ * @param {number} worldZ - The world Z coordinate.
+ * @returns {number} The calculated integer height of the terrain.
+ */
 function getTerrainHeight(worldX, worldZ) {
 	let height = noise.perlin2(worldX / TERRAIN_SCALE, worldZ / TERRAIN_SCALE); 
 	return Math.floor(height * TERRAIN_AMPLITUDE);
 }
 
+/**
+ * Gets the block data (color, type) at a specific world (x, y, z) coordinate.
+ * Checks for player-modified blocks first, then generated terrain, then bedrock.
+ * @param {number} x - The world X coordinate.
+ * @param {number} y - The world Y coordinate.
+ * @param {number} z - The world Z coordinate.
+ * @returns {object|null} A block object { color, type } or null if the space is empty.
+ */
 function getBlock(x, y, z) {
 	const blockKey = `${Math.round(x)},${Math.round(y)},${Math.round(z)}`;
 	if (modifiedBlocks.has(blockKey)) {
@@ -396,6 +414,12 @@ function getBlock(x, y, z) {
 
 // --- World Generation/Manipulation ---
 
+/**
+ * Generates or regenerates the 3D mesh for a specific chunk.
+ * It merges all individual block geometries into a single mesh for performance.
+ * @param {number} chunkX - The chunk's X index.
+ * @param {number} chunkZ - The chunk's Z index.
+ */
 function generateChunk(chunkX, chunkZ) {
 	const chunkKey = `${chunkX},${chunkZ}`;
 	if (loadedChunks.has(chunkKey)) {
@@ -460,6 +484,12 @@ function generateChunk(chunkX, chunkZ) {
 	loadedChunks.set(chunkKey, { mesh: chunkMesh, needsRegeneration: false });
 }
 
+/**
+ * Removes a chunk's mesh from the scene and disposes of its geometry and material.
+ * @param {number} chunkX - The chunk's X index.
+ * @param {number} chunkZ - The chunk's Z index.
+ * @param {boolean} [removeFromMap=true] - Whether to remove the chunk entry from the `loadedChunks` map.
+ */
 function unloadChunk(chunkX, chunkZ, removeFromMap = true) {
 	const chunkKey = `${chunkX},${chunkZ}`;
 	const chunkData = loadedChunks.get(chunkKey);
@@ -472,6 +502,11 @@ function unloadChunk(chunkX, chunkZ, removeFromMap = true) {
 	}
 }
 
+/**
+ * Main world update loop.
+ * Triggers regeneration of one "dirty" chunk per frame.
+ * Loads new chunks and unloads distant chunks as the player moves.
+ */
 function updateWorld() {
     if (!playerCube) return;
 	const playerChunkX = Math.floor(playerCube.position.x / CHUNK_SIZE);
@@ -508,6 +543,11 @@ function updateWorld() {
 	}
 }
 
+/**
+ * Marks a chunk (and neighbors, if the block is on a border) for regeneration.
+ * @param {number} worldX - The world X coordinate of the changed block.
+ * @param {number} worldZ - The world Z coordinate of the changed block.
+ */
 function markChunkForRegeneration(worldX, worldZ) {
     const chunkX = Math.floor(worldX / CHUNK_SIZE);
     const chunkZ = Math.floor(worldZ / CHUNK_SIZE);
@@ -537,6 +577,9 @@ function markChunkForRegeneration(worldX, worldZ) {
 
 // --- Core Game Actions ---
 
+/**
+ * Creates a muzzle flash and fires a fast, orange sphere projectile.
+ */
 function fireSphere() {
     createMuzzleFlash(); 
     const projectileGeometry = new THREE.SphereGeometry(0.2, 8, 8);
@@ -558,6 +601,9 @@ function fireSphere() {
     scene.add(projectile);
 }
 
+/**
+ * Creates and fires a complex missile model that explodes on impact.
+ */
 function fireMissile() {
     const missileGroup = new THREE.Group();
     const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.6, roughness: 0.4 });
@@ -603,7 +649,10 @@ function fireMissile() {
     scene.add(missileGroup);
 }
 
-// --- MODIFIED: A single function to perform the raycast action (desktop click or mobile tap) ---
+/**
+ * Main action handler for mouse click or mobile action button tap.
+ * Dispatches to the correct function based on the current mode.
+ */
 function performAction() {
     // --- NEW: Toolgun logic for mobile (toggle) ---
     if (currentMode === 'toolgun') {
@@ -671,7 +720,10 @@ function performAction() {
 	}
 }
 
-// --- MODIFIED: Simplified onMouseDown to only check pointer lock and call performAction ---
+/**
+ * Handles the desktop mouse down event (left-click, right-click).
+ * @param {MouseEvent} event - The mouse event.
+ */
 function onMouseDown(event) {
     if (!isMobileDevice && document.pointerLockElement !== renderer.domElement) return;
     
@@ -692,7 +744,10 @@ function onMouseDown(event) {
     }
 }
 
-// --- NEW: Handle Right-Click Release ---
+/**
+ * Handles the desktop mouse up event (left-click, right-click).
+ * @param {MouseEvent} event - The mouse event.
+ */
 function onMouseUp(event) {
     if (isMobileDevice) return; // Not for mobile
     
@@ -711,8 +766,13 @@ function onMouseUp(event) {
     }
 }
 
-// --- Initialisation, Player, and Rifle Functions (Unchanged) ---
+// --- Initialisation, Player, and Rifle Functions ---
 
+/**
+ * Initializes or re-initializes the entire game.
+ * Cleans up old assets, sets up the scene, camera, renderer, world, player, and event listeners.
+ * @param {string} seedString - The string seed to use for world generation.
+ */
 function init(seedString) {
     isMobileDevice = isMobile(); 
 
@@ -727,6 +787,13 @@ function init(seedString) {
         toolgunLaser = null;
     }
     if (heldBlock) {
+        // --- NEW: Cleanup glow mesh ---
+        if (heldBlock.glowMesh) {
+            heldBlock.mesh.remove(heldBlock.glowMesh); // It's a child
+            heldBlock.glowMesh.geometry.dispose();
+            heldBlock.glowMesh.material.dispose();
+        }
+        // --- End new cleanup ---
         scene.remove(heldBlock.mesh);
         heldBlock.mesh.geometry.dispose();
         heldBlock.mesh.material.dispose();
@@ -823,6 +890,10 @@ function init(seedString) {
 	animate(); 
 }
 
+/**
+ * Creates the player object (a non-visible box), adds it to the scene,
+ * and attaches the camera and rifle to it.
+ */
 function createPlayer() {
 	const startY = getTerrainHeight(0, 0) + 5; 
 	const geometry = new THREE.BoxGeometry(playerWidth, playerHeight, playerWidth);
@@ -843,6 +914,10 @@ function createPlayer() {
     camera.add(rifle);
 }
 
+/**
+ * Creates and returns a `THREE.Group` containing the 3D model for the rifle.
+ * @returns {THREE.Group} The rifle model.
+ */
 function createRifle() {
     const rifleGroup = new THREE.Group();
     const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0x222228, metalness: 0.2, roughness: 0.6 });
@@ -910,7 +985,9 @@ function createRifle() {
     return rifleGroup;
 }
 
-
+/**
+ * Creates a temporary muzzle flash effect at the end of the rifle's barrel.
+ */
 function createMuzzleFlash() {
     if (!rifle) return; 
     const flashGeo = new THREE.SphereGeometry(0.12, 8, 8);
@@ -927,6 +1004,11 @@ function createMuzzleFlash() {
     muzzleFlashes.push({ mesh: flashMesh, timer: MUZZLE_FLASH_DURATION });
 }
 
+/**
+ * Creates an explosion effect at a given position.
+ * Destroys blocks within the radius and applies knockback to the player.
+ * @param {THREE.Vector3} position - The world position of the explosion's center.
+ */
 function createExplosion(position) {
     const geometry = new THREE.SphereGeometry(MISSILE_EXPLOSION_RADIUS, 16, 16);
     const material = new THREE.MeshBasicMaterial({ color: 0xff8800, transparent: true, opacity: 0.8 });
@@ -1004,6 +1086,11 @@ function createExplosion(position) {
 
 // --- Update Functions ---
 
+/**
+ * Updates all active projectiles (spheres).
+ * Moves them and checks for collisions with the world.
+ * @param {number} deltaTime - The time elapsed since the last frame.
+ */
 function updateProjectiles(deltaTime) {
     const meshes = Array.from(loadedChunks.values()).map(c => c.mesh).filter(m => m);
     for (let i = projectiles.length - 1; i >= 0; i--) {
@@ -1042,6 +1129,11 @@ function updateProjectiles(deltaTime) {
     }
 }
 
+/**
+ * Updates all active missiles.
+ * Moves them and checks for collisions or max lifetime.
+ * @param {number} deltaTime - The time elapsed since the last frame.
+ */
 function updateMissiles(deltaTime) {
     const meshes = Array.from(loadedChunks.values()).map(c => c.mesh).filter(m => m);
     for (let i = missiles.length - 1; i >= 0; i--) {
@@ -1085,6 +1177,10 @@ function updateMissiles(deltaTime) {
     }
 }
 
+/**
+ * Updates all active explosion effects, fading them out over time.
+ * @param {number} deltaTime - The time elapsed since the last frame.
+ */
 function updateExplosions(deltaTime) {
     for (let i = explosions.length - 1; i >= 0; i--) {
         const explosion = explosions[i];
@@ -1101,6 +1197,10 @@ function updateExplosions(deltaTime) {
     }
 }
 
+/**
+ * Updates all active muzzle flash effects, fading them out quickly.
+ * @param {number} deltaTime - The time elapsed since the last frame.
+ */
 function updateMuzzleFlashes(deltaTime) {
     for (let i = muzzleFlashes.length - 1; i >= 0; i--) {
         const flash = muzzleFlashes[i];
@@ -1120,6 +1220,11 @@ function updateMuzzleFlashes(deltaTime) {
     }
 }
 
+/**
+ * Checks if the player's bounding box at a given position is colliding with any world blocks.
+ * @param {THREE.Vector3} pos - The position to check (player's feet).
+ * @returns {boolean} True if there is a collision, false otherwise.
+ */
 function checkCollision(pos) {
     if (isFlying) return false;
 	const halfWidth = playerWidth / 2;
@@ -1139,7 +1244,10 @@ function checkCollision(pos) {
 	return false;
 }
 
-// --- NEW: Smoothly move rifle position based on aiming state ---
+/**
+ * Smoothly animates the rifle's position between hip-fire and Aim Down Sights (ADS).
+ * @param {number} deltaTime - The time elapsed since the last frame.
+ */
 function updateRiflePosition(deltaTime) {
     if (!rifle) return;
 
@@ -1153,6 +1261,10 @@ function updateRiflePosition(deltaTime) {
 
 // --- NEW: Toolgun Logic ---
 
+/**
+ * Picks up a block from the world using the toolgun.
+ * Removes the block from the world and creates a new, held block mesh.
+ */
 function pickupBlock() {
     if (heldBlock) return; // Already holding a block
 
@@ -1170,14 +1282,6 @@ function pickupBlock() {
         const blockData = getBlock(pX, pY, pZ);
         if (!blockData || blockData.type === 'bedrock') return;
 
-        // --- REMOVED OLD DISTANCE LOGIC ---
-        // const cameraPos = new THREE.Vector3();
-        // camera.getWorldPosition(cameraPos);
-        // const blockWorldPos = new THREE.Vector3(pX + 0.5, pY + 0.5, pZ + 0.5);
-        // const distance = cameraPos.distanceTo(blockWorldPos);
-        // const targetDistance = (distance < 3) ? 2.0 : 5.0; // <-- REMOVED
-        // --- END REMOVED LOGIC ---
-
         const originalPos = { x: pX, y: pY, z: pZ };
         
         // Remove block from world
@@ -1193,6 +1297,19 @@ function pickupBlock() {
         });
         const heldMesh = new THREE.Mesh(heldGeo, heldMat);
         
+        // --- NEW: Create blue glow mesh ---
+        const glowGeo = new THREE.BoxGeometry(1.1, 1.1, 1.1); // Slightly larger
+        const glowMat = new THREE.MeshBasicMaterial({
+            color: 0x00aaff,
+            transparent: true,
+            opacity: 0.3,
+            blending: THREE.AdditiveBlending, // Makes it glow
+            side: THREE.BackSide // Render inside-out to see the main block
+        });
+        const glowMesh = new THREE.Mesh(glowGeo, glowMat);
+        heldMesh.add(glowMesh); // Add glow as a child
+        // --- End new glow mesh ---
+
         // Start it at its original position before it slides
         heldMesh.position.set(pX + 0.5, pY + 0.5, pZ + 0.5); 
         scene.add(heldMesh);
@@ -1200,6 +1317,7 @@ function pickupBlock() {
         // Store held block
         heldBlock = { 
             mesh: heldMesh, 
+            glowMesh: glowMesh, // --- NEW: Store glow mesh
             data: blockData, 
             originalPos: originalPos, 
             targetDistance: 5.0, // <-- SET TO DEFAULT
@@ -1210,6 +1328,11 @@ function pickupBlock() {
     }
 }
 
+/**
+ * Places the currently held block into the world.
+ * Can place instantly or trigger a sliding animation towards the target position.
+ * @param {boolean} [instant=false] - If true, place the block immediately.
+ */
 function placeBlock(instant = false) { // <-- NEW PARAMETER
     if (!heldBlock) return;
 
@@ -1226,7 +1349,7 @@ function placeBlock(instant = false) { // <-- NEW PARAMETER
     } else {
         // Place 5 units away if aiming at sky
         const targetPos = new THREE.Vector3(0, 0, -5).applyMatrix4(camera.matrixWorld);
-        [finalX, finalY, finalZ] = [Math.floor(targetPos.x), Math.floor(targetPos.y), Math.floor(targetPos.z)];
+        [finalX, finalY, finalZ] = [Math.floor(targetPos.x), Math.floor(targetPos.y - 1), Math.floor(targetPos.z)]; // <-- MODIFIED Y
     }
 
     // Check for collision with player
@@ -1252,6 +1375,14 @@ function placeBlock(instant = false) { // <-- NEW PARAMETER
         modifiedBlocks.set(`${finalX},${finalY},${finalZ}`, heldBlock.data);
         markChunkForRegeneration(finalX, finalZ);
 
+        // --- NEW: Cleanup glow mesh ---
+        if (heldBlock.glowMesh) {
+            heldBlock.mesh.remove(heldBlock.glowMesh);
+            heldBlock.glowMesh.geometry.dispose();
+            heldBlock.glowMesh.material.dispose();
+        }
+        // --- End new cleanup ---
+
         // Clean up held block
         scene.remove(heldBlock.mesh);
         heldBlock.mesh.geometry.dispose();
@@ -1269,17 +1400,25 @@ function placeBlock(instant = false) { // <-- NEW PARAMETER
     // --- END MODIFIED LOGIC ---
 }
 
+/**
+ * Updates the position, rotation, and scale of the block held by the toolgun.
+ * Animates the block sliding into place when placing, or floats it in front of the camera.
+ * @param {number} deltaTime - The time elapsed since the last frame.
+ */
 function updateHeldBlockPosition(deltaTime) {
     if (!heldBlock) return;
 
-    let targetPos; // <-- MOVED
-    const lerpSpeed = 10.0 * deltaTime; // <-- MOVED
+    let targetPos;
+    const lerpSpeed = 10.0 * deltaTime;
+    let targetScale; // --- NEW: Define target scale
 
-    if (heldBlock.isPlacing) { // <-- NEW: Check for placing state
+    if (heldBlock.isPlacing) { 
         targetPos = heldBlock.targetPlacePosition;
+        targetScale = new THREE.Vector3(1, 1, 1); // --- NEW: Scale back up
         
         // Lerp towards the final spot
         heldBlock.mesh.position.lerp(targetPos, lerpSpeed);
+        heldBlock.mesh.scale.lerp(targetScale, lerpSpeed); // --- NEW: Lerp scale
         
         // Check if it's close enough to "snap"
         if (heldBlock.mesh.position.distanceTo(targetPos) < 0.05) {
@@ -1289,6 +1428,14 @@ function updateHeldBlockPosition(deltaTime) {
             modifiedBlocks.set(`${x},${y},${z}`, heldBlock.data);
             markChunkForRegeneration(x, z);
 
+            // --- NEW: Cleanup glow mesh ---
+            if (heldBlock.glowMesh) {
+                heldBlock.mesh.remove(heldBlock.glowMesh);
+                heldBlock.glowMesh.geometry.dispose();
+                heldBlock.glowMesh.material.dispose();
+            }
+            // --- End new cleanup ---
+
             // Clean up held block
             scene.remove(heldBlock.mesh);
             heldBlock.mesh.geometry.dispose();
@@ -1297,31 +1444,45 @@ function updateHeldBlockPosition(deltaTime) {
         }
 
     } else {
+        targetScale = new THREE.Vector3(0.666, 0.666, 0.666); // --- NEW: Scale down
+        let verticalOffset = 0.0; // --- NEW: Conditional offset
+
         // --- NEW DYNAMIC DISTANCE LOGIC ---
         const meshes = Array.from(loadedChunks.values()).map(c => c.mesh).filter(m => m);
+        let distance = Infinity; // --- NEW: Store distance
+
         if (meshes.length > 0) {
             raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
             const intersects = raycaster.intersectObjects(meshes);
 
             if (intersects.length > 0) {
-                const distance = intersects[0].distance;
+                distance = intersects[0].distance;
                 // --- MODIFIED: More continuous distance adjustment ---
-                if (distance < 2) {
-                    heldBlock.targetDistance = 2.0; // Looking at < 2, hold at 2
-                } else if (distance < 3) {
-                    heldBlock.targetDistance = 3.0; // Looking at 2-3, hold at 3
-                } else if (distance < 4) {
-                    heldBlock.targetDistance = 4.0; // Looking at 3-4, hold at 4
-                } else if (distance < 5) {
-                    heldBlock.targetDistance = 5.0; // Looking at 4-5, hold at 5
-                } else {
-                    heldBlock.targetDistance = 6.0; // Looking at >= 5, hold at 6
-                }
+                if (distance < 2.0) heldBlock.targetDistance = 1.5;
+                else if (distance < 2.5) heldBlock.targetDistance = 2.0;
+                else if (distance < 3.0) heldBlock.targetDistance = 2.5;
+                else if (distance < 3.5) heldBlock.targetDistance = 3.0;
+                else if (distance < 4.0) heldBlock.targetDistance = 3.5;
+                else if (distance < 4.5) heldBlock.targetDistance = 4.0;
+                else if (distance < 5.0) heldBlock.targetDistance = 4.5;
+                else if (distance < 5.5) heldBlock.targetDistance = 5.0;
+                else if (distance < 6.0) heldBlock.targetDistance = 5.5;
+                else if (distance < 6.5) heldBlock.targetDistance = 6.0;
+                else if (distance < 7.0) heldBlock.targetDistance = 6.5;
+                else if (distance < 7.5) heldBlock.targetDistance = 7.0;
+                else if (distance < 8.0) heldBlock.targetDistance = 7.5;
+                else heldBlock.targetDistance = 8.0;
                 // --- END MODIFICATION ---
             } else {
                 // Looking at sky
-                heldBlock.targetDistance = 6.0; // Set to max hold distance
+                heldBlock.targetDistance = 8.0; // Set to max hold distance
             }
+
+            // --- NEW: Set vertical offset based on distance ---
+            if (distance <= 7.0) {
+                verticalOffset = 0.5;
+            }
+            // --- End new offset logic ---
         }
         // --- END NEW DYNAMIC DISTANCE LOGIC ---
 
@@ -1334,7 +1495,10 @@ function updateHeldBlockPosition(deltaTime) {
         camera.getWorldDirection(cameraDir);
         targetPos = cameraPos.clone().add(cameraDir.clone().multiplyScalar(targetDist));
         
+        targetPos.y += verticalOffset; // <-- MODIFIED: Apply conditional offset
+
         heldBlock.mesh.position.lerp(targetPos, lerpSpeed);
+        heldBlock.mesh.scale.lerp(targetScale, lerpSpeed); // --- NEW: Scale down
         
         // Add a slight spin for effect
         heldBlock.mesh.rotation.y += 0.5 * deltaTime;
@@ -1342,6 +1506,10 @@ function updateHeldBlockPosition(deltaTime) {
     }
 }
 
+/**
+ * Creates or updates the toolgun's laser beam.
+ * The laser originates from the rifle muzzle and points to the held block or the block being aimed at.
+ */
 function updateToolgunLaser() {
     if (!toolgunLaser) {
         const laserGeo = new THREE.CylinderGeometry(0.05, 0.05, 1, 8); // radiusTop, radiusBottom, height, segments
@@ -1393,6 +1561,11 @@ function updateToolgunLaser() {
     toolgunLaser.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), laserEnd.clone().sub(laserStart).normalize()); // Align
 }
 
+/**
+ * Main update function for the toolgun.
+ * Manages laser visibility and updates the held block's position.
+ * @param {number} deltaTime - The time elapsed since the last frame.
+ */
 function updateToolgun(deltaTime) {
     if (currentMode !== 'toolgun') {
         // Clean up laser if we switch modes
@@ -1428,7 +1601,10 @@ function updateToolgun(deltaTime) {
 }
 // --- End Toolgun Logic ---
 
-
+/**
+ * Updates the player's position based on input, gravity, flying state, and collisions.
+ * @param {number} deltaTime - The time elapsed since the last frame.
+ */
 function updatePlayer(deltaTime) {
     if (!playerCube) return;
 	const moveVector = new THREE.Vector3(0, 0, 0);
@@ -1511,6 +1687,10 @@ function updatePlayer(deltaTime) {
 	if (playerCube.position.y < BEDROCK_LEVEL - 20) respawnPlayer();
 }
 
+/**
+ * Resets the player's position to the spawn point and resets velocity.
+ * Also forces the toolgun to drop any held block.
+ */
 function respawnPlayer() {
     if (heldBlock) placeBlock(true); // <-- MODIFIED
     playerCube.position.copy(playerSpawnPoint);
@@ -1520,6 +1700,10 @@ function respawnPlayer() {
 
 // --- Main Loop ---
 
+/**
+ * The main game loop. Called every frame by `requestAnimationFrame`.
+ * Updates all game systems and renders the scene.
+ */
 function animate() {
 	animationFrameId = requestAnimationFrame(animate); 
 	if (!isMobileDevice) stats.begin();
@@ -1542,6 +1726,10 @@ function animate() {
 // --- Event Handlers & Setup ---
 
 const PI_2 = Math.PI / 2;
+/**
+ * Handles mouse movement for rotating the player (Y-axis) and camera (X-axis).
+ * @param {object} event - A mouse move event or a custom object with `movementX` and `movementY`.
+ */
 function onMouseMove(event) {
     if (!isMobileDevice && document.pointerLockElement !== renderer.domElement) return;
 
@@ -1555,6 +1743,10 @@ function onMouseMove(event) {
     camera.rotation.x = Math.max(-PI_2, Math.min(PI_2, camera.rotation.x));
 }
 
+/**
+ * Saves the current world state (seed and modified blocks) to a JSON file.
+ * Forces the toolgun to drop any held block before saving.
+ */
 function saveWorld() {
     // NEW: Drop block before saving
     if (heldBlock) {
@@ -1589,6 +1781,10 @@ function saveWorld() {
     console.log("World saved!");
 }
 
+/**
+ * Loads block modifications from a loaded world file object.
+ * @param {object} loadedBlocks - An object mapping block keys to block data.
+ */
 function loadModifications(loadedBlocks) {
     modifiedBlocks.clear();
     for (const key in loadedBlocks) {
@@ -1618,6 +1814,10 @@ let jumpStart, jumpEnd, actionStart, switchModeStart;
 let rendererTouchStart, rendererTouchMove, endLookTouchHandler;
 
 
+/**
+ * Sets up all global event listeners.
+ * Detects mobile/desktop and calls the appropriate setup function.
+ */
 function setupEventListeners() {
     // --- Window Resize (Shared) ---
     if (onWindowResize) window.removeEventListener('resize', onWindowResize, false);
@@ -1654,7 +1854,9 @@ function setupEventListeners() {
 	updateModeButtons();
 }
 
-// --- NEW: Cleanup function for desktop controls ---
+/**
+ * Removes all event listeners related to desktop controls.
+ */
 function cleanupDesktopControls() {
     if (onKeyDown) document.removeEventListener('keydown', onKeyDown);
     if (onKeyUp) document.removeEventListener('keyup', onKeyUp);
@@ -1668,6 +1870,9 @@ function cleanupDesktopControls() {
     onKeyDown = onKeyUp = onRendererClick = onPointerLockChange = onDocMouseDown = onDocMouseUp = onDocContextMenu = null;
 }
 
+/**
+ * Sets up all event listeners for desktop (keyboard/mouse) controls.
+ */
 function setupDesktopControls() {
     cleanupDesktopControls(); // Clean up just in case
     console.log("Setting up desktop controls.");
@@ -1713,7 +1918,9 @@ function setupDesktopControls() {
     document.addEventListener('contextmenu', onDocContextMenu, false);
 }
 
-// --- NEW: Cleanup function for mobile controls ---
+/**
+ * Removes all event listeners related to mobile touch controls.
+ */
 function cleanupMobileControls() {
     const joystick = document.getElementById('joystick-container');
     if (joystickStart) joystick.removeEventListener('touchstart', joystickStart, { passive: false });
@@ -1742,6 +1949,9 @@ function cleanupMobileControls() {
     joystickStart = windowTouchMove = endJoystickHandler = jumpStart = jumpEnd = actionStart = switchModeStart = rendererTouchStart = rendererTouchMove = endLookTouchHandler = null;
 }
 
+/**
+ * Sets up all event listeners for mobile (touch) controls, including the joystick and buttons.
+ */
 function setupMobileControls() {
     cleanupMobileControls(); // Clean up just in case
     console.log("Setting up mobile controls.");
@@ -1895,6 +2105,10 @@ function setupMobileControls() {
     renderer.domElement.addEventListener('touchcancel', endLookTouchHandler);
 }
 
+/**
+ * Updates the UI (desktop and mobile) to reflect the currently active mode.
+ * Shows/hides the color picker based on mode.
+ */
 function updateModeButtons() {
 	document.getElementById('add-mode-btn').classList.toggle('active', currentMode === 'add');
 	document.getElementById('shoot-mode-btn').classList.toggle('active', currentMode === 'shoot');
@@ -1925,7 +2139,9 @@ function updateModeButtons() {
     }
 }
 
-
+/**
+ * Toggles the scene's fog on or off. (Exposed to window for debugging).
+ */
 window.toggleFog = function() {
     if (scene.fog) {
         scene.fog = null;
@@ -1935,6 +2151,8 @@ window.toggleFog = function() {
         console.log("Fog enabled.");
     }
 }
+
+// --- Initial Game Start & File Loading Listeners ---
 
 document.getElementById('start-game-btn').addEventListener('click', () => {
     const seed = document.getElementById('seed-input').value;
@@ -1965,7 +2183,7 @@ document.getElementById('load-file-input').addEventListener('change', (event) =>
         }
         event.target.value = '';
     };
-    reader.readAsText(file);
+    reader.readAsText(file); // <-- This was reader.readText(file)
 });
 
 document.getElementById('seed-input').addEventListener('keypress', function (e) {
@@ -1977,11 +2195,4 @@ document.getElementById('seed-input').addEventListener('keypress', function (e) 
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
 
