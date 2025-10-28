@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Play 0.15a</title>
+    <title>Play 0.16a</title>
     <style>
         body { 
             margin: 0; 
@@ -236,12 +236,12 @@
     
     <input type="file" id="load-file-input" accept=".json" style="display: none;">
 
-    <div id="info"><strong>0.15a</strong><br><br>Press 'F' to toggle fly mode.</div>
+    <div id="info"><strong>0.16a</strong><br><br>Press 'F' to fly.</div>
     <div id="mode-selector">
-        <button id="add-mode-btn">Create(1)</button>
-        <button id="shoot-mode-btn">Shoot(2)</button>
-        <button id="missile-mode-btn">Explode(3)</button>
-        <button id="toolgun-mode-btn">Toolgun(4)</button>
+        <button id="toolgun-mode-btn">Tool Gun(1)</button>
+        <button id="add-mode-btn">Create(2)</button>
+        <button id="shoot-mode-btn">Shoot(3)</button>
+        <button id="missile-mode-btn">Explode(4)</button>
         <button id="save-world-btn">Save World</button>
         <button id="ingame-load-world-btn">Load World</button>
     </div>
@@ -308,9 +308,10 @@ let isAiming = false;
 const hipRiflePosition = new THREE.Vector3(0.4, -0.25, -0.7);
 const adsRiflePosition = new THREE.Vector3(0, -0.2, -0.5); 
 
-const modes = ['add', 'shoot', 'missile', 'toolgun']; 
+// Updated mode order for mobile cycling and initial state
+const modes = ['toolgun', 'add', 'shoot', 'missile']; 
 let currentModeIndex = 0;
-let currentMode = 'add';
+let currentMode = 'toolgun'; // Start with Tool Gun as default
 let currentColor = 0x999999;
 const modifiedBlocks = new Map();
 
@@ -328,6 +329,8 @@ const MISSILE_KNOCKBACK_FORCE = 25.0;
 let explosions = [];
 let muzzleFlashes = [];
 const MUZZLE_FLASH_DURATION = 0.05;
+let laserFlashes = [];
+const LASER_FLASH_DURATION = 0.05;
 let droppedBlocks = []; 
 let snowflakes = []; 
 let lastPlayerPos = new THREE.Vector3(); 
@@ -645,6 +648,7 @@ function performAction() {
             
 			modifiedBlocks.set(`${finalX},${finalY},${finalZ}`, { color: new THREE.Color(currentColor), type: 'normal' });
             markChunkForRegeneration(finalX, finalZ);
+            createLaserFlash(new THREE.Vector3(finalX + 0.5, finalY + 0.5, finalZ + 0.5));
 
 		} else if (currentMode === 'remove') { 
             const blockPos = intersect.point.clone().sub(intersect.face.normal.clone().multiplyScalar(0.01));
@@ -754,6 +758,7 @@ function init(seedString) {
     missiles = [];
     explosions = [];
     muzzleFlashes = []; 
+    laserFlashes = [];
     droppedBlocks = []; 
     snowflakes = []; 
     currentPlayerChunkX = undefined;
@@ -855,11 +860,16 @@ function createRifle() {
     const stockPad = new THREE.Mesh(stockPadGeo, bodyMaterial);
     stockPad.position.set(-0.6, 0.0, 0);
     rifleGroup.add(stockPad);
+
+    // Barrel uses its own material for the pulsating effect
+    const barrelMaterial = new THREE.MeshStandardMaterial({ color: 0x555555, metalness: 0.9, roughness: 0.4 });
     const barrelGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.9, 12);
-    const barrel = new THREE.Mesh(barrelGeo, metalMaterial);
+    const barrel = new THREE.Mesh(barrelGeo, barrelMaterial);
     barrel.rotation.z = Math.PI / 2;
     barrel.position.set(0.8, 0.05, 0);
     rifleGroup.add(barrel);
+    rifleGroup.barrel = barrel; // Store reference to the barrel
+
     const muzzleGeo = new THREE.CylinderGeometry(0.07, 0.07, 0.15, 6);
     const muzzle = new THREE.Mesh(muzzleGeo, metalMaterial);
     muzzle.rotation.z = Math.PI / 2;
@@ -921,6 +931,35 @@ function createMuzzleFlash() {
     rifle.add(flashMesh);
     muzzleFlashes.push({ mesh: flashMesh, timer: MUZZLE_FLASH_DURATION });
 }
+
+// Creates a temporary laser flash effect from the rifle to a target position.
+function createLaserFlash(targetPosition) {
+    if (!rifle) return;
+
+    const laserGeo = new THREE.CylinderGeometry(0.05, 0.05, 1, 8); 
+    const laserMaterial = new THREE.MeshBasicMaterial({ 
+        color: 0x00FFFF, 
+        transparent: true, 
+        opacity: 0.7, // Start opacity
+        blending: THREE.AdditiveBlending
+    });
+    const laserMesh = new THREE.Mesh(laserGeo, laserMaterial);
+
+    const laserStart = new THREE.Vector3(1.3, 0.05, 0); 
+    rifle.updateWorldMatrix(true, false); 
+    laserStart.applyMatrix4(rifle.matrixWorld); 
+    
+    const laserEnd = targetPosition;
+    
+    const distance = laserStart.distanceTo(laserEnd);
+    laserMesh.scale.y = distance; 
+    laserMesh.position.copy(laserStart).add(laserEnd).multiplyScalar(0.5); 
+    laserMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), laserEnd.clone().sub(laserStart).normalize()); 
+
+    scene.add(laserMesh);
+    laserFlashes.push({ mesh: laserMesh, timer: LASER_FLASH_DURATION });
+}
+
 
 // Creates an explosion effect, destroying blocks and applying knockback.
 function createExplosion(position) {
@@ -1011,7 +1050,7 @@ function createExplosion(position) {
     }
 }
 
-
+// MOVED FUNCTIONS START
 // Creates a spinning, collectible item when a block is destroyed.
 function createDroppedBlock(position, blockData) {
     const dropGeo = new THREE.BoxGeometry(0.25, 0.25, 0.25);
@@ -1056,16 +1095,18 @@ function createSnowflake(playerPos, playerVel) {
     const spawnY = playerPos.y + playerHeight + 5 + (Math.random() * 3); 
     const spawnFloorX = Math.floor(spawnX);
     const spawnFloorZ = Math.floor(spawnZ);
+    const spawnFloorY = Math.floor(spawnY); // <-- Added this line
 
     if (playerCube) { 
-        const playerFloorY = Math.floor(playerCube.position.y);
-        for (let y = playerFloorY; y < playerFloorY + 100; y++) {
+        // BUGFIX: Check for blocks *above* the spawn point, not from the player's height.
+        // This prevents hills *below* the spawn point from blocking the snow.
+        for (let y = spawnFloorY; y < spawnFloorY + 50; y++) { // Check 50 blocks *up* from spawn
             if (getBlock(spawnFloorX, y, spawnFloorZ)) {
                 snowGeo.dispose();
                 snowMat.dispose();
                 snowMesh.geometry.dispose(); 
                 snowMesh.material.dispose();
-                return; 
+                return; // This snowflake is under a roof, don't spawn it.
             }
         }
     }
@@ -1266,6 +1307,24 @@ function updateMuzzleFlashes(deltaTime) {
     }
 }
 
+// Fades out and removes active laser flash effects.
+function updateLaserFlashes(deltaTime) {
+    for (let i = laserFlashes.length - 1; i >= 0; i--) {
+        const flash = laserFlashes[i];
+        flash.timer -= deltaTime;
+        
+        const fade = Math.max(0, flash.timer / LASER_FLASH_DURATION);
+        flash.mesh.material.opacity = fade * 0.7; // Fade from 0.7 to 0
+
+        if (flash.timer <= 0) {
+            scene.remove(flash.mesh); // Remove from scene
+            flash.mesh.geometry.dispose();
+            flash.mesh.material.dispose();
+            laserFlashes.splice(i, 1);
+        }
+    }
+}
+
 // Updates physics, player attraction, and lifetime for dropped blocks.
 function updateDroppedBlocks(deltaTime) {
     if (!playerCube) return;
@@ -1311,6 +1370,7 @@ function updateDroppedBlocks(deltaTime) {
     }
 }
 
+// MOVED FUNCTIONS END
 
 // Checks if the player's bounding box is colliding with any world blocks.
 function checkCollision(pos) {
@@ -1717,6 +1777,7 @@ function animate() {
 	if (!isMobileDevice) stats.begin();
 
 	const deltaTime = Math.min(0.05, clock.getDelta());
+    const elapsedTime = clock.getElapsedTime();
     
     let playerHorizontalVelocity = new THREE.Vector3(0, 0, 0);
     if (playerCube && deltaTime > 0) {
@@ -1729,11 +1790,25 @@ function animate() {
     
 	updatePlayer(deltaTime);
     updateRiflePosition(deltaTime);
+
+    // Pulsate rifle barrel in specific modes
+    if (rifle && rifle.barrel) {
+        const barrelMaterial = rifle.barrel.material;
+        if (currentMode === 'add' || currentMode === 'toolgun') {
+            const pulse = (Math.sin(elapsedTime * 4) + 1) / 2; // Oscillates between 0.0 and 1.0
+            barrelMaterial.emissive.setHex(0x00ffff);
+            barrelMaterial.emissiveIntensity = pulse * 1.5;
+        } else {
+            barrelMaterial.emissiveIntensity = 0;
+        }
+    }
+
     updateToolgun(deltaTime); 
     updateProjectiles(deltaTime);
     updateMissiles(deltaTime);
     updateExplosions(deltaTime);
     updateMuzzleFlashes(deltaTime); 
+    updateLaserFlashes(deltaTime);
     updateDroppedBlocks(deltaTime); 
     updateSnowflakes(deltaTime, playerHorizontalVelocity); 
 	updateWorld();
@@ -1879,10 +1954,11 @@ function setupDesktopControls() {
     
     onKeyDown = (event) => {
         keys[event.code] = true;
-        if (event.code === 'Digit1') currentMode = 'add', updateModeButtons();
-        else if (event.code === 'Digit2') currentMode = 'shoot', updateModeButtons();
-        else if (event.code === 'Digit3') currentMode = 'missile', updateModeButtons();
-        else if (event.code === 'Digit4') currentMode = 'toolgun', updateModeButtons(); 
+        // Updated key mappings
+        if (event.code === 'Digit1') currentMode = 'toolgun', updateModeButtons(); 
+        else if (event.code === 'Digit2') currentMode = 'add', updateModeButtons();
+        else if (event.code === 'Digit3') currentMode = 'shoot', updateModeButtons();
+        else if (event.code === 'Digit4') currentMode = 'missile', updateModeButtons();
         else if (event.code === 'KeyF') {
             isFlying = !isFlying;
             playerJumpCount = isFlying ? 0 : playerJumpCount;
@@ -2169,4 +2245,5 @@ document.getElementById('seed-input').addEventListener('keypress', function (e) 
 </script>
 </body>
 </html>
+
 
