@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Play 0.17a</title>
+    <title>Play 0.18a</title>
     <style>
         body { 
             margin: 0; 
@@ -262,7 +262,7 @@
     
     <input type="file" id="load-file-input" accept=".json" style="display: none;">
 
-    <div id="info"><strong>0.17a</strong><br><br>'F' to fly.</div>
+    <div id="info"><strong>0.18a</strong><br><br>'F' to fly.</div>
     <div id="block-counter">Blocks: 0</div>
     <div id="xp-counter">XP: 0</div>
 
@@ -334,8 +334,11 @@ const keys = {};
 let spaceWasPressedLastFrame = false;
 const clock = new THREE.Clock();
 let isAiming = false;
-const hipRiflePosition = new THREE.Vector3(0.4, -0.25, -0.7);
-const adsRiflePosition = new THREE.Vector3(0, -0.2, -0.5); 
+const DESKTOP_HIP_RIFLE_POS = new THREE.Vector3(0.4, -0.25, -0.7);
+const DESKTOP_ADS_RIFLE_POS = new THREE.Vector3(0, -0.2, -0.5); 
+const MOBILE_HIP_RIFLE_POS = new THREE.Vector3(0.3, -0.25, -0.65); // More left (less X) and more forward (less neg Z)
+const MOBILE_ADS_RIFLE_POS = new THREE.Vector3(0, -0.2, -0.5); // Same as desktop
+let isFiring = false;
 
 const modes = ['toolgun', 'add', 'shoot', 'missile']; 
 let currentModeIndex = 0;
@@ -353,6 +356,8 @@ let toolgunLaser = null;
 let isToolgunActive = false; 
 
 let projectiles = [];
+let shootCooldown = 0;
+const FIRE_RATE = 0.1; // 10 shots per second
 const PROJECTILE_SPEED = 160.0;
 let missiles = [];
 const MISSILE_SPEED = 40.0;
@@ -649,10 +654,11 @@ function performAction() {
         return;
     }
 
-    if (currentMode === 'shoot') {
-        fireSphere();
-        return;
-    }
+    // 'shoot' mode is now handled in the animate() loop for full auto
+    // if (currentMode === 'shoot') {
+    //     fireSphere();
+    //     return;
+    // }
     if (currentMode === 'missile') {
         fireMissile();
         return;
@@ -717,10 +723,11 @@ function onMouseDown(event) {
     if (event.preventDefault) event.preventDefault();
 
     if (event.button === 0) {
+        isFiring = true;
         if (currentMode === 'toolgun') {
             isToolgunActive = true; 
             pickupBlock(); 
-        } else {
+        } else if (currentMode !== 'shoot') { // 'shoot' is handled in animate loop
             performAction(); 
         }
     }
@@ -735,6 +742,7 @@ function onMouseUp(event) {
     if (event.preventDefault) event.preventDefault();
 
     if (event.button === 0) {
+        isFiring = false;
         if (currentMode === 'toolgun') {
             isToolgunActive = false; 
             placeBlock(); 
@@ -885,7 +893,12 @@ function createPlayer() {
 	playerCube.add(camera);
 
     rifle = createRifle(); 
-    rifle.position.copy(hipRiflePosition); 
+    // Set initial position based on device
+    if (isMobileDevice) {
+        rifle.position.copy(MOBILE_HIP_RIFLE_POS);
+    } else {
+        rifle.position.copy(DESKTOP_HIP_RIFLE_POS);
+    }
     rifle.rotation.y = Math.PI / 2;
     rifle.scale.set(0.5, 0.5, 0.5);
     camera.add(rifle);
@@ -1598,7 +1611,13 @@ function checkCollision(pos) {
 function updateRiflePosition(deltaTime) {
     if (!rifle) return;
 
-    const targetPosition = isAiming ? adsRiflePosition : hipRiflePosition;
+    let targetPosition;
+    if (isMobileDevice) {
+        targetPosition = isAiming ? MOBILE_ADS_RIFLE_POS : MOBILE_HIP_RIFLE_POS;
+    } else {
+        targetPosition = isAiming ? DESKTOP_ADS_RIFLE_POS : DESKTOP_HIP_RIFLE_POS;
+    }
+    
     const lerpSpeed = 10.0 * deltaTime; 
     
     rifle.position.lerp(targetPosition, lerpSpeed);
@@ -1993,6 +2012,13 @@ function animate() {
 	const deltaTime = Math.min(0.05, clock.getDelta());
     const elapsedTime = clock.getElapsedTime();
     
+    shootCooldown = Math.max(0, shootCooldown - deltaTime);
+
+    if (isFiring && currentMode === 'shoot' && shootCooldown <= 0) {
+        fireSphere();
+        shootCooldown = FIRE_RATE;
+    }
+
     let playerHorizontalVelocity = new THREE.Vector3(0, 0, 0);
     if (playerCube && deltaTime > 0) {
          playerHorizontalVelocity.set(
@@ -2103,7 +2129,7 @@ function loadModifications(loadedBlocks) {
 let onWindowResize;
 let onKeyDown, onKeyUp, onRendererClick, onPointerLockChange, onDocMouseDown, onDocMouseUp, onDocContextMenu;
 let joystickStart, windowTouchMove, endJoystickHandler;
-let jumpStart, jumpEnd, actionStart, switchModeStart;
+let jumpStart, jumpEnd, actionStart, actionEnd, switchModeStart;
 let rendererTouchStart, rendererTouchMove, endLookTouchHandler;
 
 
@@ -2220,6 +2246,10 @@ function cleanupMobileControls() {
     if (jumpStart) jumpBtn.removeEventListener('touchstart', jumpStart, { passive: false });
     if (jumpEnd) jumpBtn.removeEventListener('touchend', jumpEnd, { passive: false });
     if (actionStart) actionBtn.removeEventListener('touchstart', actionStart, { passive: false });
+    if (actionEnd) {
+        actionBtn.removeEventListener('touchend', actionEnd, { passive: false });
+        actionBtn.removeEventListener('touchcancel', actionEnd, { passive: false });
+    }
     if (switchModeStart) switchModeBtn.removeEventListener('touchstart', switchModeStart, { passive: false });
 
     if (renderer && rendererTouchStart) renderer.domElement.removeEventListener('touchstart', rendererTouchStart, { passive: false });
@@ -2229,7 +2259,7 @@ function cleanupMobileControls() {
         renderer.domElement.removeEventListener('touchcancel', endLookTouchHandler);
     }
 
-    joystickStart = windowTouchMove = endJoystickHandler = jumpStart = jumpEnd = actionStart = switchModeStart = rendererTouchStart = rendererTouchMove = endLookTouchHandler = null;
+    joystickStart = windowTouchMove = endJoystickHandler = jumpStart = jumpEnd = actionStart = actionEnd = switchModeStart = rendererTouchStart = rendererTouchMove = endLookTouchHandler = null;
 }
 
 function setupMobileControls() {
@@ -2331,15 +2361,21 @@ function setupMobileControls() {
 
     actionStart = (e) => { 
         e.preventDefault(); 
+        isFiring = true;
+
         if (currentMode === 'toolgun') {
             isToolgunActive = true;
-            performAction(); 
+            performAction(); // This will pickup or place
             isToolgunActive = false;
-        } else {
-            performAction(); 
+        } else if (currentMode !== 'shoot') {
+            performAction(); // Fire once for other modes
         }
+        // If mode is 'shoot', isFiring is set to true, and animate loop handles it.
     };
+    actionEnd = (e) => { e.preventDefault(); isFiring = false; };
     actionBtn.addEventListener('touchstart', actionStart, { passive: false });
+    actionBtn.addEventListener('touchend', actionEnd, { passive: false });
+    actionBtn.addEventListener('touchcancel', actionEnd, { passive: false });
  
  
     switchModeStart = (e) => {
