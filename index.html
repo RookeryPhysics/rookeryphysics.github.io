@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Play 0.16a</title>
+    <title>Play 0.17a</title>
     <style>
         body { 
             margin: 0; 
@@ -21,6 +21,32 @@
 
         canvas { display: block; }
         #info { position: absolute; top: 10px; left: 10px; padding: 10px 15px; background-color: rgba(0,0,0,0.5); border-radius: 8px; color: #fff; z-index: 10; }
+        
+        #block-counter { 
+            position: absolute; 
+            top: 60px; 
+            right: 10px; 
+            padding: 10px 15px; 
+            background-color: rgba(0,0,0,0.5); 
+            border-radius: 8px; 
+            color: #fff; 
+            z-index: 10; 
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        #xp-counter { 
+            position: absolute; 
+            top: 115px; 
+            right: 10px; 
+            padding: 10px 15px; 
+            background-color: rgba(0,0,0,0.5); 
+            border-radius: 8px; 
+            color: #00FFFF; 
+            z-index: 10; 
+            font-size: 16px;
+            font-weight: bold;
+        }
         
         #mode-selector { position: absolute; bottom: 10px; left: 10px; display: flex; flex-direction: column; gap: 8px; padding: 12px; background-color: rgba(40,40,40,0.85); border-radius: 8px; z-index: 100; }
         #mode-selector button { background-color: #4f4f4f; color: white; border: 1px solid #666; padding: 8px 16px; border-radius: 6px; cursor: pointer; transition: background-color 0.2s; }
@@ -236,7 +262,10 @@
     
     <input type="file" id="load-file-input" accept=".json" style="display: none;">
 
-    <div id="info"><strong>0.16a</strong><br><br>Press 'F' to fly.</div>
+    <div id="info"><strong>0.17a</strong><br><br>'F' to fly.</div>
+    <div id="block-counter">Blocks: 0</div>
+    <div id="xp-counter">XP: 0</div>
+
     <div id="mode-selector">
         <button id="toolgun-mode-btn">Tool Gun(1)</button>
         <button id="add-mode-btn">Create(2)</button>
@@ -308,13 +337,17 @@ let isAiming = false;
 const hipRiflePosition = new THREE.Vector3(0.4, -0.25, -0.7);
 const adsRiflePosition = new THREE.Vector3(0, -0.2, -0.5); 
 
-// Updated mode order for mobile cycling and initial state
 const modes = ['toolgun', 'add', 'shoot', 'missile']; 
 let currentModeIndex = 0;
-let currentMode = 'toolgun'; // Start with Tool Gun as default
+let currentMode = 'toolgun';
 let currentColor = 0x999999;
 const modifiedBlocks = new Map();
-
+ 
+let blockInventory = 0;
+let goldInventory = 0;
+let goldNuggets = [];
+const MAX_ORB_LIGHTS = 10; // Max number of orb lights allowed at once
+ 
 let heldBlock = null;
 let toolgunLaser = null;
 let isToolgunActive = false; 
@@ -352,19 +385,16 @@ const BEDROCK_COLOR_1 = new THREE.Color(0x303030);
 const BEDROCK_COLOR_2 = new THREE.Color(0x3a3a3a);
 
 
-// Checks if the user's device is a mobile phone.
 function isMobile() {
     const regex = /Mobi|Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
     return regex.test(navigator.userAgent);
 }
 
-// Calculates the terrain height at a specific world coordinate.
 function getTerrainHeight(worldX, worldZ) {
 	let height = noise.perlin2(worldX / TERRAIN_SCALE, worldZ / TERRAIN_SCALE); 
 	return Math.floor(height * TERRAIN_AMPLITUDE);
 }
 
-// Gets the block data (color, type) at a world coordinate.
 function getBlock(x, y, z) {
     const floorX = Math.floor(x);
     const floorY = Math.floor(y);
@@ -385,17 +415,20 @@ function getBlock(x, y, z) {
     }
 	const isEven = (floorX + floorZ) % 2 === 0;
 	let color;
+    let blockType;
 	if (floorY === height) {
 		color = SNOW_COLOR;
+        blockType = 'snow';
 	} else if (floorY > height - 4) {
 		color = isEven ? DIRT_COLOR_1 : DIRT_COLOR_2;
+        blockType = 'dirt';
 	} else {
 		color = isEven ? STONE_COLOR_1 : STONE_COLOR_2;
+        blockType = 'stone';
 	}
-	return { color, type: 'normal' };
+	return { color, type: blockType };
 }
 
-// Generates the 3D mesh for a specific world chunk.
 function generateChunk(chunkX, chunkZ) {
 	const chunkKey = `${chunkX},${chunkZ}`;
 	if (loadedChunks.has(chunkKey)) {
@@ -459,7 +492,6 @@ function generateChunk(chunkX, chunkZ) {
 	loadedChunks.set(chunkKey, { mesh: chunkMesh, needsRegeneration: false });
 }
 
-// Removes a chunk's mesh from the scene and disposes of its assets.
 function unloadChunk(chunkX, chunkZ, removeFromMap = true) {
 	const chunkKey = `${chunkX},${chunkZ}`;
 	const chunkData = loadedChunks.get(chunkKey);
@@ -472,7 +504,6 @@ function unloadChunk(chunkX, chunkZ, removeFromMap = true) {
 	}
 }
 
-// Loads/unloads chunks as the player moves and regenerates dirty chunks.
 function updateWorld() {
     if (!playerCube) return;
 	const playerChunkX = Math.floor(playerCube.position.x / CHUNK_SIZE);
@@ -503,7 +534,6 @@ function updateWorld() {
 	}
 }
 
-// Marks a chunk and its neighbors as needing regeneration.
 function markChunkForRegeneration(worldX, worldZ) {
     const chunkX = Math.floor(worldX / CHUNK_SIZE);
     const chunkZ = Math.floor(worldZ / CHUNK_SIZE);
@@ -529,7 +559,20 @@ function markChunkForRegeneration(worldX, worldZ) {
     }
 }
 
-// Fires a standard projectile.
+function updateBlockCounter() {
+    const counterElement = document.getElementById('block-counter');
+    if (counterElement) {
+        counterElement.innerText = `Blocks: ${blockInventory}`;
+    }
+}
+
+function updateXPCounter() {
+    const counterElement = document.getElementById('xp-counter');
+    if (counterElement) {
+        counterElement.innerText = `XP: ${goldInventory}`;
+    }
+}
+
 function fireSphere() {
     createMuzzleFlash(); 
     const projectileGeometry = new THREE.SphereGeometry(0.2, 8, 8);
@@ -551,7 +594,6 @@ function fireSphere() {
     scene.add(projectile);
 }
 
-// Fires a missile that explodes on impact.
 function fireMissile() {
     const missileGroup = new THREE.Group();
     const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.6, roughness: 0.4 });
@@ -597,7 +639,6 @@ function fireMissile() {
     scene.add(missileGroup);
 }
 
-// Handles the primary action (add, shoot, missile, toolgun) based on the current mode.
 function performAction() {
     if (currentMode === 'toolgun') {
         if (heldBlock) {
@@ -629,6 +670,10 @@ function performAction() {
 		let finalX, finalY, finalZ;
 		
         if (currentMode === 'add') {
+            if (blockInventory <= 0) {
+                return; 
+            }
+
 			const adjacentBlockPos = intersect.point.clone().add(intersect.face.normal.clone().multiplyScalar(0.01));
 			[finalX, finalY, finalZ] = [Math.floor(adjacentBlockPos.x), Math.floor(adjacentBlockPos.y), Math.floor(adjacentBlockPos.z)];
             
@@ -647,6 +692,8 @@ function performAction() {
             }
             
 			modifiedBlocks.set(`${finalX},${finalY},${finalZ}`, { color: new THREE.Color(currentColor), type: 'normal' });
+            blockInventory--;
+            updateBlockCounter();
             markChunkForRegeneration(finalX, finalZ);
             createLaserFlash(new THREE.Vector3(finalX + 0.5, finalY + 0.5, finalZ + 0.5));
 
@@ -664,7 +711,6 @@ function performAction() {
 	}
 }
 
-// Handles desktop mouse down events for firing, aiming, or picking up blocks.
 function onMouseDown(event) {
     if (!isMobileDevice && document.pointerLockElement !== renderer.domElement) return;
     
@@ -683,7 +729,6 @@ function onMouseDown(event) {
     }
 }
 
-// Handles desktop mouse up events for placing blocks or stopping aim.
 function onMouseUp(event) {
     if (isMobileDevice) return; 
     
@@ -700,7 +745,6 @@ function onMouseUp(event) {
     }
 }
 
-// Initializes or re-initializes the entire game scene, world, and player.
 function init(seedString) {
     isMobileDevice = isMobile(); 
 
@@ -737,6 +781,10 @@ function init(seedString) {
     }
     if (scene) {
         scene.traverse(object => {
+             // Dispose lights properly
+            if (object.isLight) {
+                 if (object.dispose) object.dispose();
+            }
             if (object.isMesh) {
                 if (object.geometry) object.geometry.dispose();
                 if (object.material) {
@@ -761,9 +809,15 @@ function init(seedString) {
     laserFlashes = [];
     droppedBlocks = []; 
     snowflakes = []; 
+    goldNuggets = [];
     currentPlayerChunkX = undefined;
     currentPlayerChunkZ = undefined;
-
+    
+    blockInventory = 0;
+    goldInventory = 0;
+    updateBlockCounter();
+    updateXPCounter();
+ 
     worldSeedString = seedString;
     let seedValue;
     if (seedString && seedString.trim() !== "") {
@@ -773,11 +827,9 @@ function init(seedString) {
             seedValue = ((seedValue << 5) - seedValue) + char;
             seedValue = seedValue & seedValue;
         }
-        console.log(`Using provided seed: "${seedString}" (Hashed: ${seedValue})`);
     } else {
         seedValue = Math.random();
         worldSeedString = seedValue.toString();
-        console.log(`No seed provided, using random seed: ${seedValue}`);
     }
     noise = new Noise(seedValue);
 
@@ -819,7 +871,6 @@ function init(seedString) {
 	animate(); 
 }
 
-// Creates the player object, camera, and attaches the rifle.
 function createPlayer() {
 	const startY = getTerrainHeight(0, 0) + 5; 
 	const geometry = new THREE.BoxGeometry(playerWidth, playerHeight, playerWidth);
@@ -842,7 +893,6 @@ function createPlayer() {
     lastPlayerPos.copy(playerCube.position);
 }
 
-// Creates and returns the 3D model for the rifle.
 function createRifle() {
     const rifleGroup = new THREE.Group();
     const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0x222228, metalness: 0.2, roughness: 0.6 });
@@ -861,14 +911,13 @@ function createRifle() {
     stockPad.position.set(-0.6, 0.0, 0);
     rifleGroup.add(stockPad);
 
-    // Barrel uses its own material for the pulsating effect
     const barrelMaterial = new THREE.MeshStandardMaterial({ color: 0x555555, metalness: 0.9, roughness: 0.4 });
     const barrelGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.9, 12);
     const barrel = new THREE.Mesh(barrelGeo, barrelMaterial);
     barrel.rotation.z = Math.PI / 2;
     barrel.position.set(0.8, 0.05, 0);
     rifleGroup.add(barrel);
-    rifleGroup.barrel = barrel; // Store reference to the barrel
+    rifleGroup.barrel = barrel; 
 
     const muzzleGeo = new THREE.CylinderGeometry(0.07, 0.07, 0.15, 6);
     const muzzle = new THREE.Mesh(muzzleGeo, metalMaterial);
@@ -915,7 +964,6 @@ function createRifle() {
     return rifleGroup;
 }
 
-// Creates a temporary muzzle flash effect at the rifle's barrel.
 function createMuzzleFlash() {
     if (!rifle) return; 
     const flashGeo = new THREE.SphereGeometry(0.12, 8, 8);
@@ -932,7 +980,6 @@ function createMuzzleFlash() {
     muzzleFlashes.push({ mesh: flashMesh, timer: MUZZLE_FLASH_DURATION });
 }
 
-// Creates a temporary laser flash effect from the rifle to a target position.
 function createLaserFlash(targetPosition) {
     if (!rifle) return;
 
@@ -940,7 +987,7 @@ function createLaserFlash(targetPosition) {
     const laserMaterial = new THREE.MeshBasicMaterial({ 
         color: 0x00FFFF, 
         transparent: true, 
-        opacity: 0.7, // Start opacity
+        opacity: 0.7,
         blending: THREE.AdditiveBlending
     });
     const laserMesh = new THREE.Mesh(laserGeo, laserMaterial);
@@ -961,7 +1008,6 @@ function createLaserFlash(targetPosition) {
 }
 
 
-// Creates an explosion effect, destroying blocks and applying knockback.
 function createExplosion(position) {
     const geometry = new THREE.SphereGeometry(MISSILE_EXPLOSION_RADIUS, 16, 16);
     const material = new THREE.MeshBasicMaterial({ color: 0xff8800, transparent: true, opacity: 0.8 });
@@ -1050,9 +1096,11 @@ function createExplosion(position) {
     }
 }
 
-// MOVED FUNCTIONS START
-// Creates a spinning, collectible item when a block is destroyed.
 function createDroppedBlock(position, blockData) {
+    if (blockData.type === 'stone' && Math.random() < 0.01) {
+        createGoldNugget(position);
+    }
+
     const dropGeo = new THREE.BoxGeometry(0.25, 0.25, 0.25);
     const dropMat = new THREE.MeshStandardMaterial({
         color: blockData.color,
@@ -1077,7 +1125,40 @@ function createDroppedBlock(position, blockData) {
 }
 
 
-// Creates a single snowflake particle with occlusion checking.
+function createGoldNugget(position) {
+    const nuggetGeo = new THREE.IcosahedronGeometry(0.1, 0);
+    const nuggetMat = new THREE.MeshStandardMaterial({
+        color: 0x00FFFF,
+        emissive: 0x55DDFF,
+        emissiveIntensity: 1.0,
+        metalness: 0.8,
+        roughness: 0.4
+    });
+    const nuggetMesh = new THREE.Mesh(nuggetGeo, nuggetMat);
+    nuggetMesh.position.copy(position);
+
+    // Always create the light, but set initial visibility based on proximity later
+    const light = new THREE.PointLight(0x55DDFF, 3.0, 2.0); // color, intensity, distance
+    light.visible = false; // Start hidden, will be updated in updateGoldNuggets
+    nuggetMesh.add(light);
+    
+    const velocity = new THREE.Vector3(
+        (Math.random() - 0.5) * 3,
+        Math.random() * 4 + 2,   
+        (Math.random() - 0.5) * 3
+    );
+
+    scene.add(nuggetMesh);
+    goldNuggets.push({
+        mesh: nuggetMesh,
+        velocity: velocity,
+        lifetime: 60.0,
+        onGround: false,
+        light: light // Store reference to the light
+    });
+}
+
+
 function createSnowflake(playerPos, playerVel) {
     const snowGeo = new THREE.BoxGeometry(0.165, 0.165, 0.165);
     const snowMat = new THREE.MeshStandardMaterial({
@@ -1095,18 +1176,16 @@ function createSnowflake(playerPos, playerVel) {
     const spawnY = playerPos.y + playerHeight + 5 + (Math.random() * 3); 
     const spawnFloorX = Math.floor(spawnX);
     const spawnFloorZ = Math.floor(spawnZ);
-    const spawnFloorY = Math.floor(spawnY); // <-- Added this line
+    const spawnFloorY = Math.floor(spawnY);
 
     if (playerCube) { 
-        // BUGFIX: Check for blocks *above* the spawn point, not from the player's height.
-        // This prevents hills *below* the spawn point from blocking the snow.
-        for (let y = spawnFloorY; y < spawnFloorY + 50; y++) { // Check 50 blocks *up* from spawn
+        for (let y = spawnFloorY; y < spawnFloorY + 50; y++) {
             if (getBlock(spawnFloorX, y, spawnFloorZ)) {
                 snowGeo.dispose();
                 snowMat.dispose();
                 snowMesh.geometry.dispose(); 
                 snowMesh.material.dispose();
-                return; // This snowflake is under a roof, don't spawn it.
+                return;
             }
         }
     }
@@ -1128,7 +1207,6 @@ function createSnowflake(playerPos, playerVel) {
     });
 }
 
-// Updates the position, physics, and lifetime of all snowflakes.
 function updateSnowflakes(deltaTime, playerVel) {
     if (!playerCube) return;
 
@@ -1186,7 +1264,6 @@ function updateSnowflakes(deltaTime, playerVel) {
     }
 }
 
-// Updates all active projectiles and checks for world collision.
 function updateProjectiles(deltaTime) {
     const meshes = Array.from(loadedChunks.values()).map(c => c.mesh).filter(m => m);
     for (let i = projectiles.length - 1; i >= 0; i--) {
@@ -1226,7 +1303,6 @@ function updateProjectiles(deltaTime) {
     }
 }
 
-// Updates all active missiles and checks for collision or lifetime expiry.
 function updateMissiles(deltaTime) {
     const meshes = Array.from(loadedChunks.values()).map(c => c.mesh).filter(m => m);
     for (let i = missiles.length - 1; i >= 0; i--) {
@@ -1270,7 +1346,6 @@ function updateMissiles(deltaTime) {
     }
 }
 
-// Fades out and removes active explosion effects.
 function updateExplosions(deltaTime) {
     for (let i = explosions.length - 1; i >= 0; i--) {
         const explosion = explosions[i];
@@ -1287,7 +1362,6 @@ function updateExplosions(deltaTime) {
     }
 }
 
-// Fades out and removes active muzzle flash effects.
 function updateMuzzleFlashes(deltaTime) {
     for (let i = muzzleFlashes.length - 1; i >= 0; i--) {
         const flash = muzzleFlashes[i];
@@ -1307,17 +1381,16 @@ function updateMuzzleFlashes(deltaTime) {
     }
 }
 
-// Fades out and removes active laser flash effects.
 function updateLaserFlashes(deltaTime) {
     for (let i = laserFlashes.length - 1; i >= 0; i--) {
         const flash = laserFlashes[i];
         flash.timer -= deltaTime;
         
         const fade = Math.max(0, flash.timer / LASER_FLASH_DURATION);
-        flash.mesh.material.opacity = fade * 0.7; // Fade from 0.7 to 0
+        flash.mesh.material.opacity = fade * 0.7;
 
         if (flash.timer <= 0) {
-            scene.remove(flash.mesh); // Remove from scene
+            scene.remove(flash.mesh);
             flash.mesh.geometry.dispose();
             flash.mesh.material.dispose();
             laserFlashes.splice(i, 1);
@@ -1325,7 +1398,137 @@ function updateLaserFlashes(deltaTime) {
     }
 }
 
-// Updates physics, player attraction, and lifetime for dropped blocks.
+function updateGoldNuggets(deltaTime) {
+    if (!playerCube) return;
+    const playerCenter = playerCube.position.clone().add(new THREE.Vector3(0, playerHeight / 2, 0));
+    const suckRadius = 4.0;
+    const collectRadius = 1.0;
+
+    const checkCollisionSimple = (pos) => {
+        const floorX = Math.floor(pos.x);
+        const floorY = Math.floor(pos.y);
+        const floorZ = Math.floor(pos.z);
+        return !!getBlock(floorX, floorY, floorZ);
+    };
+
+    // Array to hold orbs and their distances for sorting
+    const orbsWithDistances = [];
+    
+    // First pass: Update physics and remove expired/collected orbs
+    for (let i = goldNuggets.length - 1; i >= 0; i--) {
+        const nugget = goldNuggets[i];
+        const mesh = nugget.mesh;
+
+        nugget.lifetime -= deltaTime;
+        if (nugget.lifetime <= 0) {
+            scene.remove(mesh); // Light is child, removed automatically
+            mesh.geometry.dispose();
+            mesh.material.dispose();
+            goldNuggets.splice(i, 1);
+            continue;
+        }
+
+        const distanceToPlayer = mesh.position.distanceTo(playerCenter);
+        if (distanceToPlayer < collectRadius) {
+            goldInventory += 10;
+            updateXPCounter();
+            
+            scene.remove(mesh); // Light is child, removed automatically
+            mesh.geometry.dispose();
+            mesh.material.dispose();
+            goldNuggets.splice(i, 1);
+            continue;
+        }
+
+        // Add to distance array for sorting later
+        orbsWithDistances.push({ nugget, distance: distanceToPlayer });
+
+        // Physics update
+        if (distanceToPlayer < suckRadius) {
+            const directionToPlayer = playerCenter.clone().sub(mesh.position).normalize();
+            nugget.velocity.lerp(directionToPlayer.multiplyScalar(15.0), 0.1); 
+            nugget.onGround = false;
+        } else {
+             // Only apply gravity if not being sucked
+             if (!nugget.onGround) {
+                nugget.velocity.y += (gravity * 0.5) * deltaTime;
+             }
+        }
+        
+        const desiredMoveX = nugget.velocity.x * deltaTime;
+        const desiredMoveY = nugget.velocity.y * deltaTime;
+        const desiredMoveZ = nugget.velocity.z * deltaTime;
+
+        mesh.position.x += desiredMoveX;
+        if (checkCollisionSimple(mesh.position)) {
+            mesh.position.x -= desiredMoveX;
+            nugget.velocity.x *= 0.6; // Dampen on wall hit, don't bounce
+        }
+        
+        mesh.position.z += desiredMoveZ;
+        if (checkCollisionSimple(mesh.position)) {
+            mesh.position.z -= desiredMoveZ;
+            nugget.velocity.z *= 0.6; // Dampen on wall hit, don't bounce
+        }
+        
+        mesh.position.y += desiredMoveY;
+        if (checkCollisionSimple(mesh.position)) {
+            mesh.position.y -= desiredMoveY; // Move back to pre-collision position
+            if (nugget.velocity.y < 0) { // Moving down, hit ground
+                if (!nugget.onGround) { // Only reset Y velocity if it just landed
+                     nugget.velocity.y = 0;
+                     // Set position explicitly to ground + float
+                     mesh.position.y = Math.floor(mesh.position.y) + 0.1; 
+                     if(distanceToPlayer >= suckRadius) {
+                         nugget.velocity.x *= 0.6;
+                         nugget.velocity.z *= 0.6;
+                     }
+                }
+                nugget.onGround = true;
+            } else { // Moving up, hit ceiling
+                 nugget.velocity.y *= -0.3; // Keep ceiling bounce
+            }
+        } else {
+            // We are not currently colliding, check if we're floating just above ground
+            // ONLY set onGround to false if we are NOT being sucked
+            if (distanceToPlayer >= suckRadius) {
+                // Check for ground *just* below
+                let groundCheckPos = mesh.position.clone();
+                groundCheckPos.y -= 0.15; // (orb radius is 0.1 + 0.05 buffer)
+                if (checkCollisionSimple(groundCheckPos) && nugget.velocity.y <= 0) {
+                    nugget.onGround = true;
+                    nugget.velocity.y = 0; // Make sure it doesn't fall
+                    mesh.position.y = Math.floor(mesh.position.y) + 0.1; // Re-snap to float position
+                } else {
+                    nugget.onGround = false; // No ground below, so we are in the air
+                }
+            } else {
+                 nugget.onGround = false; // Being sucked, so not on ground
+            }
+        }
+       
+        // Apply ground friction if on ground and not being sucked
+        if (nugget.onGround && distanceToPlayer >= suckRadius) {
+            nugget.velocity.x *= 0.8;
+            nugget.velocity.z *= 0.8;
+        }
+        
+        mesh.rotation.x += 1.5 * deltaTime;
+        mesh.rotation.y += 1.0 * deltaTime;
+    }
+
+    // Second pass: Sort by distance and manage light visibility
+    orbsWithDistances.sort((a, b) => a.distance - b.distance);
+
+    for (let i = 0; i < orbsWithDistances.length; i++) {
+        const { nugget } = orbsWithDistances[i];
+        if (nugget.light) { // Check if the light exists
+             nugget.light.visible = (i < MAX_ORB_LIGHTS);
+        }
+    }
+}
+
+
 function updateDroppedBlocks(deltaTime) {
     if (!playerCube) return;
     const playerCenter = playerCube.position.clone().add(new THREE.Vector3(0, playerHeight / 2, 0));
@@ -1338,6 +1541,9 @@ function updateDroppedBlocks(deltaTime) {
 
         const distanceToPlayer = mesh.position.distanceTo(playerCenter);
         if (distanceToPlayer < collectRadius) {
+            blockInventory++;
+            updateBlockCounter();
+            
             scene.remove(mesh);
             mesh.geometry.dispose();
             mesh.material.dispose();
@@ -1370,9 +1576,6 @@ function updateDroppedBlocks(deltaTime) {
     }
 }
 
-// MOVED FUNCTIONS END
-
-// Checks if the player's bounding box is colliding with any world blocks.
 function checkCollision(pos) {
     if (isFlying) return false;
 	const halfWidth = playerWidth / 2;
@@ -1392,7 +1595,6 @@ function checkCollision(pos) {
 	return false;
 }
 
-// Smoothly animates the rifle position between hip-fire and ADS.
 function updateRiflePosition(deltaTime) {
     if (!rifle) return;
 
@@ -1402,7 +1604,6 @@ function updateRiflePosition(deltaTime) {
     rifle.position.lerp(targetPosition, lerpSpeed);
 }
 
-// Picks up a block from the world with the toolgun.
 function pickupBlock() {
     if (heldBlock) return; 
 
@@ -1419,6 +1620,8 @@ function pickupBlock() {
 
         const blockData = getBlock(pX, pY, pZ);
         if (!blockData || blockData.type === 'bedrock') return;
+
+        // REMOVED: createDroppedBlock(new THREE.Vector3(pX + 0.5, pY + 0.5, pZ + 0.5), blockData);
 
         const originalPos = { x: pX, y: pY, z: pZ };
         
@@ -1460,9 +1663,11 @@ function pickupBlock() {
     }
 }
 
-// Places the held toolgun block into the world.
 function placeBlock(instant = false) {
     if (!heldBlock) return;
+
+    // REMOVED the "if (blockInventory <= 0)" check that returned the block.
+    // The toolgun should not check inventory.
 
     const meshes = Array.from(loadedChunks.values()).map(c => c.mesh).filter(m => m);
     raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
@@ -1491,7 +1696,22 @@ function placeBlock(instant = false) {
         finalZ >= playerMinZ && finalZ <= playerMaxZ) {
         
         [finalX, finalY, finalZ] = [heldBlock.originalPos.x, heldBlock.originalPos.y, heldBlock.originalPos.z];
-    }
+        
+        if (instant) {
+            modifiedBlocks.set(`${finalX},${finalY},${finalZ}`, heldBlock.data);
+            markChunkForRegeneration(finalX, finalZ);
+        } else {
+            heldBlock.isPlacing = true;
+            heldBlock.targetPlacePosition = new THREE.Vector3(finalX + 0.5, finalY + 0.5, finalZ + 0.5);
+            heldBlock.finalWorldPos = { x: finalX, y: finalY, z: finalZ }; 
+            heldBlock.mesh.rotation.set(0, 0, 0); 
+            return;
+        }
+
+    } 
+    // REMOVED the "else" block that decremented blockInventory.
+    // Placing a block with the toolgun is free.
+
 
     if (instant) {
         modifiedBlocks.set(`${finalX},${finalY},${finalZ}`, heldBlock.data);
@@ -1516,7 +1736,6 @@ function placeBlock(instant = false) {
     }
 }
 
-// Updates the position of the block being held by the toolgun.
 function updateHeldBlockPosition(deltaTime) {
     if (!heldBlock) return;
 
@@ -1603,7 +1822,6 @@ function updateHeldBlockPosition(deltaTime) {
     }
 }
 
-// Creates and updates the toolgun's laser beam.
 function updateToolgunLaser() {
     if (!toolgunLaser) {
         const laserGeo = new THREE.CylinderGeometry(0.05, 0.05, 1, 8); 
@@ -1649,7 +1867,6 @@ function updateToolgunLaser() {
     toolgunLaser.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), laserEnd.clone().sub(laserStart).normalize()); 
 }
 
-// Manages the toolgun state, laser visibility, and held block.
 function updateToolgun(deltaTime) {
     if (currentMode !== 'toolgun') {
         if (toolgunLaser) {
@@ -1681,7 +1898,6 @@ function updateToolgun(deltaTime) {
     }
 }
 
-// Updates the player's position based on input, physics, and collisions.
 function updatePlayer(deltaTime) {
     if (!playerCube) return;
 	const moveVector = new THREE.Vector3(0, 0, 0);
@@ -1763,7 +1979,6 @@ function updatePlayer(deltaTime) {
 	if (playerCube.position.y < BEDROCK_LEVEL - 20) respawnPlayer();
 }
 
-// Resets the player's position to the spawn point.
 function respawnPlayer() {
     if (heldBlock) placeBlock(true);
     playerCube.position.copy(playerSpawnPoint);
@@ -1771,7 +1986,6 @@ function respawnPlayer() {
     isFlying = false;
 }
 
-// The main game loop, called every frame.
 function animate() {
 	animationFrameId = requestAnimationFrame(animate); 
 	if (!isMobileDevice) stats.begin();
@@ -1791,11 +2005,10 @@ function animate() {
 	updatePlayer(deltaTime);
     updateRiflePosition(deltaTime);
 
-    // Pulsate rifle barrel in specific modes
     if (rifle && rifle.barrel) {
         const barrelMaterial = rifle.barrel.material;
         if (currentMode === 'add' || currentMode === 'toolgun') {
-            const pulse = (Math.sin(elapsedTime * 4) + 1) / 2; // Oscillates between 0.0 and 1.0
+            const pulse = (Math.sin(elapsedTime * 4) + 1) / 2;
             barrelMaterial.emissive.setHex(0x00ffff);
             barrelMaterial.emissiveIntensity = pulse * 1.5;
         } else {
@@ -1810,6 +2023,7 @@ function animate() {
     updateMuzzleFlashes(deltaTime); 
     updateLaserFlashes(deltaTime);
     updateDroppedBlocks(deltaTime); 
+    updateGoldNuggets(deltaTime); // This now handles light visibility updates
     updateSnowflakes(deltaTime, playerHorizontalVelocity); 
 	updateWorld();
 
@@ -1823,7 +2037,6 @@ function animate() {
 }
 
 const PI_2 = Math.PI / 2;
-// Handles mouse/touch movement for looking around.
 function onMouseMove(event) {
     if (!isMobileDevice && document.pointerLockElement !== renderer.domElement) return;
 
@@ -1837,7 +2050,6 @@ function onMouseMove(event) {
     camera.rotation.x = Math.max(-PI_2, Math.min(PI_2, camera.rotation.x));
 }
 
-// Saves the current world seed and block modifications to a JSON file.
 function saveWorld() {
     if (heldBlock) {
         placeBlock(true);
@@ -1868,10 +2080,8 @@ function saveWorld() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    console.log("World saved!");
 }
 
-// Loads block modifications from a world file.
 function loadModifications(loadedBlocks) {
     modifiedBlocks.clear();
     for (const key in loadedBlocks) {
@@ -1888,7 +2098,6 @@ function loadModifications(loadedBlocks) {
     for (const chunkData of loadedChunks.values()) {
         chunkData.needsRegeneration = true;
     }
-    console.log("World modifications loaded!");
 }
 
 let onWindowResize;
@@ -1898,7 +2107,6 @@ let jumpStart, jumpEnd, actionStart, switchModeStart;
 let rendererTouchStart, rendererTouchMove, endLookTouchHandler;
 
 
-// Sets up all global event listeners, detecting mobile or desktop.
 function setupEventListeners() {
     if (onWindowResize) window.removeEventListener('resize', onWindowResize, false);
 	onWindowResize = () => {
@@ -1920,7 +2128,10 @@ function setupEventListeners() {
 
 	document.getElementById('add-mode-btn').addEventListener('click', () => { currentMode = 'add'; updateModeButtons(); });
 	document.getElementById('shoot-mode-btn').addEventListener('click', () => { currentMode = 'shoot'; updateModeButtons(); });
-    document.getElementById('missile-mode-btn').addEventListener('click', () => { currentMode = 'missile'; updateModeButtons(); });
+    document.getElementById('missile-mode-btn').addEventListener('click', () => {
+        currentMode = 'missile';
+        updateModeButtons(); 
+    });
     document.getElementById('toolgun-mode-btn').addEventListener('click', () => { currentMode = 'toolgun'; updateModeButtons(); }); 
     document.getElementById('save-world-btn').addEventListener('click', saveWorld);
     document.getElementById('ingame-load-world-btn').addEventListener('click', () => {
@@ -1933,7 +2144,6 @@ function setupEventListeners() {
 	updateModeButtons();
 }
 
-// Removes all desktop-related event listeners.
 function cleanupDesktopControls() {
     if (onKeyDown) document.removeEventListener('keydown', onKeyDown);
     if (onKeyUp) document.removeEventListener('keyup', onKeyUp);
@@ -1947,18 +2157,18 @@ function cleanupDesktopControls() {
     onKeyDown = onKeyUp = onRendererClick = onPointerLockChange = onDocMouseDown = onDocMouseUp = onDocContextMenu = null;
 }
 
-// Sets up all event listeners for desktop keyboard/mouse controls.
 function setupDesktopControls() {
     cleanupDesktopControls(); 
-    console.log("Setting up desktop controls.");
     
     onKeyDown = (event) => {
         keys[event.code] = true;
-        // Updated key mappings
         if (event.code === 'Digit1') currentMode = 'toolgun', updateModeButtons(); 
         else if (event.code === 'Digit2') currentMode = 'add', updateModeButtons();
         else if (event.code === 'Digit3') currentMode = 'shoot', updateModeButtons();
-        else if (event.code === 'Digit4') currentMode = 'missile', updateModeButtons();
+        else if (event.code === 'Digit4') {
+            currentMode = 'missile';
+            updateModeButtons();
+        }
         else if (event.code === 'KeyF') {
             isFlying = !isFlying;
             playerJumpCount = isFlying ? 0 : playerJumpCount;
@@ -1994,7 +2204,6 @@ function setupDesktopControls() {
     document.addEventListener('contextmenu', onDocContextMenu, false);
 }
 
-// Removes all mobile-related event listeners.
 function cleanupMobileControls() {
     const joystick = document.getElementById('joystick-container');
     if (joystickStart) joystick.removeEventListener('touchstart', joystickStart, { passive: false });
@@ -2023,10 +2232,8 @@ function cleanupMobileControls() {
     joystickStart = windowTouchMove = endJoystickHandler = jumpStart = jumpEnd = actionStart = switchModeStart = rendererTouchStart = rendererTouchMove = endLookTouchHandler = null;
 }
 
-// Sets up all event listeners for mobile touch controls.
 function setupMobileControls() {
     cleanupMobileControls(); 
-    console.log("Setting up mobile controls.");
     document.getElementById('mobile-controls-container').classList.add('active');
     document.getElementById('mode-selector').style.display = 'none';
 
@@ -2122,9 +2329,19 @@ function setupMobileControls() {
     jumpBtn.addEventListener('touchstart', jumpStart, { passive: false });
     jumpBtn.addEventListener('touchend', jumpEnd, { passive: false });
 
-    actionStart = (e) => { e.preventDefault(); performAction(); };
+    actionStart = (e) => { 
+        e.preventDefault(); 
+        if (currentMode === 'toolgun') {
+            isToolgunActive = true;
+            performAction(); 
+            isToolgunActive = false;
+        } else {
+            performAction(); 
+        }
+    };
     actionBtn.addEventListener('touchstart', actionStart, { passive: false });
-
+ 
+ 
     switchModeStart = (e) => {
         e.preventDefault();
         currentModeIndex = (currentModeIndex + 1) % modes.length;
@@ -2132,7 +2349,7 @@ function setupMobileControls() {
         updateModeButtons();
     };
     switchModeBtn.addEventListener('touchstart', switchModeStart, { passive: false });
-
+ 
     let lookTouchId = null;
     let lastLookPos = { x: 0, y: 0 };
 
@@ -2173,21 +2390,31 @@ function setupMobileControls() {
     renderer.domElement.addEventListener('touchcancel', endLookTouchHandler);
 }
 
-// Updates the UI to reflect the currently active mode.
 function updateModeButtons() {
 	document.getElementById('add-mode-btn').classList.toggle('active', currentMode === 'add');
 	document.getElementById('shoot-mode-btn').classList.toggle('active', currentMode === 'shoot');
-    document.getElementById('missile-mode-btn').classList.toggle('active', currentMode === 'missile');
+    
+    const missileBtn = document.getElementById('missile-mode-btn');
+    missileBtn.classList.toggle('active', currentMode === 'missile');
+    missileBtn.innerText = 'Explode(4)';
+    missileBtn.style.color = '';
+    missileBtn.style.backgroundColor = '';
+ 
     document.getElementById('toolgun-mode-btn').classList.toggle('active', currentMode === 'toolgun');
     
 	document.getElementById('color-selector').style.display = (currentMode === 'add' && !isMobileDevice) ? 'flex' : 'none';
-
+ 
     if (isMobileDevice) {
         const modeDisplay = document.getElementById('mobile-mode-display');
         if (modeDisplay) {
-            let modeText = currentMode.charAt(0).toUpperCase() + currentMode.slice(1);
+            let modeText;
+            if (currentMode === 'toolgun') modeText = 'Tool Gun';
+            else if (currentMode === 'add') modeText = 'Create';
+            else if (currentMode === 'shoot') modeText = 'Shoot';
+            else if (currentMode === 'missile') modeText = 'Explode';
+            else modeText = currentMode.charAt(0).toUpperCase() + currentMode.slice(1);
+
             if (currentMode === 'add') {
-                modeText = `Create`;
                 modeDisplay.style.backgroundColor = `#${currentColor.toString(16).padStart(6, '0')}`;
                 if (currentColor > 0xAAAAAA) {
                     modeDisplay.style.color = '#333333';
@@ -2195,7 +2422,6 @@ function updateModeButtons() {
                     modeDisplay.style.color = '#FFFFFF';
                 }
             } else {
-                modeDisplay.textContent = modeText;
                 modeDisplay.style.backgroundColor = 'rgba(0,0,0,0.5)';
                 modeDisplay.style.color = '#FFFFFF';
             }
@@ -2203,7 +2429,7 @@ function updateModeButtons() {
         }
     }
 }
-
+ 
 document.getElementById('start-game-btn').addEventListener('click', () => {
     const seed = document.getElementById('seed-input').value;
     document.getElementById('seed-overlay').style.display = 'none';
@@ -2229,7 +2455,6 @@ document.getElementById('load-file-input').addEventListener('change', (event) =>
             loadModifications(parsedData.blocks); 
         } catch (error) {
             console.error("Failed to load world:", error);
-            console.error("Failed to load world: Invalid file format.");
         }
         event.target.value = '';
     };
@@ -2245,5 +2470,4 @@ document.getElementById('seed-input').addEventListener('keypress', function (e) 
 </script>
 </body>
 </html>
-
 
