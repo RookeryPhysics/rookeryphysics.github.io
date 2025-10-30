@@ -68,6 +68,10 @@ let droppedBlocks = [];
 let snowflakes = []; 
 let lastPlayerPos = new THREE.Vector3(); 
 
+// Reusable vectors for flashlight spotlight
+const flashlightCameraPos = new THREE.Vector3();
+const flashlightDirection = new THREE.Vector3();
+
 const CHUNK_SIZE = 16;
 const RENDER_DISTANCE = 4;
 const TERRAIN_SCALE = 50;
@@ -1743,14 +1747,11 @@ function animate() {
     if (spotlight) {
         spotlight.visible = (currentMode === 'flashlight');
         if (currentMode === 'flashlight' && spotlight.target) {
-            // Update target to point forward from camera
-            const cameraWorldPos = new THREE.Vector3();
-            camera.getWorldPosition(cameraWorldPos);
+            // Update target to point forward from camera using reusable vectors
+            camera.getWorldPosition(flashlightCameraPos);
+            camera.getWorldDirection(flashlightDirection);
             
-            const direction = new THREE.Vector3();
-            camera.getWorldDirection(direction);
-            
-            spotlight.target.position.copy(cameraWorldPos.add(direction.multiplyScalar(10)));
+            spotlight.target.position.copy(flashlightCameraPos).add(flashlightDirection.multiplyScalar(10));
         }
     }
 
