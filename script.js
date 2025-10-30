@@ -1751,7 +1751,12 @@ function animate() {
             camera.getWorldPosition(flashlightCameraPos);
             camera.getWorldDirection(flashlightDirection);
             
-            spotlight.target.position.copy(flashlightCameraPos).add(flashlightDirection.multiplyScalar(10));
+            // Set target position: camera position + (direction * 10)
+            spotlight.target.position.set(
+                flashlightCameraPos.x + flashlightDirection.x * 10,
+                flashlightCameraPos.y + flashlightDirection.y * 10,
+                flashlightCameraPos.z + flashlightDirection.z * 10
+            );
         }
     }
 
