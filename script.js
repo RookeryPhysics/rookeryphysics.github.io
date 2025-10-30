@@ -1,3 +1,5 @@
+//Copyright (C) - 2025 - Michael Oliver McGee - All Rights Reserved
+
 import * as THREE from 'three';
 import Stats from 'three/addons/libs/stats.module.js';
 import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
@@ -275,14 +277,20 @@ function updateXPCounter() {
 function fireSphere() {
     createMuzzleFlash(); 
     const projectileGeometry = new THREE.SphereGeometry(0.2, 8, 8);
+    // Futuristic projectile material
     const projectileMaterial = new THREE.MeshStandardMaterial({ 
-        color: 0xffa500,
-        emissive: 0xffa500, 
-        emissiveIntensity: 1.0,
-        metalness: 0,
-        roughness: 0.5
+        color: 0x00ffff,
+        emissive: 0x00ffff, 
+        emissiveIntensity: 2.0, // Brighter glow
+        metalness: 0.1,
+        roughness: 0.3
     });
     const projectile = new THREE.Mesh(projectileGeometry, projectileMaterial);
+    
+    // Add a point light to the projectile for a stronger glow effect
+    const light = new THREE.PointLight(0x00ffff, 3.0, 3.0);
+    projectile.add(light);
+
     const direction = new THREE.Vector3();
     camera.getWorldDirection(direction);
     const startPosition = new THREE.Vector3();
@@ -295,20 +303,34 @@ function fireSphere() {
 
 function fireMissile() {
     const missileGroup = new THREE.Group();
-    const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.6, roughness: 0.4 });
+    // Futuristic missile materials
+    const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0xdddddd, metalness: 0.8, roughness: 0.3 });
     const tipMaterial = new THREE.MeshStandardMaterial({ color: 0xcc3333, metalness: 0.4, roughness: 0.5 });
-    const finMaterial = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, metalness: 0.6, roughness: 0.4 });
+    const finMaterial = new THREE.MeshStandardMaterial({ color: 0xbbbbbb, metalness: 0.8, roughness: 0.3 });
+    const emissiveMaterial = new THREE.MeshStandardMaterial({ color: 0x00ffff, emissive: 0x00ffff, emissiveIntensity: 1.5 });
+
     const bodyLength = 0.7;
     const bodyRadius = 0.08;
     const bodyGeometry = new THREE.CylinderGeometry(bodyRadius, bodyRadius, bodyLength, 10);
     const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
     body.position.y = 0;
     missileGroup.add(body);
+
+    // Add emissive strips to missile body
+    const stripGeo = new THREE.BoxGeometry(bodyLength * 0.8, 0.02, 0.02);
+    const strip1 = new THREE.Mesh(stripGeo, emissiveMaterial);
+    strip1.position.set(bodyRadius + 0.01, 0, 0);
+    missileGroup.add(strip1);
+    const strip2 = new THREE.Mesh(stripGeo, emissiveMaterial);
+    strip2.position.set(-(bodyRadius + 0.01), 0, 0);
+    missileGroup.add(strip2);
+
     const tipHeight = 0.2;
     const tipGeometry = new THREE.ConeGeometry(bodyRadius, tipHeight, 10);
     const tip = new THREE.Mesh(tipGeometry, tipMaterial);
     tip.position.y = (bodyLength / 2) + (tipHeight / 2);
     missileGroup.add(tip);
+
     const finWidth = 0.2; 
     const finHeight = 0.15;
     const finThickness = 0.02;
@@ -327,6 +349,19 @@ function fireMissile() {
     const fin4 = new THREE.Mesh(finGeometry, finMaterial);
     fin4.position.set(0, -bodyLength / 2 + finWidth / 2, -(bodyRadius + finHeight / 2));
     missileGroup.add(fin4);
+    
+    // Add glowing thruster
+    const thrusterGeo = new THREE.CylinderGeometry(bodyRadius * 0.8, bodyRadius * 0.8, 0.05, 10);
+    const thrusterMat = new THREE.MeshStandardMaterial({ 
+        color: 0x00ffff, 
+        emissive: 0x00ffff, 
+        emissiveIntensity: 2.0 
+    });
+    const thruster = new THREE.Mesh(thrusterGeo, thrusterMat);
+    thruster.position.y = -bodyLength / 2;
+    missileGroup.add(thruster);
+
+
     const direction = new THREE.Vector3();
     camera.getWorldDirection(direction);
     const startPosition = new THREE.Vector3();
@@ -602,13 +637,28 @@ function createPlayer() {
 
 function createRifle() {
     const rifleGroup = new THREE.Group();
-    const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0x222228, metalness: 0.2, roughness: 0.6 });
-    const metalMaterial = new THREE.MeshStandardMaterial({ color: 0x555555, metalness: 0.9, roughness: 0.4 });
+    // Futuristic materials
+    const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0x222228, metalness: 0.8, roughness: 0.4 });
+    const metalMaterial = new THREE.MeshStandardMaterial({ color: 0xCCCCCC, metalness: 1.0, roughness: 0.2 });
     const emissiveMaterial = new THREE.MeshStandardMaterial({ color: 0x00ffff, emissive: 0x00ffff, emissiveIntensity: 1.5 });
+
+    // Body
     const bodyGeo = new THREE.BoxGeometry(0.7, 0.2, 0.15);
     const body = new THREE.Mesh(bodyGeo, bodyMaterial);
     body.position.set(0, 0, 0);
     rifleGroup.add(body);
+
+    // Add emissive strips to body
+    const bodyStripGeo = new THREE.BoxGeometry(0.7, 0.02, 0.16);
+    const bodyStrip1 = new THREE.Mesh(bodyStripGeo, emissiveMaterial);
+    bodyStrip1.position.set(0, 0.08, 0);
+    rifleGroup.add(bodyStrip1);
+    const bodyStrip2 = new THREE.Mesh(bodyStripGeo, emissiveMaterial);
+    bodyStrip2.position.set(0, -0.08, 0);
+    rifleGroup.add(bodyStrip2);
+
+
+    // Stock
     const stockBarGeo = new THREE.BoxGeometry(0.4, 0.05, 0.05);
     const stockBar = new THREE.Mesh(stockBarGeo, metalMaterial);
     stockBar.position.set(-0.45, 0.05, 0);
@@ -618,7 +668,8 @@ function createRifle() {
     stockPad.position.set(-0.6, 0.0, 0);
     rifleGroup.add(stockPad);
 
-    const barrelMaterial = new THREE.MeshStandardMaterial({ color: 0x555555, metalness: 0.9, roughness: 0.4 });
+    // Barrel
+    const barrelMaterial = new THREE.MeshStandardMaterial({ color: 0x999999, metalness: 0.9, roughness: 0.4, emissive: 0x000000 }); // Added emissive property
     const barrelGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.9, 12);
     const barrel = new THREE.Mesh(barrelGeo, barrelMaterial);
     barrel.rotation.z = Math.PI / 2;
@@ -626,11 +677,14 @@ function createRifle() {
     rifleGroup.add(barrel);
     rifleGroup.barrel = barrel; 
 
+    // Muzzle
     const muzzleGeo = new THREE.CylinderGeometry(0.07, 0.07, 0.15, 6);
     const muzzle = new THREE.Mesh(muzzleGeo, metalMaterial);
     muzzle.rotation.z = Math.PI / 2;
     muzzle.position.set(1.3, 0.05, 0);
     rifleGroup.add(muzzle);
+
+    // Handguard
     const handguardShape = new THREE.Shape();
     handguardShape.moveTo(0, 0);
     handguardShape.lineTo(0.6, 0);
@@ -643,19 +697,33 @@ function createRifle() {
     const handguard = new THREE.Mesh(handguardGeo, bodyMaterial);
     handguard.position.set(0.35, 0.1, -0.08);
     rifleGroup.add(handguard);
+
+    // Handguard emissive strip
+    const hgStripGeo = new THREE.BoxGeometry(0.6, 0.02, 0.17);
+    const hgStrip = new THREE.Mesh(hgStripGeo, emissiveMaterial);
+    hgStrip.position.set(0.65, 0.0, -0.08);
+    rifleGroup.add(hgStrip);
+
+    // Grip
     const gripGeo = new THREE.BoxGeometry(0.12, 0.4, 0.12);
     const grip = new THREE.Mesh(gripGeo, bodyMaterial);
     grip.position.set(-0.1, -0.2, 0);
     grip.rotation.z = 0.2; 
     rifleGroup.add(grip);
+
+    // Magazine
     const magGeo = new THREE.BoxGeometry(0.15, 0.35, 0.12);
     const mag = new THREE.Mesh(magGeo, bodyMaterial);
     mag.position.set(0.15, -0.25, 0);
     rifleGroup.add(mag);
-    const emissiveStripGeo = new THREE.BoxGeometry(0.02, 0.3, 0.13);
+
+    // Magazine emissive strip (was on side, now on front)
+    const emissiveStripGeo = new THREE.BoxGeometry(0.02, 0.3, 0.13); 
     const emissiveStrip = new THREE.Mesh(emissiveStripGeo, emissiveMaterial);
-    emissiveStrip.position.set(0.23, -0.25, 0);
+    emissiveStrip.position.set(0.23, -0.25, 0); // Kept original, maybe this is fine
     rifleGroup.add(emissiveStrip);
+
+    // Sight
     const sightBaseGeo = new THREE.BoxGeometry(0.25, 0.05, 0.12);
     const sightBase = new THREE.Mesh(sightBaseGeo, metalMaterial);
     sightBase.position.set(0.1, 0.2, 0);
@@ -664,18 +732,24 @@ function createRifle() {
     const sightHousing = new THREE.Mesh(sightHousingGeo, metalMaterial);
     sightHousing.position.set(0.2, 0.25, 0);
     rifleGroup.add(sightHousing);
+    
+    // Brighter sight emissive
     const sightEmissiveGeo = new THREE.BoxGeometry(0.06, 0.02, 0.02);
     const sightEmissive = new THREE.Mesh(sightEmissiveGeo, emissiveMaterial);
+    sightEmissive.material.emissiveIntensity = 2.0; // Make sight brighter
     sightEmissive.position.set(0.2, 0.18, 0);
     rifleGroup.add(sightEmissive);
+    
     return rifleGroup;
 }
+
 
 function createMuzzleFlash() {
     if (!rifle) return; 
     const flashGeo = new THREE.SphereGeometry(0.12, 8, 8);
+    // Futuristic muzzle flash
     const flashMat = new THREE.MeshBasicMaterial({ 
-        color: 0xFFFF99, 
+        color: 0x00FFFF, // Cyan glow
         transparent: true, 
         opacity: 0.9, 
         blending: THREE.AdditiveBlending 
@@ -717,11 +791,30 @@ function createLaserFlash(targetPosition) {
 
 function createExplosion(position) {
     const geometry = new THREE.SphereGeometry(MISSILE_EXPLOSION_RADIUS, 16, 16);
-    const material = new THREE.MeshBasicMaterial({ color: 0xff8800, transparent: true, opacity: 0.8 });
+    // Futuristic explosion
+    const material = new THREE.MeshBasicMaterial({ 
+        color: 0x00ffff, // Cyan explosion
+        transparent: true, 
+        opacity: 0.8,
+        blending: THREE.AdditiveBlending // More glow
+    });
     const explosionMesh = new THREE.Mesh(geometry, material);
     explosionMesh.position.copy(position);
     scene.add(explosionMesh);
-    explosions.push({ mesh: explosionMesh, timer: MISSILE_EXPLOSION_DURATION });
+
+    // Add a secondary, larger, faster-fading orange core
+    const coreGeo = new THREE.SphereGeometry(MISSILE_EXPLOSION_RADIUS * 0.5, 16, 16);
+    const coreMat = new THREE.MeshBasicMaterial({
+        color: 0xffaa00,
+        transparent: true,
+        opacity: 0.9,
+        blending: THREE.AdditiveBlending
+    });
+    const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+    explosionMesh.add(coreMesh); // Add core as a child
+
+    explosions.push({ mesh: explosionMesh, timer: MISSILE_EXPLOSION_DURATION, coreMesh: coreMesh });
+
 
     if (playerCube && !isFlying) {
         const playerPos = playerCube.position.clone().add(new THREE.Vector3(0, playerHeight / 2, 0)); 
@@ -834,10 +927,11 @@ function createDroppedBlock(position, blockData) {
 
 function createGoldNugget(position) {
     const nuggetGeo = new THREE.IcosahedronGeometry(0.1, 0);
+    // Futuristic XP orb
     const nuggetMat = new THREE.MeshStandardMaterial({
         color: 0x00FFFF,
-        emissive: 0x55DDFF,
-        emissiveIntensity: 1.0,
+        emissive: 0x00FFFF, // Brighter emissive
+        emissiveIntensity: 1.5, // Increased intensity
         metalness: 0.8,
         roughness: 0.4
     });
@@ -845,7 +939,8 @@ function createGoldNugget(position) {
     nuggetMesh.position.copy(position);
 
     // Always create the light, but set initial visibility based on proximity later
-    const light = new THREE.PointLight(0x55DDFF, 3.0, 2.0); // color, intensity, distance
+    // Brighter light
+    const light = new THREE.PointLight(0x00FFFF, 5.0, 3.0); // color, intensity, distance
     light.visible = false; // Start hidden, will be updated in updateGoldNuggets
     nuggetMesh.add(light);
     
@@ -1003,6 +1098,9 @@ function updateProjectiles(deltaTime) {
         const playerDistance = pMesh.position.distanceTo(playerCube.position);
         if (hit || playerDistance > RENDER_DISTANCE * CHUNK_SIZE) {
             scene.remove(pMesh);
+            pMesh.traverse(child => { // Ensure light is disposed
+                if (child.isLight) child.dispose();
+            });
             pMesh.geometry.dispose();
             pMesh.material.dispose();
             projectiles.splice(i, 1);
@@ -1057,13 +1155,24 @@ function updateExplosions(deltaTime) {
     for (let i = explosions.length - 1; i >= 0; i--) {
         const explosion = explosions[i];
         explosion.timer -= deltaTime;
+        
+        const fade = explosion.timer / MISSILE_EXPLOSION_DURATION;
         if (explosion.mesh.material.opacity > 0) {
-            explosion.mesh.material.opacity = (explosion.timer / MISSILE_EXPLOSION_DURATION) * 0.8;
+            explosion.mesh.material.opacity = fade * 0.8;
         }
+        // Fade core faster
+        if (explosion.coreMesh && explosion.coreMesh.material.opacity > 0) {
+            explosion.coreMesh.material.opacity = (fade * 2.0) * 0.9; // Fades out 2x as fast
+        }
+
         if (explosion.timer <= 0) {
-            scene.remove(explosion.mesh);
+            scene.remove(explosion.mesh); // coreMesh is a child, removed automatically
             explosion.mesh.geometry.dispose();
             explosion.mesh.material.dispose();
+            if (explosion.coreMesh) {
+                explosion.coreMesh.geometry.dispose();
+                explosion.coreMesh.material.dispose();
+            }
             explosions.splice(i, 1);
         }
     }
@@ -1076,6 +1185,9 @@ function updateMuzzleFlashes(deltaTime) {
         
         const fade = Math.max(0, flash.timer / MUZZLE_FLASH_DURATION);
         flash.mesh.material.opacity = fade * 0.9;
+        // Pulse scale
+        flash.mesh.scale.set(1.0 + (1.0 - fade), 1.0 + (1.0 - fade), 1.0 + (1.0 - fade));
+
 
         if (flash.timer <= 0) {
             if (rifle) {
@@ -1349,11 +1461,12 @@ function pickupBlock() {
         });
         const heldMesh = new THREE.Mesh(heldGeo, heldMat);
         
+        // Futuristic held block glow
         const glowGeo = new THREE.BoxGeometry(1.1, 1.1, 1.1); 
         const glowMat = new THREE.MeshBasicMaterial({
-            color: 0x00aaff,
+            color: 0x00ffff, // Cyan glow
             transparent: true,
-            opacity: 0.3,
+            opacity: 0.4, // Slightly brighter
             blending: THREE.AdditiveBlending, 
             side: THREE.BackSide 
         });
@@ -2127,8 +2240,6 @@ function updateModeButtons() {
     const missileBtn = document.getElementById('missile-mode-btn');
     missileBtn.classList.toggle('active', currentMode === 'missile');
     missileBtn.innerText = 'Explode(4)';
-    missileBtn.style.color = '';
-    missileBtn.style.backgroundColor = '';
  
     document.getElementById('toolgun-mode-btn').classList.toggle('active', currentMode === 'toolgun');
     
@@ -2140,20 +2251,29 @@ function updateModeButtons() {
             let modeText;
             if (currentMode === 'toolgun') modeText = 'Tool Gun';
             else if (currentMode === 'add') modeText = 'Create';
-            else if (currentMode === 'shoot') modeText = 'Shoot';
+            else if (currentMode ===f'shoot') modeText = 'Shoot';
             else if (currentMode === 'missile') modeText = 'Explode';
             else modeText = currentMode.charAt(0).toUpperCase() + currentMode.slice(1);
 
             if (currentMode === 'add') {
                 modeDisplay.style.backgroundColor = `#${currentColor.toString(16).padStart(6, '0')}`;
-                if (currentColor > 0xAAAAAA) {
-                    modeDisplay.style.color = '#333333';
+                // Check brightness of color to set text color
+                const r = (currentColor >> 16) & 0xff;
+                const g = (currentColor >> 8) & 0xff;
+                const b = currentColor & 0xff;
+                const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+                if (brightness > 125) {
+                    modeDisplay.style.color = '#000000'; // Dark text on light color
+                    modeDisplay.style.textShadow = 'none';
                 } else {
-                    modeDisplay.style.color = '#FFFFFF';
+                    modeDisplay.style.color = '#FFFFFF'; // Light text on dark color
+                    modeDisplay.style.textShadow = '0 0 3px #000';
                 }
             } else {
-                modeDisplay.style.backgroundColor = 'rgba(0,0,0,0.5)';
-                modeDisplay.style.color = '#FFFFFF';
+                // Reset to default panel style
+                modeDisplay.style.backgroundColor = ''; // Lets the CSS class handle it
+                modeDisplay.style.color = 'var(--glow-color)';
+                modeDisplay.style.textShadow = '0 0 5px var(--glow-color)';
             }
             modeDisplay.textContent = modeText;
         }

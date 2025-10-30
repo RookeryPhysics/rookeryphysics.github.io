@@ -3,47 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Play 0.18a</title>
+    <title>Play 0.18a - Future Glow</title>
+    <!-- Import Futuristic Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
     <!-- Link to the external stylesheet -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- Start screen overlay -->
     <div id="seed-overlay">
         <div id="seed-box">
-            <h2>Enter World Seed</h2>
+            <h2>ENTER WORLD SEED</h2>
             <p>Leave blank for a random world.</p>
-            <input type="text" id="seed-input" placeholder="e.g., 'mountainview' or '12345'">
-            <button id="start-game-btn">Generate World</button>
-            <button id="load-world-btn">Load World</button>
+            <input type="text" id="seed-input" placeholder="e.g., 'CYBERPUNK' or '12345'">
+            <button id="start-game-btn" class="glow-btn">Generate World</button>
+            <button id="load-world-btn" class="glow-btn">Load World</button>
         </div>
     </div>
     
+    <!-- Hidden file input for loading worlds -->
     <input type="file" id="load-file-input" accept=".json" style="display: none;">
 
+    <!-- In-game UI elements -->
     <div id="info"><strong>0.18a</strong><br><br>'F' to fly.</div>
-    <div id="block-counter">Blocks: 0</div>
-    <div id="xp-counter">XP: 0</div>
+    <div id="block-counter" class="hud-panel">Blocks: 0</div>
+    <div id="xp-counter" class="hud-panel">XP: 0</div>
 
-    <div id="mode-selector">
-        <button id="toolgun-mode-btn">Tool Gun(1)</button>
-        <button id="add-mode-btn">Create(2)</button>
-        <button id="shoot-mode-btn">Shoot(3)</button>
-        <button id="missile-mode-btn">Explode(4)</button>
-        <button id="save-world-btn">Save World</button>
-        <button id="ingame-load-world-btn">Load World</button>
+    <div id="mode-selector" class="hud-panel">
+        <button id="toolgun-mode-btn" class="glow-btn">Tool Gun(1)</button>
+        <button id="add-mode-btn" class="glow-btn">Create(2)</button>
+        <button id="shoot-mode-btn" class="glow-btn">Shoot(3)</button>
+        <button id="missile-mode-btn" class="glow-btn">Explode(4)</button>
+        <button id="save-world-btn" class="glow-btn">Save World</button>
+        <button id="ingame-load-world-btn" class="glow-btn">Load World</button>
     </div>
-    <div id="color-selector">
+    <div id="color-selector" class="hud-panel">
         <label for="cube-color-picker">Color</label>
         <input type="color" id="cube-color-picker" value="#999999">
     </div>
     <div id="crosshair"></div>
 
+    <!-- Mobile controls -->
     <div id="mobile-controls-container">
         <div id="joystick-container">
             <div id="joystick-thumb"></div>
         </div>
         <div id="action-buttons-container">
-            <div id="mobile-mode-display">Create</div>
+            <div id="mobile-mode-display" class="hud-panel">Create</div>
             <button id="mobile-jump-btn" class="action-btn">▲</button>
             <button id="mobile-action-btn" class="action-btn">⦿</button>
             <button id="mobile-switch-mode-btn" class="action-btn">⇄</button>
