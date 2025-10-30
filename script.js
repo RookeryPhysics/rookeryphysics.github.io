@@ -570,7 +570,7 @@ function init(seedString) {
 	scene.add(directionalLight);
 
 	// Create spotlight for flashlight mode
-	spotlight = new THREE.SpotLight(0xffffff, 2, 50, Math.PI / 6, 0.5, 1);
+	spotlight = new THREE.SpotLight(0xffffff, 8, 100, Math.PI / 4, 0.3, 1);
 	spotlight.position.set(0, 0, 0);
 	spotlight.visible = false;
 	camera.add(spotlight);
