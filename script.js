@@ -571,10 +571,10 @@ function init(seedString) {
 	spotlight.visible = false;
 	camera.add(spotlight);
 	
-	// Create spotlight target
+	// Create spotlight target and add to scene (not camera)
 	const spotlightTarget = new THREE.Object3D();
 	spotlightTarget.position.set(0, 0, -10);
-	camera.add(spotlightTarget);
+	scene.add(spotlightTarget);
 	spotlight.target = spotlightTarget;
 
 	raycaster = new THREE.Raycaster();
@@ -1742,6 +1742,16 @@ function animate() {
     // Update flashlight spotlight
     if (spotlight) {
         spotlight.visible = (currentMode === 'flashlight');
+        if (currentMode === 'flashlight' && spotlight.target) {
+            // Update target to point forward from camera
+            const cameraWorldPos = new THREE.Vector3();
+            camera.getWorldPosition(cameraWorldPos);
+            
+            const direction = new THREE.Vector3();
+            camera.getWorldDirection(direction);
+            
+            spotlight.target.position.copy(cameraWorldPos.add(direction.multiplyScalar(10)));
+        }
     }
 
     updateToolgun(deltaTime); 
