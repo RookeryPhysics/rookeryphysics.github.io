@@ -10,6 +10,7 @@ let originalFog;
 let noise;
 let worldSeedString = ""; 
 let isMobileDevice = false;
+let spotlight;
 
 let playerCube;
 let rifle; 
@@ -34,7 +35,7 @@ const MOBILE_HIP_RIFLE_POS = new THREE.Vector3(0.3, -0.25, -0.65); // More left 
 const MOBILE_ADS_RIFLE_POS = new THREE.Vector3(0, -0.2, -0.5); // Same as desktop
 let isFiring = false;
 
-const modes = ['toolgun', 'add', 'shoot', 'missile']; 
+const modes = ['toolgun', 'add', 'shoot', 'missile', 'flashlight']; 
 let currentModeIndex = 0;
 let currentMode = 'toolgun';
 let currentColor = 0x999999;
@@ -563,6 +564,18 @@ function init(seedString) {
 	const directionalLight = new THREE.DirectionalLight(0xffffff, 0.9);
 	directionalLight.position.set(50, 50, 25);
 	scene.add(directionalLight);
+
+	// Create spotlight for flashlight mode
+	spotlight = new THREE.SpotLight(0xffffff, 100, 50, Math.PI / 6, 0.5, 1);
+	spotlight.position.set(0, 0, 0);
+	spotlight.visible = false;
+	camera.add(spotlight);
+	
+	// Create spotlight target
+	const spotlightTarget = new THREE.Object3D();
+	spotlightTarget.position.set(0, 0, -10);
+	camera.add(spotlightTarget);
+	spotlight.target = spotlightTarget;
 
 	raycaster = new THREE.Raycaster();
     projectileRaycaster = new THREE.Raycaster();
@@ -1726,6 +1739,16 @@ function animate() {
         }
     }
 
+    // Update flashlight spotlight
+    if (spotlight) {
+        spotlight.visible = (currentMode === 'flashlight');
+        if (currentMode === 'flashlight') {
+            const direction = new THREE.Vector3();
+            camera.getWorldDirection(direction);
+            spotlight.target.position.copy(direction.multiplyScalar(10));
+        }
+    }
+
     updateToolgun(deltaTime); 
     updateProjectiles(deltaTime);
     updateMissiles(deltaTime);
@@ -1843,6 +1866,7 @@ function setupEventListeners() {
         updateModeButtons(); 
     });
     document.getElementById('toolgun-mode-btn').addEventListener('click', () => { currentMode = 'toolgun'; updateModeButtons(); });
+    document.getElementById('flashlight-mode-btn').addEventListener('click', () => { currentMode = 'flashlight'; updateModeButtons(); });
 
     document.getElementById('save-world-btn').addEventListener('click', saveWorld);
     document.getElementById('ingame-load-world-btn').addEventListener('click', () => {
@@ -1877,6 +1901,7 @@ function setupDesktopControls() {
         else if (event.code === 'Digit2') currentMode = 'add', updateModeButtons();
         else if (event.code === 'Digit3') currentMode = 'shoot', updateModeButtons();
         else if (event.code === 'Digit4') currentMode = 'missile', updateModeButtons();
+        else if (event.code === 'Digit5') currentMode = 'flashlight', updateModeButtons();
         else if (event.code === 'KeyF') {
             isFlying = !isFlying;
             playerJumpCount = isFlying ? 0 : playerJumpCount;
@@ -2119,6 +2144,7 @@ function updateModeButtons() {
     missileBtn.style.backgroundColor = '';
  
     document.getElementById('toolgun-mode-btn').classList.toggle('active', currentMode === 'toolgun');
+    document.getElementById('flashlight-mode-btn').classList.toggle('active', currentMode === 'flashlight');
 
 	document.getElementById('color-selector').style.display = currentMode === 'add' && !isMobileDevice ? 'flex' : 'none';
  
@@ -2130,6 +2156,7 @@ function updateModeButtons() {
             else if (currentMode === 'add') modeText = 'Create';
             else if (currentMode === 'shoot') modeText = 'Shoot';
             else if (currentMode === 'missile') modeText = 'Explode';
+            else if (currentMode === 'flashlight') modeText = 'Flashlight';
             else modeText = currentMode.charAt(0).toUpperCase() + currentMode.slice(1);
 
             if (currentMode === 'add') {
