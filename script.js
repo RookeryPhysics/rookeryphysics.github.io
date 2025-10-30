@@ -34,7 +34,7 @@ const MOBILE_HIP_RIFLE_POS = new THREE.Vector3(0.3, -0.25, -0.65); // More left 
 const MOBILE_ADS_RIFLE_POS = new THREE.Vector3(0, -0.2, -0.5); // Same as desktop
 let isFiring = false;
 
-const modes = ['toolgun', 'add', 'shoot', 'missile', 'prism', 'sphere']; 
+const modes = ['toolgun', 'add', 'shoot', 'missile']; 
 let currentModeIndex = 0;
 let currentMode = 'toolgun';
 let currentColor = 0x999999;
@@ -47,9 +47,7 @@ const MAX_ORB_LIGHTS = 10; // Max number of orb lights allowed at once
  
 let heldBlock = null;
 let toolgunLaser = null;
-let isToolgunActive = false; 
-
-let prismFirstClickPos = null; // For the 2-click prism tool
+let isToolgunActive = false;
 
 let projectiles = [];
 let shootCooldown = 0;
@@ -411,103 +409,6 @@ function performAction() {
                 modifiedBlocks.set(`${finalX},${finalY},${finalZ}`, null);
                 markChunkForRegeneration(finalX, finalZ);
             }
-        } else if (currentMode === 'prism') {
-            const adjacentBlockPos = intersect.point.clone().add(intersect.face.normal.clone().multiplyScalar(0.01));
-			[finalX, finalY, finalZ] = [Math.floor(adjacentBlockPos.x), Math.floor(adjacentBlockPos.y), Math.floor(adjacentBlockPos.z)];
-            
-            if (prismFirstClickPos === null) {
-                // First click: store position
-                prismFirstClickPos = new THREE.Vector3(finalX, finalY, finalZ);
-                createLaserFlash(new THREE.Vector3(finalX + 0.5, finalY + 0.5, finalZ + 0.5));
-            } else {
-                // Second click: create prism
-                const p1 = prismFirstClickPos;
-                const p2 = new THREE.Vector3(finalX, finalY, finalZ);
-
-                const minX = Math.min(p1.x, p2.x);
-                const minY = Math.min(p1.y, p2.y);
-                const minZ = Math.min(p1.z, p2.z);
-                const maxX = Math.max(p1.x, p2.x);
-                const maxY = Math.max(p1.y, p2.y);
-                const maxZ = Math.max(p1.z, p2.z);
-
-                let blocksToPlace = (maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1);
-                if (blockInventory < blocksToPlace) {
-                    // Not enough blocks, flash and reset
-                    createLaserFlash(new THREE.Vector3(finalX + 0.5, finalY + 0.5, finalZ + 0.5));
-                    prismFirstClickPos = null;
-                    return;
-                }
-
-                for (let x = minX; x <= maxX; x++) {
-                    for (let y = minY; y <= maxY; y++) {
-                        for (let z = minZ; z <= maxZ; z++) {
-                            if (isPlayerOccupying(x, y, z)) continue; // Skip blocks player is in
-
-                            modifiedBlocks.set(`${x},${y},${z}`, { color: new THREE.Color(currentColor), type: 'normal' });
-                            blockInventory--;
-                            markChunkForRegeneration(x, z);
-                        }
-                    }
-                }
-                
-                updateBlockCounter();
-                createLaserFlash(new THREE.Vector3(finalX + 0.5, finalY + 0.5, finalZ + 0.5));
-                prismFirstClickPos = null;
-            }
-        } else if (currentMode === 'sphere') {
-            const adjacentBlockPos = intersect.point.clone().add(intersect.face.normal.clone().multiplyScalar(0.01));
-			const [cX, cY, cZ] = [Math.floor(adjacentBlockPos.x), Math.floor(adjacentBlockPos.y), Math.floor(adjacentBlockPos.z)];
-
-            const radius = 2;
-            const radiusSq = radius * radius;
-            let blocksNeeded = 0;
-            
-            // First pass: check for collisions and count blocks
-            for (let x = -radius; x <= radius; x++) {
-                for (let y = -radius; y <= radius; y++) {
-                    for (let z = -radius; z <= radius; z++) {
-                        if (x*x + y*y + z*z > radiusSq) continue;
-                        
-                        const pX = cX + x;
-                        const pY = cY + y;
-                        const pZ = cZ + z;
-                        
-                        if (isPlayerOccupying(pX, pY, pZ)) continue; // Skip blocks player is in
-                        if (getBlock(pX, pY, pZ)) continue; // Skip existing blocks
-                        
-                        blocksNeeded++;
-                    }
-                }
-            }
-            
-            if (blockInventory < blocksNeeded) {
-                 createLaserFlash(new THREE.Vector3(cX + 0.5, cY + 0.5, cZ + 0.5));
-                 return; // Not enough blocks
-            }
-            
-            // Second pass: place blocks
-             for (let x = -radius; x <= radius; x++) {
-                for (let y = -radius; y <= radius; y++) {
-                    for (let z = -radius; z <= radius; z++) {
-                        if (x*x + y*y + z*z > radiusSq) continue;
-                        
-                        const pX = cX + x;
-                        const pY = cY + y;
-                        const pZ = cZ + z;
-                        
-                        if (isPlayerOccupying(pX, pY, pZ)) continue; // Skip blocks player is in
-                        if (getBlock(pX, pY, pZ)) continue; // Skip existing blocks
-
-                        modifiedBlocks.set(`${pX},${pY},${pZ}`, { color: new THREE.Color(currentColor), type: 'normal' });
-                        blockInventory--;
-                        markChunkForRegeneration(pX, pZ);
-                    }
-                }
-            }
-            
-            updateBlockCounter();
-            createLaserFlash(new THREE.Vector3(cX + 0.5, cY + 0.5, cZ + 0.5));
         }
 	}
 }
@@ -1816,7 +1717,7 @@ function animate() {
 
     if (rifle && rifle.barrel) {
         const barrelMaterial = rifle.barrel.material;
-        if (currentMode === 'add' || currentMode === 'toolgun' || currentMode === 'prism' || currentMode === 'sphere') {
+        if (['add', 'toolgun'].includes(currentMode)) {
             const pulse = (Math.sin(elapsedTime * 4) + 1) / 2;
             barrelMaterial.emissive.setHex(0x00ffff);
             barrelMaterial.emissiveIntensity = pulse * 1.5;
@@ -1862,9 +1763,6 @@ function onMouseMove(event) {
 function saveWorld() {
     if (heldBlock) {
         placeBlock(true);
-    }
-    if (prismFirstClickPos) { // Cancel prism build on save
-        prismFirstClickPos = null;
     }
 
     const serializableBlocks = {};
@@ -1944,13 +1842,7 @@ function setupEventListeners() {
         currentMode = 'missile';
         updateModeButtons(); 
     });
-    document.getElementById('toolgun-mode-btn').addEventListener('click', () => { currentMode = 'toolgun'; updateModeButtons(); }); 
-    
-    // Add listeners for new buttons, assuming they exist in the HTML
-    const prismBtn = document.getElementById('prism-mode-btn');
-    if (prismBtn) prismBtn.addEventListener('click', () => { currentMode = 'prism'; updateModeButtons(); });
-    const sphereBtn = document.getElementById('sphere-mode-btn');
-    if (sphereBtn) sphereBtn.addEventListener('click', () => { currentMode = 'sphere'; updateModeButtons(); });
+    document.getElementById('toolgun-mode-btn').addEventListener('click', () => { currentMode = 'toolgun'; updateModeButtons(); });
 
     document.getElementById('save-world-btn').addEventListener('click', saveWorld);
     document.getElementById('ingame-load-world-btn').addEventListener('click', () => {
@@ -1985,8 +1877,6 @@ function setupDesktopControls() {
         else if (event.code === 'Digit2') currentMode = 'add', updateModeButtons();
         else if (event.code === 'Digit3') currentMode = 'shoot', updateModeButtons();
         else if (event.code === 'Digit4') currentMode = 'missile', updateModeButtons();
-        else if (event.code === 'Digit5') currentMode = 'prism', updateModeButtons();
-        else if (event.code === 'Digit6') currentMode = 'sphere', updateModeButtons();
         else if (event.code === 'KeyF') {
             isFlying = !isFlying;
             playerJumpCount = isFlying ? 0 : playerJumpCount;
@@ -2219,11 +2109,6 @@ function setupMobileControls() {
 }
 
 function updateModeButtons() {
-    // Reset prism tool if mode is switched
-    if (currentMode !== 'prism' && prismFirstClickPos) {
-        prismFirstClickPos = null;
-    }
-
 	document.getElementById('add-mode-btn').classList.toggle('active', currentMode === 'add');
 	document.getElementById('shoot-mode-btn').classList.toggle('active', currentMode === 'shoot');
     
@@ -2234,14 +2119,8 @@ function updateModeButtons() {
     missileBtn.style.backgroundColor = '';
  
     document.getElementById('toolgun-mode-btn').classList.toggle('active', currentMode === 'toolgun');
-    
-    // Update new buttons, checking if they exist
-    const prismBtn = document.getElementById('prism-mode-btn');
-    if (prismBtn) prismBtn.classList.toggle('active', currentMode === 'prism');
-    const sphereBtn = document.getElementById('sphere-mode-btn');
-    if (sphereBtn) sphereBtn.classList.toggle('active', currentMode === 'sphere');
 
-	document.getElementById('color-selector').style.display = (currentMode === 'add' || currentMode === 'prism' || currentMode === 'sphere') && !isMobileDevice ? 'flex' : 'none';
+	document.getElementById('color-selector').style.display = currentMode === 'add' && !isMobileDevice ? 'flex' : 'none';
  
     if (isMobileDevice) {
         const modeDisplay = document.getElementById('mobile-mode-display');
@@ -2251,11 +2130,9 @@ function updateModeButtons() {
             else if (currentMode === 'add') modeText = 'Create';
             else if (currentMode === 'shoot') modeText = 'Shoot';
             else if (currentMode === 'missile') modeText = 'Explode';
-            else if (currentMode === 'prism') modeText = 'Prism';
-            else if (currentMode === 'sphere') modeText = 'Sphere';
             else modeText = currentMode.charAt(0).toUpperCase() + currentMode.slice(1);
 
-            if (currentMode === 'add' || currentMode === 'prism' || currentMode === 'sphere') {
+            if (currentMode === 'add') {
                 modeDisplay.style.backgroundColor = `#${currentColor.toString(16).padStart(6, '0')}`;
                 if (currentColor > 0xAAAAAA) {
                     modeDisplay.style.color = '#333333';
