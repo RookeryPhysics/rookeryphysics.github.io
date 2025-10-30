@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Play 0.18a</title>
+
+  <!-- External Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- World Seed Overlay -->
+  <section id="seed-overlay">
+    <div id="seed-box">
+      <h2>Enter World Seed</h2>
+      <p>Leave blank for a random world.</p>
+      <input 
+        type="text" 
+        id="seed-input" 
+        placeholder="e.g., 'mountainview' or '12345'" 
+        aria-label="World Seed"
+      >
+      <button id="start-game-btn">Generate World</button>
+      <button id="load-world-btn">Load World</button>
+    </div>
+  </section>
+
+  <!-- Hidden File Input -->
+  <input type="file" id="load-file-input" accept=".json" hidden>
+
+  <!-- Info and Counters -->
+  <aside id="info"><strong>0.18a</strong><br><br>'F' to fly.</aside>
+  <div id="block-counter">Blocks: 0</div>
+  <div id="xp-counter">XP: 0</div>
+
+  <!-- Mode Selector -->
+  <nav id="mode-selector">
+    <button id="toolgun-mode-btn">Tool Gun (1)</button>
+    <button id="add-mode-btn">Create (2)</button>
+    <button id="shoot-mode-btn">Shoot (3)</button>
+    <button id="missile-mode-btn">Explode (4)</button>
+    <button id="save-world-btn">Save World</button>
+    <button id="ingame-load-world-btn">Load World</button>
+  </nav>
+
+  <!-- Color Selector -->
+  <div id="color-selector">
+    <label for="cube-color-picker">Color:</label>
+    <input type="color" id="cube-color-picker" value="#999999">
+  </div>
+
+  <!-- Crosshair -->
+  <div id="crosshair" aria-hidden="true"></div>
+
+  <!-- Mobile Controls -->
+  <section id="mobile-controls-container">
+    <div id="joystick-container">
+      <div id="joystick-thumb"></div>
+    </div>
+    <div id="action-buttons-container">
+      <div id="mobile-mode-display">Create</div>
+      <button id="mobile-jump-btn" class="action-btn" aria-label="Jump">▲</button>
+      <button id="mobile-action-btn" class="action-btn" aria-label="Action">⦿</button>
+      <button id="mobile-switch-mode-btn" class="action-btn" aria-label="Switch Mode">⇄</button>
+    </div>
+  </section>
+
+  <!-- External Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/noisejs@2.1.0/index.min.js"></script>
+  <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+
+  <!-- Import Map for Three.js -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.157.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <!-- Main Script -->
+  <script type="module" src="script.js"></script>
+</body>
+</html>

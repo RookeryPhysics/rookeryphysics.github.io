@@ -1,0 +1,242 @@
+body { 
+    margin: 0; 
+    overflow: hidden; 
+    font-family: sans-serif; 
+    background-color: #000; 
+    cursor: none;
+}
+
+@media (pointer: fine) {
+    body {
+        cursor: crosshair;
+    }
+}
+
+canvas { display: block; }
+#info { position: absolute; top: 10px; left: 10px; padding: 10px 15px; background-color: rgba(0,0,0,0.5); border-radius: 8px; color: #fff; z-index: 10; }
+
+#block-counter { 
+    position: absolute; 
+    top: 60px; 
+    right: 10px; 
+    padding: 10px 15px; 
+    background-color: rgba(0,0,0,0.5); 
+    border-radius: 8px; 
+    color: #fff; 
+    z-index: 10; 
+    font-size: 16px;
+    font-weight: bold;
+}
+
+#xp-counter { 
+    position: absolute; 
+    top: 115px; 
+    right: 10px; 
+    padding: 10px 15px; 
+    background-color: rgba(0,0,0,0.5); 
+    border-radius: 8px; 
+    color: #00FFFF; 
+    z-index: 10; 
+    font-size: 16px;
+    font-weight: bold;
+}
+
+#mode-selector { position: absolute; bottom: 10px; left: 10px; display: flex; flex-direction: column; gap: 8px; padding: 12px; background-color: rgba(40,40,40,0.85); border-radius: 8px; z-index: 100; }
+#mode-selector button { background-color: #4f4f4f; color: white; border: 1px solid #666; padding: 8px 16px; border-radius: 6px; cursor: pointer; transition: background-color 0.2s; }
+#mode-selector button:hover { background-color: #6a6a6a; }
+#mode-selector button.active { background-color: #6a6a6a; }
+#color-selector { position: absolute; bottom: 10px; left: 175px; display: none; flex-direction: column; gap: 8px; padding: 12px; background-color: rgba(40,40,40,0.85); border-radius: 8px; align-items: center; z-index: 100; }
+#color-selector label { font-size: 14px; margin-bottom: 4px; color: #fff; }
+#color-selector input[type="color"] { width: 50px; height: 30px; border: 1px solid #666; border-radius: 6px; cursor: pointer; }
+
+#crosshair {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 4px;
+    height: 4px;
+    background-color: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(0, 0, 0, 0.5);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 200;
+}
+
+#seed-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    color: white;
+}
+#seed-box {
+    background: #2a2a2a;
+    padding: 25px 40px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.4);
+    max-width: 90%;
+}
+#seed-box h2 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-weight: 300;
+}
+#seed-box p {
+    margin-bottom: 20px;
+    font-size: 14px;
+    color: #ccc;
+}
+#seed-input {
+    padding: 12px;
+    width: 250px;
+    max-width: calc(100% - 24px);
+    border: 1px solid #555;
+    background: #333;
+    color: white;
+    border-radius: 6px;
+    font-size: 16px;
+}
+#start-game-btn {
+    padding: 12px 24px;
+    margin-top: 20px;
+    background-color: #4f4f4f;
+    color: white;
+    border: 1px solid #666;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-size: 16px;
+    width: 100%;
+}
+#start-game-btn:hover {
+    background-color: #6a6a6a;
+}
+#load-world-btn {
+    padding: 12px 24px;
+    margin-top: 10px;
+    background-color: #4f4f4f;
+    color: white;
+    border: 1px solid #666;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-size: 16px;
+    width: 100%;
+}
+#load-world-btn:hover {
+    background-color: #6a6a6a;
+}
+#save-world-btn {
+    background-color: #4f4f4f;
+    color: white;
+    border: 1px solid #666;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin-top: 16px;
+}
+#ingame-load-world-btn {
+    background-color: #4f4f4f;
+    color: white;
+    border: 1px solid #666;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+#save-world-btn:hover, #ingame-load-world-btn:hover {
+    background-color: #6a6a6a;
+}
+
+#mobile-controls-container {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    display: none;
+    z-index: 1000;
+}
+
+#mobile-controls-container.active {
+    display: block;
+}
+
+#joystick-container {
+    position: absolute;
+    bottom: 30px;
+    left: 30px;
+    width: 120px;
+    height: 120px;
+    background-color: rgba(80, 80, 80, 0.4);
+    border-radius: 50%;
+    pointer-events: auto;
+}
+
+#joystick-thumb {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 60px;
+    height: 60px;
+    background-color: rgba(180, 180, 180, 0.6);
+    border: 2px solid rgba(255, 255, 255, 0.7);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: transform 0.1s;
+}
+
+#action-buttons-container {
+    position: absolute;
+    bottom: 30px;
+    right: 30px;
+    display: grid;
+    grid-template-areas:
+        ". mode ."
+        "switch action jump";
+    gap: 15px;
+    pointer-events: auto;
+    color: white;
+    text-align: center;
+}
+
+#mobile-mode-display {
+    grid-area: mode;
+    background-color: rgba(0,0,0,0.5);
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+.action-btn {
+    width: 65px;
+    height: 65px;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    background-color: rgba(80, 80, 80, 0.5);
+    color: white;
+    border-radius: 50%;
+    font-size: 24px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+#mobile-jump-btn { grid-area: jump; }
+#mobile-action-btn { grid-area: action; }
+#mobile-switch-mode-btn { grid-area: switch; }
+
+.action-btn:active {
+    background-color: rgba(120, 120, 120, 0.7);
+}
