@@ -50,6 +50,7 @@ let toolgunLaser = null;
 let isToolgunActive = false; 
 
 let prismFirstClickPos = null; // For the 2-click prism tool
+let prismPreviewMesh = null;
 
 let projectiles = [];
 let shootCooldown = 0;
@@ -260,6 +261,76 @@ function markChunkForRegeneration(worldX, worldZ) {
     }
 }
 
+function updatePrismPreview() {
+    if (!prismFirstClickPos || currentMode !== 'prism') {
+        clearPrismPreview();
+        return;
+    }
+
+    // Raycast to get current position
+    const meshes = Array.from(loadedChunks.values()).map(c => c.mesh).filter(m => m);
+    if (meshes.length === 0) return;
+
+    const mouse = new THREE.Vector2(0, 0);
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects(meshes);
+
+    if (intersects.length === 0) return;
+
+    const intersect = intersects[0];
+    const adjacentBlockPos = intersect.point.clone().add(intersect.face.normal.clone().multiplyScalar(0.01));
+    const finalX = Math.floor(adjacentBlockPos.x);
+    const finalY = Math.floor(adjacentBlockPos.y);
+    const finalZ = Math.floor(adjacentBlockPos.z);
+
+    // Compute bounds
+    const p1 = prismFirstClickPos;
+    const minX = Math.min(p1.x, finalX);
+    const minY = Math.min(p1.y, finalY);
+    const minZ = Math.min(p1.z, finalZ);
+    const maxX = Math.max(p1.x, finalX);
+    const maxY = Math.max(p1.y, finalY);
+    const maxZ = Math.max(p1.z, finalZ);
+
+    const dx = maxX - minX + 1;
+    const dy = maxY - minY + 1;
+    const dz = maxZ - minZ + 1;
+
+    const centerX = (minX + maxX + 1) / 2;
+    const centerY = (minY + maxY + 1) / 2;
+    const centerZ = (minZ + maxZ + 1) / 2;
+
+    if (!prismPreviewMesh) {
+        // Create new preview mesh
+        const geometry = new THREE.BoxGeometry(dx, dy, dz);
+        const material = new THREE.MeshBasicMaterial({
+            color: 0x00ffff,
+            transparent: true,
+            opacity: 0.3,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+        prismPreviewMesh = new THREE.Mesh(geometry, material);
+        prismPreviewMesh.position.set(centerX, centerY, centerZ);
+        scene.add(prismPreviewMesh);
+    } else {
+        // Update existing preview mesh
+        prismPreviewMesh.geometry.dispose();
+        const geometry = new THREE.BoxGeometry(dx, dy, dz);
+        prismPreviewMesh.geometry = geometry;
+        prismPreviewMesh.position.set(centerX, centerY, centerZ);
+    }
+}
+
+function clearPrismPreview() {
+    if (prismPreviewMesh) {
+        scene.remove(prismPreviewMesh);
+        prismPreviewMesh.geometry.dispose();
+        prismPreviewMesh.material.dispose();
+        prismPreviewMesh = null;
+    }
+}
+
 function updateBlockCounter() {
     const counterElement = document.getElementById('block-counter');
     if (counterElement) {
@@ -431,28 +502,64 @@ function performAction() {
                 const maxY = Math.max(p1.y, p2.y);
                 const maxZ = Math.max(p1.z, p2.z);
 
-                let blocksToPlace = (maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1);
-                if (blockInventory < blocksToPlace) {
+                // First pass: count blocks needed (skip existing blocks and player-occupied cells)
+                let blocksNeeded = 0;
+                for (let x = minX; x <= maxX; x++) {
+                    for (let y = minY; y <= maxY; y++) {
+                        for (let z = minZ; z <= maxZ; z++) {
+                            if (isPlayerOccupying(x, y, z)) continue;
+                            if (getBlock(x, y, z)) continue; // Skip existing blocks
+                            blocksNeeded++;
+                        }
+                    }
+                }
+
+                if (blockInventory < blocksNeeded) {
                     // Not enough blocks, flash and reset
                     createLaserFlash(new THREE.Vector3(finalX + 0.5, finalY + 0.5, finalZ + 0.5));
+                    clearPrismPreview();
                     prismFirstClickPos = null;
                     return;
                 }
 
+                // Second pass: place blocks and collect affected chunks
+                const chunksToUpdate = new Set();
                 for (let x = minX; x <= maxX; x++) {
                     for (let y = minY; y <= maxY; y++) {
                         for (let z = minZ; z <= maxZ; z++) {
-                            if (isPlayerOccupying(x, y, z)) continue; // Skip blocks player is in
+                            if (isPlayerOccupying(x, y, z)) continue;
+                            if (getBlock(x, y, z)) continue; // Skip existing blocks
 
                             modifiedBlocks.set(`${x},${y},${z}`, { color: new THREE.Color(currentColor), type: 'normal' });
                             blockInventory--;
-                            markChunkForRegeneration(x, z);
+
+                            // Add affected chunk
+                            const chunkX = Math.floor(x / CHUNK_SIZE);
+                            const chunkZ = Math.floor(z / CHUNK_SIZE);
+                            chunksToUpdate.add(`${chunkX},${chunkZ}`);
+
+                            // Add neighbor chunks for edge blocks
+                            const localX = x - chunkX * CHUNK_SIZE;
+                            const localZ = z - chunkZ * CHUNK_SIZE;
+                            if (localX === 0) chunksToUpdate.add(`${chunkX - 1},${chunkZ}`);
+                            if (localX === CHUNK_SIZE - 1) chunksToUpdate.add(`${chunkX + 1},${chunkZ}`);
+                            if (localZ === 0) chunksToUpdate.add(`${chunkX},${chunkZ - 1}`);
+                            if (localZ === CHUNK_SIZE - 1) chunksToUpdate.add(`${chunkX},${chunkZ + 1}`);
                         }
+                    }
+                }
+
+                // Mark all affected chunks for regeneration
+                for (const chunkKey of chunksToUpdate) {
+                    const chunk = loadedChunks.get(chunkKey);
+                    if (chunk) {
+                        chunk.needsRegeneration = true;
                     }
                 }
                 
                 updateBlockCounter();
                 createLaserFlash(new THREE.Vector3(finalX + 0.5, finalY + 0.5, finalZ + 0.5));
+                clearPrismPreview();
                 prismFirstClickPos = null;
             }
         } else if (currentMode === 'sphere') {
@@ -572,6 +679,10 @@ function init(seedString) {
         heldBlock.mesh.material.dispose();
         heldBlock = null;
     }
+    
+    // Clear prism preview and reset state
+    clearPrismPreview();
+    prismFirstClickPos = null;
 
     if (renderer) {
         document.body.removeChild(renderer.domElement);
@@ -1826,6 +1937,7 @@ function animate() {
     }
 
     updateToolgun(deltaTime); 
+    updatePrismPreview(); // Update prism preview if in prism mode
     updateProjectiles(deltaTime);
     updateMissiles(deltaTime);
     updateExplosions(deltaTime);
@@ -1865,6 +1977,7 @@ function saveWorld() {
     }
     if (prismFirstClickPos) { // Cancel prism build on save
         prismFirstClickPos = null;
+        clearPrismPreview();
     }
 
     const serializableBlocks = {};
@@ -2222,6 +2335,7 @@ function updateModeButtons() {
     // Reset prism tool if mode is switched
     if (currentMode !== 'prism' && prismFirstClickPos) {
         prismFirstClickPos = null;
+        clearPrismPreview();
     }
 
 	document.getElementById('add-mode-btn').classList.toggle('active', currentMode === 'add');
