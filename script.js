@@ -566,7 +566,7 @@ function init(seedString) {
 	scene.add(directionalLight);
 
 	// Create spotlight for flashlight mode
-	spotlight = new THREE.SpotLight(0xffffff, 100, 50, Math.PI / 6, 0.5, 1);
+	spotlight = new THREE.SpotLight(0xffffff, 2, 50, Math.PI / 6, 0.5, 1);
 	spotlight.position.set(0, 0, 0);
 	spotlight.visible = false;
 	camera.add(spotlight);
@@ -1742,11 +1742,6 @@ function animate() {
     // Update flashlight spotlight
     if (spotlight) {
         spotlight.visible = (currentMode === 'flashlight');
-        if (currentMode === 'flashlight') {
-            const direction = new THREE.Vector3();
-            camera.getWorldDirection(direction);
-            spotlight.target.position.copy(direction.multiplyScalar(10));
-        }
     }
 
     updateToolgun(deltaTime); 
