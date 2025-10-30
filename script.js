@@ -324,7 +324,7 @@ function updatePrismPreview() {
 
 function clearPrismPreview() {
     if (prismPreviewMesh) {
-        scene.remove(prismPreviewMesh);
+        if (scene) scene.remove(prismPreviewMesh);
         prismPreviewMesh.geometry.dispose();
         prismPreviewMesh.material.dispose();
         prismPreviewMesh = null;
