@@ -2251,7 +2251,7 @@ function updateModeButtons() {
             let modeText;
             if (currentMode === 'toolgun') modeText = 'Tool Gun';
             else if (currentMode === 'add') modeText = 'Create';
-            else if (currentMode ===f'shoot') modeText = 'Shoot';
+            else if (currentMode ==='shoot') modeText = 'Shoot';
             else if (currentMode === 'missile') modeText = 'Explode';
             else modeText = currentMode.charAt(0).toUpperCase() + currentMode.slice(1);
 
@@ -2316,3 +2316,4 @@ document.getElementById('seed-input').addEventListener('keypress', function (e) 
         document.getElementById('start-game-btn').click();
     }
 });
+
