@@ -1717,7 +1717,7 @@ function animate() {
 
     if (rifle && rifle.barrel) {
         const barrelMaterial = rifle.barrel.material;
-        if (currentMode === 'add' || currentMode === 'toolgun') {
+        if (['add', 'toolgun'].includes(currentMode)) {
             const pulse = (Math.sin(elapsedTime * 4) + 1) / 2;
             barrelMaterial.emissive.setHex(0x00ffff);
             barrelMaterial.emissiveIntensity = pulse * 1.5;
@@ -2120,7 +2120,7 @@ function updateModeButtons() {
  
     document.getElementById('toolgun-mode-btn').classList.toggle('active', currentMode === 'toolgun');
 
-	document.getElementById('color-selector').style.display = (currentMode === 'add') && !isMobileDevice ? 'flex' : 'none';
+	document.getElementById('color-selector').style.display = currentMode === 'add' && !isMobileDevice ? 'flex' : 'none';
  
     if (isMobileDevice) {
         const modeDisplay = document.getElementById('mobile-mode-display');
