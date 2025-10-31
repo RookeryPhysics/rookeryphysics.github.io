@@ -22,19 +22,6 @@
         canvas { display: block; }
         #info { position: absolute; top: 10px; left: 10px; padding: 10px 15px; background-color: rgba(0,0,0,0.5); border-radius: 8px; color: #fff; z-index: 10; }
         
-        #block-counter { 
-            position: absolute; 
-            top: 60px; 
-            right: 10px; 
-            padding: 10px 15px; 
-            background-color: rgba(0,0,0,0.5); 
-            border-radius: 8px; 
-            color: #fff; 
-            z-index: 10; 
-            font-size: 16px;
-            font-weight: bold;
-        }
-        
         #xp-counter { 
             position: absolute; 
             top: 115px; 
@@ -263,14 +250,13 @@
     <input type="file" id="load-file-input" accept=".json" style="display: none;">
 
     <div id="info"><strong>0.19a</strong><br><br>'F' to fly.</div>
-    <div id="block-counter">Blocks: 0</div>
     <div id="xp-counter">XP: 0</div>
 
     <div id="mode-selector">
-        <button id="toolgun-mode-btn">Tool Gun(1)</button>
-        <button id="add-mode-btn">Create(2)</button>
-        <button id="shoot-mode-btn">Shoot(3)</button>
-        <button id="missile-mode-btn">Explode(4)</button>
+        <button id="shoot-mode-btn">Shoot(1)</button>
+        <button id="missile-mode-btn">Missile(2)</button>
+        <button id="toolgun-mode-btn">Tool Gun(3)</button>
+        <button id="add-mode-btn">Create(4)</button>
         <button id="save-world-btn">Save World</button>
         <button id="ingame-load-world-btn">Load World</button>
     </div>
@@ -337,7 +323,7 @@ let isAiming = false;
 const hipRiflePosition = new THREE.Vector3(0.4, -0.25, -0.7);
 const adsRiflePosition = new THREE.Vector3(0, -0.2, -0.5); 
 
-const modes = ['toolgun', 'add', 'shoot', 'missile']; 
+const modes = ['shoot', 'missile', 'toolgun', 'add']; 
 let currentModeIndex = 0;
 let currentMode = 'toolgun';
 let currentColor = 0x999999;
@@ -1947,11 +1933,11 @@ function setupDesktopControls() {
     
     onKeyDown = (event) => {
         keys[event.code] = true;
-        if (event.code === 'Digit1') currentMode = 'toolgun', updateModeButtons(); 
-        else if (event.code === 'Digit2') currentMode = 'add', updateModeButtons();
-        else if (event.code === 'Digit3') currentMode = 'shoot', updateModeButtons();
+        if (event.code === 'Digit1') currentMode = 'shoot', updateModeButtons(); 
+        else if (event.code === 'Digit2') currentMode = 'missile', updateModeButtons();
+        else if (event.code === 'Digit3') currentMode = 'toolgun', updateModeButtons();
         else if (event.code === 'Digit4') {
-            currentMode = 'missile';
+            currentMode = 'add';
             updateModeButtons();
         }
         else if (event.code === 'KeyF') {
@@ -2181,7 +2167,7 @@ function updateModeButtons() {
     
     const missileBtn = document.getElementById('missile-mode-btn');
     missileBtn.classList.toggle('active', currentMode === 'missile');
-    missileBtn.innerText = 'Explode(4)';
+    missileBtn.innerText = 'Missile(2)';
     missileBtn.style.color = '';
     missileBtn.style.backgroundColor = '';
  
@@ -2196,7 +2182,7 @@ function updateModeButtons() {
             if (currentMode === 'toolgun') modeText = 'Tool Gun';
             else if (currentMode === 'add') modeText = 'Create';
             else if (currentMode === 'shoot') modeText = 'Shoot';
-            else if (currentMode === 'missile') modeText = 'Explode';
+            else if (currentMode === 'missile') modeText = 'Missile';
             else modeText = currentMode.charAt(0).toUpperCase() + currentMode.slice(1);
 
             if (currentMode === 'add') {
