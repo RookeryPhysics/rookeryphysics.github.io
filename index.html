@@ -364,8 +364,6 @@ let muzzleFlashes = [];
 const MUZZLE_FLASH_DURATION = 0.05;
 let laserFlashes = [];
 const LASER_FLASH_DURATION = 0.05;
-let droppedBlocks = []; 
-let snowflakes = []; 
 let lastPlayerPos = new THREE.Vector3(); 
 
 const CHUNK_SIZE = 16;
@@ -703,7 +701,6 @@ function performAction() {
 
             const block = getBlock(finalX, finalY, finalZ);
             if (block && block.type !== 'bedrock') {
-                createDroppedBlock(new THREE.Vector3(finalX + 0.5, finalY + 0.5, finalZ + 0.5), block);
                 modifiedBlocks.set(`${finalX},${finalY},${finalZ}`, null);
                 markChunkForRegeneration(finalX, finalZ);
             }
@@ -807,8 +804,6 @@ function init(seedString) {
     explosions = [];
     muzzleFlashes = []; 
     laserFlashes = [];
-    droppedBlocks = []; 
-    snowflakes = []; 
     goldNuggets = [];
     currentPlayerChunkX = undefined;
     currentPlayerChunkZ = undefined;
@@ -1041,21 +1036,6 @@ function createExplosion(position) {
     const snowKnockbackRadius = MISSILE_EXPLOSION_RADIUS * 3; 
     const SNOWFLAKE_KNOCKBACK_FORCE = 15.0; 
 
-    for (const snow of snowflakes) {
-        const snowPos = snow.mesh.position;
-        const distance = snowPos.distanceTo(position);
-
-        if (distance < snowKnockbackRadius && distance > 0) { 
-            const knockbackDir = snowPos.clone().sub(position).normalize();
-            
-            const forceFalloff = 1 - (distance / snowKnockbackRadius); 
-            const finalForce = SNOWFLAKE_KNOCKBACK_FORCE * forceFalloff;
-
-            snow.velocity.add(knockbackDir.multiplyScalar(finalForce));
-        }
-    }
-
-
     const chunksToUpdate = new Set();
     const radius = MISSILE_EXPLOSION_RADIUS;
     const cX = Math.floor(position.x);
@@ -1071,7 +1051,9 @@ function createExplosion(position) {
                 if (distSq <= radius * radius) {
                     const block = getBlock(pX, pY, pZ);
                     if (block && block.type !== 'bedrock') {
-                        createDroppedBlock(new THREE.Vector3(pX + 0.5, pY + 0.5, pZ + 0.5), block);
+                        if (block.type === 'stone' && Math.random() < 0.01) {
+                           createGoldNugget(new THREE.Vector3(pX + 0.5, pY + 0.5, pZ + 0.5));
+                        }
                         modifiedBlocks.set(`${pX},${pY},${pZ}`, null);
                         const chunkX = Math.floor(pX / CHUNK_SIZE);
                         const chunkZ = Math.floor(pZ / CHUNK_SIZE);
@@ -1095,35 +1077,6 @@ function createExplosion(position) {
         }
     }
 }
-
-function createDroppedBlock(position, blockData) {
-    if (blockData.type === 'stone' && Math.random() < 0.01) {
-        createGoldNugget(position);
-    }
-
-    const dropGeo = new THREE.BoxGeometry(0.25, 0.25, 0.25);
-    const dropMat = new THREE.MeshStandardMaterial({
-        color: blockData.color,
-        transparent: true,
-        opacity: 0.7
-    });
-    const dropMesh = new THREE.Mesh(dropGeo, dropMat);
-    dropMesh.position.copy(position);
-
-    const velocity = new THREE.Vector3(
-        (Math.random() - 0.5) * 2, 
-        Math.random() * 2 + 1,   
-        (Math.random() - 0.5) * 2  
-    );
-
-    scene.add(dropMesh);
-    droppedBlocks.push({
-        mesh: dropMesh,
-        velocity: velocity,
-        lifetime: 5.0 
-    });
-}
-
 
 function createGoldNugget(position) {
     const nuggetGeo = new THREE.IcosahedronGeometry(0.1, 0);
@@ -1159,112 +1112,7 @@ function createGoldNugget(position) {
 }
 
 
-function createSnowflake(playerPos, playerVel) {
-    const snowGeo = new THREE.BoxGeometry(0.165, 0.165, 0.165);
-    const snowMat = new THREE.MeshStandardMaterial({
-        color: 0xFFFFFF,
-        transparent: true,
-        opacity: 0.0, 
-        metalness: 0,
-        roughness: 1
-    });
-    const snowMesh = new THREE.Mesh(snowGeo, snowMat);
-
-    const spawnX = playerPos.x + (Math.random() * 48 - 24);
-    const spawnZ = playerPos.z + (Math.random() * 48 - 24);
-    
-    const spawnY = playerPos.y + playerHeight + 5 + (Math.random() * 3); 
-    const spawnFloorX = Math.floor(spawnX);
-    const spawnFloorZ = Math.floor(spawnZ);
-    const spawnFloorY = Math.floor(spawnY);
-
-    if (playerCube) { 
-        for (let y = spawnFloorY; y < spawnFloorY + 50; y++) {
-            if (getBlock(spawnFloorX, y, spawnFloorZ)) {
-                snowGeo.dispose();
-                snowMat.dispose();
-                snowMesh.geometry.dispose(); 
-                snowMesh.material.dispose();
-                return;
-            }
-        }
-    }
-
-
-    snowMesh.position.set(spawnX, spawnY, spawnZ);
-
-    const velocity = new THREE.Vector3(
-        -playerVel.x + (Math.random() - 0.5) * 0.5, 
-        -Math.random() * 1.5 - 0.5, 
-        -playerVel.z + (Math.random() - 0.5) * 0.5 
-    );
-
-    scene.add(snowMesh);
-    snowflakes.push({
-        mesh: snowMesh,
-        velocity: velocity,
-        lifetime: 8.0 
-    });
-}
-
-function updateSnowflakes(deltaTime, playerVel) {
-    if (!playerCube) return;
-
-    for (let i = 0; i < 10; i++) {
-        createSnowflake(playerCube.position, playerVel);
-    }
-
-    const playerCenter = playerCube.position.clone().add(new THREE.Vector3(0, playerHeight / 2, 0));
-    
-    for (let i = snowflakes.length - 1; i >= 0; i--) {
-        const snow = snowflakes[i];
-        const mesh = snow.mesh;
-
-        snow.lifetime -= deltaTime;
-        
-        const distanceToPlayer = mesh.position.distanceTo(playerCenter);
-        if (snow.lifetime <= 0 || distanceToPlayer > 30.0) { 
-            scene.remove(mesh);
-            mesh.geometry.dispose();
-            mesh.material.dispose();
-            snowflakes.splice(i, 1);
-            continue;
-        }
-
-        const targetVelX = -playerVel.x + (Math.random() - 0.5) * 0.5;
-        const targetVelZ = -playerVel.z + (Math.random() - 0.5) * 0.5;
-
-        snow.velocity.x = THREE.MathUtils.lerp(snow.velocity.x, targetVelX, 0.05);
-        snow.velocity.z = THREE.MathUtils.lerp(snow.velocity.z, targetVelZ, 0.05);
-
-        snow.velocity.y += (gravity * 0.05) * deltaTime;
-        
-        if (snow.velocity.y < -2.0) {
-            snow.velocity.y = -2.0;
-        }
-
-        mesh.position.add(snow.velocity.clone().multiplyScalar(deltaTime));
-
-        const snowX = Math.floor(mesh.position.x);
-        const snowY = Math.floor(mesh.position.y);
-        const snowZ = Math.floor(mesh.position.z);
-        
-        if (getBlock(snowX, snowY, snowZ)) {
-            scene.remove(mesh);
-            mesh.geometry.dispose();
-            mesh.material.dispose();
-            snowflakes.splice(i, 1);
-            continue; 
-        }
-
-        mesh.rotation.x += 1.0 * deltaTime;
-        mesh.rotation.y += 0.8 * deltaTime;
-
-        mesh.material.opacity = (1.0 - (snow.lifetime / 8.0)) * 0.9;
-    }
-}
-
-function updateProjectiles(deltaTime) {
+function updateGoldNuggets(deltaTime) {
     const meshes = Array.from(loadedChunks.values()).map(c => c.mesh).filter(m => m);
     for (let i = projectiles.length - 1; i >= 0; i--) {
         const projectile = projectiles[i];
@@ -1287,7 +1135,9 @@ function updateProjectiles(deltaTime) {
             const pZ = Math.floor(clickedBlockPos.z);
             const block = getBlock(pX, pY, pZ);
             if (block && block.type !== 'bedrock') {
-                createDroppedBlock(new THREE.Vector3(pX + 0.5, pY + 0.5, pZ + 0.5), block);
+                if (block.type === 'stone' && Math.random() < 0.01) {
+                    createGoldNugget(new THREE.Vector3(pX + 0.5, pY + 0.5, pZ + 0.5));
+                }
                 modifiedBlocks.set(`${pX},${pY},${pZ}`, null); 
                 markChunkForRegeneration(pX, pZ);
                 hit = true;
@@ -2022,9 +1872,7 @@ function animate() {
     updateExplosions(deltaTime);
     updateMuzzleFlashes(deltaTime); 
     updateLaserFlashes(deltaTime);
-    updateDroppedBlocks(deltaTime); 
-    updateGoldNuggets(deltaTime); // This now handles light visibility updates
-    updateSnowflakes(deltaTime, playerHorizontalVelocity); 
+    updateGoldNuggets(deltaTime); 
 	updateWorld();
 
 	renderer.render(scene, camera);
