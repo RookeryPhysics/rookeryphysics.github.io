@@ -1709,7 +1709,7 @@ function updateFPS() {
         fpsFrameCount = 0;
         fpsLastTime = currentTime;
         
-        if (fpsCounterElement && !isMobileDevice) {
+        if (fpsCounterElement) {
             fpsCounterElement.textContent = `FPS: ${currentFPS}`;
         }
     }
