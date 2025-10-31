@@ -68,7 +68,8 @@ let lastPlayerPos = new THREE.Vector3();
 // FPS counter variables
 let fpsFrameCount = 0;
 let fpsLastTime = performance.now();
-let currentFPS = 0; 
+let currentFPS = 0;
+let fpsCounterElement = null; 
 
 const CHUNK_SIZE = 16;
 const RENDER_DISTANCE = 4;
@@ -551,12 +552,12 @@ function init(seedString) {
 	document.body.appendChild(renderer.domElement);
 
 	// Initialize FPS counter
-	const fpsCounter = document.getElementById('fps-counter');
-	if (fpsCounter) {
+	fpsCounterElement = document.getElementById('fps-counter');
+	if (fpsCounterElement) {
 		if (isMobileDevice) {
-			fpsCounter.style.display = 'none';
+			fpsCounterElement.style.display = 'none';
 		} else {
-			fpsCounter.style.display = 'block';
+			fpsCounterElement.style.display = 'block';
 		}
 	}
 
@@ -1708,9 +1709,8 @@ function updateFPS() {
         fpsFrameCount = 0;
         fpsLastTime = currentTime;
         
-        const fpsCounter = document.getElementById('fps-counter');
-        if (fpsCounter && !isMobileDevice) {
-            fpsCounter.textContent = `FPS: ${currentFPS}`;
+        if (fpsCounterElement && !isMobileDevice) {
+            fpsCounterElement.textContent = `FPS: ${currentFPS}`;
         }
     }
 }
