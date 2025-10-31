@@ -779,7 +779,10 @@ function createExplosion(position) {
                 if (distSq <= radius * radius) {
                     const block = getBlock(pX, pY, pZ);
                     if (block && block.type !== 'bedrock') {
-                        createDroppedBlock(new THREE.Vector3(pX + 0.5, pY + 0.5, pZ + 0.5), block);
+                        // 50% chance to spawn a dropped block
+                        if (Math.random() < 0.5) {
+                            createDroppedBlock(new THREE.Vector3(pX + 0.5, pY + 0.5, pZ + 0.5), block);
+                        }
                         modifiedBlocks.set(`${pX},${pY},${pZ}`, null);
                         const chunkX = Math.floor(pX / CHUNK_SIZE);
                         const chunkZ = Math.floor(pZ / CHUNK_SIZE);
