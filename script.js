@@ -404,8 +404,8 @@ function performAction() {
 
             const block = getBlock(finalX, finalY, finalZ);
             if (block && block.type !== 'bedrock') {
-                // 10% chance to spawn a dropped block
-                if (Math.random() < 0.1) {
+                // 20% chance to spawn a dropped block
+                if (Math.random() < 0.2) {
                     createDroppedBlock(new THREE.Vector3(finalX + 0.5, finalY + 0.5, finalZ + 0.5), block);
                 }
                 modifiedBlocks.set(`${finalX},${finalY},${finalZ}`, null);
