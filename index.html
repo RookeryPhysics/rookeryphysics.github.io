@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Play 0.17a</title>
+    <title>Play 0.19a</title>
     <style>
         body { 
             margin: 0; 
@@ -262,7 +262,7 @@
     
     <input type="file" id="load-file-input" accept=".json" style="display: none;">
 
-    <div id="info"><strong>0.17a</strong><br><br>'F' to fly.</div>
+    <div id="info"><strong>0.19a</strong><br><br>'F' to fly.</div>
     <div id="block-counter">Blocks: 0</div>
     <div id="xp-counter">XP: 0</div>
 
@@ -343,7 +343,6 @@ let currentMode = 'toolgun';
 let currentColor = 0x999999;
 const modifiedBlocks = new Map();
  
-let blockInventory = 0;
 let goldInventory = 0;
 let goldNuggets = [];
 const MAX_ORB_LIGHTS = 10; // Max number of orb lights allowed at once
@@ -557,13 +556,6 @@ function markChunkForRegeneration(worldX, worldZ) {
     }
 }
 
-function updateBlockCounter() {
-    const counterElement = document.getElementById('block-counter');
-    if (counterElement) {
-        counterElement.innerText = `Blocks: ${blockInventory}`;
-    }
-}
-
 function updateXPCounter() {
     const counterElement = document.getElementById('xp-counter');
     if (counterElement) {
@@ -669,10 +661,6 @@ function performAction() {
 		let finalX, finalY, finalZ;
 		
         if (currentMode === 'add') {
-            if (blockInventory <= 0) {
-                return; 
-            }
-
 			const adjacentBlockPos = intersect.point.clone().add(intersect.face.normal.clone().multiplyScalar(0.01));
 			[finalX, finalY, finalZ] = [Math.floor(adjacentBlockPos.x), Math.floor(adjacentBlockPos.y), Math.floor(adjacentBlockPos.z)];
             
@@ -691,8 +679,6 @@ function performAction() {
             }
             
 			modifiedBlocks.set(`${finalX},${finalY},${finalZ}`, { color: new THREE.Color(currentColor), type: 'normal' });
-            blockInventory--;
-            updateBlockCounter();
             markChunkForRegeneration(finalX, finalZ);
             createLaserFlash(new THREE.Vector3(finalX + 0.5, finalY + 0.5, finalZ + 0.5));
 
@@ -808,10 +794,7 @@ function init(seedString) {
     goldNuggets = [];
     currentPlayerChunkX = undefined;
     currentPlayerChunkZ = undefined;
-    
-    blockInventory = 0;
     goldInventory = 0;
-    updateBlockCounter();
     updateXPCounter();
  
     worldSeedString = seedString;
@@ -1386,54 +1369,6 @@ function updateGoldNuggets(deltaTime) {
     }
 }
 
-
-function updateDroppedBlocks(deltaTime) {
-    if (!playerCube) return;
-    const playerCenter = playerCube.position.clone().add(new THREE.Vector3(0, playerHeight / 2, 0));
-    const suckRadius = 2.0;
-    const collectRadius = 0.75;
-    
-    for (let i = droppedBlocks.length - 1; i >= 0; i--) {
-        const drop = droppedBlocks[i];
-        const mesh = drop.mesh;
-
-        const distanceToPlayer = mesh.position.distanceTo(playerCenter);
-        if (distanceToPlayer < collectRadius) {
-            blockInventory++;
-            updateBlockCounter();
-            
-            scene.remove(mesh);
-            mesh.geometry.dispose();
-            mesh.material.dispose();
-            droppedBlocks.splice(i, 1);
-            continue;
-        }
-
-        if (distanceToPlayer < suckRadius) {
-            const directionToPlayer = playerCenter.clone().sub(mesh.position).normalize();
-            drop.velocity.lerp(directionToPlayer.multiplyScalar(15.0), 0.1); 
-        } else {
-            drop.velocity.y += (gravity * 0.2) * deltaTime; 
-            drop.velocity.multiplyScalar(0.98); 
-        }
-
-        mesh.position.add(drop.velocity.clone().multiplyScalar(deltaTime));
-
-        mesh.rotation.x += 1.5 * deltaTime;
-        mesh.rotation.y += 1.0 * deltaTime;
-
-        drop.lifetime -= deltaTime;
-        mesh.material.opacity = Math.max(0, (drop.lifetime / 5.0) * 0.7); 
-
-        if (drop.lifetime <= 0) {
-            scene.remove(mesh);
-            mesh.geometry.dispose();
-            mesh.material.dispose();
-            droppedBlocks.splice(i, 1);
-        }
-    }
-}
-
 function checkCollision(pos) {
     if (isFlying) return false;
 	const halfWidth = playerWidth / 2;
@@ -1524,9 +1459,6 @@ function pickupBlock() {
 function placeBlock(instant = false) {
     if (!heldBlock) return;
 
-    // REMOVED the "if (blockInventory <= 0)" check that returned the block.
-    // The toolgun should not check inventory.
-
     const meshes = Array.from(loadedChunks.values()).map(c => c.mesh).filter(m => m);
     raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
     const intersects = raycaster.intersectObjects(meshes);
@@ -1567,9 +1499,6 @@ function placeBlock(instant = false) {
         }
 
     } 
-    // REMOVED the "else" block that decremented blockInventory.
-    // Placing a block with the toolgun is free.
-
 
     if (instant) {
         modifiedBlocks.set(`${finalX},${finalY},${finalZ}`, heldBlock.data);
