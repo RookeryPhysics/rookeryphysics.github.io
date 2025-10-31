@@ -783,8 +783,8 @@ function createExplosion(position) {
                 if (distSq <= radius * radius) {
                     const block = getBlock(pX, pY, pZ);
                     if (block && block.type !== 'bedrock') {
-                        // 10% chance to spawn a dropped block
-                        if (Math.random() < 0.1) {
+                        // 20% chance to spawn a dropped block
+                        if (Math.random() < 0.2) {
                             createDroppedBlock(new THREE.Vector3(pX + 0.5, pY + 0.5, pZ + 0.5), block);
                         }
                         modifiedBlocks.set(`${pX},${pY},${pZ}`, null);
@@ -1002,8 +1002,8 @@ function updateProjectiles(deltaTime) {
             const pZ = Math.floor(clickedBlockPos.z);
             const block = getBlock(pX, pY, pZ);
             if (block && block.type !== 'bedrock') {
-                // 10% chance to spawn a dropped block
-                if (Math.random() < 0.1) {
+                // 20% chance to spawn a dropped block
+                if (Math.random() < 0.2) {
                     createDroppedBlock(new THREE.Vector3(pX + 0.5, pY + 0.5, pZ + 0.5), block);
                 }
                 modifiedBlocks.set(`${pX},${pY},${pZ}`, null); 
