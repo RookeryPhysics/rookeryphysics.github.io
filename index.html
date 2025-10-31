@@ -343,7 +343,7 @@ let currentMode = 'toolgun';
 let currentColor = 0x999999;
 const modifiedBlocks = new Map();
  
-let goldInventory = 0;
+let orbInventory = 0;
 let goldNuggets = [];
 const MAX_ORB_LIGHTS = 10; // Max number of orb lights allowed at once
  
@@ -559,7 +559,7 @@ function markChunkForRegeneration(worldX, worldZ) {
 function updateXPCounter() {
     const counterElement = document.getElementById('xp-counter');
     if (counterElement) {
-        counterElement.innerText = `XP: ${goldInventory}`;
+        counterElement.innerText = `XP: ${orbInventory}`;
     }
 }
 
@@ -794,7 +794,7 @@ function init(seedString) {
     goldNuggets = [];
     currentPlayerChunkX = undefined;
     currentPlayerChunkZ = undefined;
-    goldInventory = 0;
+    orbInventory = 0;
     updateXPCounter();
  
     worldSeedString = seedString;
@@ -1271,7 +1271,7 @@ function updateGoldNuggets(deltaTime) {
 
         const distanceToPlayer = mesh.position.distanceTo(playerCenter);
         if (distanceToPlayer < collectRadius) {
-            goldInventory += 10;
+            orbInventory += 10;
             updateXPCounter();
             
             scene.remove(mesh); // Light is child, removed automatically
