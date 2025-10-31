@@ -2183,3 +2183,32 @@ document.getElementById('seed-input').addEventListener('keypress', function (e) 
         document.getElementById('start-game-btn').click();
     }
 });
+
+// Function to attempt loading map.json from the same directory
+function tryLoadMapJson() {
+    fetch('./map.json')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('map.json not found');
+            }
+            return response.json();
+        })
+        .then(parsedData => {
+            // Validate the data structure
+            if (parsedData.seed === undefined || !parsedData.blocks) {
+                throw new Error("Invalid map.json format.");
+            }
+            // Hide the seed overlay and start the game with loaded data
+            document.getElementById('seed-overlay').style.display = 'none';
+            init(parsedData.seed);
+            loadModifications(parsedData.blocks);
+        })
+        .catch(error => {
+            // If map.json doesn't load, show the seed overlay normally
+            console.log("map.json not found or invalid, showing seed overlay:", error.message);
+            document.getElementById('seed-overlay').style.display = 'flex';
+        });
+}
+
+// Attempt to load map.json on page load
+tryLoadMapJson();
