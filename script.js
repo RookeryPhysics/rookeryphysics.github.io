@@ -361,6 +361,7 @@ function returnProjectileToPool(projectile) {
         scene.remove(projectile);
         projectilePool.push(projectile);
     } else {
+        scene.remove(projectile);
         projectile.geometry.dispose();
         projectile.material.dispose();
     }
@@ -383,6 +384,7 @@ function returnExplosionToPool(explosion) {
         scene.remove(explosion);
         explosionPool.push(explosion);
     } else {
+        scene.remove(explosion);
         explosion.geometry.dispose();
         explosion.material.dispose();
     }
@@ -438,6 +440,7 @@ function returnSnowflakeToPool(snow) {
         scene.remove(snow);
         snowflakePool.push(snow);
     } else {
+        scene.remove(snow);
         snow.geometry.dispose();
         snow.material.dispose();
     }
@@ -1066,7 +1069,6 @@ function createGoldNugget(position) {
     );
 
     scene.add(nuggetMesh);
-    const nuggetIndex = goldNuggets.length;
     goldNuggets.push({
         mesh: nuggetMesh,
         velocity: velocity,
@@ -1074,7 +1076,8 @@ function createGoldNugget(position) {
         onGround: false,
         light: light // Store reference to the light
     });
-    addToSpatialGrid(nuggetIndex);
+    // Add to spatial grid after push completes
+    addToSpatialGrid(goldNuggets.length - 1);
 }
 
 
@@ -1308,26 +1311,25 @@ function updateGoldNuggets(deltaTime) {
         return !!getBlock(floorX, floorY, floorZ);
     };
 
-    // Get nearby nuggets using spatial grid
-    const nearbyIndices = getNearbyCells(playerCenter, Math.max(suckRadius, 10.0));
+    // Get nearby nuggets using spatial grid (convert to Set for O(1) lookups)
+    const nearbyIndices = new Set(getNearbyCells(playerCenter, Math.max(suckRadius, 10.0)));
     const orbsWithDistances = [];
     
-    // Track indices to remove (we need to rebuild the grid after removals)
-    const indicesToRemove = [];
+    // Track if we need to rebuild the spatial grid
+    let needsGridRebuild = false;
     
     // First pass: Update physics and check for collection/expiry
     for (let i = goldNuggets.length - 1; i >= 0; i--) {
         const nugget = goldNuggets[i];
         const mesh = nugget.mesh;
-        const oldGridKey = getGridKey(mesh.position);
 
         nugget.lifetime -= deltaTime;
         if (nugget.lifetime <= 0) {
-            removeFromSpatialGrid(i);
             scene.remove(mesh); // Light is child, removed automatically
             mesh.geometry.dispose();
             mesh.material.dispose();
-            indicesToRemove.push(i);
+            goldNuggets.splice(i, 1);
+            needsGridRebuild = true;
             continue;
         }
 
@@ -1336,19 +1338,21 @@ function updateGoldNuggets(deltaTime) {
             goldInventory += 10;
             updateXPCounter();
             
-            removeFromSpatialGrid(i);
             scene.remove(mesh); // Light is child, removed automatically
             mesh.geometry.dispose();
             mesh.material.dispose();
-            indicesToRemove.push(i);
+            goldNuggets.splice(i, 1);
+            needsGridRebuild = true;
             continue;
         }
 
         // Only update physics for nearby nuggets (spatial grid optimization)
-        const isNearby = nearbyIndices.includes(i);
+        const isNearby = nearbyIndices.has(i);
         if (isNearby) {
+            const oldGridKey = getGridKey(mesh.position);
+            
             // Add to distance array for light management later
-            orbsWithDistances.push({ nugget, distance: distanceToPlayer, index: i });
+            orbsWithDistances.push({ nugget, distance: distanceToPlayer });
 
             // Physics update
             if (distanceToPlayer < suckRadius) {
@@ -1420,11 +1424,10 @@ function updateGoldNuggets(deltaTime) {
                 nugget.velocity.z *= 0.8;
             }
             
-            // Update spatial grid if nugget moved to a different cell
+            // Check if nugget moved to a different cell
             const newGridKey = getGridKey(mesh.position);
             if (oldGridKey !== newGridKey) {
-                removeFromSpatialGrid(i);
-                addToSpatialGrid(i);
+                needsGridRebuild = true;
             }
             
             mesh.rotation.x += 1.5 * deltaTime;
@@ -1432,10 +1435,8 @@ function updateGoldNuggets(deltaTime) {
         }
     }
     
-    // Remove collected/expired nuggets in reverse order
-    for (const idx of indicesToRemove) {
-        goldNuggets.splice(idx, 1);
-        // Rebuild spatial grid indices after removal
+    // Rebuild spatial grid once if any nuggets were removed or moved between cells
+    if (needsGridRebuild) {
         nuggetSpatialGrid.clear();
         for (let i = 0; i < goldNuggets.length; i++) {
             addToSpatialGrid(i);
