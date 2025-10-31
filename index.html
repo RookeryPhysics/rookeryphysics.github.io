@@ -588,6 +588,8 @@ function fireSphere() {
     camera.getWorldPosition(startPosition);
     projectile.position.copy(startPosition).add(direction.clone().multiplyScalar(0.5));
     const velocity = direction.clone().multiplyScalar(PROJECTILE_SPEED);
+    // Debug: log velocity created for projectile
+    console.log('fireSphere velocity', velocity.length(), velocity.toArray());
     projectiles.push({ mesh: projectile, velocity: velocity });
     scene.add(projectile);
 }
@@ -1116,6 +1118,10 @@ function updateProjectiles(deltaTime) {
     for (let i = projectiles.length - 1; i >= 0; i--) {
         const projectile = projectiles[i];
         const pMesh = projectile.mesh;
+        // Debug: warn if projectile has no velocity
+        if (!projectile.velocity || projectile.velocity.length() === 0) {
+            console.warn('updateProjectiles: projectile has zero velocity', projectile);
+        }
 
         const oldPosition = pMesh.position.clone();
         pMesh.position.add(projectile.velocity.clone().multiplyScalar(deltaTime));
