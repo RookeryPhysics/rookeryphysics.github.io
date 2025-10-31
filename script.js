@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
 
 let animationFrameId;
 let scene, camera, renderer;
@@ -43,6 +42,10 @@ let goldInventory = 0;
 let goldNuggets = [];
 const MAX_ORB_LIGHTS = 10; // Max number of orb lights allowed at once
  
+// Spatial grid for gold nuggets optimization
+const NUGGET_GRID_CELL_SIZE = 8.0;
+const nuggetSpatialGrid = new Map(); // Key: "x,y,z", Value: array of nugget indices
+
 let heldBlock = null;
 let toolgunLaser = null;
 let isToolgunActive = false;
@@ -65,6 +68,13 @@ let droppedBlocks = [];
 let snowflakes = []; 
 let lastPlayerPos = new THREE.Vector3(); 
 
+// Object pools for performance
+const projectilePool = [];
+const explosionPool = [];
+const muzzleFlashPool = [];
+const snowflakePool = [];
+const MAX_POOL_SIZE = 100;
+
 // FPS counter variables
 let fpsFrameCount = 0;
 let fpsLastTime = performance.now();
@@ -78,6 +88,7 @@ const TERRAIN_AMPLITUDE = 30;
 const loadedChunks = new Map();
 let currentPlayerChunkX, currentPlayerChunkZ;
 const BEDROCK_LEVEL = -30;
+let cachedChunkMeshes = []; // Cache for raycasting
 
 const DIRT_COLOR_1 = new THREE.Color(0x8B4513);
 const DIRT_COLOR_2 = new THREE.Color(0x654321);
@@ -139,9 +150,6 @@ function generateChunk(chunkX, chunkZ) {
 		if (!existing.needsRegeneration) return;
 		unloadChunk(chunkX, chunkZ, false);
 	}
-	const geometries = [];
-	const matrix = new THREE.Matrix4();
-    const boxGeometry = new THREE.BoxGeometry(0.9999, 0.9999, 0.9999);
 	const worldXStart = chunkX * CHUNK_SIZE;
 	const worldZStart = chunkZ * CHUNK_SIZE;
 	let maxHeight = -Infinity;
@@ -155,6 +163,31 @@ function generateChunk(chunkX, chunkZ) {
 	}
 	const minY = BEDROCK_LEVEL;
 	const maxY = maxHeight + 40;
+	
+	// Arrays to build the geometry from scratch
+	const positions = [];
+	const normals = [];
+	const colors = [];
+	const indices = [];
+	
+	const s = 0.9999 / 2; // half size
+	
+	// Face definitions: positions and normals for each face
+	const faceData = [
+		// Right (+X)
+		{ dir: [1, 0, 0], positions: [[s, -s, -s], [s, s, -s], [s, s, s], [s, -s, s]], normal: [1, 0, 0] },
+		// Left (-X)
+		{ dir: [-1, 0, 0], positions: [[-s, -s, s], [-s, s, s], [-s, s, -s], [-s, -s, -s]], normal: [-1, 0, 0] },
+		// Top (+Y)
+		{ dir: [0, 1, 0], positions: [[-s, s, -s], [-s, s, s], [s, s, s], [s, s, -s]], normal: [0, 1, 0] },
+		// Bottom (-Y)
+		{ dir: [0, -1, 0], positions: [[-s, -s, -s], [s, -s, -s], [s, -s, s], [-s, -s, s]], normal: [0, -1, 0] },
+		// Front (+Z)
+		{ dir: [0, 0, 1], positions: [[-s, -s, s], [s, -s, s], [s, s, s], [-s, s, s]], normal: [0, 0, 1] },
+		// Back (-Z)
+		{ dir: [0, 0, -1], positions: [[s, -s, -s], [-s, -s, -s], [-s, s, -s], [s, s, -s]], normal: [0, 0, -1] }
+	];
+	
 	for (let x = 0; x < CHUNK_SIZE; x++) {
 		for (let z = 0; z < CHUNK_SIZE; z++) {
 			const worldX = worldXStart + x;
@@ -166,33 +199,60 @@ function generateChunk(chunkX, chunkZ) {
                 if (heldBlock && heldBlock.originalPos.x === worldX && heldBlock.originalPos.y === y && heldBlock.originalPos.z === worldZ) {
                     continue;
                 }
-
-				if (getBlock(worldX + 1, y, worldZ) && getBlock(worldX - 1, y, worldZ) && getBlock(worldX, y + 1, worldZ) && getBlock(worldX, y - 1, worldZ) && getBlock(worldX, y, worldZ + 1) && getBlock(worldX, y, worldZ - 1)) {
-					continue;
+				
+				const cx = worldX + 0.5;
+				const cy = y + 0.5;
+				const cz = worldZ + 0.5;
+				
+				// Check each face and only add if adjacent block is air
+				for (let faceIdx = 0; faceIdx < faceData.length; faceIdx++) {
+					const face = faceData[faceIdx];
+					const [dx, dy, dz] = face.dir;
+					const neighbor = getBlock(worldX + dx, y + dy, worldZ + dz);
+					
+					if (!neighbor) {
+						// This face is visible, add it
+						const startIdx = positions.length / 3;
+						
+						// Add 4 vertices for this face
+						for (let i = 0; i < 4; i++) {
+							const [vx, vy, vz] = face.positions[i];
+							positions.push(cx + vx, cy + vy, cz + vz);
+							normals.push(face.normal[0], face.normal[1], face.normal[2]);
+							colors.push(block.color.r, block.color.g, block.color.b);
+						}
+						
+						// Add indices for two triangles (quad)
+						indices.push(
+							startIdx, startIdx + 1, startIdx + 2,
+							startIdx, startIdx + 2, startIdx + 3
+						);
+					}
 				}
-				const newGeo = boxGeometry.clone();
-				const colorAttr = new THREE.BufferAttribute(new Float32Array(newGeo.attributes.position.count * 3), 3);
-				for (let i = 0; i < colorAttr.count; i++) {
-					colorAttr.setXYZ(i, block.color.r, block.color.g, block.color.b);
-				}
-				newGeo.setAttribute('color', colorAttr);
-				matrix.setPosition(worldX + 0.5, y + 0.5, worldZ + 0.5);
-				newGeo.applyMatrix4(matrix);
-				geometries.push(newGeo);
 			}
 		}
 	}
-    boxGeometry.dispose();
-	if (geometries.length === 0) {
+	
+	if (positions.length === 0) {
 		loadedChunks.set(chunkKey, { mesh: null, needsRegeneration: false });
 		return;
 	}
-	const mergedGeometry = BufferGeometryUtils.mergeGeometries(geometries, false);
+	
+	// Build the BufferGeometry from arrays
+	const geometry = new THREE.BufferGeometry();
+	geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+	geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+	geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+	geometry.setIndex(indices);
+	
 	const material = new THREE.MeshStandardMaterial({ vertexColors: true, metalness: 0, roughness: 1 });
-	const chunkMesh = new THREE.Mesh(mergedGeometry, material);
+	const chunkMesh = new THREE.Mesh(geometry, material);
 	chunkMesh.userData.key = chunkKey;
 	scene.add(chunkMesh);
 	loadedChunks.set(chunkKey, { mesh: chunkMesh, needsRegeneration: false });
+	
+	// Update cached mesh list
+	cachedChunkMeshes = Array.from(loadedChunks.values()).map(c => c.mesh).filter(m => m);
 }
 
 function unloadChunk(chunkX, chunkZ, removeFromMap = true) {
@@ -205,6 +265,9 @@ function unloadChunk(chunkX, chunkZ, removeFromMap = true) {
 	if (removeFromMap) {
 		loadedChunks.delete(chunkKey);
 	}
+	
+	// Update cached mesh list
+	cachedChunkMeshes = Array.from(loadedChunks.values()).map(c => c.mesh).filter(m => m);
 }
 
 function updateWorld() {
@@ -276,8 +339,11 @@ function updateXPCounter() {
     }
 }
 
-function fireSphere() {
-    createMuzzleFlash(); 
+// Object pool helper functions
+function getProjectileFromPool() {
+    if (projectilePool.length > 0) {
+        return projectilePool.pop();
+    }
     const projectileGeometry = new THREE.SphereGeometry(0.2, 8, 8);
     const projectileMaterial = new THREE.MeshStandardMaterial({ 
         color: 0xffa500,
@@ -286,7 +352,100 @@ function fireSphere() {
         metalness: 0,
         roughness: 0.5
     });
-    const projectile = new THREE.Mesh(projectileGeometry, projectileMaterial);
+    return new THREE.Mesh(projectileGeometry, projectileMaterial);
+}
+
+function returnProjectileToPool(projectile) {
+    if (projectilePool.length < MAX_POOL_SIZE) {
+        projectile.position.set(0, 0, 0);
+        scene.remove(projectile);
+        projectilePool.push(projectile);
+    } else {
+        projectile.geometry.dispose();
+        projectile.material.dispose();
+    }
+}
+
+function getExplosionFromPool() {
+    if (explosionPool.length > 0) {
+        const explosion = explosionPool.pop();
+        explosion.material.opacity = 0.8;
+        return explosion;
+    }
+    const geometry = new THREE.SphereGeometry(MISSILE_EXPLOSION_RADIUS, 16, 16);
+    const material = new THREE.MeshBasicMaterial({ color: 0xff8800, transparent: true, opacity: 0.8 });
+    return new THREE.Mesh(geometry, material);
+}
+
+function returnExplosionToPool(explosion) {
+    if (explosionPool.length < MAX_POOL_SIZE) {
+        explosion.position.set(0, 0, 0);
+        scene.remove(explosion);
+        explosionPool.push(explosion);
+    } else {
+        explosion.geometry.dispose();
+        explosion.material.dispose();
+    }
+}
+
+function getMuzzleFlashFromPool() {
+    if (muzzleFlashPool.length > 0) {
+        const flash = muzzleFlashPool.pop();
+        flash.material.opacity = 0.9;
+        return flash;
+    }
+    const flashGeo = new THREE.SphereGeometry(0.12, 8, 8);
+    const flashMat = new THREE.MeshBasicMaterial({ 
+        color: 0xFFFF99, 
+        transparent: true, 
+        opacity: 0.9, 
+        blending: THREE.AdditiveBlending 
+    });
+    return new THREE.Mesh(flashGeo, flashMat);
+}
+
+function returnMuzzleFlashToPool(flash) {
+    if (muzzleFlashPool.length < MAX_POOL_SIZE) {
+        if (rifle) rifle.remove(flash);
+        muzzleFlashPool.push(flash);
+    } else {
+        flash.geometry.dispose();
+        flash.material.dispose();
+    }
+}
+
+function getSnowflakeFromPool() {
+    if (snowflakePool.length > 0) {
+        const snow = snowflakePool.pop();
+        snow.material.opacity = 0.0;
+        snow.rotation.set(0, 0, 0);
+        return snow;
+    }
+    const snowGeo = new THREE.BoxGeometry(0.165, 0.165, 0.165);
+    const snowMat = new THREE.MeshStandardMaterial({
+        color: 0xFFFFFF,
+        transparent: true,
+        opacity: 0.0, 
+        metalness: 0,
+        roughness: 1
+    });
+    return new THREE.Mesh(snowGeo, snowMat);
+}
+
+function returnSnowflakeToPool(snow) {
+    if (snowflakePool.length < MAX_POOL_SIZE) {
+        snow.position.set(0, 0, 0);
+        scene.remove(snow);
+        snowflakePool.push(snow);
+    } else {
+        snow.geometry.dispose();
+        snow.material.dispose();
+    }
+}
+
+function fireSphere() {
+    createMuzzleFlash(); 
+    const projectile = getProjectileFromPool();
     const direction = new THREE.Vector3();
     camera.getWorldDirection(direction);
     const startPosition = new THREE.Vector3();
@@ -374,12 +533,11 @@ function performAction() {
         return;
     }
 
-	const meshes = Array.from(loadedChunks.values()).map(c => c.mesh).filter(m => m);
-	if (meshes.length === 0) return;
+	if (cachedChunkMeshes.length === 0) return;
 	
     const mouse = new THREE.Vector2(0, 0);
 	raycaster.setFromCamera(mouse, camera);
-    const intersects = raycaster.intersectObjects(meshes);
+    const intersects = raycaster.intersectObjects(cachedChunkMeshes);
 
 	if (intersects.length > 0) {
 		const intersect = intersects[0];
@@ -507,6 +665,7 @@ function init(seedString) {
         }
     }
     loadedChunks.clear();
+    cachedChunkMeshes = []; // Clear cache
     modifiedBlocks.clear(); 
     projectiles = [];
     missiles = [];
@@ -516,6 +675,7 @@ function init(seedString) {
     droppedBlocks = []; 
     snowflakes = []; 
     goldNuggets = [];
+    nuggetSpatialGrid.clear(); // Clear spatial grid
     currentPlayerChunkX = undefined;
     currentPlayerChunkZ = undefined;
     
@@ -678,14 +838,7 @@ function createRifle() {
 
 function createMuzzleFlash() {
     if (!rifle) return; 
-    const flashGeo = new THREE.SphereGeometry(0.12, 8, 8);
-    const flashMat = new THREE.MeshBasicMaterial({ 
-        color: 0xFFFF99, 
-        transparent: true, 
-        opacity: 0.9, 
-        blending: THREE.AdditiveBlending 
-    });
-    const flashMesh = new THREE.Mesh(flashGeo, flashMat);
+    const flashMesh = getMuzzleFlashFromPool();
     const muzzleLocalPos = new THREE.Vector3(1.3, 0.05, 0);
     flashMesh.position.copy(muzzleLocalPos);
     rifle.add(flashMesh);
@@ -721,9 +874,7 @@ function createLaserFlash(targetPosition) {
 
 
 function createExplosion(position) {
-    const geometry = new THREE.SphereGeometry(MISSILE_EXPLOSION_RADIUS, 16, 16);
-    const material = new THREE.MeshBasicMaterial({ color: 0xff8800, transparent: true, opacity: 0.8 });
-    const explosionMesh = new THREE.Mesh(geometry, material);
+    const explosionMesh = getExplosionFromPool();
     explosionMesh.position.copy(position);
     scene.add(explosionMesh);
     explosions.push({ mesh: explosionMesh, timer: MISSILE_EXPLOSION_DURATION });
@@ -839,6 +990,57 @@ function createDroppedBlock(position, blockData) {
     });
 }
 
+// Spatial grid helper functions for gold nuggets
+function getGridKey(position) {
+    const x = Math.floor(position.x / NUGGET_GRID_CELL_SIZE);
+    const y = Math.floor(position.y / NUGGET_GRID_CELL_SIZE);
+    const z = Math.floor(position.z / NUGGET_GRID_CELL_SIZE);
+    return `${x},${y},${z}`;
+}
+
+function addToSpatialGrid(nuggetIndex) {
+    const position = goldNuggets[nuggetIndex].mesh.position;
+    const key = getGridKey(position);
+    if (!nuggetSpatialGrid.has(key)) {
+        nuggetSpatialGrid.set(key, []);
+    }
+    nuggetSpatialGrid.get(key).push(nuggetIndex);
+}
+
+function removeFromSpatialGrid(nuggetIndex) {
+    const position = goldNuggets[nuggetIndex].mesh.position;
+    const key = getGridKey(position);
+    if (nuggetSpatialGrid.has(key)) {
+        const cell = nuggetSpatialGrid.get(key);
+        const index = cell.indexOf(nuggetIndex);
+        if (index > -1) {
+            cell.splice(index, 1);
+        }
+        if (cell.length === 0) {
+            nuggetSpatialGrid.delete(key);
+        }
+    }
+}
+
+function getNearbyCells(position, radius) {
+    const cells = [];
+    const cellRadius = Math.ceil(radius / NUGGET_GRID_CELL_SIZE);
+    const centerX = Math.floor(position.x / NUGGET_GRID_CELL_SIZE);
+    const centerY = Math.floor(position.y / NUGGET_GRID_CELL_SIZE);
+    const centerZ = Math.floor(position.z / NUGGET_GRID_CELL_SIZE);
+    
+    for (let x = centerX - cellRadius; x <= centerX + cellRadius; x++) {
+        for (let y = centerY - cellRadius; y <= centerY + cellRadius; y++) {
+            for (let z = centerZ - cellRadius; z <= centerZ + cellRadius; z++) {
+                const key = `${x},${y},${z}`;
+                if (nuggetSpatialGrid.has(key)) {
+                    cells.push(...nuggetSpatialGrid.get(key));
+                }
+            }
+        }
+    }
+    return cells;
+}
 
 function createGoldNugget(position) {
     const nuggetGeo = new THREE.IcosahedronGeometry(0.1, 0);
@@ -864,6 +1066,7 @@ function createGoldNugget(position) {
     );
 
     scene.add(nuggetMesh);
+    const nuggetIndex = goldNuggets.length;
     goldNuggets.push({
         mesh: nuggetMesh,
         velocity: velocity,
@@ -871,19 +1074,12 @@ function createGoldNugget(position) {
         onGround: false,
         light: light // Store reference to the light
     });
+    addToSpatialGrid(nuggetIndex);
 }
 
 
 function createSnowflake(playerPos, playerVel) {
-    const snowGeo = new THREE.BoxGeometry(0.165, 0.165, 0.165);
-    const snowMat = new THREE.MeshStandardMaterial({
-        color: 0xFFFFFF,
-        transparent: true,
-        opacity: 0.0, 
-        metalness: 0,
-        roughness: 1
-    });
-    const snowMesh = new THREE.Mesh(snowGeo, snowMat);
+    const snowMesh = getSnowflakeFromPool();
 
     const spawnX = playerPos.x + (Math.random() * 48 - 24);
     const spawnZ = playerPos.z + (Math.random() * 48 - 24);
@@ -896,10 +1092,7 @@ function createSnowflake(playerPos, playerVel) {
     if (playerCube) { 
         for (let y = spawnFloorY; y < spawnFloorY + 50; y++) {
             if (getBlock(spawnFloorX, y, spawnFloorZ)) {
-                snowGeo.dispose();
-                snowMat.dispose();
-                snowMesh.geometry.dispose(); 
-                snowMesh.material.dispose();
+                returnSnowflakeToPool(snowMesh);
                 return;
             }
         }
@@ -939,9 +1132,7 @@ function updateSnowflakes(deltaTime, playerVel) {
         
         const distanceToPlayer = mesh.position.distanceTo(playerCenter);
         if (snow.lifetime <= 0 || distanceToPlayer > 30.0) { 
-            scene.remove(mesh);
-            mesh.geometry.dispose();
-            mesh.material.dispose();
+            returnSnowflakeToPool(mesh);
             snowflakes.splice(i, 1);
             continue;
         }
@@ -965,9 +1156,7 @@ function updateSnowflakes(deltaTime, playerVel) {
         const snowZ = Math.floor(mesh.position.z);
         
         if (getBlock(snowX, snowY, snowZ)) {
-            scene.remove(mesh);
-            mesh.geometry.dispose();
-            mesh.material.dispose();
+            returnSnowflakeToPool(mesh);
             snowflakes.splice(i, 1);
             continue; 
         }
@@ -980,7 +1169,6 @@ function updateSnowflakes(deltaTime, playerVel) {
 }
 
 function updateProjectiles(deltaTime) {
-    const meshes = Array.from(loadedChunks.values()).map(c => c.mesh).filter(m => m);
     for (let i = projectiles.length - 1; i >= 0; i--) {
         const projectile = projectiles[i];
         const pMesh = projectile.mesh;
@@ -992,7 +1180,7 @@ function updateProjectiles(deltaTime) {
         const direction = newPosition.clone().sub(oldPosition).normalize();
         projectileRaycaster.set(oldPosition, direction);
         projectileRaycaster.far = distance;
-        const intersects = projectileRaycaster.intersectObjects(meshes);
+        const intersects = projectileRaycaster.intersectObjects(cachedChunkMeshes);
         let hit = false;
         if (intersects.length > 0) {
             const intersect = intersects[0]; 
@@ -1013,16 +1201,13 @@ function updateProjectiles(deltaTime) {
         }
         const playerDistance = pMesh.position.distanceTo(playerCube.position);
         if (hit || playerDistance > RENDER_DISTANCE * CHUNK_SIZE) {
-            scene.remove(pMesh);
-            pMesh.geometry.dispose();
-            pMesh.material.dispose();
+            returnProjectileToPool(pMesh);
             projectiles.splice(i, 1);
         }
     }
 }
 
 function updateMissiles(deltaTime) {
-    const meshes = Array.from(loadedChunks.values()).map(c => c.mesh).filter(m => m);
     for (let i = missiles.length - 1; i >= 0; i--) {
         const missile = missiles[i];
         const mMesh = missile.mesh;
@@ -1037,8 +1222,8 @@ function updateMissiles(deltaTime) {
         projectileRaycaster.far = distance;
         let hit = false;
         let hitPosition = null;
-        if (meshes.length > 0) {
-            const intersects = projectileRaycaster.intersectObjects(meshes);
+        if (cachedChunkMeshes.length > 0) {
+            const intersects = projectileRaycaster.intersectObjects(cachedChunkMeshes);
             if (intersects.length > 0) {
                 hitPosition = intersects[0].point.clone();
                 hit = true;
@@ -1072,9 +1257,7 @@ function updateExplosions(deltaTime) {
             explosion.mesh.material.opacity = (explosion.timer / MISSILE_EXPLOSION_DURATION) * 0.8;
         }
         if (explosion.timer <= 0) {
-            scene.remove(explosion.mesh);
-            explosion.mesh.geometry.dispose();
-            explosion.mesh.material.dispose();
+            returnExplosionToPool(explosion.mesh);
             explosions.splice(i, 1);
         }
     }
@@ -1089,11 +1272,7 @@ function updateMuzzleFlashes(deltaTime) {
         flash.mesh.material.opacity = fade * 0.9;
 
         if (flash.timer <= 0) {
-            if (rifle) {
-                rifle.remove(flash.mesh);
-            }
-            flash.mesh.geometry.dispose();
-            flash.mesh.material.dispose();
+            returnMuzzleFlashToPool(flash.mesh);
             muzzleFlashes.splice(i, 1);
         }
     }
@@ -1129,20 +1308,26 @@ function updateGoldNuggets(deltaTime) {
         return !!getBlock(floorX, floorY, floorZ);
     };
 
-    // Array to hold orbs and their distances for sorting
+    // Get nearby nuggets using spatial grid
+    const nearbyIndices = getNearbyCells(playerCenter, Math.max(suckRadius, 10.0));
     const orbsWithDistances = [];
     
-    // First pass: Update physics and remove expired/collected orbs
+    // Track indices to remove (we need to rebuild the grid after removals)
+    const indicesToRemove = [];
+    
+    // First pass: Update physics and check for collection/expiry
     for (let i = goldNuggets.length - 1; i >= 0; i--) {
         const nugget = goldNuggets[i];
         const mesh = nugget.mesh;
+        const oldGridKey = getGridKey(mesh.position);
 
         nugget.lifetime -= deltaTime;
         if (nugget.lifetime <= 0) {
+            removeFromSpatialGrid(i);
             scene.remove(mesh); // Light is child, removed automatically
             mesh.geometry.dispose();
             mesh.material.dispose();
-            goldNuggets.splice(i, 1);
+            indicesToRemove.push(i);
             continue;
         }
 
@@ -1151,88 +1336,110 @@ function updateGoldNuggets(deltaTime) {
             goldInventory += 10;
             updateXPCounter();
             
+            removeFromSpatialGrid(i);
             scene.remove(mesh); // Light is child, removed automatically
             mesh.geometry.dispose();
             mesh.material.dispose();
-            goldNuggets.splice(i, 1);
+            indicesToRemove.push(i);
             continue;
         }
 
-        // Add to distance array for sorting later
-        orbsWithDistances.push({ nugget, distance: distanceToPlayer });
+        // Only update physics for nearby nuggets (spatial grid optimization)
+        const isNearby = nearbyIndices.includes(i);
+        if (isNearby) {
+            // Add to distance array for light management later
+            orbsWithDistances.push({ nugget, distance: distanceToPlayer, index: i });
 
-        // Physics update
-        if (distanceToPlayer < suckRadius) {
-            const directionToPlayer = playerCenter.clone().sub(mesh.position).normalize();
-            nugget.velocity.lerp(directionToPlayer.multiplyScalar(15.0), 0.1); 
-            nugget.onGround = false;
-        } else {
-             // Only apply gravity if not being sucked
-             if (!nugget.onGround) {
-                nugget.velocity.y += (gravity * 0.5) * deltaTime;
-             }
-        }
-        
-        const desiredMoveX = nugget.velocity.x * deltaTime;
-        const desiredMoveY = nugget.velocity.y * deltaTime;
-        const desiredMoveZ = nugget.velocity.z * deltaTime;
-
-        mesh.position.x += desiredMoveX;
-        if (checkCollisionSimple(mesh.position)) {
-            mesh.position.x -= desiredMoveX;
-            nugget.velocity.x *= 0.6; // Dampen on wall hit, don't bounce
-        }
-        
-        mesh.position.z += desiredMoveZ;
-        if (checkCollisionSimple(mesh.position)) {
-            mesh.position.z -= desiredMoveZ;
-            nugget.velocity.z *= 0.6; // Dampen on wall hit, don't bounce
-        }
-        
-        mesh.position.y += desiredMoveY;
-        if (checkCollisionSimple(mesh.position)) {
-            mesh.position.y -= desiredMoveY; // Move back to pre-collision position
-            if (nugget.velocity.y < 0) { // Moving down, hit ground
-                if (!nugget.onGround) { // Only reset Y velocity if it just landed
-                     nugget.velocity.y = 0;
-                     // Set position explicitly to ground + float
-                     mesh.position.y = Math.floor(mesh.position.y) + 0.1; 
-                     if(distanceToPlayer >= suckRadius) {
-                         nugget.velocity.x *= 0.6;
-                         nugget.velocity.z *= 0.6;
-                     }
-                }
-                nugget.onGround = true;
-            } else { // Moving up, hit ceiling
-                 nugget.velocity.y *= -0.3; // Keep ceiling bounce
+            // Physics update
+            if (distanceToPlayer < suckRadius) {
+                const directionToPlayer = playerCenter.clone().sub(mesh.position).normalize();
+                nugget.velocity.lerp(directionToPlayer.multiplyScalar(15.0), 0.1); 
+                nugget.onGround = false;
+            } else {
+                 // Only apply gravity if not being sucked
+                 if (!nugget.onGround) {
+                    nugget.velocity.y += (gravity * 0.5) * deltaTime;
+                 }
             }
-        } else {
-            // We are not currently colliding, check if we're floating just above ground
-            // ONLY set onGround to false if we are NOT being sucked
-            if (distanceToPlayer >= suckRadius) {
-                // Check for ground *just* below
-                let groundCheckPos = mesh.position.clone();
-                groundCheckPos.y -= 0.15; // (orb radius is 0.1 + 0.05 buffer)
-                if (checkCollisionSimple(groundCheckPos) && nugget.velocity.y <= 0) {
+            
+            const desiredMoveX = nugget.velocity.x * deltaTime;
+            const desiredMoveY = nugget.velocity.y * deltaTime;
+            const desiredMoveZ = nugget.velocity.z * deltaTime;
+
+            mesh.position.x += desiredMoveX;
+            if (checkCollisionSimple(mesh.position)) {
+                mesh.position.x -= desiredMoveX;
+                nugget.velocity.x *= 0.6; // Dampen on wall hit, don't bounce
+            }
+            
+            mesh.position.z += desiredMoveZ;
+            if (checkCollisionSimple(mesh.position)) {
+                mesh.position.z -= desiredMoveZ;
+                nugget.velocity.z *= 0.6; // Dampen on wall hit, don't bounce
+            }
+            
+            mesh.position.y += desiredMoveY;
+            if (checkCollisionSimple(mesh.position)) {
+                mesh.position.y -= desiredMoveY; // Move back to pre-collision position
+                if (nugget.velocity.y < 0) { // Moving down, hit ground
+                    if (!nugget.onGround) { // Only reset Y velocity if it just landed
+                         nugget.velocity.y = 0;
+                         // Set position explicitly to ground + float
+                         mesh.position.y = Math.floor(mesh.position.y) + 0.1; 
+                         if(distanceToPlayer >= suckRadius) {
+                             nugget.velocity.x *= 0.6;
+                             nugget.velocity.z *= 0.6;
+                         }
+                    }
                     nugget.onGround = true;
-                    nugget.velocity.y = 0; // Make sure it doesn't fall
-                    mesh.position.y = Math.floor(mesh.position.y) + 0.1; // Re-snap to float position
-                } else {
-                    nugget.onGround = false; // No ground below, so we are in the air
+                } else { // Moving up, hit ceiling
+                     nugget.velocity.y *= -0.3; // Keep ceiling bounce
                 }
             } else {
-                 nugget.onGround = false; // Being sucked, so not on ground
+                // We are not currently colliding, check if we're floating just above ground
+                // ONLY set onGround to false if we are NOT being sucked
+                if (distanceToPlayer >= suckRadius) {
+                    // Check for ground *just* below
+                    let groundCheckPos = mesh.position.clone();
+                    groundCheckPos.y -= 0.15; // (orb radius is 0.1 + 0.05 buffer)
+                    if (checkCollisionSimple(groundCheckPos) && nugget.velocity.y <= 0) {
+                        nugget.onGround = true;
+                        nugget.velocity.y = 0; // Make sure it doesn't fall
+                        mesh.position.y = Math.floor(mesh.position.y) + 0.1; // Re-snap to float position
+                    } else {
+                        nugget.onGround = false; // No ground below, so we are in the air
+                    }
+                } else {
+                     nugget.onGround = false; // Being sucked, so not on ground
+                }
             }
+           
+            // Apply ground friction if on ground and not being sucked
+            if (nugget.onGround && distanceToPlayer >= suckRadius) {
+                nugget.velocity.x *= 0.8;
+                nugget.velocity.z *= 0.8;
+            }
+            
+            // Update spatial grid if nugget moved to a different cell
+            const newGridKey = getGridKey(mesh.position);
+            if (oldGridKey !== newGridKey) {
+                removeFromSpatialGrid(i);
+                addToSpatialGrid(i);
+            }
+            
+            mesh.rotation.x += 1.5 * deltaTime;
+            mesh.rotation.y += 1.0 * deltaTime;
         }
-       
-        // Apply ground friction if on ground and not being sucked
-        if (nugget.onGround && distanceToPlayer >= suckRadius) {
-            nugget.velocity.x *= 0.8;
-            nugget.velocity.z *= 0.8;
+    }
+    
+    // Remove collected/expired nuggets in reverse order
+    for (const idx of indicesToRemove) {
+        goldNuggets.splice(idx, 1);
+        // Rebuild spatial grid indices after removal
+        nuggetSpatialGrid.clear();
+        for (let i = 0; i < goldNuggets.length; i++) {
+            addToSpatialGrid(i);
         }
-        
-        mesh.rotation.x += 1.5 * deltaTime;
-        mesh.rotation.y += 1.0 * deltaTime;
     }
 
     // Second pass: Sort by distance and manage light visibility
@@ -1331,11 +1538,10 @@ function updateRiflePosition(deltaTime) {
 function pickupBlock() {
     if (heldBlock) return; 
 
-    const meshes = Array.from(loadedChunks.values()).map(c => c.mesh).filter(m => m);
-	if (meshes.length === 0) return;
+    if (cachedChunkMeshes.length === 0) return;
 	
     raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
-    const intersects = raycaster.intersectObjects(meshes);
+    const intersects = raycaster.intersectObjects(cachedChunkMeshes);
 
     if (intersects.length > 0) {
         const intersect = intersects[0];
@@ -1393,9 +1599,8 @@ function placeBlock(instant = false) {
     // REMOVED the "if (blockInventory <= 0)" check that returned the block.
     // The toolgun should not check inventory.
 
-    const meshes = Array.from(loadedChunks.values()).map(c => c.mesh).filter(m => m);
     raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
-    const intersects = raycaster.intersectObjects(meshes);
+    const intersects = raycaster.intersectObjects(cachedChunkMeshes);
 
     let finalX, finalY, finalZ;
 
@@ -1484,12 +1689,11 @@ function updateHeldBlockPosition(deltaTime) {
         targetScale = new THREE.Vector3(0.666, 0.666, 0.666); 
         let verticalOffset = 0.0; 
 
-        const meshes = Array.from(loadedChunks.values()).map(c => c.mesh).filter(m => m);
         let distance = Infinity; 
 
-        if (meshes.length > 0) {
+        if (cachedChunkMeshes.length > 0) {
             raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
-            const intersects = raycaster.intersectObjects(meshes);
+            const intersects = raycaster.intersectObjects(cachedChunkMeshes);
 
             if (intersects.length > 0) {
                 distance = intersects[0].distance;
@@ -1559,10 +1763,9 @@ function updateToolgunLaser() {
     if (heldBlock) {
         laserEnd = heldBlock.mesh.position.clone();
     } else {
-        const meshes = Array.from(loadedChunks.values()).map(c => c.mesh).filter(m => m);
         const cameraRaycaster = new THREE.Raycaster();
         cameraRaycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
-        const intersects = cameraRaycaster.intersectObjects(meshes);
+        const intersects = cameraRaycaster.intersectObjects(cachedChunkMeshes);
         
         if (intersects.length > 0) {
             laserEnd = intersects[0].point;
