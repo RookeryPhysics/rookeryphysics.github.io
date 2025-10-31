@@ -584,12 +584,11 @@ function fireSphere() {
     const projectile = new THREE.Mesh(projectileGeometry, projectileMaterial);
     const direction = new THREE.Vector3();
     camera.getWorldDirection(direction);
+    direction.normalize(); // Ensure the direction vector is a unit vector
     const startPosition = new THREE.Vector3();
     camera.getWorldPosition(startPosition);
     projectile.position.copy(startPosition).add(direction.clone().multiplyScalar(0.5));
     const velocity = direction.clone().multiplyScalar(PROJECTILE_SPEED);
-    // Debug: log velocity created for projectile
-    console.log('fireSphere velocity', velocity.length(), velocity.toArray());
     projectiles.push({ mesh: projectile, velocity: velocity });
     scene.add(projectile);
 }
@@ -1118,10 +1117,6 @@ function updateProjectiles(deltaTime) {
     for (let i = projectiles.length - 1; i >= 0; i--) {
         const projectile = projectiles[i];
         const pMesh = projectile.mesh;
-        // Debug: warn if projectile has no velocity
-        if (!projectile.velocity || projectile.velocity.length() === 0) {
-            console.warn('updateProjectiles: projectile has zero velocity', projectile);
-        }
 
         const oldPosition = pMesh.position.clone();
         pMesh.position.add(projectile.velocity.clone().multiplyScalar(deltaTime));
@@ -1157,7 +1152,48 @@ function updateProjectiles(deltaTime) {
     }
 }
 
-
+function updateMissiles(deltaTime) {
+    const meshes = Array.from(loadedChunks.values()).map(c => c.mesh).filter(m => m);
+    for (let i = missiles.length - 1; i >= 0; i--) {
+        const missile = missiles[i];
+        const mMesh = missile.mesh;
+        missile.lifetime += deltaTime;
+        const oldPosition = mMesh.position.clone();
+        mMesh.position.add(missile.velocity.clone().multiplyScalar(deltaTime));
+        const newPosition = mMesh.position;
+        const distance = oldPosition.distanceTo(newPosition);
+        if (distance === 0) continue; 
+        const direction = newPosition.clone().sub(oldPosition).normalize();
+        projectileRaycaster.set(oldPosition, direction);
+        projectileRaycaster.far = distance;
+        let hit = false;
+        let hitPosition = null;
+        if (meshes.length > 0) {
+            const intersects = projectileRaycaster.intersectObjects(meshes);
+            if (intersects.length > 0) {
+                hitPosition = intersects[0].point.clone();
+                hit = true;
+            }
+        }
+        if (hit || missile.lifetime > 10.0) {
+            createExplosion(hitPosition || newPosition);
+            scene.remove(mMesh);
+            mMesh.traverse((child) => {
+                if (child.isMesh) {
+                    child.geometry.dispose();
+                    if (child.material) {
+                        if (Array.isArray(child.material)) {
+                            child.material.forEach(material => material.dispose());
+                        } else {
+                            child.material.dispose();
+                        }
+                    }
+                }
+            });
+            missiles.splice(i, 1);
+        }
+    }
+}
 
 function updateExplosions(deltaTime) {
     for (let i = explosions.length - 1; i >= 0; i--) {
