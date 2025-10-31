@@ -1140,6 +1140,15 @@ function updateProjectiles(deltaTime) {
             const intersects = projectileRaycaster.intersectObjects(meshes);
             if (intersects.length > 0) {
                 hit = true;
+                const intersect = intersects[0];
+                const blockPos = intersect.point.clone().sub(intersect.face.normal.clone().multiplyScalar(0.01));
+                const [pX, pY, pZ] = [Math.floor(blockPos.x), Math.floor(blockPos.y), Math.floor(blockPos.z)];
+
+                const block = getBlock(pX, pY, pZ);
+                if (block && block.type !== 'bedrock') {
+                    modifiedBlocks.set(`${pX},${pY},${pZ}`, null);
+                    markChunkForRegeneration(pX, pZ);
+                }
             }
         }
 
