@@ -990,7 +990,6 @@ function createLaserFlash(targetPosition) {
     const laserStart = new THREE.Vector3(1.3, 0.05, 0); 
     rifle.updateWorldMatrix(true, false); 
     laserStart.applyMatrix4(rifle.matrixWorld); 
-    
     const laserEnd = targetPosition;
     
     const distance = laserStart.distanceTo(laserEnd);
@@ -1113,6 +1112,49 @@ function createGoldNugget(position) {
 
 
 function updateProjectiles(deltaTime) {
+    const meshes = Array.from(loadedChunks.values()).map(c => c.mesh).filter(m => m);
+    for (let i = missiles.length - 1; i >= 0; i--) {
+        const missile = missiles[i];
+        const mMesh = missile.mesh;
+        missile.lifetime += deltaTime;
+        const oldPosition = mMesh.position.clone();
+        mMesh.position.add(missile.velocity.clone().multiplyScalar(deltaTime));
+        const newPosition = mMesh.position;
+        const distance = oldPosition.distanceTo(newPosition);
+        if (distance === 0) continue; 
+        const direction = newPosition.clone().sub(oldPosition).normalize();
+        projectileRaycaster.set(oldPosition, direction);
+        projectileRaycaster.far = distance;
+        let hit = false;
+        let hitPosition = null;
+        if (meshes.length > 0) {
+            const intersects = projectileRaycaster.intersectObjects(meshes);
+            if (intersects.length > 0) {
+                hitPosition = intersects[0].point.clone();
+                hit = true;
+            }
+        }
+        if (hit || missile.lifetime > 10.0) {
+            createExplosion(hitPosition || newPosition);
+            scene.remove(mMesh);
+            mMesh.traverse((child) => {
+                if (child.isMesh) {
+                    child.geometry.dispose();
+                    if (child.material) {
+                        if (Array.isArray(child.material)) {
+                            child.material.forEach(material => material.dispose());
+                        } else {
+                            child.material.dispose();
+                        }
+                    }
+                }
+            });
+            missiles.splice(i, 1);
+        }
+    }
+}
+
+function updateMissiles(deltaTime) {
     const meshes = Array.from(loadedChunks.values()).map(c => c.mesh).filter(m => m);
     for (let i = missiles.length - 1; i >= 0; i--) {
         const missile = missiles[i];
@@ -1715,7 +1757,7 @@ function updatePlayer(deltaTime) {
 	if (keys['KeyD']) moveVector.x += 1;
 	if (keys['KeyA']) moveVector.x -= 1;
 
-    if (isFlying) {
+    if ( isFlying) {
         if (keys['Space']) moveVector.y += 1;
         if (keys['ShiftLeft']) moveVector.y -= 1;
 
