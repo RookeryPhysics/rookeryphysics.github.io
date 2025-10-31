@@ -1112,48 +1112,7 @@ function createGoldNugget(position) {
 }
 
 
-function updateGoldNuggets(deltaTime) {
-    const meshes = Array.from(loadedChunks.values()).map(c => c.mesh).filter(m => m);
-    for (let i = projectiles.length - 1; i >= 0; i--) {
-        const projectile = projectiles[i];
-        const pMesh = projectile.mesh;
-        const oldPosition = pMesh.position.clone();
-        pMesh.position.add(projectile.velocity.clone().multiplyScalar(deltaTime));
-        const newPosition = pMesh.position;
-        const distance = oldPosition.distanceTo(newPosition);
-        if (distance === 0) continue; 
-        const direction = newPosition.clone().sub(oldPosition).normalize();
-        projectileRaycaster.set(oldPosition, direction);
-        projectileRaycaster.far = distance;
-        const intersects = projectileRaycaster.intersectObjects(meshes);
-        let hit = false;
-        if (intersects.length > 0) {
-            const intersect = intersects[0]; 
-            const clickedBlockPos = intersect.point.clone().sub(intersect.face.normal.clone().multiplyScalar(0.01));
-            const pX = Math.floor(clickedBlockPos.x);
-            const pY = Math.floor(clickedBlockPos.y);
-            const pZ = Math.floor(clickedBlockPos.z);
-            const block = getBlock(pX, pY, pZ);
-            if (block && block.type !== 'bedrock') {
-                if (block.type === 'stone' && Math.random() < 0.01) {
-                    createGoldNugget(new THREE.Vector3(pX + 0.5, pY + 0.5, pZ + 0.5));
-                }
-                modifiedBlocks.set(`${pX},${pY},${pZ}`, null); 
-                markChunkForRegeneration(pX, pZ);
-                hit = true;
-            }
-        }
-        const playerDistance = pMesh.position.distanceTo(playerCube.position);
-        if (hit || playerDistance > RENDER_DISTANCE * CHUNK_SIZE) {
-            scene.remove(pMesh);
-            pMesh.geometry.dispose();
-            pMesh.material.dispose();
-            projectiles.splice(i, 1);
-        }
-    }
-}
-
-function updateMissiles(deltaTime) {
+function updateProjectiles(deltaTime) {
     const meshes = Array.from(loadedChunks.values()).map(c => c.mesh).filter(m => m);
     for (let i = missiles.length - 1; i >= 0; i--) {
         const missile = missiles[i];
