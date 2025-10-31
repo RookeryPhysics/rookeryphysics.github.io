@@ -1,9 +1,8 @@
 import * as THREE from 'three';
-import Stats from 'three/addons/libs/stats.module.js';
 import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
 
 let animationFrameId;
-let scene, camera, renderer, stats;
+let scene, camera, renderer;
 let raycaster;
 let projectileRaycaster;
 let originalFog;
@@ -65,6 +64,11 @@ const LASER_FLASH_DURATION = 0.05;
 let droppedBlocks = []; 
 let snowflakes = []; 
 let lastPlayerPos = new THREE.Vector3(); 
+
+// FPS counter variables
+let fpsFrameCount = 0;
+let fpsLastTime = performance.now();
+let currentFPS = 0; 
 
 const CHUNK_SIZE = 16;
 const RENDER_DISTANCE = 4;
@@ -480,11 +484,6 @@ function init(seedString) {
         document.body.removeChild(renderer.domElement);
         renderer.dispose();
     }
-    if (stats) {
-        if (stats.dom.parentElement) {
-            document.body.removeChild(stats.dom);
-        }
-    }
     if (scene) {
         scene.traverse(object => {
              // Dispose lights properly
@@ -551,15 +550,15 @@ function init(seedString) {
 	renderer.setSize(window.innerWidth, window.innerHeight);
 	document.body.appendChild(renderer.domElement);
 
-	stats = new Stats();
-    if (!isMobileDevice) {
-	    document.body.appendChild(stats.dom);
-	    stats.dom.style.position = 'fixed';
-	    stats.dom.style.top = '10px';
-	    stats.dom.style.right = '10px';
-	    stats.dom.style.left = 'auto';
-	    stats.dom.style.zIndex = '100';
-    }
+	// Initialize FPS counter
+	const fpsCounter = document.getElementById('fps-counter');
+	if (fpsCounter) {
+		if (isMobileDevice) {
+			fpsCounter.style.display = 'none';
+		} else {
+			fpsCounter.style.display = 'block';
+		}
+	}
 
 	const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
 	scene.add(ambientLight);
@@ -1698,9 +1697,27 @@ function respawnPlayer() {
     isFlying = false;
 }
 
+function updateFPS() {
+    fpsFrameCount++;
+    const currentTime = performance.now();
+    const elapsed = currentTime - fpsLastTime;
+    
+    // Update FPS display every 500ms
+    if (elapsed >= 500) {
+        currentFPS = Math.round((fpsFrameCount * 1000) / elapsed);
+        fpsFrameCount = 0;
+        fpsLastTime = currentTime;
+        
+        const fpsCounter = document.getElementById('fps-counter');
+        if (fpsCounter && !isMobileDevice) {
+            fpsCounter.textContent = `FPS: ${currentFPS}`;
+        }
+    }
+}
+
 function animate() {
 	animationFrameId = requestAnimationFrame(animate); 
-	if (!isMobileDevice) stats.begin();
+	updateFPS();
 
 	const deltaTime = Math.min(0.05, clock.getDelta());
     const elapsedTime = clock.getElapsedTime();
@@ -1751,8 +1768,6 @@ function animate() {
     if (playerCube) {
         lastPlayerPos.copy(playerCube.position); 
     }
-	
-    if (!isMobileDevice) stats.end();
 }
 
 const PI_2 = Math.PI / 2;
