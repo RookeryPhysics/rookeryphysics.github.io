@@ -404,7 +404,10 @@ function performAction() {
 
             const block = getBlock(finalX, finalY, finalZ);
             if (block && block.type !== 'bedrock') {
-                createDroppedBlock(new THREE.Vector3(finalX + 0.5, finalY + 0.5, finalZ + 0.5), block);
+                // 50% chance to spawn a dropped block
+                if (Math.random() < 0.5) {
+                    createDroppedBlock(new THREE.Vector3(finalX + 0.5, finalY + 0.5, finalZ + 0.5), block);
+                }
                 modifiedBlocks.set(`${finalX},${finalY},${finalZ}`, null);
                 markChunkForRegeneration(finalX, finalZ);
             }
@@ -999,7 +1002,10 @@ function updateProjectiles(deltaTime) {
             const pZ = Math.floor(clickedBlockPos.z);
             const block = getBlock(pX, pY, pZ);
             if (block && block.type !== 'bedrock') {
-                createDroppedBlock(new THREE.Vector3(pX + 0.5, pY + 0.5, pZ + 0.5), block);
+                // 50% chance to spawn a dropped block
+                if (Math.random() < 0.5) {
+                    createDroppedBlock(new THREE.Vector3(pX + 0.5, pY + 0.5, pZ + 0.5), block);
+                }
                 modifiedBlocks.set(`${pX},${pY},${pZ}`, null); 
                 markChunkForRegeneration(pX, pZ);
                 hit = true;
