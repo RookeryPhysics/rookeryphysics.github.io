@@ -551,10 +551,11 @@ function init(seedString) {
 	stats = new Stats();
     if (!isMobileDevice) {
 	    document.body.appendChild(stats.dom);
-	    stats.dom.style.position = 'absolute';
-	    stats.dom.style.top = '0px';
-	    stats.dom.style.right = '0px';
+	    stats.dom.style.position = 'fixed';
+	    stats.dom.style.top = '10px';
+	    stats.dom.style.right = '10px';
 	    stats.dom.style.left = 'auto';
+	    stats.dom.style.zIndex = '100';
     }
 
 	const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);

@@ -240,14 +240,3 @@ canvas { display: block; position: fixed; top: 0; left: 0; z-index: 1; }
 .action-btn:active {
     background-color: rgba(120, 120, 120, 0.7);
 }
-
-/* FPS Counter positioning fix */
-/* Stats.js creates a fixed position div, we need to reposition it to top-right */
-/* The stats div has specific dimensions and cursor styling from the library */
-body > div[style*="width: 80px"] {
-    position: fixed !important;
-    top: 10px !important;
-    right: 10px !important;
-    left: auto !important;
-    z-index: 100 !important;
-}
