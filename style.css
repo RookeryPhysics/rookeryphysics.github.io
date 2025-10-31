@@ -175,7 +175,7 @@ canvas { display: block; position: fixed; top: 0; left: 0; z-index: 1; }
 #joystick-container {
     position: absolute;
     bottom: 70px;
-    left: 0px;
+    left: -10px;
     width: 120px;
     height: 120px;
     background-color: rgba(80, 80, 80, 0.4);
