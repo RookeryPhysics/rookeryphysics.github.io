@@ -329,8 +329,6 @@ let explosions = [];
 let laserFlashes = [];
 const LASER_FLASH_DURATION = 0.05;
 let lastPlayerPos = new THREE.Vector3(); 
-let lastGCTime = 0;
-let frameCount = 0;
 
 const CHUNK_SIZE = 16;
 const RENDER_DISTANCE = 4;
@@ -1512,16 +1510,9 @@ function respawnPlayer() {
 
 function animate() {
 	animationFrameId = requestAnimationFrame(animate); 
-    frameCount++;
 
 	const deltaTime = Math.min(0.05, clock.getDelta());
     const elapsedTime = clock.getElapsedTime();
-    
-    if (elapsedTime > lastGCTime + 3) {
-        renderer.info.memory.geometries = 0;
-        renderer.info.memory.textures = 0;
-        lastGCTime = elapsedTime;
-    }
     
 	updatePlayer(deltaTime);
     updateRiflePosition(deltaTime);
@@ -1543,9 +1534,7 @@ function animate() {
     updateExplosions(deltaTime);
     updateLaserFlashes(deltaTime);
 	
-    if (frameCount % 4 === 0) {
-        updateWorld();
-    }
+    updateWorld();
 
 	renderer.render(scene, camera);
 
