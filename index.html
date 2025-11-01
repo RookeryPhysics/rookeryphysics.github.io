@@ -225,6 +225,12 @@
         #mobile-switch-mode-btn { grid-area: switch; }
         #mobile-save-world-btn { grid-area: save; }
 
+        @media (hover: none) and (pointer: coarse) {
+            #mobile-save-world-btn {
+                display: none;
+            }
+        }
+
         .action-btn:active {
             background-color: rgba(120, 120, 120, 0.7);
         }
