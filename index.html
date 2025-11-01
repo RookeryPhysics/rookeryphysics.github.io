@@ -219,7 +219,7 @@
             right: 30px;
             display: grid;
             grid-template-areas:
-                ". mode ."
+                ". mode save"
                 "switch action jump";
             gap: 15px;
             pointer-events: auto;
@@ -253,9 +253,10 @@
             -webkit-user-select: none;
         }
 
-        #mobile-jump-btn { grid-area: jump; }
-        #mobile-action-btn { grid-area: action; }
-        #mobile-switch-mode-btn { grid-area: switch; }
+    #mobile-jump-btn { grid-area: jump; }
+    #mobile-action-btn { grid-area: action; }
+    #mobile-switch-mode-btn { grid-area: switch; }
+    #mobile-save-world-btn { grid-area: save; }
 
         .action-btn:active {
             background-color: rgba(120, 120, 120, 0.7);
@@ -297,6 +298,7 @@
         </div>
         <div id="action-buttons-container">
             <div id="mobile-mode-display">Create</div>
+            <button id="mobile-save-world-btn" class="action-btn">Save</button>
             <button id="mobile-jump-btn" class="action-btn">▲</button>
             <button id="mobile-action-btn" class="action-btn">⦿</button>
             <button id="mobile-switch-mode-btn" class="action-btn">⇄</button>
@@ -1718,7 +1720,7 @@ function loadModifications(loadedBlocks) {
 let onWindowResize;
 let onKeyDown, onKeyUp, onRendererClick, onPointerLockChange, onDocMouseDown, onDocMouseUp, onDocContextMenu;
 let joystickStart, windowTouchMove, endJoystickHandler;
-let jumpStart, jumpEnd, actionStart, switchModeStart, mobileModeDisplayStart;
+let jumpStart, jumpEnd, actionStart, switchModeStart, mobileModeDisplayStart, saveStart;
 let rendererTouchStart, rendererTouchMove, endLookTouchHandler;
 
 
@@ -1847,6 +1849,7 @@ function cleanupMobileControls() {
     const jumpBtn = document.getElementById('mobile-jump-btn');
     const actionBtn = document.getElementById('mobile-action-btn');
     const switchModeBtn = document.getElementById('mobile-switch-mode-btn');
+    const saveBtn = document.getElementById('mobile-save-world-btn');
     const mobileModeDisplay = document.getElementById('mobile-mode-display');
 
     if (jumpStart) jumpBtn.removeEventListener('touchstart', jumpStart, { passive: false });
@@ -1854,6 +1857,7 @@ function cleanupMobileControls() {
     if (actionStart) actionBtn.removeEventListener('touchstart', actionStart, { passive: false });
     if (switchModeStart) switchModeBtn.removeEventListener('touchstart', switchModeStart, { passive: false });
     if (mobileModeDisplayStart) mobileModeDisplay.removeEventListener('touchstart', mobileModeDisplayStart, { passive: false });
+    if (saveStart) saveBtn.removeEventListener('touchstart', saveStart, { passive: false });
 
     if (renderer && rendererTouchStart) renderer.domElement.removeEventListener('touchstart', rendererTouchStart, { passive: false });
     if (renderer && rendererTouchMove) renderer.domElement.removeEventListener('touchmove', rendererTouchMove, { passive: false });
@@ -1862,7 +1866,7 @@ function cleanupMobileControls() {
         renderer.domElement.removeEventListener('touchcancel', endLookTouchHandler);
     }
 
-    joystickStart = windowTouchMove = endJoystickHandler = jumpStart = jumpEnd = actionStart = switchModeStart = mobileModeDisplayStart = rendererTouchStart = rendererTouchMove = endLookTouchHandler = null;
+    joystickStart = windowTouchMove = endJoystickHandler = jumpStart = jumpEnd = actionStart = switchModeStart = mobileModeDisplayStart = saveStart = rendererTouchStart = rendererTouchMove = endLookTouchHandler = null;
 }
 
 function setupMobileControls() {
@@ -1959,6 +1963,7 @@ function setupMobileControls() {
     const jumpBtn = document.getElementById('mobile-jump-btn');
     const actionBtn = document.getElementById('mobile-action-btn');
     const switchModeBtn = document.getElementById('mobile-switch-mode-btn');
+    const saveBtn = document.getElementById('mobile-save-world-btn');
     const mobileModeDisplay = document.getElementById('mobile-mode-display');
     const colorSelector = document.getElementById('color-selector');
 
@@ -2001,6 +2006,10 @@ function setupMobileControls() {
         }
     };
     mobileModeDisplay.addEventListener('touchstart', mobileModeDisplayStart, { passive: false });
+    
+    // Save world on mobile
+    saveStart = (e) => { e.preventDefault(); saveWorld(); };
+    saveBtn.addEventListener('touchstart', saveStart, { passive: false });
     // --- End of new listener ---
 
     let lookTouchId = null;
