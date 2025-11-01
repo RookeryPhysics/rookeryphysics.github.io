@@ -1790,6 +1790,11 @@ function setupMobileControls() {
     windowTouchMove = (e) => {
         if (!joystickActive) return;
         
+        joystick.addEventListener('touchmove', (e) => {
+            if (!joystickActive) return;
+            e.preventDefault();
+        }, { passive: false });
+
         let foundTouch = null;
         for (let touch of e.touches) {
             if (touch.identifier === joystickTouchId) {
@@ -1798,8 +1803,6 @@ function setupMobileControls() {
             }
         }
         if (!foundTouch) return;
-
-        e.preventDefault(); 
 
         const currentX = foundTouch.clientX;
         const currentY = foundTouch.clientY;
