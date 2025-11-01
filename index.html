@@ -281,7 +281,7 @@ import * as THREE from 'three';
 import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
 
 let animationFrameId;
-let scene, camera, renderer, stats;
+let scene, camera, renderer;
 let raycaster;
 let projectileRaycaster;
 let noise;
@@ -293,7 +293,7 @@ let rifle;
 let playerSpawnPoint = new THREE.Vector3();
 const playerHeight = 1.6; 
 const playerWidth = 0.8;  
-const playerMoveSpeed = 6.0;
+const v = 6.0;
 const playerJumpHeight = 10.0;
 const gravity = -25;
 let playerVelocity = new THREE.Vector3();
@@ -718,11 +718,6 @@ function init(seedString) {
     if (renderer) {
         document.body.removeChild(renderer.domElement);
         renderer.dispose();
-    }
-    if (stats) {
-        if (stats.dom.parentElement) {
-            document.body.removeChild(stats.dom);
-        }
     }
     if (scene) {
         scene.traverse(object => {
@@ -1450,8 +1445,8 @@ function updatePlayer(deltaTime) {
         if (moveVector.lengthSq() > 0) moveVector.normalize();
         
         moveVector.applyQuaternion(playerCube.quaternion);
-        const desiredMoveX = moveVector.x * playerMoveSpeed * deltaTime;
-        const desiredMoveZ = moveVector.z * playerMoveSpeed * deltaTime;
+        const desiredMoveX = moveVector.x * v * deltaTime;
+        const desiredMoveZ = moveVector.z * v * deltaTime;
 
         playerVelocity.y += gravity * deltaTime;
 
