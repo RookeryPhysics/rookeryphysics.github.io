@@ -1630,6 +1630,34 @@ function saveWorld() {
     URL.revokeObjectURL(url);
 }
 
+function loadWorld(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const worldData = JSON.parse(e.target.result);
+            if (worldData.seed === undefined || worldData.blocks === undefined) {
+                throw new Error("Invalid world file format.");
+            }
+            
+            // Hide seed overlay and re-initialize the world
+            document.getElementById('seed-overlay').style.display = 'none';
+            init(worldData.seed);
+            loadModifications(worldData.blocks);
+
+        } catch (error) {
+            console.error("Failed to load world:", error);
+            alert("Error loading world file. Make sure it's a valid world JSON file.");
+        } finally {
+            // Reset file input so the same file can be loaded again
+            event.target.value = '';
+        }
+    };
+    reader.readAsText(file);
+}
+
 function loadModifications(loadedBlocks) {
     modifiedBlocks.clear();
     for (const key in loadedBlocks) {
@@ -1990,26 +2018,7 @@ document.getElementById('load-world-btn').addEventListener('click', () => {
     document.getElementById('load-file-input').click();
 });
 
-document.getElementById('load-file-input').addEventListener('change', (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        try {
-            const parsedData = JSON.parse(e.target.result);
-            if (parsedData.seed === undefined || !parsedData.blocks) {
-                throw new Error("Invalid world file format.");
-            }
-            document.getElementById('seed-overlay').style.display = 'none';
-            init(parsedData.seed); 
-            loadModifications(parsedData.blocks); 
-        } catch (error) {
-            console.error("Failed to load world:", error);
-        }
-        event.target.value = '';
-    };
-    reader.readAsText(file);
-});
+document.getElementById('load-file-input').addEventListener('change', loadWorld);
 
 document.getElementById('seed-input').addEventListener('keypress', function (e) {
     if (e.key === 'Enter') {
