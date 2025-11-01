@@ -331,13 +331,13 @@ const LASER_FLASH_DURATION = 0.05;
 let lastPlayerPos = new THREE.Vector3(); 
 
 const CHUNK_SIZE = 16;
-const RENDER_DISTANCE = 4;
+const RENDER_DISTANCE = 3;
 const TERRAIN_SCALE = 50;
 const TERRAIN_AMPLITUDE = 30;
 const loadedChunks = new Map();
 const chunkGenerationQueue = new Set();
 let currentPlayerChunkX, currentPlayerChunkZ;
-const BEDROCK_LEVEL = -22;
+const BEDROCK_LEVEL = -16;
 
 const DIRT_COLOR_1 = new THREE.Color(0x8B4513);
 const DIRT_COLOR_2 = new THREE.Color(0x654321);
@@ -355,7 +355,7 @@ function isMobile() {
 
 function getTerrainHeight(worldX, worldZ) {
 	let height = noise.perlin2(worldX / TERRAIN_SCALE, worldZ / TERRAIN_SCALE); 
-	return Math.floor(height * TERRAIN_AMPLITUDE) + 8;
+	return Math.floor(height * TERRAIN_AMPLITUDE);
 }
 
 function getBlock(x, y, z) {
