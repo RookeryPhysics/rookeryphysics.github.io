@@ -310,6 +310,7 @@ let spaceWasPressedLastFrame = false;
 const clock = new THREE.Clock();
 let isAiming = false;
 const hipRiflePosition = new THREE.Vector3(0.4, -0.25, -0.7);
+const mobileHipRiflePosition = new THREE.Vector3(0.25, -0.28, -0.5);
 const adsRiflePosition = new THREE.Vector3(0, -0.2, -0.5); 
 
 const modes = ['shoot', 'missile', 'toolgun', 'add']; 
@@ -829,9 +830,14 @@ function createPlayer() {
 	playerCube.add(camera);
 
     rifle = createRifle(); 
-    rifle.position.copy(hipRiflePosition); 
+    if (isMobileDevice) {
+        rifle.position.copy(mobileHipRiflePosition);
+        rifle.scale.set(0.4, 0.4, 0.4);
+    } else {
+        rifle.position.copy(hipRiflePosition);
+        rifle.scale.set(0.5, 0.5, 0.5);
+    }
     rifle.rotation.y = Math.PI / 2;
-    rifle.scale.set(0.5, 0.5, 0.5);
     camera.add(rifle);
 
     lastPlayerPos.copy(playerCube.position);
@@ -1153,7 +1159,8 @@ function checkCollision(pos) {
 function updateRiflePosition(deltaTime) {
     if (!rifle) return;
 
-    const targetPosition = isAiming ? adsRiflePosition : hipRiflePosition;
+    const baseHipPosition = isMobileDevice ? mobileHipRiflePosition : hipRiflePosition;
+    const targetPosition = isAiming ? adsRiflePosition : baseHipPosition;
     const lerpSpeed = 10.0 * deltaTime; 
     
     rifle.position.lerp(targetPosition, lerpSpeed);
