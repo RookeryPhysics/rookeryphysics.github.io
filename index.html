@@ -1790,11 +1790,6 @@ function setupMobileControls() {
     windowTouchMove = (e) => {
         if (!joystickActive) return;
         
-        joystick.addEventListener('touchmove', (e) => {
-            if (!joystickActive) return;
-            e.preventDefault();
-        }, { passive: false });
-
         let foundTouch = null;
         for (let touch of e.touches) {
             if (touch.identifier === joystickTouchId) {
@@ -1830,6 +1825,11 @@ function setupMobileControls() {
         keys['KeyD'] = deltaX > moveThreshold;
 
     };
+    joystick.addEventListener('touchmove', (e) => {
+        if (joystickActive) {
+            e.preventDefault();
+        }
+    }, { passive: false });
     window.addEventListener('touchmove', windowTouchMove, { passive: false });
 
     endJoystickHandler = (e) => {
