@@ -22,18 +22,7 @@
         canvas { display: block; }
         #info { position: absolute; top: 10px; left: 10px; padding: 10px 15px; background-color: rgba(0,0,0,0.5); border-radius: 8px; color: #fff; z-index: 10; }
         
-        #xp-counter { 
-            position: absolute; 
-            top: 115px; 
-            right: 10px; 
-            padding: 10px 15px; 
-            background-color: rgba(0,0,0,0.5); 
-            border-radius: 8px; 
-            color: #00FFFF; 
-            z-index: 10; 
-            font-size: 16px;
-            font-weight: bold;
-        }
+
         
         #mode-selector { position: absolute; bottom: 10px; left: 10px; display: flex; flex-direction: column; gap: 8px; padding: 12px; background-color: rgba(40,40,40,0.85); border-radius: 8px; z-index: 100; }
         #mode-selector button { background-color: #4f4f4f; color: white; border: 1px solid #666; padding: 8px 16px; border-radius: 6px; cursor: pointer; transition: background-color 0.2s; }
@@ -250,7 +239,7 @@
     <input type="file" id="load-file-input" accept=".json" style="display: none;">
 
     <div id="info"><strong>0.195a</strong><br><br>'F' to fly.</div>
-    <div id="xp-counter">XP: 0</div>
+
 
     <div id="mode-selector">
         <button id="shoot-mode-btn">Shoot(1)</button>
@@ -328,10 +317,6 @@ let currentModeIndex = 0;
 let currentMode = 'toolgun';
 let currentColor = 0x999999;
 const modifiedBlocks = new Map();
- 
-let orbInventory = 0;
-let goldNuggets = [];
-const MAX_ORB_LIGHTS = 10; // Max number of orb lights allowed at once
  
 let heldBlock = null;
 let toolgunLaser = null;
@@ -542,12 +527,7 @@ function markChunkForRegeneration(worldX, worldZ) {
     }
 }
 
-function updateXPCounter() {
-    const counterElement = document.getElementById('xp-counter');
-    if (counterElement) {
-        counterElement.innerText = `XP: ${orbInventory}`;
-    }
-}
+
 
 function fireSphere() {
     createMuzzleFlash(); 
@@ -777,11 +757,8 @@ function init(seedString) {
     explosions = [];
     muzzleFlashes = []; 
     laserFlashes = [];
-    goldNuggets = [];
     currentPlayerChunkX = undefined;
     currentPlayerChunkZ = undefined;
-    orbInventory = 0;
-    updateXPCounter();
  
     worldSeedString = seedString;
     let seedValue;
@@ -1002,9 +979,6 @@ function createExplosion(position) {
         }
     }
 
-    const snowKnockbackRadius = MISSILE_EXPLOSION_RADIUS * 3; 
-    const SNOWFLAKE_KNOCKBACK_FORCE = 15.0; 
-
     const chunksToUpdate = new Set();
     const radius = MISSILE_EXPLOSION_RADIUS;
     const cX = Math.floor(position.x);
@@ -1020,9 +994,6 @@ function createExplosion(position) {
                 if (distSq <= radius * radius) {
                     const block = getBlock(pX, pY, pZ);
                     if (block && block.type !== 'bedrock') {
-                        if (block.type === 'stone' && Math.random() < 0.01) {
-                           createGoldNugget(new THREE.Vector3(pX + 0.5, pY + 0.5, pZ + 0.5));
-                        }
                         modifiedBlocks.set(`${pX},${pY},${pZ}`, null);
                         const chunkX = Math.floor(pX / CHUNK_SIZE);
                         const chunkZ = Math.floor(pZ / CHUNK_SIZE);
@@ -1046,40 +1017,6 @@ function createExplosion(position) {
         }
     }
 }
-
-function createGoldNugget(position) {
-    const nuggetGeo = new THREE.IcosahedronGeometry(0.1, 0);
-    const nuggetMat = new THREE.MeshStandardMaterial({
-        color: 0x00FFFF,
-        emissive: 0x55DDFF,
-        emissiveIntensity: 1.0,
-        metalness: 0.8,
-        roughness: 0.4
-    });
-    const nuggetMesh = new THREE.Mesh(nuggetGeo, nuggetMat);
-    nuggetMesh.position.copy(position);
-
-    // Always create the light, but set initial visibility based on proximity later
-    const light = new THREE.PointLight(0x55DDFF, 3.0, 2.0); // color, intensity, distance
-    light.visible = false; // Start hidden, will be updated in updateGoldNuggets
-    nuggetMesh.add(light);
-    
-    const velocity = new THREE.Vector3(
-        (Math.random() - 0.5) * 3,
-        Math.random() * 4 + 2,   
-        (Math.random() - 0.5) * 3
-    );
-
-    scene.add(nuggetMesh);
-    goldNuggets.push({
-        mesh: nuggetMesh,
-        velocity: velocity,
-        lifetime: 60.0,
-        onGround: false,
-        light: light // Store reference to the light
-    });
-}
-
 
 function updateProjectiles(deltaTime) {
     const meshes = Array.from(loadedChunks.values()).map(c => c.mesh).filter(m => m);
@@ -1225,135 +1162,7 @@ function updateLaserFlashes(deltaTime) {
     }
 }
 
-function updateGoldNuggets(deltaTime) {
-    if (!playerCube) return;
-    const playerCenter = playerCube.position.clone().add(new THREE.Vector3(0, playerHeight / 2, 0));
-    const suckRadius = 4.0;
-    const collectRadius = 1.0;
 
-    const checkCollisionSimple = (pos) => {
-        const floorX = Math.floor(pos.x);
-        const floorY = Math.floor(pos.y);
-        const floorZ = Math.floor(pos.z);
-        return !!getBlock(floorX, floorY, floorZ);
-    };
-
-    // Array to hold orbs and their distances for sorting
-    const orbsWithDistances = [];
-    
-    // First pass: Update physics and remove expired/collected orbs
-    for (let i = goldNuggets.length - 1; i >= 0; i--) {
-        const nugget = goldNuggets[i];
-        const mesh = nugget.mesh;
-
-        nugget.lifetime -= deltaTime;
-        if (nugget.lifetime <= 0) {
-            scene.remove(mesh); // Light is child, removed automatically
-            mesh.geometry.dispose();
-            mesh.material.dispose();
-            goldNuggets.splice(i, 1);
-            continue;
-        }
-
-        const distanceToPlayer = mesh.position.distanceTo(playerCenter);
-        if (distanceToPlayer < collectRadius) {
-            orbInventory += 10;
-            updateXPCounter();
-            
-            scene.remove(mesh); // Light is child, removed automatically
-            mesh.geometry.dispose();
-            mesh.material.dispose();
-            goldNuggets.splice(i, 1);
-            continue;
-        }
-
-        // Add to distance array for sorting later
-        orbsWithDistances.push({ nugget, distance: distanceToPlayer });
-
-        // Physics update
-        if (distanceToPlayer < suckRadius) {
-            const directionToPlayer = playerCenter.clone().sub(mesh.position).normalize();
-            nugget.velocity.lerp(directionToPlayer.multiplyScalar(15.0), 0.1); 
-            nugget.onGround = false;
-        } else {
-             // Only apply gravity if not being sucked
-             if (!nugget.onGround) {
-                nugget.velocity.y += (gravity * 0.5) * deltaTime;
-             }
-        }
-        
-        const desiredMoveX = nugget.velocity.x * deltaTime;
-        const desiredMoveY = nugget.velocity.y * deltaTime;
-        const desiredMoveZ = nugget.velocity.z * deltaTime;
-
-        mesh.position.x += desiredMoveX;
-        if (checkCollisionSimple(mesh.position)) {
-            mesh.position.x -= desiredMoveX;
-            nugget.velocity.x *= 0.6; // Dampen on wall hit, don't bounce
-        }
-        
-        mesh.position.z += desiredMoveZ;
-        if (checkCollisionSimple(mesh.position)) {
-            mesh.position.z -= desiredMoveZ;
-            nugget.velocity.z *= 0.6; // Dampen on wall hit, don't bounce
-        }
-        
-        mesh.position.y += desiredMoveY;
-        if (checkCollisionSimple(mesh.position)) {
-            mesh.position.y -= desiredMoveY; // Move back to pre-collision position
-            if (nugget.velocity.y < 0) { // Moving down, hit ground
-                if (!nugget.onGround) { // Only reset Y velocity if it just landed
-                     nugget.velocity.y = 0;
-                     // Set position explicitly to ground + float
-                     mesh.position.y = Math.floor(mesh.position.y) + 0.1; 
-                     if(distanceToPlayer >= suckRadius) {
-                         nugget.velocity.x *= 0.6;
-                         nugget.velocity.z *= 0.6;
-                     }
-                }
-                nugget.onGround = true;
-            } else { // Moving up, hit ceiling
-                 nugget.velocity.y *= -0.3; // Keep ceiling bounce
-            }
-        } else {
-            // We are not currently colliding, check if we're floating just above ground
-            // ONLY set onGround to false if we are NOT being sucked
-            if (distanceToPlayer >= suckRadius) {
-                // Check for ground *just* below
-                let groundCheckPos = mesh.position.clone();
-                groundCheckPos.y -= 0.15; // (orb radius is 0.1 + 0.05 buffer)
-                if (checkCollisionSimple(groundCheckPos) && nugget.velocity.y <= 0) {
-                    nugget.onGround = true;
-                    nugget.velocity.y = 0; // Make sure it doesn't fall
-                    mesh.position.y = Math.floor(mesh.position.y) + 0.1; // Re-snap to float position
-                } else {
-                    nugget.onGround = false; // No ground below, so we are in the air
-                }
-            } else {
-                 nugget.onGround = false; // Being sucked, so not on ground
-            }
-        }
-       
-        // Apply ground friction if on ground and not being sucked
-        if (nugget.onGround && distanceToPlayer >= suckRadius) {
-            nugget.velocity.x *= 0.8;
-            nugget.velocity.z *= 0.8;
-        }
-        
-        mesh.rotation.x += 1.5 * deltaTime;
-        mesh.rotation.y += 1.0 * deltaTime;
-    }
-
-    // Second pass: Sort by distance and manage light visibility
-    orbsWithDistances.sort((a, b) => a.distance - b.distance);
-
-    for (let i = 0; i < orbsWithDistances.length; i++) {
-        const { nugget } = orbsWithDistances[i];
-        if (nugget.light) { // Check if the light exists
-             nugget.light.visible = (i < MAX_ORB_LIGHTS);
-        }
-    }
-}
 
 function checkCollision(pos) {
     if (isFlying) return false;
@@ -1795,7 +1604,6 @@ function animate() {
     updateExplosions(deltaTime);
     updateMuzzleFlashes(deltaTime); 
     updateLaserFlashes(deltaTime);
-    updateGoldNuggets(deltaTime); 
 	updateWorld();
 
 	renderer.render(scene, camera);
