@@ -331,7 +331,7 @@ const LASER_FLASH_DURATION = 0.05;
 let lastPlayerPos = new THREE.Vector3(); 
 
 const CHUNK_SIZE = 16;
-const RENDER_DISTANCE = 1;
+const RENDER_DISTANCE = 2;
 const TERRAIN_SCALE = 50;
 const TERRAIN_AMPLITUDE = 30;
 const loadedChunks = new Map();
@@ -776,7 +776,7 @@ function init(seedString) {
 
 	scene = new THREE.Scene();
 	scene.background = new THREE.Color(0x87CEEB);
-	// scene.fog = new THREE.Fog(0x87CEEB, RENDER_DISTANCE * CHUNK_SIZE / 2, RENDER_DISTANCE * CHUNK_SIZE);
+	scene.fog = new THREE.Fog(0x87CEEB, RENDER_DISTANCE * CHUNK_SIZE, RENDER_DISTANCE * CHUNK_SIZE);
     
 	const farPlane = (RENDER_DISTANCE + 2) * CHUNK_SIZE;
 	camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, farPlane);
