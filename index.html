@@ -188,6 +188,7 @@
             right: 30px;
             display: grid;
             grid-template-areas:
+                ". save ."
                 ". mode ."
                 "switch action jump";
             gap: 15px;
@@ -222,6 +223,7 @@
         #mobile-jump-btn { grid-area: jump; }
         #mobile-action-btn { grid-area: action; }
         #mobile-switch-mode-btn { grid-area: switch; }
+        #mobile-save-world-btn { grid-area: save; }
 
         .action-btn:active {
             background-color: rgba(120, 120, 120, 0.7);
@@ -263,6 +265,7 @@
         </div>
         <div id="action-buttons-container">
             <div id="mobile-mode-display">Create</div>
+            <button id="mobile-save-world-btn" class="action-btn">💾</button>
             <button id="mobile-jump-btn" class="action-btn">▲</button>
             <button id="mobile-action-btn" class="action-btn">⦿</button>
             <button id="mobile-switch-mode-btn" class="action-btn">⇄</button>
