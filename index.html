@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Play 0.195a</title>
+    <title>Play 0.196a</title>
     <style>
         body { 
             margin: 0; 
@@ -25,15 +25,46 @@
 
         canvas { display: block; }
         
-
         
         #mode-selector { position: absolute; bottom: 10px; left: 10px; display: flex; flex-direction: column; gap: 8px; padding: 12px; background-color: rgba(40,40,40,0.85); border-radius: 8px; z-index: 100; }
         #mode-selector button { background-color: #4f4f4f; color: white; border: 1px solid #666; padding: 8px 16px; border-radius: 6px; cursor: pointer; transition: background-color 0.2s; }
         #mode-selector button:hover { background-color: #6a6a6a; }
         #mode-selector button.active { background-color: #6a6a6a; }
-        #color-selector { position: absolute; bottom: 10px; left: 175px; display: none; flex-direction: column; gap: 8px; padding: 12px; background-color: rgba(40,40,40,0.85); border-radius: 8px; align-items: center; z-index: 100; }
+        
+        /* --- Modified Color Selector CSS --- */
+        #color-selector { 
+            position: absolute; 
+            display: none; 
+            flex-direction: column; 
+            gap: 8px; 
+            padding: 12px; 
+            background-color: rgba(40,40,40,0.85); 
+            border-radius: 8px; 
+            align-items: center; 
+            z-index: 100; 
+        }
         #color-selector label { font-size: 14px; margin-bottom: 4px; color: #fff; }
         #color-selector input[type="color"] { width: 50px; height: 30px; border: 1px solid #666; border-radius: 6px; cursor: pointer; }
+        
+        @media (pointer: fine) {
+            #color-selector {
+                bottom: 10px; 
+                left: 175px; 
+            }
+        }
+        
+        @media (pointer: coarse) {
+            #color-selector {
+                bottom: 135px; /* Above the action buttons grid */
+                right: 30px;
+                z-index: 1001; /* Above other mobile UI */
+            }
+            #color-selector input[type="color"] {
+                width: 60px; /* Bigger for touch */
+                height: 40px;
+            }
+        }
+        /* --- End of Modified CSS --- */
         
         #crosshair {
             position: absolute;
@@ -202,6 +233,9 @@
             padding: 5px 10px;
             border-radius: 5px;
             font-size: 14px;
+            /* Allow taps to trigger color picker */
+            pointer-events: auto; 
+            cursor: pointer;
         }
 
         .action-btn {
@@ -1653,7 +1687,8 @@ function loadWorld(event) {
 
         } catch (error) {
             console.error("Failed to load world:", error);
-            alert("Error loading world file. Make sure it's a valid world JSON file.");
+            // Do not use alert()
+            console.error("Error loading world file. Make sure it's a valid world JSON file.");
         } finally {
             // Reset file input so the same file can be loaded again
             event.target.value = '';
@@ -1683,17 +1718,28 @@ function loadModifications(loadedBlocks) {
 let onWindowResize;
 let onKeyDown, onKeyUp, onRendererClick, onPointerLockChange, onDocMouseDown, onDocMouseUp, onDocContextMenu;
 let joystickStart, windowTouchMove, endJoystickHandler;
-let jumpStart, jumpEnd, actionStart, switchModeStart;
+let jumpStart, jumpEnd, actionStart, switchModeStart, mobileModeDisplayStart;
 let rendererTouchStart, rendererTouchMove, endLookTouchHandler;
 
 
 function setupEventListeners() {
     if (onWindowResize) window.removeEventListener('resize', onWindowResize, false);
 	onWindowResize = () => {
-		camera.aspect = window.innerWidth / window.innerHeight;
-		camera.updateProjectionMatrix();
-		renderer.setSize(window.innerWidth, window.innerHeight);
+        if (!isMobileDevice) {
+            // On desktop, maintain fixed size
+            const aspect = 805 / 500;
+            camera.aspect = aspect;
+            camera.updateProjectionMatrix();
+            renderer.setSize(805, 500);
+        } else {
+            // On mobile, fill screen
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
 	};
+    // Call it once to set initial size
+    onWindowResize(); 
     window.addEventListener('resize', onWindowResize, false);
 
 
@@ -1718,7 +1764,13 @@ function setupEventListeners() {
     document.getElementById('start-game-btn').addEventListener('click', startGameFromInput);
 
 	const colorPicker = document.getElementById('cube-color-picker');
-	colorPicker.addEventListener('input', (event) => { currentColor = parseInt(event.target.value.substring(1), 16); });
+	colorPicker.addEventListener('input', (event) => { 
+        currentColor = parseInt(event.target.value.substring(1), 16); 
+        // Update mobile UI in real-time if it's open
+        if (isMobileDevice) {
+            updateModeButtons();
+        }
+    });
 	currentColor = parseInt(colorPicker.value.substring(1), 16);
 	updateModeButtons();
 }
@@ -1795,11 +1847,13 @@ function cleanupMobileControls() {
     const jumpBtn = document.getElementById('mobile-jump-btn');
     const actionBtn = document.getElementById('mobile-action-btn');
     const switchModeBtn = document.getElementById('mobile-switch-mode-btn');
+    const mobileModeDisplay = document.getElementById('mobile-mode-display');
 
     if (jumpStart) jumpBtn.removeEventListener('touchstart', jumpStart, { passive: false });
     if (jumpEnd) jumpBtn.removeEventListener('touchend', jumpEnd, { passive: false });
     if (actionStart) actionBtn.removeEventListener('touchstart', actionStart, { passive: false });
     if (switchModeStart) switchModeBtn.removeEventListener('touchstart', switchModeStart, { passive: false });
+    if (mobileModeDisplayStart) mobileModeDisplay.removeEventListener('touchstart', mobileModeDisplayStart, { passive: false });
 
     if (renderer && rendererTouchStart) renderer.domElement.removeEventListener('touchstart', rendererTouchStart, { passive: false });
     if (renderer && rendererTouchMove) renderer.domElement.removeEventListener('touchmove', rendererTouchMove, { passive: false });
@@ -1808,7 +1862,7 @@ function cleanupMobileControls() {
         renderer.domElement.removeEventListener('touchcancel', endLookTouchHandler);
     }
 
-    joystickStart = windowTouchMove = endJoystickHandler = jumpStart = jumpEnd = actionStart = switchModeStart = rendererTouchStart = rendererTouchMove = endLookTouchHandler = null;
+    joystickStart = windowTouchMove = endJoystickHandler = jumpStart = jumpEnd = actionStart = switchModeStart = mobileModeDisplayStart = rendererTouchStart = rendererTouchMove = endLookTouchHandler = null;
 }
 
 function setupMobileControls() {
@@ -1905,6 +1959,8 @@ function setupMobileControls() {
     const jumpBtn = document.getElementById('mobile-jump-btn');
     const actionBtn = document.getElementById('mobile-action-btn');
     const switchModeBtn = document.getElementById('mobile-switch-mode-btn');
+    const mobileModeDisplay = document.getElementById('mobile-mode-display');
+    const colorSelector = document.getElementById('color-selector');
 
     jumpStart = (e) => { e.preventDefault(); keys['Space'] = true; };
     jumpEnd = (e) => { e.preventDefault(); keys['Space'] = false; };
@@ -1932,11 +1988,31 @@ function setupMobileControls() {
     };
     switchModeBtn.addEventListener('touchstart', switchModeStart, { passive: false });
  
+    // --- New listener for mobile color picker ---
+    mobileModeDisplayStart = (e) => {
+        e.preventDefault();
+        if (currentMode === 'add') {
+            // Toggle color picker
+            if (colorSelector.style.display === 'flex') {
+                colorSelector.style.display = 'none';
+            } else {
+                colorSelector.style.display = 'flex';
+            }
+        }
+    };
+    mobileModeDisplay.addEventListener('touchstart', mobileModeDisplayStart, { passive: false });
+    // --- End of new listener ---
+
     let lookTouchId = null;
     let lastLookPos = { x: 0, y: 0 };
 
     rendererTouchStart = (e) => {
-        if (e.target.closest('#joystick-container, #action-buttons-container')) return;
+        // Check if tap is on UI elements, if so, ignore.
+        if (e.target.closest('#joystick-container, #action-buttons-container, #color-selector')) return;
+        
+        // Hide color picker if it's open and tap is outside
+        document.getElementById('color-selector').style.display = 'none';
+        
         if (lookTouchId === null) {
             e.preventDefault();
             const touch = e.changedTouches[0];
@@ -1984,6 +2060,7 @@ function updateModeButtons() {
  
     document.getElementById('toolgun-mode-btn').classList.toggle('active', currentMode === 'toolgun');
     
+    // Only show for desktop by default. Mobile is handled by tap.
 	document.getElementById('color-selector').style.display = (currentMode === 'add' && !isMobileDevice) ? 'flex' : 'none';
  
     if (isMobileDevice) {
@@ -1997,15 +2074,22 @@ function updateModeButtons() {
             else modeText = currentMode.charAt(0).toUpperCase() + currentMode.slice(1);
 
             if (currentMode === 'add') {
-                modeDisplay.style.backgroundColor = `#${currentColor.toString(16).padStart(6, '0')}`;
-                if (currentColor > 0xAAAAAA) {
-                    modeDisplay.style.color = '#333333';
-                } else {
-                    modeDisplay.style.color = '#FFFFFF';
-                }
+                // Update background color, but check brightness for text color
+                const hexColor = currentColor.toString(16).padStart(6, '0');
+                modeDisplay.style.backgroundColor = `#${hexColor}`;
+                
+                // Simple brightness check
+                const r = (currentColor >> 16) & 0xff;
+                const g = (currentColor >> 8) & 0xff;
+                const b = currentColor & 0xff;
+                const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+                modeDisplay.style.color = brightness > 128 ? '#333333' : '#FFFFFF';
+
             } else {
                 modeDisplay.style.backgroundColor = 'rgba(0,0,0,0.5)';
                 modeDisplay.style.color = '#FFFFFF';
+                // Hide color picker if mode is changed
+                document.getElementById('color-selector').style.display = 'none';
             }
             modeDisplay.textContent = modeText;
         }
@@ -2038,4 +2122,3 @@ function startGameFromInput() {
     </script>
 </body>
 </html>
-
