@@ -1681,9 +1681,9 @@ function setupEventListeners() {
     });
     document.getElementById('toolgun-mode-btn').addEventListener('click', () => { currentMode = 'toolgun'; updateModeButtons(); }); 
     document.getElementById('save-world-btn').addEventListener('click', saveWorld);
-    document.getElementById('ingame-load-world-btn').addEventListener('click', () => {
-        document.getElementById('load-file-input').click();
-    });
+    document.getElementById('ingame-load-world-btn').addEventListener('click', () => document.getElementById('load-file-input').click());
+    document.getElementById('load-file-input').addEventListener('change', loadWorld);
+    document.getElementById('start-game-btn').addEventListener('click', startGameFromInput);
 
 	const colorPicker = document.getElementById('cube-color-picker');
 	colorPicker.addEventListener('input', (event) => { currentColor = parseInt(event.target.value.substring(1), 16); });
@@ -2017,7 +2017,12 @@ document.getElementById('seed-input').addEventListener('keypress', function (e) 
     }
 });
 
-</script>
+function startGameFromInput() {
+    const seed = document.getElementById('seed-input').value;
+    document.getElementById('seed-overlay').style.display = 'none';
+    init(seed); 
+}
+    </script>
 </body>
 </html>
 
