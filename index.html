@@ -335,6 +335,7 @@ const RENDER_DISTANCE = 4;
 const TERRAIN_SCALE = 50;
 const TERRAIN_AMPLITUDE = 30;
 const loadedChunks = new Map();
+const chunkGenerationQueue = new Set();
 let currentPlayerChunkX, currentPlayerChunkZ;
 const BEDROCK_LEVEL = -30;
 
@@ -471,6 +472,14 @@ function updateWorld() {
 	const playerChunkX = Math.floor(playerCube.position.x / CHUNK_SIZE);
 	const playerChunkZ = Math.floor(playerCube.position.z / CHUNK_SIZE);
 
+    if (chunkGenerationQueue.size > 0) {
+        const key = chunkGenerationQueue.values().next().value;
+        chunkGenerationQueue.delete(key);
+        const [cx, cz] = key.split(',').map(Number);
+        generateChunk(cx, cz);
+        return; 
+    }
+
 	for (const [key, chunkData] of loadedChunks.entries()) {
 		if (chunkData.needsRegeneration) {
 			const [cx, cz] = key.split(',').map(Number);
@@ -485,7 +494,10 @@ function updateWorld() {
 
 	for (let x = playerChunkX - RENDER_DISTANCE; x <= playerChunkX + RENDER_DISTANCE; x++) {
 		for (let z = playerChunkZ - RENDER_DISTANCE; z <= playerChunkZ + RENDER_DISTANCE; z++) {
-			generateChunk(x, z);
+            const chunkKey = `${x},${z}`;
+            if (!loadedChunks.has(chunkKey)) {
+			    chunkGenerationQueue.add(chunkKey);
+            }
 		}
 	}
 	for (const [key] of loadedChunks.entries()) {
@@ -1443,8 +1455,8 @@ function updatePlayer(deltaTime) {
         if (moveVector.lengthSq() > 0) moveVector.normalize();
         
         moveVector.applyQuaternion(playerCube.quaternion);
-        const desiredMoveX = moveVector.x * v * deltaTime;
-        const desiredMoveZ = moveVector.z * v * deltaTime;
+        const desiredMoveX = moveVector.x * v;
+        const desiredMoveZ = moveVector.z * v;
 
         playerVelocity.y += gravity * deltaTime;
 
@@ -1463,33 +1475,45 @@ function updatePlayer(deltaTime) {
             }
         }
         
-        const desiredMoveY = playerVelocity.y * deltaTime;
-        const desiredKnockbackX = playerVelocity.x * deltaTime;
-        const desiredKnockbackZ = playerVelocity.z * deltaTime;
+        const finalVelocity = new THREE.Vector3(desiredMoveX, playerVelocity.y, desiredMoveZ);
+        finalVelocity.x += playerVelocity.x;
+        finalVelocity.z += playerVelocity.z;
 
-        playerCube.position.x += desiredMoveX + desiredKnockbackX;
-        if (checkCollision(playerCube.position)) {
-            playerCube.position.x -= (desiredMoveX + desiredKnockbackX);
-            playerVelocity.x = 0; 
-        }
+        const nextPos = playerCube.position.clone().add(finalVelocity.clone().multiplyScalar(deltaTime));
         
-        playerCube.position.z += desiredMoveZ + desiredKnockbackZ;
-        if (checkCollision(playerCube.position)) {
-            playerCube.position.z -= (desiredMoveZ + desiredKnockbackZ);
-            playerVelocity.z = 0; 
-        }
-        
-        playerCube.position.y += desiredMoveY;
-        if (checkCollision(playerCube.position)) {
-            playerCube.position.y -= desiredMoveY;
-            if (playerVelocity.y < 0) {
-                playerOnGround = true;
-                playerJumpCount = 0;
+        if (checkCollision(nextPos)) {
+            const tempPos = playerCube.position.clone();
+            
+            tempPos.x = nextPos.x;
+            if (checkCollision(tempPos)) {
+                finalVelocity.x = 0;
+                playerVelocity.x = 0;
             }
-            playerVelocity.y = 0;
+            
+            tempPos.x = playerCube.position.x;
+            tempPos.z = nextPos.z;
+            if (checkCollision(tempPos)) {
+                finalVelocity.z = 0;
+                playerVelocity.z = 0;
+            }
+
+            tempPos.z = playerCube.position.z;
+            tempPos.y = nextPos.y;
+            if (checkCollision(tempPos)) {
+                if (finalVelocity.y < 0) {
+                    playerOnGround = true;
+                    playerJumpCount = 0;
+                }
+                finalVelocity.y = 0;
+                playerVelocity.y = 0;
+            } else {
+                playerOnGround = false;
+            }
         } else {
             playerOnGround = false;
         }
+
+        playerCube.position.add(finalVelocity.multiplyScalar(deltaTime));
 
         playerVelocity.x *= 0.98;
         playerVelocity.z *= 0.98;
