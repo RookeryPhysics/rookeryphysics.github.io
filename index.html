@@ -20,7 +20,6 @@
         }
 
         canvas { display: block; }
-        #info { position: absolute; top: 10px; left: 10px; padding: 10px 15px; background-color: rgba(0,0,0,0.5); border-radius: 8px; color: #fff; z-index: 10; }
         
 
         
@@ -238,8 +237,7 @@
     
     <input type="file" id="load-file-input" accept=".json" style="display: none;">
 
-    <div id="info"><strong>0.195a</strong><br><br>'F' to fly.</div>
-
+    
 
     <div id="mode-selector">
         <button id="shoot-mode-btn">Shoot(1)</button>
@@ -280,14 +278,12 @@
     </script>
     <script type="module">
 import * as THREE from 'three';
-import Stats from 'three/addons/libs/stats.module.js';
 import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
 
 let animationFrameId;
-let scene, camera, renderer, stats;
+let scene, camera, renderer;
 let raycaster;
 let projectileRaycaster;
-let originalFog;
 let noise;
 let worldSeedString = ""; 
 let isMobileDevice = false;
@@ -779,7 +775,6 @@ function init(seedString) {
 	scene = new THREE.Scene();
 	scene.background = new THREE.Color(0x87CEEB);
 	scene.fog = new THREE.Fog(0x87CEEB, RENDER_DISTANCE * CHUNK_SIZE / 2, RENDER_DISTANCE * CHUNK_SIZE);
-    originalFog = scene.fog;
     
 	const farPlane = (RENDER_DISTANCE + 2) * CHUNK_SIZE;
 	camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, farPlane);
@@ -787,15 +782,6 @@ function init(seedString) {
 	renderer = new THREE.WebGLRenderer({ antialias: true });
 	renderer.setSize(window.innerWidth, window.innerHeight);
 	document.body.appendChild(renderer.domElement);
-
-	stats = new Stats();
-    if (!isMobileDevice) {
-	    document.body.appendChild(stats.dom);
-	    stats.dom.style.position = 'absolute';
-	    stats.dom.style.top = '0px';
-	    stats.dom.style.right = '0px';
-	    stats.dom.style.left = 'auto';
-    }
 
 	const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
 	scene.add(ambientLight);
@@ -1571,19 +1557,9 @@ function respawnPlayer() {
 
 function animate() {
 	animationFrameId = requestAnimationFrame(animate); 
-	if (!isMobileDevice) stats.begin();
 
 	const deltaTime = Math.min(0.05, clock.getDelta());
     const elapsedTime = clock.getElapsedTime();
-    
-    let playerHorizontalVelocity = new THREE.Vector3(0, 0, 0);
-    if (playerCube && deltaTime > 0) {
-         playerHorizontalVelocity.set(
-            (playerCube.position.x - lastPlayerPos.x) / deltaTime,
-            0,
-            (playerCube.position.z - lastPlayerPos.z) / deltaTime
-        );
-    }
     
     if (elapsedTime > lastGCTime + 3) {
         renderer.info.memory.geometries = 0;
@@ -1619,7 +1595,6 @@ function animate() {
         lastPlayerPos.copy(playerCube.position); 
     }
 	
-    if (!isMobileDevice) stats.end();
 }
 
 const PI_2 = Math.PI / 2;
