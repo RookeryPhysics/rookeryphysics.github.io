@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Play 0.196a</title>
+    <title>Play 0.20a</title>
     <style>
         body { 
             margin: 0; 
@@ -479,8 +479,8 @@ const BEDROCK_COLOR_1 = new THREE.Color(0x303030);
 const BEDROCK_COLOR_2 = new THREE.Color(0x3a3a3a);
 
 const chunkGenerationJobs = new Map();
-const MAX_CHUNK_STEPS_PER_SLICE = 2048;
-const BOOSTED_CHUNK_STEPS_PER_SLICE = MAX_CHUNK_STEPS_PER_SLICE * 12;
+const MAX_CHUNK_STEPS_PER_SLICE = 4996;
+const BOOSTED_CHUNK_STEPS_PER_SLICE = MAX_CHUNK_STEPS_PER_SLICE * 6;
 const CHUNK_SPEED_BOOST_DURATION_MS = 3000;
 let chunkSpeedBoostEndTime = 0;
 
