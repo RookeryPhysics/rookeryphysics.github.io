@@ -478,6 +478,9 @@ const BEDROCK_COLOR_2 = new THREE.Color(0x3a3a3a);
 
 const chunkGenerationJobs = new Map();
 const MAX_CHUNK_STEPS_PER_SLICE = 2048;
+const BOOSTED_CHUNK_STEPS_PER_SLICE = MAX_CHUNK_STEPS_PER_SLICE * 12;
+const CHUNK_SPEED_BOOST_DURATION_MS = 3000;
+let chunkSpeedBoostEndTime = 0;
 
 let loadingScreenTimer = null;
 
@@ -503,7 +506,7 @@ function hideLoadingOverlay() {
     overlay.style.display = 'none';
 }
 
-function runWithLoadingOverlay(action, duration = 8000) {
+function runWithLoadingOverlay(action, duration = 3000) {
     showLoadingOverlay();
     if (loadingScreenTimer !== null) {
         clearTimeout(loadingScreenTimer);
@@ -523,6 +526,10 @@ function runWithLoadingOverlay(action, duration = 8000) {
             }
         });
     }
+}
+
+function activateChunkSpeedBoost() {
+    chunkSpeedBoostEndTime = performance.now() + CHUNK_SPEED_BOOST_DURATION_MS;
 }
 
 function getTerrainHeight(worldX, worldZ) {
@@ -765,9 +772,20 @@ function processChunkJob(job, stepBudget) {
 }
 
 function processChunkGenerationSlice() {
-    if (chunkGenerationJobs.size === 0) return;
+    if (chunkGenerationJobs.size === 0) {
+        if (chunkSpeedBoostEndTime !== 0 && performance.now() >= chunkSpeedBoostEndTime) {
+            chunkSpeedBoostEndTime = 0;
+        }
+        return;
+    }
 
-    let stepsRemaining = MAX_CHUNK_STEPS_PER_SLICE;
+    const now = performance.now();
+    const boostActive = now < chunkSpeedBoostEndTime;
+    if (!boostActive && chunkSpeedBoostEndTime !== 0) {
+        chunkSpeedBoostEndTime = 0;
+    }
+
+    let stepsRemaining = boostActive ? BOOSTED_CHUNK_STEPS_PER_SLICE : MAX_CHUNK_STEPS_PER_SLICE;
 
     while (stepsRemaining > 0 && chunkGenerationJobs.size > 0) {
         let jobToProcess = null;
@@ -1111,6 +1129,7 @@ function onMouseUp(event) {
 }
 
 function init(seedString) {
+    activateChunkSpeedBoost();
     isMobileDevice = isMobile(); 
 
     if (animationFrameId) {
