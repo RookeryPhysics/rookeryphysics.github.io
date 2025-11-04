@@ -261,6 +261,74 @@
         .action-btn:active {
             background-color: rgba(120, 120, 120, 0.7);
         }
+
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 40px;
+            z-index: 3000;
+            perspective: 600px;
+        }
+
+        #loading-cube {
+            position: relative;
+            width: 60px;
+            height: 60px;
+            transform-style: preserve-3d;
+            animation: spinCube 1.6s linear infinite;
+        }
+
+        #loading-cube .cube-face {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: #ffffff;
+            opacity: 0.92;
+            border: 2px solid rgba(255, 255, 255, 0.6);
+            box-sizing: border-box;
+        }
+
+        #loading-cube .front { transform: translateZ(30px); }
+        #loading-cube .back { transform: rotateY(180deg) translateZ(30px); }
+        #loading-cube .right { transform: rotateY(90deg) translateZ(30px); }
+        #loading-cube .left { transform: rotateY(-90deg) translateZ(30px); }
+        #loading-cube .top { transform: rotateX(90deg) translateZ(30px); }
+        #loading-cube .bottom { transform: rotateX(-90deg) translateZ(30px); }
+
+        #loading-message {
+            display: flex;
+            align-items: center;
+            gap: 1px;
+            color: #ffffff;
+            font-size: 28px;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        #loading-message .dot {
+            animation: dotPulse 1.4s ease-in-out infinite;
+            animation-delay: var(--delay, 0s);
+            opacity: 0.25;
+        }
+
+        @keyframes spinCube {
+            0% { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
+            100% { transform: rotateX(360deg) rotateY(360deg) rotateZ(360deg); }
+        }
+
+        @keyframes dotPulse {
+            0%, 20% { opacity: 0.25; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.1); }
+            100% { opacity: 0.25; transform: scale(0.8); }
+        }
     </style>
 </head>
 <body>
@@ -275,6 +343,26 @@
     </div>
     
     <input type="file" id="load-file-input" accept=".json" style="display: none;">
+
+    <div id="loading-screen">
+        <div id="loading-cube">
+            <div class="cube-face front"></div>
+            <div class="cube-face back"></div>
+            <div class="cube-face right"></div>
+            <div class="cube-face left"></div>
+            <div class="cube-face top"></div>
+            <div class="cube-face bottom"></div>
+        </div>
+        <div id="loading-message">
+            <span class="dot" style="--delay: 0s;">.</span>
+            <span class="dot" style="--delay: 0.15s;">.</span>
+            <span class="dot" style="--delay: 0.3s;">.</span>
+            <span class="loading-word">Loading</span>
+            <span class="dot" style="--delay: 0.45s;">.</span>
+            <span class="dot" style="--delay: 0.6s;">.</span>
+            <span class="dot" style="--delay: 0.75s;">.</span>
+        </div>
+    </div>
 
     
 
@@ -391,10 +479,50 @@ const BEDROCK_COLOR_2 = new THREE.Color(0x3a3a3a);
 const chunkGenerationJobs = new Map();
 const MAX_CHUNK_STEPS_PER_SLICE = 2048;
 
+let loadingScreenTimer = null;
+
 
 function isMobile() {
     const regex = /Mobi|Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
     return regex.test(navigator.userAgent);
+}
+
+function showLoadingOverlay() {
+    const overlay = document.getElementById('loading-screen');
+    if (!overlay) return;
+    overlay.style.display = 'flex';
+}
+
+function hideLoadingOverlay() {
+    if (loadingScreenTimer !== null) {
+        clearTimeout(loadingScreenTimer);
+        loadingScreenTimer = null;
+    }
+    const overlay = document.getElementById('loading-screen');
+    if (!overlay) return;
+    overlay.style.display = 'none';
+}
+
+function runWithLoadingOverlay(action, duration = 8000) {
+    showLoadingOverlay();
+    if (loadingScreenTimer !== null) {
+        clearTimeout(loadingScreenTimer);
+    }
+    loadingScreenTimer = window.setTimeout(() => {
+        hideLoadingOverlay();
+    }, duration);
+
+    if (typeof action === 'function') {
+        requestAnimationFrame(() => {
+            try {
+                action();
+            } catch (error) {
+                console.error('World initialization failed:', error);
+                hideLoadingOverlay();
+                throw error;
+            }
+        });
+    }
 }
 
 function getTerrainHeight(worldX, worldZ) {
@@ -1931,13 +2059,16 @@ function loadWorld(event) {
             
             // Hide seed overlay and re-initialize the world
             document.getElementById('seed-overlay').style.display = 'none';
-            init(worldData.seed);
-            loadModifications(worldData.blocks);
+            runWithLoadingOverlay(() => {
+                init(worldData.seed);
+                loadModifications(worldData.blocks);
+            });
 
         } catch (error) {
             console.error("Failed to load world:", error);
             // Do not use alert()
             console.error("Error loading world file. Make sure it's a valid world JSON file.");
+            hideLoadingOverlay();
         } finally {
             // Reset file input so the same file can be loaded again
             event.target.value = '';
@@ -2352,11 +2483,7 @@ function updateModeButtons() {
     }
 }
  
-document.getElementById('start-game-btn').addEventListener('click', () => {
-    const seed = document.getElementById('seed-input').value;
-    document.getElementById('seed-overlay').style.display = 'none';
-    init(seed); 
-});
+document.getElementById('start-game-btn').addEventListener('click', startGameFromInput);
 
 document.getElementById('load-world-btn').addEventListener('click', () => {
     document.getElementById('load-file-input').click();
@@ -2373,7 +2500,7 @@ document.getElementById('seed-input').addEventListener('keypress', function (e) 
 function startGameFromInput() {
     const seed = document.getElementById('seed-input').value;
     document.getElementById('seed-overlay').style.display = 'none';
-    init(seed); 
+    runWithLoadingOverlay(() => init(seed));
 }
     </script>
 </body>
