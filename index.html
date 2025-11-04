@@ -414,6 +414,8 @@ let raycaster;
 let projectileRaycaster;
 let noise;
 let worldSeedString = ""; 
+let worldSeedValue = 0;
+let worldSeedSource = 'manual';
 let isMobileDevice = false;
 
 let playerCube;
@@ -526,6 +528,16 @@ function runWithLoadingOverlay(action, duration = 3000) {
             }
         });
     }
+}
+
+function hashSeedString(value) {
+    let hash = 0;
+    for (let i = 0; i < value.length; i++) {
+        const charCode = value.charCodeAt(i);
+        hash = ((hash << 5) - hash) + charCode;
+        hash |= 0; // Keep hash in 32-bit range
+    }
+    return hash;
 }
 
 function activateChunkSpeedBoost() {
@@ -1128,7 +1140,7 @@ function onMouseUp(event) {
     }
 }
 
-function init(seedString) {
+function init(seedString, explicitSeedValue = null, seedSourceOverride = null) {
     activateChunkSpeedBoost();
     isMobileDevice = isMobile(); 
 
@@ -1193,19 +1205,38 @@ function init(seedString) {
     currentPlayerChunkX = undefined;
     currentPlayerChunkZ = undefined;
  
-    worldSeedString = seedString;
+    const hasExplicitSeedValue = explicitSeedValue !== null && explicitSeedValue !== undefined && !Number.isNaN(explicitSeedValue);
+    let normalizedSeedString = "";
+    if (typeof seedString === 'string') {
+        normalizedSeedString = seedString;
+    } else if (seedString !== undefined && seedString !== null) {
+        normalizedSeedString = String(seedString);
+    }
+    const trimmedSeed = normalizedSeedString.trim();
     let seedValue;
-    if (seedString && seedString.trim() !== "") {
-        seedValue = 0;
-        for (let i = 0; i < seedString.length; i++) {
-            let char = seedString.charCodeAt(i);
-            seedValue = ((seedValue << 5) - seedValue) + char;
-            seedValue = seedValue & seedValue;
+
+    if (hasExplicitSeedValue) {
+        seedValue = explicitSeedValue;
+        worldSeedString = trimmedSeed !== "" ? normalizedSeedString : seedValue.toString();
+        worldSeedSource = seedSourceOverride || (trimmedSeed === "" ? 'random' : 'manual');
+    } else if (trimmedSeed !== "") {
+        const numericCandidate = Number(trimmedSeed);
+        const shouldUseNumeric = seedSourceOverride === 'random' || (trimmedSeed.startsWith('0.') && !Number.isNaN(numericCandidate));
+        if (shouldUseNumeric && !Number.isNaN(numericCandidate)) {
+            seedValue = numericCandidate;
+            worldSeedSource = 'random';
+        } else {
+            seedValue = hashSeedString(normalizedSeedString);
+            worldSeedSource = seedSourceOverride || 'manual';
         }
+        worldSeedString = normalizedSeedString;
     } else {
         seedValue = Math.random();
         worldSeedString = seedValue.toString();
+        worldSeedSource = 'random';
     }
+
+    worldSeedValue = seedValue;
     noise = new Noise(seedValue);
 
 	scene = new THREE.Scene();
@@ -2048,6 +2079,8 @@ function saveWorld() {
 
     const worldData = {
         seed: worldSeedString,
+        seedValue: worldSeedValue,
+        seedType: worldSeedSource,
         blocks: serializableBlocks
     };
 
@@ -2056,8 +2089,11 @@ function saveWorld() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    const safeSeed = worldSeedString.length > 10 ? worldSeedString.substring(0, 10) : worldSeedString;
-    a.download = `world_seed_${safeSeed}.json`;
+    const fallbackSeedLabel = worldSeedValue.toString();
+    const safeSeedSource = (typeof worldSeedString === 'string' && worldSeedString.length > 0) ? worldSeedString : fallbackSeedLabel;
+    const sanitizedSeed = safeSeedSource.replace(/[^a-zA-Z0-9_-]+/g, '').substring(0, 16);
+    const fileSeed = sanitizedSeed.length > 0 ? sanitizedSeed : 'world';
+    a.download = `world_seed_${fileSeed}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -2078,8 +2114,24 @@ function loadWorld(event) {
             
             // Hide seed overlay and re-initialize the world
             document.getElementById('seed-overlay').style.display = 'none';
+
+            const hasSeedValueProperty = Object.prototype.hasOwnProperty.call(worldData, 'seedValue');
+            let numericSeedValue = null;
+            if (hasSeedValueProperty) {
+                if (typeof worldData.seedValue === 'number' && !Number.isNaN(worldData.seedValue)) {
+                    numericSeedValue = worldData.seedValue;
+                } else if (typeof worldData.seedValue === 'string') {
+                    const trimmedValue = worldData.seedValue.trim();
+                    const parsedValue = Number(trimmedValue);
+                    if (!Number.isNaN(parsedValue)) {
+                        numericSeedValue = parsedValue;
+                    }
+                }
+            }
+            const seedType = (typeof worldData.seedType === 'string') ? worldData.seedType : null;
+
             runWithLoadingOverlay(() => {
-                init(worldData.seed);
+                init(worldData.seed, numericSeedValue, seedType);
                 loadModifications(worldData.blocks);
             });
 
