@@ -615,6 +615,25 @@ function isMobile() {
     return regex.test(navigator.userAgent);
 }
 
+// Set the runtime flag and hide developer options on mobile devices
+// Uses the same detection function already present in the file.
+try {
+    isMobileDevice = isMobile();
+    const devOptionsEl = document.getElementById('developer-options');
+    if (devOptionsEl) {
+        if (isMobileDevice) {
+            // Ensure developer options are not visible on mobile
+            devOptionsEl.style.display = 'none';
+        } else {
+            // Explicitly show on non-mobile (desktop) in case CSS or other code toggles it
+            devOptionsEl.style.display = '';
+        }
+    }
+} catch (e) {
+    // Fail silently if DOM isn't ready yet or something else goes wrong
+    console.warn('Failed to apply mobile developer-options visibility:', e);
+}
+
 function showLoadingOverlay() {
     const overlay = document.getElementById('loading-screen');
     if (!overlay) return;
