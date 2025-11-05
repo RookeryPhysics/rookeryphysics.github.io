@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Play 0.20a</title>
+    <title>Play 0.21a</title>
     <style>
         body { 
             margin: 0; 
@@ -25,6 +25,58 @@
 
         canvas { display: block; }
         
+        
+        #developer-options {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 1200;
+        }
+        #developer-options button {
+            background-color: rgba(40,40,40,0.85);
+            color: #fff;
+            border: 1px solid #666;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        #developer-options button:hover {
+            background-color: rgba(74,74,74,0.9);
+        }
+        #developer-options button:focus {
+            outline: none;
+        }
+        #developer-options .menu {
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+            padding: 10px;
+            background-color: rgba(30,30,30,0.92);
+            border: 1px solid #555;
+            border-radius: 6px;
+            min-width: 160px;
+        }
+        #developer-options.open .menu {
+            display: flex;
+        }
+        #developer-options label {
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        #developer-options input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
         
         #mode-selector { position: absolute; bottom: 10px; left: 10px; display: flex; flex-direction: column; gap: 8px; padding: 12px; background-color: rgba(40,40,40,0.85); border-radius: 8px; z-index: 100; }
         #mode-selector button { background-color: #4f4f4f; color: white; border: 1px solid #666; padding: 8px 16px; border-radius: 6px; cursor: pointer; transition: background-color 0.2s; }
@@ -344,6 +396,20 @@
     
     <input type="file" id="load-file-input" accept=".json" style="display: none;">
 
+    <div id="developer-options">
+        <button id="developer-options-toggle">Developer ▾</button>
+        <div class="menu">
+            <label>
+                <input type="checkbox" id="bedrock-mode-toggle">
+                Bedrock
+            </label>
+            <label>
+                <input type="checkbox" id="noclip-toggle">
+                Noclip
+            </label>
+        </div>
+    </div>
+
     <div id="loading-screen">
         <div id="loading-cube">
             <div class="cube-face front"></div>
@@ -371,6 +437,7 @@
         <button id="missile-mode-btn">Missile(2)</button>
         <button id="toolgun-mode-btn">Tool Gun(3)</button>
         <button id="add-mode-btn">Create(4)</button>
+        <button id="bedrock-mode-btn" style="display: none;">Bedrock(5)</button>
         <button id="save-world-btn">Save World</button>
         <button id="ingame-load-world-btn">Load World</button>
     </div>
@@ -439,9 +506,14 @@ const hipRiflePosition = new THREE.Vector3(0.4, -0.25, -0.7);
 const mobileHipRiflePosition = new THREE.Vector3(0.22, -0.32, -0.5);
 const adsRiflePosition = new THREE.Vector3(0, -0.2, -0.5); 
 
-const modes = ['shoot', 'missile', 'toolgun', 'add']; 
+const DEFAULT_MODES = ['shoot', 'missile', 'toolgun', 'add'];
+const BEDROCK_PLACE_MODE = 'bedrock-add';
+let modes = [...DEFAULT_MODES];
 let currentModeIndex = 0;
 let currentMode = 'shoot';
+let bedrockModesEnabled = false;
+let bedrockPlacementToggle = false;
+let noclipEnabled = false;
 let currentColor = 0x999999;
 const modifiedBlocks = new Map();
  
@@ -485,6 +557,57 @@ const CHUNK_SPEED_BOOST_DURATION_MS = 3000;
 let chunkSpeedBoostEndTime = 0;
 
 let loadingScreenTimer = null;
+
+function updateAvailableModes() {
+    modes = bedrockModesEnabled ? [...DEFAULT_MODES, BEDROCK_PLACE_MODE] : [...DEFAULT_MODES];
+}
+
+function setCurrentMode(mode) {
+    if (!modes.includes(mode)) return;
+    currentMode = mode;
+    currentModeIndex = modes.indexOf(mode);
+    updateModeButtons();
+}
+
+function setBedrockModesEnabled(enabled) {
+    bedrockModesEnabled = !!enabled;
+    updateAvailableModes();
+
+    const toggleEl = document.getElementById('bedrock-mode-toggle');
+    if (toggleEl) {
+        toggleEl.checked = bedrockModesEnabled;
+    }
+
+    if (!bedrockModesEnabled) {
+        bedrockPlacementToggle = false;
+    }
+
+    if (!bedrockModesEnabled && currentMode === BEDROCK_PLACE_MODE) {
+        setCurrentMode('shoot');
+    } else {
+        const nextIndex = modes.indexOf(currentMode);
+        if (nextIndex !== -1) {
+            currentModeIndex = nextIndex;
+            updateModeButtons();
+        } else {
+            setCurrentMode('shoot');
+        }
+    }
+}
+
+function setNoclipEnabled(enabled) {
+    noclipEnabled = !!enabled;
+    const toggleEl = document.getElementById('noclip-toggle');
+    if (toggleEl) {
+        toggleEl.checked = noclipEnabled;
+    }
+
+    if (!noclipEnabled && isFlying) {
+        isFlying = false;
+        playerVelocity.y = 0;
+        playerJumpCount = 0;
+    }
+}
 
 
 function isMobile() {
@@ -1051,6 +1174,10 @@ function performAction() {
         return;
     }
 
+    if (currentMode === BEDROCK_PLACE_MODE && !bedrockModesEnabled) {
+        return;
+    }
+
     if (currentMode === 'shoot') {
         fireSphere();
         return;
@@ -1070,11 +1197,12 @@ function performAction() {
 	if (intersects.length > 0) {
 		const intersect = intersects[0];
 		let finalX, finalY, finalZ;
-		
-        if (currentMode === 'add') {
+		const isPlacementMode = currentMode === 'add' || currentMode === BEDROCK_PLACE_MODE;
+
+        if (isPlacementMode) {
 			const adjacentBlockPos = intersect.point.clone().add(intersect.face.normal.clone().multiplyScalar(0.01));
 			[finalX, finalY, finalZ] = [Math.floor(adjacentBlockPos.x), Math.floor(adjacentBlockPos.y), Math.floor(adjacentBlockPos.z)];
-            
+
             const halfWidth = playerWidth / 2;
             const playerMinX = Math.floor(playerCube.position.x - halfWidth);
             const playerMaxX = Math.floor(playerCube.position.x + halfWidth);
@@ -1082,14 +1210,21 @@ function performAction() {
             const playerMaxY = Math.floor(playerCube.position.y + playerHeight);
             const playerMinZ = Math.floor(playerCube.position.z - halfWidth);
             const playerMaxZ = Math.floor(playerCube.position.z + halfWidth);
-            
+
             if (finalX >= playerMinX && finalX <= playerMaxX && 
                 finalY >= playerMinY && finalY <= playerMaxY && 
                 finalZ >= playerMinZ && finalZ <= playerMaxZ) {
                 return; 
             }
-            
-			modifiedBlocks.set(`${finalX},${finalY},${finalZ}`, { color: new THREE.Color(currentColor), type: 'normal' });
+
+            const blockKey = `${finalX},${finalY},${finalZ}`;
+            if (currentMode === BEDROCK_PLACE_MODE) {
+                const bedrockColor = (bedrockPlacementToggle ? BEDROCK_COLOR_1 : BEDROCK_COLOR_2).clone();
+                modifiedBlocks.set(blockKey, { color: bedrockColor, type: 'bedrock' });
+                bedrockPlacementToggle = !bedrockPlacementToggle;
+            } else {
+			    modifiedBlocks.set(blockKey, { color: new THREE.Color(currentColor), type: 'normal' });
+            }
             markChunkForRegeneration(finalX, finalZ);
             createLaserFlash(new THREE.Vector3(finalX + 0.5, finalY + 0.5, finalZ + 0.5));
 
@@ -1098,7 +1233,7 @@ function performAction() {
             [finalX, finalY, finalZ] = [Math.floor(blockPos.x), Math.floor(blockPos.y), Math.floor(blockPos.z)];
 
             const block = getBlock(finalX, finalY, finalZ);
-            if (block && block.type !== 'bedrock') {
+            if (block && (block.type !== 'bedrock' || bedrockModesEnabled)) {
                 modifiedBlocks.set(`${finalX},${finalY},${finalZ}`, null);
                 markChunkForRegeneration(finalX, finalZ);
             }
@@ -1503,7 +1638,7 @@ function updateProjectiles(deltaTime) {
                 const [pX, pY, pZ] = [Math.floor(blockPos.x), Math.floor(blockPos.y), Math.floor(blockPos.z)];
 
                 const block = getBlock(pX, pY, pZ);
-                if (block && block.type !== 'bedrock') {
+                if (block && (block.type !== 'bedrock' || bedrockModesEnabled)) {
                     modifiedBlocks.set(`${pX},${pY},${pZ}`, null);
                     markChunkForRegeneration(pX, pZ);
                 }
@@ -2023,7 +2158,7 @@ function animate() {
 
     if (rifle && rifle.barrel) {
         const barrelMaterial = rifle.barrel.material;
-        if (currentMode === 'add' || currentMode === 'toolgun') {
+        if (currentMode === 'add' || currentMode === 'toolgun' || currentMode === BEDROCK_PLACE_MODE) {
             const pulse = (Math.sin(elapsedTime * 4) + 1) / 2;
             barrelMaterial.emissive.setHex(0x00ffff);
             barrelMaterial.emissiveIntensity = pulse * 1.5;
@@ -2202,13 +2337,22 @@ function setupEventListeners() {
         setupDesktopControls();
     }
 
-	document.getElementById('add-mode-btn').addEventListener('click', () => { currentMode = 'add'; updateModeButtons(); });
-	document.getElementById('shoot-mode-btn').addEventListener('click', () => { currentMode = 'shoot'; updateModeButtons(); });
+    updateAvailableModes();
+
+	document.getElementById('add-mode-btn').addEventListener('click', () => { setCurrentMode('add'); });
+	document.getElementById('shoot-mode-btn').addEventListener('click', () => { setCurrentMode('shoot'); });
     document.getElementById('missile-mode-btn').addEventListener('click', () => {
-        currentMode = 'missile';
-        updateModeButtons(); 
+        setCurrentMode('missile'); 
     });
-    document.getElementById('toolgun-mode-btn').addEventListener('click', () => { currentMode = 'toolgun'; updateModeButtons(); }); 
+    document.getElementById('toolgun-mode-btn').addEventListener('click', () => { setCurrentMode('toolgun'); }); 
+    const bedrockButton = document.getElementById('bedrock-mode-btn');
+    if (bedrockButton) {
+        bedrockButton.addEventListener('click', () => {
+            if (bedrockModesEnabled) {
+                setCurrentMode(BEDROCK_PLACE_MODE);
+            }
+        });
+    }
     document.getElementById('save-world-btn').addEventListener('click', saveWorld);
     document.getElementById('ingame-load-world-btn').addEventListener('click', () => document.getElementById('load-file-input').click());
     document.getElementById('load-file-input').addEventListener('change', loadWorld);
@@ -2244,16 +2388,20 @@ function setupDesktopControls() {
     
     onKeyDown = (event) => {
         keys[event.code] = true;
-        if (event.code === 'Digit1') currentMode = 'shoot', updateModeButtons(); 
-        else if (event.code === 'Digit2') currentMode = 'missile', updateModeButtons();
-        else if (event.code === 'Digit3') currentMode = 'toolgun', updateModeButtons();
+        if (event.code === 'Digit1') setCurrentMode('shoot'); 
+        else if (event.code === 'Digit2') setCurrentMode('missile');
+        else if (event.code === 'Digit3') setCurrentMode('toolgun');
         else if (event.code === 'Digit4') {
-            currentMode = 'add';
-            updateModeButtons();
+            setCurrentMode('add');
+        }
+        else if (event.code === 'Digit5' && bedrockModesEnabled) {
+            setCurrentMode(BEDROCK_PLACE_MODE);
         }
         else if (event.code === 'KeyF') {
-            isFlying = !isFlying;
-            playerJumpCount = isFlying ? 0 : playerJumpCount;
+            if (noclipEnabled) {
+                isFlying = !isFlying;
+                playerJumpCount = isFlying ? 0 : playerJumpCount;
+            }
         }
     };
 	onKeyUp = (event) => { keys[event.code] = false; };
@@ -2436,9 +2584,9 @@ function setupMobileControls() {
  
     switchModeStart = (e) => {
         e.preventDefault();
-        currentModeIndex = (currentModeIndex + 1) % modes.length;
-        currentMode = modes[currentModeIndex];
-        updateModeButtons();
+        if (modes.length === 0) return;
+        const nextIndex = (currentModeIndex + 1) % modes.length;
+        setCurrentMode(modes[nextIndex]);
     };
     switchModeBtn.addEventListener('touchstart', switchModeStart, { passive: false });
  
@@ -2517,9 +2665,21 @@ function updateModeButtons() {
     missileBtn.style.backgroundColor = '';
  
     document.getElementById('toolgun-mode-btn').classList.toggle('active', currentMode === 'toolgun');
+    const bedrockBtn = document.getElementById('bedrock-mode-btn');
+    if (bedrockBtn) {
+        const shouldShowBedrock = bedrockModesEnabled && !isMobileDevice;
+        bedrockBtn.style.display = shouldShowBedrock ? 'block' : 'none';
+        bedrockBtn.classList.toggle('active', currentMode === BEDROCK_PLACE_MODE);
+        if (shouldShowBedrock) {
+            bedrockBtn.textContent = 'Bedrock(5)';
+        }
+    }
+
+    currentModeIndex = Math.max(0, modes.indexOf(currentMode));
     
     // Only show for desktop by default. Mobile is handled by tap.
-	document.getElementById('color-selector').style.display = (currentMode === 'add' && !isMobileDevice) ? 'flex' : 'none';
+    const showColorSelector = currentMode === 'add' && !isMobileDevice;
+	document.getElementById('color-selector').style.display = showColorSelector ? 'flex' : 'none';
  
     if (isMobileDevice) {
         const modeDisplay = document.getElementById('mobile-mode-display');
@@ -2529,6 +2689,7 @@ function updateModeButtons() {
             else if (currentMode === 'add') modeText = 'Create';
             else if (currentMode === 'shoot') modeText = 'Shoot';
             else if (currentMode === 'missile') modeText = 'Missile';
+            else if (currentMode === BEDROCK_PLACE_MODE) modeText = 'Bedrock';
             else modeText = currentMode.charAt(0).toUpperCase() + currentMode.slice(1);
 
             if (currentMode === 'add') {
@@ -2551,6 +2712,45 @@ function updateModeButtons() {
             }
             modeDisplay.textContent = modeText;
         }
+    }
+}
+
+const developerOptionsContainer = document.getElementById('developer-options');
+if (developerOptionsContainer) {
+    const developerToggleButton = document.getElementById('developer-options-toggle');
+    const bedrockModeToggle = document.getElementById('bedrock-mode-toggle');
+    const noclipToggle = document.getElementById('noclip-toggle');
+
+    if (developerToggleButton) {
+        developerToggleButton.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            developerOptionsContainer.classList.toggle('open');
+        });
+    }
+
+    developerOptionsContainer.addEventListener('click', (event) => {
+        event.stopPropagation();
+    });
+
+    document.addEventListener('click', (event) => {
+        if (!developerOptionsContainer.contains(event.target)) {
+            developerOptionsContainer.classList.remove('open');
+        }
+    });
+
+    if (bedrockModeToggle) {
+        bedrockModeToggle.addEventListener('change', (event) => {
+            setBedrockModesEnabled(event.target.checked);
+        });
+        bedrockModeToggle.checked = bedrockModesEnabled;
+    }
+
+    if (noclipToggle) {
+        noclipToggle.addEventListener('change', (event) => {
+            setNoclipEnabled(event.target.checked);
+        });
+        noclipToggle.checked = noclipEnabled;
     }
 }
  
