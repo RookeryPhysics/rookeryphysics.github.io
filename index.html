@@ -487,6 +487,12 @@ let isMobileDevice = false;
 
 let playerCube;
 let rifle; 
+// Gun ownership and pickup state
+let hasGun = false;
+let gunPickup = null; // THREE.Group placed in world
+const GUN_PICKUP_DISTANCE = 2.0;
+const GUN_SPIN_SPEED = 2.5; // rad/sec
+let gunPickupBobTime = 0;
 let playerSpawnPoint = new THREE.Vector3();
 const playerHeight = 1.6; 
 const playerWidth = 0.8;  
@@ -563,6 +569,7 @@ function updateAvailableModes() {
 }
 
 function setCurrentMode(mode) {
+    if (!hasGun) return; // No mode switching before picking up the gun
     if (!modes.includes(mode)) return;
     currentMode = mode;
     currentModeIndex = modes.indexOf(mode);
@@ -1184,6 +1191,7 @@ function fireMissile() {
 }
 
 function performAction() {
+    if (!hasGun) return; // No actions before picking up the gun
     if (currentMode === 'toolgun') {
         if (heldBlock) {
             placeBlock();
@@ -1358,6 +1366,14 @@ function init(seedString, explicitSeedValue = null, seedSourceOverride = null) {
     laserFlashes = [];
     currentPlayerChunkX = undefined;
     currentPlayerChunkZ = undefined;
+    
+    // Reset gun state at start
+    hasGun = false;
+    if (gunPickup) {
+        scene.remove(gunPickup);
+        gunPickup.traverse(obj => { if (obj.isMesh) { obj.geometry.dispose(); if (obj.material) { if (Array.isArray(obj.material)) obj.material.forEach(m=>m.dispose()); else obj.material.dispose(); } } });
+        gunPickup = null;
+    }
  
     const hasExplicitSeedValue = explicitSeedValue !== null && explicitSeedValue !== undefined && !Number.isNaN(explicitSeedValue);
     let normalizedSeedString = "";
@@ -1423,6 +1439,11 @@ function init(seedString, explicitSeedValue = null, seedSourceOverride = null) {
     projectileRaycaster = new THREE.Raycaster();
 
 	createPlayer(); 
+    // Hide modes until gun is picked up
+    updateModeButtons();
+    updateModeUIVisibility();
+    // Spawn a pickup in front of the player on the ground
+    spawnGunPickup();
 	updateWorld();
 
 	setupEventListeners();
@@ -1443,16 +1464,8 @@ function createPlayer() {
 	camera.position.set(0, 1.4, 0); 
 	playerCube.add(camera);
 
-    rifle = createRifle(); 
-    if (isMobileDevice) {
-        rifle.position.copy(mobileHipRiflePosition);
-        rifle.scale.set(0.4, 0.4, 0.4);
-    } else {
-        rifle.position.copy(hipRiflePosition);
-        rifle.scale.set(0.5, 0.5, 0.5);
-    }
-    rifle.rotation.y = Math.PI / 2;
-    camera.add(rifle);
+    // Do not attach rifle yet; it will be picked up
+    rifle = null;
 
     lastPlayerPos.copy(playerCube.position);
 }
@@ -2036,7 +2049,7 @@ function updateToolgunLaser() {
 }
 
 function updateToolgun(deltaTime) {
-    if (currentMode !== 'toolgun') {
+    if (!hasGun || currentMode !== 'toolgun') {
         if (toolgunLaser) {
             scene.remove(toolgunLaser);
             toolgunLaser.geometry.dispose();
@@ -2191,6 +2204,7 @@ function animate() {
     updateMissiles(deltaTime);
     updateExplosions(deltaTime);
     updateLaserFlashes(deltaTime);
+    updateGunPickup(deltaTime);
 	
     updateWorld();
     processChunkGenerationSlice();
@@ -2695,14 +2709,18 @@ function updateModeButtons() {
     }
 
     currentModeIndex = Math.max(0, modes.indexOf(currentMode));
-    
-    // Only show for desktop by default. Mobile is handled by tap.
-    const showColorSelector = currentMode === 'add' && !isMobileDevice;
-	document.getElementById('color-selector').style.display = showColorSelector ? 'flex' : 'none';
+
+    // Modes UI visibility depends on having the gun
+    updateModeUIVisibility();
  
     if (isMobileDevice) {
         const modeDisplay = document.getElementById('mobile-mode-display');
         if (modeDisplay) {
+            if (!hasGun) {
+                modeDisplay.style.display = 'none';
+                return;
+            }
+            modeDisplay.style.display = 'block';
             let modeText;
             if (currentMode === 'toolgun') modeText = 'Tool Gun';
             else if (currentMode === 'add') modeText = 'Create';
@@ -2732,6 +2750,80 @@ function updateModeButtons() {
             modeDisplay.textContent = modeText;
         }
     }
+}
+
+function updateModeUIVisibility() {
+    // Desktop modes panel
+    const modeSelector = document.getElementById('mode-selector');
+    if (modeSelector) {
+        modeSelector.style.display = hasGun && !isMobileDevice ? 'flex' : 'none';
+    }
+    // Color selector only if gun owned and in add mode on desktop
+    const colorSelector = document.getElementById('color-selector');
+    if (colorSelector) {
+        const showColorSelector = hasGun && currentMode === 'add' && !isMobileDevice;
+        colorSelector.style.display = showColorSelector ? 'flex' : 'none';
+    }
+    // Mobile mode display handled in updateModeButtons()
+}
+
+function spawnGunPickup() {
+    if (!playerCube) return;
+    // Determine a spot ~3 units in front, on ground
+    const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(playerCube.quaternion).normalize();
+    const targetPos = playerCube.position.clone().add(forward.multiplyScalar(3.0));
+    const groundY = getTerrainHeight(Math.floor(targetPos.x), Math.floor(targetPos.z));
+
+    const pickup = createRifle();
+    pickup.scale.set(0.5, 0.5, 0.5);
+    pickup.rotation.y = Math.PI / 2;
+    const y = groundY + 2.0; // Float one extra block above current spawn
+    pickup.position.set(targetPos.x, y, targetPos.z);
+    pickup.userData.baseY = y;
+    scene.add(pickup);
+    gunPickup = pickup;
+    gunPickupBobTime = 0;
+}
+
+function updateGunPickup(deltaTime) {
+    if (!gunPickup) return;
+    // Spin and bob
+    gunPickup.rotation.y += GUN_SPIN_SPEED * deltaTime;
+    gunPickupBobTime += deltaTime;
+    const baseY = gunPickup.userData.baseY || gunPickup.position.y;
+    gunPickup.position.y = baseY + Math.sin(gunPickupBobTime * 2.0) * 0.1;
+
+    // Auto-pickup when close
+    const playerPos = playerCube ? playerCube.position.clone().add(new THREE.Vector3(0, playerHeight * 0.5, 0)) : null;
+    if (playerPos) {
+        const d = playerPos.distanceTo(gunPickup.position);
+        if (d <= GUN_PICKUP_DISTANCE) {
+            pickupGun();
+        }
+    }
+}
+
+function pickupGun() {
+    if (!gunPickup || hasGun) return;
+    // Remove pickup model
+    scene.remove(gunPickup);
+    gunPickup.traverse(obj => { if (obj.isMesh) { obj.geometry.dispose(); if (obj.material) { if (Array.isArray(obj.material)) obj.material.forEach(m=>m.dispose()); else obj.material.dispose(); } } });
+    gunPickup = null;
+
+    // Attach rifle to camera
+    rifle = createRifle();
+    if (isMobileDevice) {
+        rifle.position.copy(mobileHipRiflePosition);
+        rifle.scale.set(0.4, 0.4, 0.4);
+    } else {
+        rifle.position.copy(hipRiflePosition);
+        rifle.scale.set(0.5, 0.5, 0.5);
+    }
+    rifle.rotation.y = Math.PI / 2;
+    camera.add(rifle);
+
+    hasGun = true;
+    updateModeButtons();
 }
 
 const developerOptionsContainer = document.getElementById('developer-options');
