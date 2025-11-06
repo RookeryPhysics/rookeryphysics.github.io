@@ -407,6 +407,10 @@
                 <input type="checkbox" id="noclip-toggle">
                 Noclip
             </label>
+            <label>
+                <input type="checkbox" id="map-tools-toggle">
+                Map Tools
+            </label>
         </div>
     </div>
 
@@ -438,6 +442,8 @@
         <button id="toolgun-mode-btn">Tool Gun(3)</button>
         <button id="add-mode-btn">Create(4)</button>
         <button id="bedrock-mode-btn" style="display: none;">Bedrock(5)</button>
+        <button id="fill-mode-btn" style="display: none;">Fill(6)</button>
+        <button id="sphere-mode-btn" style="display: none;">Sphere(7)</button>
         <button id="save-world-btn">Save World</button>
         <button id="ingame-load-world-btn">Load World</button>
     </div>
@@ -514,14 +520,21 @@ const adsRiflePosition = new THREE.Vector3(0, -0.2, -0.5);
 
 const DEFAULT_MODES = ['shoot', 'missile', 'toolgun', 'add'];
 const BEDROCK_PLACE_MODE = 'bedrock-add';
+const MAP_TOOLS_MODES = ['fill', 'sphere'];
 let modes = [...DEFAULT_MODES];
 let currentModeIndex = 0;
 let currentMode = 'shoot';
 let bedrockModesEnabled = false;
 let bedrockPlacementToggle = false;
 let noclipEnabled = false;
+let mapToolsEnabled = false;
 let currentColor = 0x999999;
 const modifiedBlocks = new Map();
+
+// Map Tools state
+let wallCorner1 = null;
+let wallCorner2 = null;
+const SPHERE_RADIUS = 3;
  
 let heldBlock = null;
 let toolgunLaser = null;
@@ -565,7 +578,17 @@ let chunkSpeedBoostEndTime = 0;
 let loadingScreenTimer = null;
 
 function updateAvailableModes() {
-    modes = bedrockModesEnabled ? [...DEFAULT_MODES, BEDROCK_PLACE_MODE] : [...DEFAULT_MODES];
+    let newModes = [...DEFAULT_MODES];
+    
+    if (mapToolsEnabled && hasGun) {
+        newModes = [...newModes, ...MAP_TOOLS_MODES];
+    }
+    
+    if (bedrockModesEnabled) {
+        newModes = [...newModes, BEDROCK_PLACE_MODE];
+    }
+    
+    modes = newModes;
 }
 
 function setCurrentMode(mode) {
@@ -613,6 +636,35 @@ function setNoclipEnabled(enabled) {
         isFlying = false;
         playerVelocity.y = 0;
         playerJumpCount = 0;
+    }
+}
+
+function setMapToolsEnabled(enabled) {
+    mapToolsEnabled = !!enabled;
+    updateAvailableModes();
+    
+    const toggleEl = document.getElementById('map-tools-toggle');
+    if (toggleEl) {
+        toggleEl.checked = mapToolsEnabled;
+    }
+    
+    // Reset stored corners when disabling
+    if (!mapToolsEnabled) {
+        wallCorner1 = null;
+        wallCorner2 = null;
+    }
+    
+    // If currently in a map tools mode and it's being disabled, switch to shoot
+    if (!mapToolsEnabled && MAP_TOOLS_MODES.includes(currentMode)) {
+        setCurrentMode('shoot');
+    } else {
+        const nextIndex = modes.indexOf(currentMode);
+        if (nextIndex !== -1) {
+            currentModeIndex = nextIndex;
+            updateModeButtons();
+        } else {
+            setCurrentMode('shoot');
+        }
     }
 }
 
@@ -1190,6 +1242,119 @@ function fireMissile() {
     scene.add(missileGroup);
 }
 
+function handleWallPlacement() {
+    const meshes = Array.from(loadedChunks.values()).map(c => c.mesh).filter(m => m);
+    if (meshes.length === 0) return;
+    
+    const mouse = new THREE.Vector2(0, 0);
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects(meshes);
+    
+    if (intersects.length > 0) {
+        const intersect = intersects[0];
+        const adjacentBlockPos = intersect.point.clone().add(intersect.face.normal.clone().multiplyScalar(0.01));
+        const clickX = Math.floor(adjacentBlockPos.x);
+        const clickY = Math.floor(adjacentBlockPos.y);
+        const clickZ = Math.floor(adjacentBlockPos.z);
+        
+        if (!wallCorner1) {
+            // First corner of the fill region
+            wallCorner1 = { x: clickX, y: clickY, z: clickZ };
+            createLaserFlash(new THREE.Vector3(clickX + 0.5, clickY + 0.5, clickZ + 0.5));
+        } else if (!wallCorner2) {
+            // Second corner - draw the filled volume
+            wallCorner2 = { x: clickX, y: clickY, z: clickZ };
+            createLaserFlash(new THREE.Vector3(clickX + 0.5, clickY + 0.5, clickZ + 0.5));
+            
+            // Draw fill between the two corners
+            drawWall(wallCorner1, wallCorner2);
+            
+            // Reset for next fill placement
+            wallCorner1 = null;
+            wallCorner2 = null;
+        }
+    }
+}
+
+function drawWall(corner1, corner2) {
+    const minX = Math.min(corner1.x, corner2.x);
+    const maxX = Math.max(corner1.x, corner2.x);
+    const minY = Math.min(corner1.y, corner2.y);
+    const maxY = Math.max(corner1.y, corner2.y);
+    const minZ = Math.min(corner1.z, corner2.z);
+    const maxZ = Math.max(corner1.z, corner2.z);
+    
+    const affectedChunks = new Set();
+    
+    // Fill the rectangular volume between the two corners
+    for (let x = minX; x <= maxX; x++) {
+        for (let y = minY; y <= maxY; y++) {
+            for (let z = minZ; z <= maxZ; z++) {
+                const blockKey = `${x},${y},${z}`;
+                modifiedBlocks.set(blockKey, { color: new THREE.Color(currentColor), type: 'normal' });
+                affectedChunks.add(`${Math.floor(x / CHUNK_SIZE)},${Math.floor(z / CHUNK_SIZE)}`);
+            }
+        }
+    }
+    
+    // Regenerate all affected chunks
+    for (const chunkKey of affectedChunks) {
+        const [chunkX, chunkZ] = chunkKey.split(',').map(Number);
+        markChunkForRegeneration(chunkX * CHUNK_SIZE, chunkZ * CHUNK_SIZE);
+    }
+}
+
+function handleSphereCreation() {
+    const meshes = Array.from(loadedChunks.values()).map(c => c.mesh).filter(m => m);
+    if (meshes.length === 0) return;
+    
+    const mouse = new THREE.Vector2(0, 0);
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects(meshes);
+    
+    if (intersects.length > 0) {
+        const intersect = intersects[0];
+        const adjacentBlockPos = intersect.point.clone().add(intersect.face.normal.clone().multiplyScalar(0.01));
+        const centerX = Math.floor(adjacentBlockPos.x);
+        const centerY = Math.floor(adjacentBlockPos.y);
+        const centerZ = Math.floor(adjacentBlockPos.z);
+        
+        createLaserFlash(new THREE.Vector3(centerX + 0.5, centerY + 0.5, centerZ + 0.5));
+        drawSphere(centerX, centerY, centerZ, SPHERE_RADIUS);
+    }
+}
+
+function drawSphere(centerX, centerY, centerZ, radius) {
+    const affectedChunks = new Set();
+    const radiusSquared = radius * radius;
+    
+    // Iterate through a bounding box around the sphere
+    for (let x = centerX - radius; x <= centerX + radius; x++) {
+        for (let y = centerY - radius; y <= centerY + radius; y++) {
+            for (let z = centerZ - radius; z <= centerZ + radius; z++) {
+                // Calculate distance from center
+                const dx = x - centerX;
+                const dy = y - centerY;
+                const dz = z - centerZ;
+                const distanceSquared = dx * dx + dy * dy + dz * dz;
+                
+                // Only place blocks within the sphere radius
+                if (distanceSquared <= radiusSquared) {
+                    const blockKey = `${x},${y},${z}`;
+                    modifiedBlocks.set(blockKey, { color: new THREE.Color(currentColor), type: 'normal' });
+                    affectedChunks.add(`${Math.floor(x / CHUNK_SIZE)},${Math.floor(z / CHUNK_SIZE)}`);
+                }
+            }
+        }
+    }
+    
+    // Regenerate all affected chunks
+    for (const chunkKey of affectedChunks) {
+        const [chunkX, chunkZ] = chunkKey.split(',').map(Number);
+        markChunkForRegeneration(chunkX * CHUNK_SIZE, chunkZ * CHUNK_SIZE);
+    }
+}
+
 function performAction() {
     if (!hasGun) return; // No actions before picking up the gun
     if (currentMode === 'toolgun') {
@@ -1211,6 +1376,18 @@ function performAction() {
     }
     if (currentMode === 'missile') {
         fireMissile();
+        return;
+    }
+    
+    // Handle fill mode (draw volume between two corners)
+    if (currentMode === 'fill') {
+        handleWallPlacement();
+        return;
+    }
+    
+    // Handle sphere mode (create sphere at clicked location)
+    if (currentMode === 'sphere') {
+        handleSphereCreation();
         return;
     }
 
@@ -2190,7 +2367,7 @@ function animate() {
 
     if (rifle && rifle.barrel) {
         const barrelMaterial = rifle.barrel.material;
-        if (currentMode === 'add' || currentMode === 'toolgun' || currentMode === BEDROCK_PLACE_MODE) {
+    if (currentMode === 'add' || currentMode === 'toolgun' || currentMode === BEDROCK_PLACE_MODE || currentMode === 'fill' || currentMode === 'sphere') {
             const pulse = (Math.sin(elapsedTime * 4) + 1) / 2;
             barrelMaterial.emissive.setHex(0x00ffff);
             barrelMaterial.emissiveIntensity = pulse * 1.5;
@@ -2386,6 +2563,27 @@ function setupEventListeners() {
             }
         });
     }
+    
+    // Map Tools mode buttons
+    const fillButton = document.getElementById('fill-mode-btn');
+    const sphereButton = document.getElementById('sphere-mode-btn');
+    if (fillButton) {
+        fillButton.addEventListener('click', () => {
+            if (mapToolsEnabled && hasGun) {
+                wallCorner1 = null; // Reset stored corners when switching to fill mode
+                wallCorner2 = null;
+                setCurrentMode('fill');
+            }
+        });
+    }
+    if (sphereButton) {
+        sphereButton.addEventListener('click', () => {
+            if (mapToolsEnabled && hasGun) {
+                setCurrentMode('sphere');
+            }
+        });
+    }
+    
     document.getElementById('save-world-btn').addEventListener('click', saveWorld);
     document.getElementById('ingame-load-world-btn').addEventListener('click', () => document.getElementById('load-file-input').click());
     document.getElementById('load-file-input').addEventListener('change', loadWorld);
@@ -2429,6 +2627,14 @@ function setupDesktopControls() {
         }
         else if (event.code === 'Digit5' && bedrockModesEnabled) {
             setCurrentMode(BEDROCK_PLACE_MODE);
+        }
+        else if (event.code === 'Digit6' && mapToolsEnabled && hasGun) {
+            wallCorner1 = null; // Reset stored corners when switching to fill mode
+            wallCorner2 = null;
+            setCurrentMode('fill');
+        }
+        else if (event.code === 'Digit7' && mapToolsEnabled && hasGun) {
+            setCurrentMode('sphere');
         }
         else if (event.code === 'KeyF') {
             if (noclipEnabled) {
@@ -2626,7 +2832,8 @@ function setupMobileControls() {
     // --- New listener for mobile color picker ---
     mobileModeDisplayStart = (e) => {
         e.preventDefault();
-        if (currentMode === 'add') {
+        const colorModes = ['add', 'fill', 'sphere'];
+        if (colorModes.includes(currentMode)) {
             // Toggle color picker
             if (colorSelector.style.display === 'flex') {
                 colorSelector.style.display = 'none';
@@ -2708,6 +2915,21 @@ function updateModeButtons() {
         }
     }
 
+    // Map Tools mode buttons
+    const fillBtn = document.getElementById('fill-mode-btn');
+    const sphereBtn = document.getElementById('sphere-mode-btn');
+    if (fillBtn && sphereBtn) {
+        const shouldShowMapTools = mapToolsEnabled && hasGun && !isMobileDevice;
+        fillBtn.style.display = shouldShowMapTools ? 'block' : 'none';
+        sphereBtn.style.display = shouldShowMapTools ? 'block' : 'none';
+        fillBtn.classList.toggle('active', currentMode === 'fill');
+        sphereBtn.classList.toggle('active', currentMode === 'sphere');
+        if (shouldShowMapTools) {
+            fillBtn.textContent = 'Fill(6)';
+            sphereBtn.textContent = 'Sphere(7)';
+        }
+    }
+
     currentModeIndex = Math.max(0, modes.indexOf(currentMode));
 
     // Modes UI visibility depends on having the gun
@@ -2727,9 +2949,12 @@ function updateModeButtons() {
             else if (currentMode === 'shoot') modeText = 'Shoot';
             else if (currentMode === 'missile') modeText = 'Missile';
             else if (currentMode === BEDROCK_PLACE_MODE) modeText = 'Bedrock';
+            else if (currentMode === 'fill') modeText = 'Fill';
+            else if (currentMode === 'sphere') modeText = 'Sphere';
             else modeText = currentMode.charAt(0).toUpperCase() + currentMode.slice(1);
 
-            if (currentMode === 'add') {
+            const colorModes = ['add', 'fill', 'sphere'];
+            if (colorModes.includes(currentMode)) {
                 // Update background color, but check brightness for text color
                 const hexColor = currentColor.toString(16).padStart(6, '0');
                 modeDisplay.style.backgroundColor = `#${hexColor}`;
@@ -2758,10 +2983,11 @@ function updateModeUIVisibility() {
     if (modeSelector) {
         modeSelector.style.display = hasGun && !isMobileDevice ? 'flex' : 'none';
     }
-    // Color selector only if gun owned and in add mode on desktop
+    // Color selector only if gun owned and in color-capable mode on desktop
     const colorSelector = document.getElementById('color-selector');
     if (colorSelector) {
-        const showColorSelector = hasGun && currentMode === 'add' && !isMobileDevice;
+        const colorModes = ['add', 'fill', 'sphere'];
+        const showColorSelector = hasGun && colorModes.includes(currentMode) && !isMobileDevice;
         colorSelector.style.display = showColorSelector ? 'flex' : 'none';
     }
     // Mobile mode display handled in updateModeButtons()
@@ -2823,6 +3049,7 @@ function pickupGun() {
     camera.add(rifle);
 
     hasGun = true;
+    updateAvailableModes(); // Update modes to include map tools if enabled
     updateModeButtons();
 }
 
@@ -2831,6 +3058,7 @@ if (developerOptionsContainer) {
     const developerToggleButton = document.getElementById('developer-options-toggle');
     const bedrockModeToggle = document.getElementById('bedrock-mode-toggle');
     const noclipToggle = document.getElementById('noclip-toggle');
+    const mapToolsToggle = document.getElementById('map-tools-toggle');
 
     if (developerToggleButton) {
         developerToggleButton.addEventListener('click', (event) => {
@@ -2862,6 +3090,13 @@ if (developerOptionsContainer) {
             setNoclipEnabled(event.target.checked);
         });
         noclipToggle.checked = noclipEnabled;
+    }
+    
+    if (mapToolsToggle) {
+        mapToolsToggle.addEventListener('change', (event) => {
+            setMapToolsEnabled(event.target.checked);
+        });
+        mapToolsToggle.checked = mapToolsEnabled;
     }
 }
  
