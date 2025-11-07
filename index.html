@@ -550,6 +550,8 @@ const MISSILE_KNOCKBACK_FORCE = 15.0;
 let explosions = [];
 let laserFlashes = [];
 const LASER_FLASH_DURATION = 0.05;
+let blockRemovalParticles = [];
+const MAX_BLOCK_REMOVAL_PARTICLES = 220;
 let lastPlayerPos = new THREE.Vector3(); 
 
 const CHUNK_SIZE = 16;
@@ -1440,6 +1442,7 @@ function performAction() {
             if (block && (block.type !== 'bedrock' || bedrockModesEnabled)) {
                 modifiedBlocks.set(`${finalX},${finalY},${finalZ}`, null);
                 markChunkForRegeneration(finalX, finalZ);
+                spawnBlockRemovalParticles(new THREE.Vector3(finalX + 0.5, finalY + 0.5, finalZ + 0.5), block.color);
             }
         }
 	}
@@ -1541,6 +1544,15 @@ function init(seedString, explicitSeedValue = null, seedSourceOverride = null) {
     missiles = [];
     explosions = [];
     laserFlashes = [];
+    for (const particle of blockRemovalParticles) {
+        if (particle.sprite && particle.sprite.parent) {
+            particle.sprite.parent.remove(particle.sprite);
+        }
+        if (particle.sprite && particle.sprite.material) {
+            particle.sprite.material.dispose();
+        }
+    }
+    blockRemovalParticles = [];
     currentPlayerChunkX = undefined;
     currentPlayerChunkZ = undefined;
     
@@ -1744,6 +1756,72 @@ function createLaserFlash(targetPosition) {
     laserFlashes.push({ mesh: laserMesh, timer: LASER_FLASH_DURATION });
 }
 
+function spawnBlockRemovalParticles(position, color, count = 6) {
+    if (!scene) return;
+
+    const baseColor = (color && color.isColor) ? color.clone() : new THREE.Color(color || 0xffffff);
+
+    for (let i = 0; i < count; i++) {
+        const material = new THREE.SpriteMaterial({
+            color: baseColor.clone(),
+            transparent: true,
+            opacity: THREE.MathUtils.randFloat(0.65, 0.95),
+            blending: THREE.AdditiveBlending
+        });
+        const sprite = new THREE.Sprite(material);
+        sprite.position.copy(position);
+        const scale = THREE.MathUtils.randFloat(0.18, 0.38);
+        sprite.scale.set(scale, scale, scale);
+
+        const angle = Math.random() * Math.PI * 2;
+        const horiz = new THREE.Vector3(Math.cos(angle), 0, Math.sin(angle));
+        const speed = THREE.MathUtils.randFloat(1.6, 3.2);
+        const velocity = horiz.multiplyScalar(speed);
+        velocity.y = THREE.MathUtils.randFloat(0.8, 2.3);
+
+        blockRemovalParticles.push({
+            sprite,
+            velocity,
+            life: 0,
+            lifetime: THREE.MathUtils.randFloat(0.45, 0.75),
+            startOpacity: material.opacity,
+            startScale: scale
+        });
+
+        scene.add(sprite);
+    }
+
+    if (blockRemovalParticles.length > MAX_BLOCK_REMOVAL_PARTICLES) {
+        const excess = blockRemovalParticles.length - MAX_BLOCK_REMOVAL_PARTICLES;
+        for (let i = 0; i < excess; i++) {
+            const particle = blockRemovalParticles.shift();
+            if (!particle) break;
+            scene.remove(particle.sprite);
+            particle.sprite.material.dispose();
+        }
+    }
+}
+
+function updateBlockRemovalParticles(deltaTime) {
+    for (let i = blockRemovalParticles.length - 1; i >= 0; i--) {
+        const particle = blockRemovalParticles[i];
+        particle.life += deltaTime;
+        particle.velocity.y -= 4.5 * deltaTime;
+        particle.sprite.position.addScaledVector(particle.velocity, deltaTime);
+
+        const progress = particle.life / particle.lifetime;
+        particle.sprite.material.opacity = particle.startOpacity * Math.max(0, 1 - progress);
+        const currentScale = THREE.MathUtils.lerp(particle.startScale, particle.startScale * 0.25, THREE.MathUtils.clamp(progress, 0, 1));
+        particle.sprite.scale.set(currentScale, currentScale, currentScale);
+
+        if (particle.life >= particle.lifetime) {
+            scene.remove(particle.sprite);
+            particle.sprite.material.dispose();
+            blockRemovalParticles.splice(i, 1);
+        }
+    }
+}
+
 
 function createExplosion(position) {
     const geometry = new THREE.SphereGeometry(MISSILE_EXPLOSION_RADIUS, 16, 16);
@@ -1780,6 +1858,8 @@ function createExplosion(position) {
     const cX = Math.floor(position.x);
     const cY = Math.floor(position.y);
     const cZ = Math.floor(position.z);
+    let explosionParticlesSpawned = 0;
+    const MAX_EXPLOSION_PARTICLES = 90;
     for (let x = -radius; x <= radius; x++) {
         for (let y = -radius; y <= radius; y++) {
             for (let z = -radius; z <= radius; z++) {
@@ -1790,6 +1870,11 @@ function createExplosion(position) {
                 if (distSq <= radius * radius) {
                     const block = getBlock(pX, pY, pZ);
                     if (block && block.type !== 'bedrock') {
+                        if (explosionParticlesSpawned < MAX_EXPLOSION_PARTICLES && Math.random() < 0.35) {
+                            const spawnCount = 3;
+                            spawnBlockRemovalParticles(new THREE.Vector3(pX + 0.5, pY + 0.5, pZ + 0.5), block.color, spawnCount);
+                            explosionParticlesSpawned += spawnCount;
+                        }
                         modifiedBlocks.set(`${pX},${pY},${pZ}`, null);
                         const chunkX = Math.floor(pX / CHUNK_SIZE);
                         const chunkZ = Math.floor(pZ / CHUNK_SIZE);
@@ -1850,6 +1935,7 @@ function updateProjectiles(deltaTime) {
                 if (block && (block.type !== 'bedrock' || bedrockModesEnabled)) {
                     modifiedBlocks.set(`${pX},${pY},${pZ}`, null);
                     markChunkForRegeneration(pX, pZ);
+                    spawnBlockRemovalParticles(new THREE.Vector3(pX + 0.5, pY + 0.5, pZ + 0.5), block.color);
                 }
             }
         }
@@ -1991,6 +2077,7 @@ function pickupBlock() {
         
         modifiedBlocks.set(`${pX},${pY},${pZ}`, null);
         markChunkForRegeneration(pX, pZ);
+    spawnBlockRemovalParticles(new THREE.Vector3(pX + 0.5, pY + 0.5, pZ + 0.5), blockData.color);
 
         const heldGeo = new THREE.BoxGeometry(1, 1, 1);
         const heldMat = new THREE.MeshStandardMaterial({ 
@@ -2381,6 +2468,7 @@ function animate() {
     updateMissiles(deltaTime);
     updateExplosions(deltaTime);
     updateLaserFlashes(deltaTime);
+    updateBlockRemovalParticles(deltaTime);
     updateGunPickup(deltaTime);
 	
     updateWorld();
