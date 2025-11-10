@@ -76,6 +76,7 @@
             height: 16px;
             cursor: pointer;
         }
+        .ui-note { color: #aaa; font-size: 11px; line-height: 1.2; }
 
         
         #mode-selector { position: absolute; bottom: 10px; left: 10px; display: flex; flex-direction: column; gap: 8px; padding: 12px; background-color: rgba(40,40,40,0.85); border-radius: 8px; z-index: 100; }
@@ -411,6 +412,11 @@
                 <input type="checkbox" id="map-tools-toggle">
                 Map Tools
             </label>
+            <label>
+                <input type="checkbox" id="jump-pads-toggle">
+                Jump Pads
+            </label>
+            <div class="ui-note">Enable to spawn green launch pads</div>
         </div>
     </div>
 
@@ -444,6 +450,7 @@
         <button id="bedrock-mode-btn" style="display: none;">Bedrock(5)</button>
         <button id="fill-mode-btn" style="display: none;">Fill(6)</button>
         <button id="sphere-mode-btn" style="display: none;">Sphere(7)</button>
+        <button id="jumppad-mode-btn" style="display: none;">Jump Pad(8)</button>
         <button id="save-world-btn">Save World</button>
         <button id="ingame-load-world-btn">Load World</button>
     </div>
@@ -521,6 +528,7 @@ const adsRiflePosition = new THREE.Vector3(0, -0.2, -0.5);
 const DEFAULT_MODES = ['shoot', 'missile', 'toolgun', 'add'];
 const BEDROCK_PLACE_MODE = 'bedrock-add';
 const MAP_TOOLS_MODES = ['fill', 'sphere'];
+const JUMP_PAD_MODE = 'jump-pad';
 let modes = [...DEFAULT_MODES];
 let currentModeIndex = 0;
 let currentMode = 'shoot';
@@ -528,6 +536,7 @@ let bedrockModesEnabled = false;
 let bedrockPlacementToggle = false;
 let noclipEnabled = false;
 let mapToolsEnabled = false;
+let jumpPadsEnabled = false;
 let currentColor = 0x999999;
 const modifiedBlocks = new Map();
 
@@ -553,6 +562,15 @@ const LASER_FLASH_DURATION = 0.05;
 let blockRemovalParticles = [];
 const MAX_BLOCK_REMOVAL_PARTICLES = 220;
 let lastPlayerPos = new THREE.Vector3(); 
+
+// Jump pad data
+let jumpPads = [];
+const JUMP_PAD_SIZE = 1.3; // width/depth of the pressure plate
+const JUMP_PAD_HEIGHT = 0.15; // thin plate
+const JUMP_PAD_COLOR = 0x2ecc71; // green
+const JUMP_PAD_EMISSIVE = 0x2ecc71;
+const JUMP_PAD_BOOST = 40.0; // launch strength
+const JUMP_PAD_LAND_COOLDOWN = 0.35; // seconds before a pad can relaunch same player
 
 const CHUNK_SIZE = 16;
 const RENDER_DISTANCE = 5;
@@ -588,6 +606,9 @@ function updateAvailableModes() {
     
     if (bedrockModesEnabled) {
         newModes = [...newModes, BEDROCK_PLACE_MODE];
+    }
+    if (jumpPadsEnabled) {
+        newModes = [...newModes, JUMP_PAD_MODE];
     }
     
     modes = newModes;
@@ -658,6 +679,29 @@ function setMapToolsEnabled(enabled) {
     
     // If currently in a map tools mode and it's being disabled, switch to shoot
     if (!mapToolsEnabled && MAP_TOOLS_MODES.includes(currentMode)) {
+        setCurrentMode('shoot');
+    } else {
+        const nextIndex = modes.indexOf(currentMode);
+        if (nextIndex !== -1) {
+            currentModeIndex = nextIndex;
+            updateModeButtons();
+        } else {
+            setCurrentMode('shoot');
+        }
+    }
+}
+
+function setJumpPadsEnabled(enabled) {
+    jumpPadsEnabled = !!enabled;
+    updateAvailableModes();
+
+    const toggleEl = document.getElementById('jump-pads-toggle');
+    if (toggleEl) {
+        toggleEl.checked = jumpPadsEnabled;
+    }
+
+    // If currently in this mode and disabling, switch to shoot
+    if (!jumpPadsEnabled && currentMode === JUMP_PAD_MODE) {
         setCurrentMode('shoot');
     } else {
         const nextIndex = modes.indexOf(currentMode);
@@ -1380,6 +1424,10 @@ function performAction() {
         fireMissile();
         return;
     }
+    if (currentMode === JUMP_PAD_MODE) {
+        placeJumpPad();
+        return;
+    }
     
     // Handle fill mode (draw volume between two corners)
     if (currentMode === 'fill') {
@@ -1540,6 +1588,15 @@ function init(seedString, explicitSeedValue = null, seedSourceOverride = null) {
     chunkGenerationJobs.clear();
     loadedChunks.clear();
     modifiedBlocks.clear(); 
+    // Dispose jump pads
+    for (const pad of jumpPads) {
+        if (pad.mesh) {
+            scene.remove(pad.mesh);
+            if (pad.mesh.geometry) pad.mesh.geometry.dispose();
+            if (pad.mesh.material) pad.mesh.material.dispose();
+        }
+    }
+    jumpPads = [];
     projectiles = [];
     missiles = [];
     explosions = [];
@@ -1897,6 +1954,23 @@ function createExplosion(position) {
             chunk.needsRegeneration = true;
         }
     }
+
+    // Destroy any jump pads within explosion radius (XZ circle + vertical allowance)
+    if (jumpPads.length > 0) {
+        for (let i = jumpPads.length - 1; i >= 0; i--) {
+            const pad = jumpPads[i];
+            const padCenter = new THREE.Vector3(pad.x + 0.5, pad.y + JUMP_PAD_HEIGHT / 2, pad.z + 0.5);
+            const horizDistSq = (padCenter.x - position.x) * (padCenter.x - position.x) + (padCenter.z - position.z) * (padCenter.z - position.z);
+            if (horizDistSq <= (MISSILE_EXPLOSION_RADIUS + JUMP_PAD_SIZE * 0.5) * (MISSILE_EXPLOSION_RADIUS + JUMP_PAD_SIZE * 0.5)) {
+                if (Math.abs(padCenter.y - position.y) <= MISSILE_EXPLOSION_RADIUS + 1.0) {
+                    scene.remove(pad.mesh);
+                    if (pad.mesh.geometry) pad.mesh.geometry.dispose();
+                    if (pad.mesh.material) pad.mesh.material.dispose();
+                    jumpPads.splice(i, 1);
+                }
+            }
+        }
+    }
 }
 
 function updateProjectiles(deltaTime) {
@@ -1936,6 +2010,36 @@ function updateProjectiles(deltaTime) {
                     modifiedBlocks.set(`${pX},${pY},${pZ}`, null);
                     markChunkForRegeneration(pX, pZ);
                     spawnBlockRemovalParticles(new THREE.Vector3(pX + 0.5, pY + 0.5, pZ + 0.5), block.color);
+                }
+            }
+        }
+
+        // Also check for jump pad hits along the projectile path
+        if (!hit && jumpPads.length > 0) {
+            const dir = newPosition.clone().sub(oldPosition).normalize();
+            const segLen = distance;
+            // simple sphere overlap per pad for thickness; treat as 0.75 radius in XZ
+            for (let j = jumpPads.length - 1; j >= 0; j--) {
+                const pad = jumpPads[j];
+                const padCenter = new THREE.Vector3(pad.x + 0.5, pad.y + JUMP_PAD_HEIGHT / 2, pad.z + 0.5);
+                // Ray-segment to AABB intersection would be ideal; approximate with horizontal distance
+                // Project pad center onto segment
+                const w = padCenter.clone().sub(oldPosition);
+                const t = THREE.MathUtils.clamp(w.dot(dir), 0, segLen);
+                const closest = oldPosition.clone().addScaledVector(dir, t);
+                const dx = Math.abs(closest.x - padCenter.x);
+                const dz = Math.abs(closest.z - padCenter.z);
+                const dy = Math.abs(closest.y - padCenter.y);
+                const withinXZ = (dx <= JUMP_PAD_SIZE * 0.5) && (dz <= JUMP_PAD_SIZE * 0.5);
+                const withinY = dy <= (JUMP_PAD_HEIGHT * 1.2);
+                if (withinXZ && withinY) {
+                    // destroy pad
+                    scene.remove(pad.mesh);
+                    if (pad.mesh.geometry) pad.mesh.geometry.dispose();
+                    if (pad.mesh.material) pad.mesh.material.dispose();
+                    jumpPads.splice(j, 1);
+                    hit = true; // stop projectile
+                    break;
                 }
             }
         }
@@ -2343,6 +2447,85 @@ function updateToolgun(deltaTime) {
     }
 }
 
+// ---------------- Jump Pad Feature ----------------
+function createJumpPadAt(x, y, z) {
+    if (!scene) return;
+    const geo = new THREE.BoxGeometry(JUMP_PAD_SIZE, JUMP_PAD_HEIGHT, JUMP_PAD_SIZE);
+    const mat = new THREE.MeshStandardMaterial({ color: JUMP_PAD_COLOR, emissive: JUMP_PAD_EMISSIVE, emissiveIntensity: 0.6, metalness: 0.1, roughness: 0.8 });
+    const mesh = new THREE.Mesh(geo, mat);
+    // Center within block space
+    mesh.position.set(x + 0.5, y + (JUMP_PAD_HEIGHT / 2), z + 0.5);
+    // Slight scale pulse data
+    mesh.userData.baseScale = 1.0;
+    mesh.userData.pulseTime = 0;
+    scene.add(mesh);
+    jumpPads.push({ mesh, x, y, z, lastTriggerTime: -Infinity });
+}
+
+function placeJumpPad() {
+    if (!jumpPadsEnabled) return;
+    const meshes = Array.from(loadedChunks.values()).map(c => c.mesh).filter(m => m);
+    if (meshes.length === 0) return;
+    raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+    const intersects = raycaster.intersectObjects(meshes);
+    if (intersects.length === 0) return;
+    const adjacentBlockPos = intersects[0].point.clone().add(intersects[0].face.normal.clone().multiplyScalar(0.01));
+    const finalX = Math.floor(adjacentBlockPos.x);
+    const finalY = Math.floor(adjacentBlockPos.y);
+    const finalZ = Math.floor(adjacentBlockPos.z);
+    // Don't spawn inside player
+    const halfWidth = playerWidth / 2;
+    const playerMinX = Math.floor(playerCube.position.x - halfWidth);
+    const playerMaxX = Math.floor(playerCube.position.x + halfWidth);
+    const playerMinY = Math.floor(playerCube.position.y);
+    const playerMaxY = Math.floor(playerCube.position.y + playerHeight);
+    const playerMinZ = Math.floor(playerCube.position.z - halfWidth);
+    const playerMaxZ = Math.floor(playerCube.position.z + halfWidth);
+    if (finalX >= playerMinX && finalX <= playerMaxX && finalY >= playerMinY && finalY <= playerMaxY && finalZ >= playerMinZ && finalZ <= playerMaxZ) {
+        return;
+    }
+    createJumpPadAt(finalX, finalY, finalZ);
+    createLaserFlash(new THREE.Vector3(finalX + 0.5, finalY + 0.5, finalZ + 0.5));
+}
+
+function updateJumpPads(deltaTime) {
+    for (const pad of jumpPads) {
+        if (!pad.mesh) continue;
+        pad.mesh.userData.pulseTime += deltaTime;
+        const pulse = (Math.sin(pad.mesh.userData.pulseTime * 3) + 1) * 0.05 + 1;
+        pad.mesh.scale.set(pulse, 1, pulse);
+    }
+}
+
+function isOverJumpPad() {
+    const playerBaseY = playerCube.position.y;
+    const px = playerCube.position.x;
+    const pz = playerCube.position.z;
+    for (const pad of jumpPads) {
+        const padTopY = pad.y + JUMP_PAD_HEIGHT;
+        // horizontal check (pad centered with 0.5 offset)
+        const withinX = px >= pad.x && px <= pad.x + 1;
+        const withinZ = pz >= pad.z && pz <= pad.z + 1;
+        const verticalClose = Math.abs(playerBaseY - padTopY) < 0.25; // near surface
+        if (withinX && withinZ && verticalClose) return pad;
+    }
+    return null;
+}
+
+function checkJumpPadActivation() {
+    if (isFlying) return; // ignore in noclip fly
+    if (playerVelocity.y > 0) return; // only when falling/standing
+    const pad = isOverJumpPad();
+    if (!pad) return;
+    const now = performance.now() / 1000.0;
+    if (now - pad.lastTriggerTime < JUMP_PAD_LAND_COOLDOWN) return;
+    pad.lastTriggerTime = now;
+    playerVelocity.y = JUMP_PAD_BOOST;
+    playerOnGround = false;
+    playerJumpCount = 1;
+}
+// ---------------------------------------------------
+
 function updatePlayer(deltaTime) {
     if (!playerCube) return;
 	const moveVector = new THREE.Vector3(0, 0, 0);
@@ -2376,6 +2559,7 @@ function updatePlayer(deltaTime) {
         spaceWasPressedLastFrame = isSpacePressed;
 
         if (justPressedSpace) {
+            // Manual jump still allowed; auto launch handled separately on landing
             if (playerOnGround) {
                 playerVelocity.y = playerJumpHeight;
                 playerOnGround = false;
@@ -2434,6 +2618,9 @@ function updatePlayer(deltaTime) {
     }
 
 	if (playerCube.position.y < BEDROCK_LEVEL - 20) respawnPlayer();
+
+    updateJumpPads(deltaTime);
+    checkJumpPadActivation();
 }
 
 function respawnPlayer() {
@@ -2643,6 +2830,14 @@ function setupEventListeners() {
         setCurrentMode('missile'); 
     });
     document.getElementById('toolgun-mode-btn').addEventListener('click', () => { setCurrentMode('toolgun'); }); 
+    const jumpPadButton = document.getElementById('jumppad-mode-btn');
+    if (jumpPadButton) {
+        jumpPadButton.addEventListener('click', () => {
+            if (jumpPadsEnabled && hasGun) {
+                setCurrentMode(JUMP_PAD_MODE);
+            }
+        });
+    }
     const bedrockButton = document.getElementById('bedrock-mode-btn');
     if (bedrockButton) {
         bedrockButton.addEventListener('click', () => {
@@ -2723,6 +2918,9 @@ function setupDesktopControls() {
         }
         else if (event.code === 'Digit7' && mapToolsEnabled && hasGun) {
             setCurrentMode('sphere');
+        }
+        else if (event.code === 'Digit8' && jumpPadsEnabled && hasGun) {
+            setCurrentMode(JUMP_PAD_MODE);
         }
         else if (event.code === 'KeyF') {
             if (noclipEnabled) {
@@ -3006,6 +3204,7 @@ function updateModeButtons() {
     // Map Tools mode buttons
     const fillBtn = document.getElementById('fill-mode-btn');
     const sphereBtn = document.getElementById('sphere-mode-btn');
+    const jumpPadBtn = document.getElementById('jumppad-mode-btn');
     if (fillBtn && sphereBtn) {
         const shouldShowMapTools = mapToolsEnabled && hasGun && !isMobileDevice;
         fillBtn.style.display = shouldShowMapTools ? 'block' : 'none';
@@ -3015,6 +3214,15 @@ function updateModeButtons() {
         if (shouldShowMapTools) {
             fillBtn.textContent = 'Fill(6)';
             sphereBtn.textContent = 'Sphere(7)';
+        }
+    }
+
+    if (jumpPadBtn) {
+        const shouldShowJumpPad = jumpPadsEnabled && hasGun && !isMobileDevice;
+        jumpPadBtn.style.display = shouldShowJumpPad ? 'block' : 'none';
+        jumpPadBtn.classList.toggle('active', currentMode === JUMP_PAD_MODE);
+        if (shouldShowJumpPad) {
+            jumpPadBtn.textContent = 'Jump Pad(8)';
         }
     }
 
@@ -3147,6 +3355,7 @@ if (developerOptionsContainer) {
     const bedrockModeToggle = document.getElementById('bedrock-mode-toggle');
     const noclipToggle = document.getElementById('noclip-toggle');
     const mapToolsToggle = document.getElementById('map-tools-toggle');
+    const jumpPadsToggle = document.getElementById('jump-pads-toggle');
 
     if (developerToggleButton) {
         developerToggleButton.addEventListener('click', (event) => {
@@ -3185,6 +3394,12 @@ if (developerOptionsContainer) {
             setMapToolsEnabled(event.target.checked);
         });
         mapToolsToggle.checked = mapToolsEnabled;
+    }
+    if (jumpPadsToggle) {
+        jumpPadsToggle.addEventListener('change', (event) => {
+            setJumpPadsEnabled(event.target.checked);
+        });
+        jumpPadsToggle.checked = jumpPadsEnabled;
     }
 }
  
