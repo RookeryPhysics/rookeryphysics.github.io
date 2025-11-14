@@ -1019,7 +1019,7 @@ function hideLoadingOverlay() {
     overlay.style.display = 'none';
 }
 
-function runWithLoadingOverlay(action, duration = 3000) {
+function runWithLoadingOverlay(action, duration = 3500) {
     showLoadingOverlay();
     if (loadingScreenTimer !== null) {
         clearTimeout(loadingScreenTimer);
