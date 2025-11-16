@@ -670,6 +670,11 @@
                 Jump Pads
             </label>
             <div class="ui-note">Enable to spawn green launch pads</div>
+            <label>
+                <input type="checkbox" id="psychedelic-mode-toggle">
+                Psychedelic
+            </label>
+            <div class="ui-note">Rainbow waves animate all blocks</div>
             <hr style="border: none; border-top: 1px solid #555; margin: 8px 0;">
             <label>
                 <input type="checkbox" id="noclip-toggle">
@@ -801,6 +806,8 @@ let bedrockPlacementToggle = false;
 let noclipEnabled = false;
 let mapToolsEnabled = false;
 let jumpPadsEnabled = false;
+let psychedelicModeEnabled = false;
+let psychedelicPhase = 0;
 let currentColor = 0x999999;
 const modifiedBlocks = new Map();
 
@@ -844,6 +851,10 @@ const loadedChunks = new Map();
 const chunkGenerationQueue = new Set();
 let currentPlayerChunkX, currentPlayerChunkZ;
 const BEDROCK_LEVEL = -30;
+const TWO_PI_THIRD = (2 * Math.PI) / 3;
+const FOUR_PI_THIRD = 2 * TWO_PI_THIRD;
+const PSYCHEDELIC_RADIUS = 6;
+const PSYCHEDELIC_RADIUS_SQ = PSYCHEDELIC_RADIUS * PSYCHEDELIC_RADIUS;
 
 const DIRT_COLOR_1 = new THREE.Color(0x8B4513);
 const DIRT_COLOR_2 = new THREE.Color(0x654321);
@@ -975,6 +986,132 @@ function setJumpPadsEnabled(enabled) {
         } else {
             setCurrentMode('shoot');
         }
+    }
+}
+
+function setPsychedelicModeEnabled(enabled) {
+    const nextState = !!enabled;
+    if (psychedelicModeEnabled === nextState) {
+        const toggleEl = document.getElementById('psychedelic-mode-toggle');
+        if (toggleEl) {
+            toggleEl.checked = psychedelicModeEnabled;
+        }
+        return;
+    }
+
+    psychedelicModeEnabled = nextState;
+    const toggleEl = document.getElementById('psychedelic-mode-toggle');
+    if (toggleEl) {
+        toggleEl.checked = psychedelicModeEnabled;
+    }
+
+    if (psychedelicModeEnabled) {
+        capturePsychedelicBaselines();
+        updatePsychedelicMode(0);
+    } else {
+        restoreOriginalChunkColors();
+        psychedelicPhase = 0;
+    }
+}
+
+function storeOriginalChunkColors(mesh) {
+    if (!mesh || !mesh.geometry) return;
+    const colorAttr = mesh.geometry.getAttribute('color');
+    if (!colorAttr) return;
+    const array = colorAttr.array;
+    if (!mesh.userData.originalColors || mesh.userData.originalColors.length !== array.length) {
+        mesh.userData.originalColors = new Float32Array(array);
+    }
+}
+
+function capturePsychedelicBaselines() {
+    for (const chunkData of loadedChunks.values()) {
+        storeOriginalChunkColors(chunkData.mesh);
+    }
+}
+
+function restoreOriginalChunkColors() {
+    for (const chunkData of loadedChunks.values()) {
+        const mesh = chunkData.mesh;
+        if (!mesh || !mesh.geometry) continue;
+        const colorAttr = mesh.geometry.getAttribute('color');
+        const original = mesh.userData.originalColors;
+        if (colorAttr && original) {
+            colorAttr.array.set(original);
+            colorAttr.needsUpdate = true;
+        }
+        if (mesh.userData.originalColors) {
+            delete mesh.userData.originalColors;
+        }
+    }
+}
+
+function applyPsychedelicColorsToMesh(mesh, time, playerPos, radiusSq) {
+    if (!mesh || !mesh.geometry || !playerPos) return;
+    const geometry = mesh.geometry;
+    const colorAttr = geometry.getAttribute('color');
+    const positionAttr = geometry.getAttribute('position');
+    const original = mesh.userData.originalColors;
+    if (!colorAttr || !positionAttr || !original) return;
+
+    const colors = colorAttr.array;
+    const positions = positionAttr.array;
+    const pxPlayer = playerPos.x;
+    const pyPlayer = playerPos.y;
+    const pzPlayer = playerPos.z;
+
+    for (let i = 0; i < positions.length; i += 3) {
+        const px = positions[i];
+        const py = positions[i + 1];
+        const pz = positions[i + 2];
+
+        const dx = px - pxPlayer;
+        const dy = py - pyPlayer;
+        const dz = pz - pzPlayer;
+        const distSq = dx * dx + dy * dy + dz * dz;
+
+        if (distSq > radiusSq) {
+            colors[i] = original[i];
+            colors[i + 1] = original[i + 1];
+            colors[i + 2] = original[i + 2];
+            continue;
+        }
+
+        const waveBase = px * 0.18 + pz * 0.14 + time * 3.2;
+        const verticalPulse = Math.sin(py * 0.45 + time * 2.6) * 0.5 + 0.5;
+        const swirl = Math.sin((px - pz) * 0.12 + time * 1.7) * 0.5 + 0.5;
+        const brightness = 0.6 + 0.4 * verticalPulse;
+
+        colors[i] = (0.5 + 0.5 * Math.sin(waveBase)) * brightness;
+        colors[i + 1] = (0.5 + 0.5 * Math.sin(waveBase + TWO_PI_THIRD)) * (0.7 + 0.3 * verticalPulse);
+        colors[i + 2] = (0.5 + 0.5 * Math.sin(waveBase + FOUR_PI_THIRD)) * (0.65 + 0.35 * swirl);
+    }
+
+    colorAttr.needsUpdate = true;
+}
+
+function updatePsychedelicMode(deltaTime) {
+    if (!psychedelicModeEnabled) return;
+    psychedelicPhase += deltaTime;
+    const time = psychedelicPhase;
+    const playerPos = playerCube ? playerCube.position : lastPlayerPos;
+
+    for (const chunkData of loadedChunks.values()) {
+        if (!chunkData.mesh) continue;
+        storeOriginalChunkColors(chunkData.mesh);
+        applyPsychedelicColorsToMesh(chunkData.mesh, time, playerPos, PSYCHEDELIC_RADIUS_SQ);
+    }
+}
+
+function syncChunkMeshWithPsychedelicState(mesh, playerPos) {
+    if (!mesh) return;
+    if (psychedelicModeEnabled) {
+        storeOriginalChunkColors(mesh);
+        if (playerPos) {
+            applyPsychedelicColorsToMesh(mesh, psychedelicPhase, playerPos, PSYCHEDELIC_RADIUS_SQ);
+        }
+    } else if (mesh.userData && mesh.userData.originalColors) {
+        delete mesh.userData.originalColors;
     }
 }
 
@@ -1171,6 +1308,8 @@ function finalizeChunkJob(job) {
         chunkMesh = new THREE.Mesh(mergedGeometry, material);
         chunkMesh.userData.key = chunkKey;
         scene.add(chunkMesh);
+        const playerPosForSync = playerCube ? playerCube.position : lastPlayerPos;
+        syncChunkMeshWithPsychedelicState(chunkMesh, playerPosForSync);
     }
 
     for (const geo of job.geometries) {
@@ -2924,6 +3063,7 @@ function animate() {
 	
     updateWorld();
     processChunkGenerationSlice();
+    updatePsychedelicMode(deltaTime);
 
 	renderer.render(scene, camera);
 
@@ -3620,6 +3760,7 @@ if (developerOptionsContainer) {
     const noclipToggle = document.getElementById('noclip-toggle');
     const mapToolsToggle = document.getElementById('map-tools-toggle');
     const jumpPadsToggle = document.getElementById('jump-pads-toggle');
+    const psychedelicToggle = document.getElementById('psychedelic-mode-toggle');
 
     if (developerToggleButton) {
         developerToggleButton.addEventListener('click', (event) => {
@@ -3664,6 +3805,13 @@ if (developerOptionsContainer) {
             setJumpPadsEnabled(event.target.checked);
         });
         jumpPadsToggle.checked = jumpPadsEnabled;
+    }
+
+    if (psychedelicToggle) {
+        psychedelicToggle.addEventListener('change', (event) => {
+            setPsychedelicModeEnabled(event.target.checked);
+        });
+        psychedelicToggle.checked = psychedelicModeEnabled;
     }
 }
  
