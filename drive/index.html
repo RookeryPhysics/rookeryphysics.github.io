@@ -1,0 +1,1597 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Infinite Voxel Driver</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            /* Prevent scrolling */
+            background-color: #87CEEB;
+            /* Sky blue fallback */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+            /* Prevent text selection on long press */
+            -webkit-user-select: none;
+            touch-action: none;
+            /* Prevent browser zooming/scrolling */
+        }
+
+        #game-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .instructions {
+            position: absolute;
+            top: 60px;
+            /* Below score */
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            text-align: center;
+            font-size: 14px;
+            pointer-events: none;
+            backdrop-filter: blur(4px);
+            animation: fadeOut 5s forwards;
+            animation-delay: 5s;
+            width: 80%;
+        }
+
+        /* --- Controls Layout --- */
+
+        /* Left Zone - Movement */
+        #movement-zone {
+            position: absolute;
+            bottom: 30px;
+            /* Moved up slightly */
+            left: 30px;
+            width: 180px;
+            /* Bigger zone */
+            height: 180px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            pointer-events: auto;
+            /* Catch touches */
+        }
+
+        /* Stick Graphic */
+        #stick-knob {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 60px;
+            /* Bigger knob */
+            height: 60px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            /* Let clicks pass to zone */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        /* Heading Arrow Indicator Container */
+        #heading-arrow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            transform-origin: center center;
+            /* Will be rotated via JS */
+            z-index: 10;
+        }
+
+        /* Arrow Shaft */
+        #heading-arrow::before {
+            content: '';
+            position: absolute;
+            width: 6px;
+            height: 14px;
+            background-color: #ff3366;
+            left: -3px;
+            /* Center horizontally */
+            bottom: 2px;
+            /* Start slightly above center */
+            border-radius: 3px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Arrow Head */
+        #heading-arrow::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-bottom: 16px solid #ff3366;
+            left: -10px;
+            /* Center horizontally */
+            bottom: 14px;
+            /* Place on top of shaft */
+            filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.3));
+        }
+
+        /* Center Camera Button */
+        #center-cam-btn {
+            position: absolute;
+            bottom: 40px;
+            right: 40px;
+            width: 60px;
+            height: 60px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            color: white;
+            font-size: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            pointer-events: auto;
+            backdrop-filter: blur(4px);
+            z-index: 20;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        #center-cam-btn:active {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(0.95);
+        }
+
+        /* Score Display */
+        #score-board {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* FPS Counter */
+        #fps-counter {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #00ff00;
+            font-family: monospace;
+            font-size: 16px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 4px 8px;
+            border-radius: 4px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        #coord-display {
+            position: absolute;
+            top: 45px;
+            left: 20px;
+            color: #ffff00;
+            font-family: monospace;
+            font-size: 14px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 4px 8px;
+            border-radius: 4px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+
+            to {
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- UI Overlay -->
+    <div id="ui-layer">
+        <div id="fps-counter">FPS: 60</div>
+        <div id="coord-display">X: 0 Z: 0</div>
+        <div id="score-board">Score: 0</div>
+        <div class="instructions">
+            Infinite Procedural Map<br>Left Stick: Drive<br>Click the 3D car icon to switch!
+        </div>
+
+        <!-- Left Movement Stick -->
+        <div id="movement-zone">
+            <div id="stick-knob">
+                <div id="heading-arrow"></div>
+            </div>
+        </div>
+
+        <!-- Center Camera Button -->
+        <div id="center-cam-btn">◎</div>
+    </div>
+
+    <!-- 3D Container -->
+    <div id="game-container"></div>
+
+    <!-- Three.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        // --- Variables ---
+        let scene, camera, renderer;
+        // UI Scene Variables (For the 3D car button)
+        let uiScene, uiCamera, uiLight;
+        let miniatureGroup;
+        let raycaster = new THREE.Raycaster();
+        let mouse = new THREE.Vector2();
+
+        let player;
+        let carType = 'truck'; // 'truck' or 'hypercar'
+        let currentCarMesh = null; // Reference to the actual graphical mesh inside player group
+
+        let score = 0;
+        const scoreElement = document.getElementById('score-board');
+        const fpsElement = document.getElementById('fps-counter');
+        const coordElement = document.getElementById('coord-display');
+
+        // Game Objects Lists
+        const allPedestrians = []; // Stores data for ALL pedestrians
+        const activeObstacles = []; // Pedestrians currently in scene
+        const staticObstacles = []; // Buildings from chunks
+        const particles = [];
+
+        // Optimization: Shared Geometries
+        const pedGeometries = {};
+        const buildingGeometries = {};
+        let groundGeometry, groundMaterial; // Shared for chunks
+        let roadTileGeometry, roadMaterial;
+        let lineTileGeometry, lineMaterial;
+
+        const CULL_DIST = 250;
+        const CULL_DIST_SQ = CULL_DIST * CULL_DIST;
+
+        // Infinite Map Settings
+        const CHUNK_SIZE = 200;
+        const CHUNK_RENDER_DIST = 2; // Radius of chunks to render (2 = 5x5 grid)
+        const activeChunks = new Map(); // Stores active chunks by "x,z" key
+        const ROAD_TILE_SIZE = 10; // Size of road grid cells
+        const ROAD_WIDTH_THRESHOLD = 0.25; // Defines how wide the road is in the noise function
+
+        // Physics/Game Config
+        let PLAYER_SPEED = 0.25;
+        const FRICTION = 0.80;
+        let MAX_SPEED = 2.0;
+        const PLAYER_BASE_Y = 0.05;
+        const GRAVITY = 0.02;
+        let isGameOver = false;
+        let isAirborne = false;
+
+        // Movement State
+        const velocity = new THREE.Vector3(); // x, y (vertical), z
+        let moveInput = { x: 0, y: 0 }; // -1 to 1
+
+        // Camera State
+        let cameraAngle = 0;
+        let cameraVerticalAngle = 0.5;
+        const CAMERA_DIST = 25;
+        let isManualCamera = false;
+        let manualCamTimer = 0;
+
+        // Touch Input State
+        let moveTouchId = null;
+        let camTouchId = null;
+        let camLastPos = { x: 0, y: 0 };
+        const joystickRadius = 90;
+
+        // FPS Counting
+        let lastTime = performance.now();
+        let frameCount = 0;
+
+        // DOM Elements
+        const stickKnob = document.getElementById('stick-knob');
+        const headingArrow = document.getElementById('heading-arrow');
+        const movementZone = document.getElementById('movement-zone');
+        const centerBtn = document.getElementById('center-cam-btn');
+
+        init();
+        animate();
+
+        function init() {
+            const container = document.getElementById('game-container');
+
+            // 1. Main Scene Setup
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xa0d8ef);
+            scene.fog = new THREE.Fog(0xa0d8ef, 50, 280);
+
+            // 2. Camera Setup
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+            // 3. Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.autoClear = false; // Important for overlaying the UI scene
+            container.appendChild(renderer.domElement);
+
+            // 4. Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(50, 100, 50);
+            dirLight.castShadow = true;
+            // Shadow settings
+            dirLight.shadow.mapSize.width = 1024;
+            dirLight.shadow.mapSize.height = 1024;
+            dirLight.shadow.camera.near = 0.5;
+            dirLight.shadow.camera.far = 300;
+            const d = 100;
+            dirLight.shadow.camera.left = -d;
+            dirLight.shadow.camera.right = d;
+            dirLight.shadow.camera.top = d;
+            dirLight.shadow.camera.bottom = -d;
+            scene.add(dirLight);
+            scene.userData.sun = dirLight;
+
+            // --- 5. UI Scene Setup (Miniature) ---
+            uiScene = new THREE.Scene();
+            uiCamera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+            uiCamera.position.z = 10;
+
+            // Add Light to UI Scene so the miniature is visible
+            const uiAmb = new THREE.AmbientLight(0xffffff, 0.8);
+            uiScene.add(uiAmb);
+            const uiDir = new THREE.DirectionalLight(0xffffff, 1.0);
+            uiDir.position.set(2, 5, 5);
+            uiScene.add(uiDir);
+
+            // Miniature Container
+            miniatureGroup = new THREE.Group();
+            // Position it in bottom right corner relative to camera view
+            // NOTE: We adjust this in animate or resize to handle aspect ratios, 
+            // but for now a rough guess in 3D space works for Perspective camera
+            updateMiniaturePosition();
+            uiScene.add(miniatureGroup);
+
+            // 6. Initialize Geometries
+            initPedestrianGeometries();
+            initWorldGeometries();
+
+            // 7. Player
+            createPlayer();
+
+            // Initialize Miniature (Show the option you CAN switch to)
+            updateMiniatureModel();
+
+            // 8. Entities (Virtual Pool)
+            for (let i = 0; i < 500; i++) {
+                createPedestrianData();
+            }
+
+            // 9. Listeners
+            window.addEventListener('resize', onWindowResize);
+            document.addEventListener('touchstart', onTouchStart, { passive: false });
+            document.addEventListener('touchmove', onTouchMove, { passive: false });
+            document.addEventListener('touchend', onTouchEnd, { passive: false });
+            document.addEventListener('mousedown', onMouseDown); // Add mouse support for miniature
+
+            centerBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                centerCamera();
+            }, { passive: false });
+
+            centerBtn.addEventListener('mousedown', (e) => {
+                e.stopPropagation();
+                centerCamera();
+            });
+        }
+
+        // --- Miniature UI Logic ---
+
+        function updateMiniaturePosition() {
+            // Position the miniature based on screen aspect ratio to keep it in the corner
+            const aspect = window.innerWidth / window.innerHeight;
+            // Adjust X based on aspect ratio to stay in corner
+            // Z is fixed at 10 (camera distance)
+            // Camera FOV 50 means visible height at Z=0 (camera at 10) is approx 9.3 units
+            const visibleHeight = 2 * Math.tan((uiCamera.fov * Math.PI / 180) / 2) * uiCamera.position.z;
+            const visibleWidth = visibleHeight * aspect;
+
+            // Convert pixels to 3D units for precise alignment with DOM elements
+            const unitsPerPixel = visibleHeight / window.innerHeight;
+
+            // Target Position Logic:
+            // The Reset Button is at Bottom: 40px, Height: 60px -> Top Edge is 100px.
+            // We want the miniature center to be slightly above that. 
+            // 100px (button top) + 30px (half icon size) + 20px (padding) = 150px from bottom.
+            // Center alignment: Button is Right: 40px + 30px (half width) = 70px from right.
+
+            const yOffsetPixels = 160;
+            const xOffsetPixels = 70;
+
+            const x = visibleWidth / 2 - (xOffsetPixels * unitsPerPixel);
+            const y = -visibleHeight / 2 + (yOffsetPixels * unitsPerPixel);
+
+            miniatureGroup.position.set(x, y, 0);
+        }
+
+        function updateMiniatureModel() {
+            // Clear previous
+            while (miniatureGroup.children.length > 0) {
+                miniatureGroup.remove(miniatureGroup.children[0]);
+            }
+
+            // Logic: Show the vehicle we are NOT currently driving
+            const targetType = (carType === 'truck') ? 'hypercar' : 'truck';
+
+            let mesh;
+            if (targetType === 'truck') {
+                mesh = buildTruckMesh();
+                // Significantly reduced scale for button size
+                mesh.scale.set(0.4, 0.4, 0.4);
+            } else {
+                mesh = buildHypercarMesh();
+                // Significantly reduced scale for button size
+                mesh.scale.set(0.35, 0.35, 0.35);
+            }
+
+            // Center the mesh visually in the group
+            mesh.position.y = -0.5;
+
+            // Make it spin automatically in animate loop
+            miniatureGroup.add(mesh);
+            miniatureGroup.userData.targetType = targetType;
+        }
+
+        function checkMiniatureClick(clientX, clientY) {
+            // Convert to Normalized Device Coordinates (-1 to +1)
+            mouse.x = (clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, uiCamera);
+
+            // Raycast against the miniature group
+            const intersects = raycaster.intersectObjects(miniatureGroup.children, true);
+
+            if (intersects.length > 0) {
+                toggleCarModel();
+                return true;
+            }
+            return false;
+        }
+
+        // --- Infinite Map System ---
+
+        function initWorldGeometries() {
+            // 1. Procedural Grid Texture (Ground)
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+
+            // Base Color
+            ctx.fillStyle = '#66aa66'; // Grass Green
+            ctx.fillRect(0, 0, 512, 512);
+
+            // Grid Lines
+            ctx.strokeStyle = '#559955';
+            ctx.lineWidth = 4;
+
+            // Draw Grid 
+            const cells = 8;
+            const step = 512 / cells;
+
+            for (let i = 0; i <= cells; i++) {
+                ctx.beginPath(); ctx.moveTo(i * step, 0); ctx.lineTo(i * step, 512); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0, i * step); ctx.lineTo(512, i * step); ctx.stroke();
+            }
+
+            // Add some noise
+            ctx.fillStyle = 'rgba(0,0,0,0.05)';
+            for (let i = 0; i < 1000; i++) {
+                const x = Math.random() * 512;
+                const y = Math.random() * 512;
+                const w = Math.random() * 10 + 2;
+                ctx.fillRect(x, y, w, w);
+            }
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+
+            groundGeometry = new THREE.PlaneGeometry(CHUNK_SIZE, CHUNK_SIZE);
+            groundMaterial = new THREE.MeshStandardMaterial({
+                map: texture, roughness: 0.9, metalness: 0.1
+            });
+
+            // Road Geometries
+            roadTileGeometry = new THREE.PlaneGeometry(ROAD_TILE_SIZE, ROAD_TILE_SIZE);
+            roadMaterial = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.5, metalness: 0.1 });
+
+            lineTileGeometry = new THREE.PlaneGeometry(2, 6);
+            lineMaterial = new THREE.MeshBasicMaterial({ color: 0xffcc00 });
+
+            // Building Geometries
+            // Increased heights for all building types
+            buildingGeometries.small = new THREE.BoxGeometry(10, 30, 10);
+            buildingGeometries.tall = new THREE.BoxGeometry(15, 80, 15);
+            buildingGeometries.wide = new THREE.BoxGeometry(30, 25, 20);
+        }
+
+        // Deterministic pseudo-random for chunk generation
+        function pseudoRandom(x, z) {
+            const val = Math.sin(x * 12.9898 + z * 78.233) * 43758.5453;
+            return val - Math.floor(val);
+        }
+
+        // Function to determine if a point is on a "Highway"
+        function getRoadValue(x, z) {
+            // Scale controls the size of the curves. Smaller = bigger curves.
+            const scale = 0.005;
+
+            // We sum a few sine waves to get organic looking curves
+            // The logic: if (sin(x) + cos(z)) is close to 0, it's a "ridge" or road.
+            const v1 = Math.sin(x * scale) + Math.cos(z * scale);
+            const v2 = Math.sin(x * scale * 0.5 + z * scale * 0.2) * 0.5;
+
+            // The absolute value creates the "road" corridor where values are near zero
+            return Math.abs(v1 + v2);
+        }
+
+        function updateChunks() {
+            if (!player) return;
+
+            const px = player.position.x;
+            const pz = player.position.z;
+
+            const currentChunkX = Math.floor(px / CHUNK_SIZE + 0.5);
+            const currentChunkZ = Math.floor(pz / CHUNK_SIZE + 0.5);
+
+            const newKeys = new Set();
+
+            // Generate chunks in range
+            for (let x = -CHUNK_RENDER_DIST; x <= CHUNK_RENDER_DIST; x++) {
+                for (let z = -CHUNK_RENDER_DIST; z <= CHUNK_RENDER_DIST; z++) {
+                    const cx = currentChunkX + x;
+                    const cz = currentChunkZ + z;
+                    const key = `${cx},${cz}`;
+                    newKeys.add(key);
+
+                    if (!activeChunks.has(key)) {
+                        createChunk(cx, cz);
+                    }
+                }
+            }
+
+            // Remove old chunks
+            for (const [key, chunkData] of activeChunks) {
+                if (!newKeys.has(key)) {
+                    scene.remove(chunkData.mesh);
+
+                    // Remove obstacles associated with this chunk
+                    if (chunkData.obstacles) {
+                        for (const obs of chunkData.obstacles) {
+                            const idx = staticObstacles.indexOf(obs);
+                            if (idx > -1) staticObstacles.splice(idx, 1);
+                        }
+                    }
+
+                    activeChunks.delete(key);
+                }
+            }
+        }
+
+        function createChunk(cx, cz) {
+            const group = new THREE.Group();
+
+            // Chunk base position
+            const chunkX = cx * CHUNK_SIZE;
+            const chunkZ = cz * CHUNK_SIZE;
+            group.position.set(chunkX, 0, chunkZ);
+
+            // 1. Ground
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            group.add(ground);
+
+            // 2. Generate Highways
+            // We use InstancedMesh for performance since there are many tiles
+            const roadMatrices = [];
+            const lineMatrices = [];
+
+            // Track where roads are so we don't put buildings there
+            // Key format: "localX,localZ"
+            const roadSet = new Set();
+
+            const halfSize = CHUNK_SIZE / 2;
+            const LINE_THRESH = 0.03; // How wide the center line is
+
+            // Iterate over grid in the chunk
+            for (let lx = -halfSize; lx < halfSize; lx += ROAD_TILE_SIZE) {
+                for (let lz = -halfSize; lz < halfSize; lz += ROAD_TILE_SIZE) {
+                    const wx = chunkX + lx + ROAD_TILE_SIZE / 2;
+                    const wz = chunkZ + lz + ROAD_TILE_SIZE / 2;
+
+                    const val = getRoadValue(wx, wz);
+
+                    if (val < ROAD_WIDTH_THRESHOLD) {
+                        // It's a road
+                        const dummy = new THREE.Object3D();
+                        dummy.position.set(lx + ROAD_TILE_SIZE / 2, 0.1, lz + ROAD_TILE_SIZE / 2);
+                        dummy.rotation.x = -Math.PI / 2;
+                        dummy.updateMatrix();
+                        roadMatrices.push(dummy.matrix.clone());
+
+                        roadSet.add(`${lx + ROAD_TILE_SIZE / 2},${lz + ROAD_TILE_SIZE / 2}`);
+
+                        // Center line
+                        if (val < LINE_THRESH) {
+                            const dummyL = new THREE.Object3D();
+                            dummyL.position.set(lx + ROAD_TILE_SIZE / 2, 0.15, lz + ROAD_TILE_SIZE / 2);
+                            dummyL.rotation.x = -Math.PI / 2;
+                            // Add a random rotation to lines to make them look less grid-like? 
+                            // No, grid alignment is better for voxel style unless we do complex meshing.
+                            dummyL.updateMatrix();
+                            lineMatrices.push(dummyL.matrix.clone());
+                        }
+                    }
+                }
+            }
+
+            if (roadMatrices.length > 0) {
+                const roadMesh = new THREE.InstancedMesh(roadTileGeometry, roadMaterial, roadMatrices.length);
+                roadMesh.receiveShadow = true;
+                for (let i = 0; i < roadMatrices.length; i++) {
+                    roadMesh.setMatrixAt(i, roadMatrices[i]);
+                }
+                group.add(roadMesh);
+            }
+
+            if (lineMatrices.length > 0) {
+                const lineMesh = new THREE.InstancedMesh(lineTileGeometry, lineMaterial, lineMatrices.length);
+                for (let i = 0; i < lineMatrices.length; i++) {
+                    lineMesh.setMatrixAt(i, lineMatrices[i]);
+                }
+                group.add(lineMesh);
+            }
+
+            // 3. Procedural Buildings
+            let seed = pseudoRandom(cx, cz);
+            const obstacles = [];
+
+            // 10% chance of being an "Dense" chunk, else "Rural"
+            const numObjects = seed > 0.8 ? 15 : (seed > 0.4 ? 4 : 2);
+
+            for (let i = 0; i < numObjects; i++) {
+                seed = pseudoRandom(seed, i);
+
+                // Random pos within chunk
+                const bx = (pseudoRandom(seed * 10, i) - 0.5) * (CHUNK_SIZE - 20);
+                const bz = (pseudoRandom(seed * 20, i) - 0.5) * (CHUNK_SIZE - 20);
+
+                // Snap to road grid for checking
+                const snapX = Math.round(bx / ROAD_TILE_SIZE) * ROAD_TILE_SIZE + ROAD_TILE_SIZE / 2;
+                const snapZ = Math.round(bz / ROAD_TILE_SIZE) * ROAD_TILE_SIZE + ROAD_TILE_SIZE / 2;
+
+                // Check if this spot or neighbors are road
+                let onRoad = false;
+                if (roadSet.has(`${snapX},${snapZ}`)) onRoad = true;
+
+                // Extra check: check actual world coord against road function just in case
+                if (!onRoad) {
+                    const worldX = chunkX + bx;
+                    const worldZ = chunkZ + bz;
+                    if (getRoadValue(worldX, worldZ) < ROAD_WIDTH_THRESHOLD + 0.1) {
+                        onRoad = true; // Buffer zone
+                    }
+                }
+
+                if (onRoad) continue; // Don't place building
+
+                let geo, radius, height;
+
+                // Select building type randomly
+                if (seed < 0.3) {
+                    geo = buildingGeometries.small;
+                    radius = 8;
+                    height = 30;
+                } else if (seed < 0.6) {
+                    geo = buildingGeometries.tall;
+                    radius = 10;
+                    height = 80;
+                } else {
+                    geo = buildingGeometries.wide;
+                    radius = 15;
+                    height = 25;
+                }
+
+                // New Color Selection: Light Grey or Sky Blue
+                const matColor = seed > 0.5 ? 0xcccccc : 0xa0d8ef;
+
+                const mat = new THREE.MeshStandardMaterial({ color: matColor });
+                const mesh = new THREE.Mesh(geo, mat);
+
+                // Rotation
+                const rot = (pseudoRandom(seed * 30, i) * Math.PI * 4);
+
+                // Position based on new height
+                mesh.position.set(bx, geo.parameters.height / 2, bz);
+                mesh.rotation.y = rot;
+
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                group.add(mesh);
+
+                // Add collision data
+                const worldX = chunkX + bx;
+                const worldZ = chunkZ + bz;
+
+                obstacles.push({
+                    x: worldX,
+                    z: worldZ,
+                    radiusSq: radius * radius,
+                    isBuilding: true,
+                    rotation: rot,
+                    height: height
+                });
+            }
+
+            scene.add(group);
+
+            // Store chunk data
+            activeChunks.set(`${cx},${cz}`, {
+                mesh: group,
+                obstacles: obstacles
+            });
+
+            // Register obstacles globally
+            obstacles.forEach(o => staticObstacles.push(o));
+        }
+
+        // --- Entities ---
+
+        function initPedestrianGeometries() {
+            pedGeometries.head = new THREE.BoxGeometry(0.6, 0.6, 0.6);
+            pedGeometries.body = new THREE.BoxGeometry(0.8, 1.2, 0.5);
+            pedGeometries.arm = new THREE.BoxGeometry(0.25, 1.0, 0.25);
+            pedGeometries.arm.translate(0, -0.4, 0);
+            pedGeometries.leg = new THREE.BoxGeometry(0.3, 1.2, 0.3);
+            pedGeometries.leg.translate(0, -0.6, 0);
+        }
+
+        function createPedestrianData() {
+            // Start random
+            const angle = Math.random() * Math.PI * 2;
+            const dist = Math.random() * 200 + 50;
+
+            const pedData = {
+                position: new THREE.Vector3(Math.sin(angle) * dist, 2.0, Math.cos(angle) * dist),
+                velocity: new THREE.Vector3((Math.random() - 0.5) * 0.2, 0, (Math.random() - 0.5) * 0.2),
+                rotation: Math.random() * Math.PI * 2,
+                animPhase: Math.random() * 100,
+                isActive: false,
+                mesh: null,
+                colors: {
+                    shirt: Math.random() * 0xffffff,
+                    pants: Math.random() * 0xffffff,
+                    skin: 0xffccaa
+                }
+            };
+            allPedestrians.push(pedData);
+        }
+
+        function buildPedestrianMesh(data) {
+            const group = new THREE.Group();
+
+            const skinMat = new THREE.MeshStandardMaterial({ color: data.colors.skin });
+            const shirtMat = new THREE.MeshStandardMaterial({ color: data.colors.shirt });
+            const pantsMat = new THREE.MeshStandardMaterial({ color: data.colors.pants });
+
+            const head = new THREE.Mesh(pedGeometries.head, skinMat);
+            head.position.y = 0.9;
+            head.castShadow = true;
+            group.add(head);
+
+            const body = new THREE.Mesh(pedGeometries.body, shirtMat);
+            body.position.y = 0;
+            body.castShadow = true;
+            group.add(body);
+
+            const armL = new THREE.Mesh(pedGeometries.arm, shirtMat);
+            armL.position.set(-0.55, 0.4, 0);
+            armL.castShadow = true;
+            group.add(armL);
+
+            const armR = new THREE.Mesh(pedGeometries.arm, shirtMat);
+            armR.position.set(0.55, 0.4, 0);
+            armR.castShadow = true;
+            group.add(armR);
+
+            const legL = new THREE.Mesh(pedGeometries.leg, pantsMat);
+            legL.position.set(-0.25, -0.6, 0);
+            legL.castShadow = true;
+            group.add(legL);
+
+            const legR = new THREE.Mesh(pedGeometries.leg, pantsMat);
+            legR.position.set(0.25, -0.6, 0);
+            legR.castShadow = true;
+            group.add(legR);
+
+            group.userData = { limbs: { armL, armR, legL, legR } };
+            return group;
+        }
+
+        // --- CAR MODELS ---
+
+        function buildTruckMesh() {
+            const group = new THREE.Group();
+
+            // Materials
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.3, metalness: 0.8 });
+            const cabinMat = new THREE.MeshStandardMaterial({ color: 0x00aaff, roughness: 0.0, metalness: 0.9, emissive: 0x004466 });
+            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 });
+            const rimMat = new THREE.MeshStandardMaterial({ color: 0x00ffcc, emissive: 0x00ffcc, emissiveIntensity: 0.5 });
+            const tailLightMat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 2 });
+            const headLightMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 2 });
+
+            // Chassis
+            const chassisGeo = new THREE.BoxGeometry(2.2, 0.8, 4);
+            const chassis = new THREE.Mesh(chassisGeo, bodyMat);
+            chassis.position.y = 0.6;
+            group.add(chassis);
+
+            // Cabin
+            const cabinGeo = new THREE.BoxGeometry(1.6, 0.6, 2);
+            const cabin = new THREE.Mesh(cabinGeo, cabinMat);
+            cabin.position.set(0, 1.2, 0);
+            group.add(cabin);
+
+            // Spoiler
+            const spoilerStalkGeo = new THREE.BoxGeometry(0.2, 0.5, 0.5);
+            const spoilerWingGeo = new THREE.BoxGeometry(2.4, 0.1, 0.8);
+
+            const stalkL = new THREE.Mesh(spoilerStalkGeo, bodyMat);
+            stalkL.position.set(-0.8, 1.1, -1.8);
+            group.add(stalkL);
+            const stalkR = new THREE.Mesh(spoilerStalkGeo, bodyMat);
+            stalkR.position.set(0.8, 1.1, -1.8);
+            group.add(stalkR);
+            const wing = new THREE.Mesh(spoilerWingGeo, bodyMat);
+            wing.position.set(0, 1.4, -1.8);
+            group.add(wing);
+
+            // Wheels
+            const wheelGeo = new THREE.BoxGeometry(0.4, 0.8, 0.8);
+            const positions = [
+                { x: -1.2, z: 1.2 }, { x: 1.2, z: 1.2 },
+                { x: -1.2, z: -1.2 }, { x: 1.2, z: -1.2 }
+            ];
+
+            positions.forEach(pos => {
+                const wheel = new THREE.Mesh(wheelGeo, wheelMat);
+                wheel.position.set(pos.x, 0.4, pos.z);
+                group.add(wheel);
+                const rim = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.4, 0.4), rimMat);
+                rim.position.set(pos.x + (pos.x > 0 ? 0.2 : -0.2), 0.4, pos.z);
+                group.add(rim);
+            });
+
+            // Lights
+            const headLightGeo = new THREE.BoxGeometry(0.6, 0.2, 0.1);
+            const headL = new THREE.Mesh(headLightGeo, headLightMat);
+            headL.position.set(-0.6, 0.7, 2.0);
+            group.add(headL);
+            const headR = new THREE.Mesh(headLightGeo, headLightMat);
+            headR.position.set(0.6, 0.7, 2.0);
+            group.add(headR);
+            const tailGeo = new THREE.BoxGeometry(2.0, 0.2, 0.1);
+            const tail = new THREE.Mesh(tailGeo, tailLightMat);
+            tail.position.set(0, 0.8, -2.0);
+            group.add(tail);
+
+            return group;
+        }
+
+        function buildHypercarMesh() {
+            const group = new THREE.Group();
+
+            // Materials - Yellow Pagani Style
+            const bodyColor = 0xFFD700; // Bright Gold/Yellow
+            const carbonColor = 0x111111;
+            const glassColor = 0x111111;
+
+            const bodyMat = new THREE.MeshStandardMaterial({ color: bodyColor, roughness: 0.2, metalness: 0.6 });
+            const carbonMat = new THREE.MeshStandardMaterial({ color: carbonColor, roughness: 0.5, metalness: 0.5 });
+            const glassMat = new THREE.MeshStandardMaterial({ color: glassColor, roughness: 0.1, metalness: 0.9 });
+            const tailLightMat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 2 });
+            const exhaustMat = new THREE.MeshStandardMaterial({ color: 0x8888ff, metalness: 1.0, roughness: 0.2 });
+
+            // 1. Low Main Chassis
+            // Length: 4.5, Width: 2.0, Height: 0.5
+            const chassisGeo = new THREE.BoxGeometry(2.0, 0.5, 4.4);
+            const chassis = new THREE.Mesh(chassisGeo, bodyMat);
+            chassis.position.y = 0.5;
+            group.add(chassis);
+
+            // 2. Bubble Cabin (Teardrop shape approximation with voxels)
+            // Center Cabin
+            const cabinGeo = new THREE.BoxGeometry(1.4, 0.5, 2.0);
+            const cabin = new THREE.Mesh(cabinGeo, glassMat);
+            cabin.position.set(0, 1.0, 0.2); // Slightly forward
+            group.add(cabin);
+
+            // 3. Wide Wheel Arches (Fenders)
+            const fenderGeoFront = new THREE.BoxGeometry(0.8, 0.6, 1.2);
+            const fenderGeoRear = new THREE.BoxGeometry(0.9, 0.7, 1.4);
+
+            // Front Left
+            const fl = new THREE.Mesh(fenderGeoFront, bodyMat);
+            fl.position.set(-1.2, 0.5, 1.4);
+            group.add(fl);
+            // Front Right
+            const fr = new THREE.Mesh(fenderGeoFront, bodyMat);
+            fr.position.set(1.2, 0.5, 1.4);
+            group.add(fr);
+            // Rear Left (Wider hips)
+            const rl = new THREE.Mesh(fenderGeoRear, bodyMat);
+            rl.position.set(-1.25, 0.6, -1.2);
+            group.add(rl);
+            // Rear Right
+            const rr = new THREE.Mesh(fenderGeoRear, bodyMat);
+            rr.position.set(1.25, 0.6, -1.2);
+            group.add(rr);
+
+            // 4. Side Skirts (Carbon)
+            const skirtGeo = new THREE.BoxGeometry(0.4, 0.2, 2.0);
+            const skirtL = new THREE.Mesh(skirtGeo, carbonMat);
+            skirtL.position.set(-1.1, 0.3, 0.1);
+            group.add(skirtL);
+            const skirtR = new THREE.Mesh(skirtGeo, carbonMat);
+            skirtR.position.set(1.1, 0.3, 0.1);
+            group.add(skirtR);
+
+            // 5. Huge Rear Wing (Pagani style active aero flaps + wing)
+            // Central pillars
+            const wingPillarGeo = new THREE.BoxGeometry(0.2, 0.6, 0.4);
+            const wpL = new THREE.Mesh(wingPillarGeo, carbonMat);
+            wpL.position.set(-0.5, 0.8, -1.8);
+            group.add(wpL);
+            const wpR = new THREE.Mesh(wingPillarGeo, carbonMat);
+            wpR.position.set(0.5, 0.8, -1.8);
+            group.add(wpR);
+
+            // The Wing Blade
+            const wingBladeGeo = new THREE.BoxGeometry(2.6, 0.1, 0.8);
+            const wing = new THREE.Mesh(wingBladeGeo, carbonMat);
+            wing.position.set(0, 1.1, -1.9);
+            group.add(wing);
+
+            // 6. Distinctive Center Quad Exhaust
+            const exhaustBoxGeo = new THREE.BoxGeometry(0.6, 0.4, 0.1);
+            const exhaustBox = new THREE.Mesh(exhaustBoxGeo, carbonMat);
+            exhaustBox.position.set(0, 0.6, -2.25);
+            group.add(exhaustBox);
+
+            // The pipes (4 small dots/voxels)
+            const pipeGeo = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+            const pipeOffsets = [
+                [-0.15, 0.1], [0.15, 0.1],
+                [-0.15, -0.1], [0.15, -0.1]
+            ];
+            pipeOffsets.forEach(off => {
+                const pipe = new THREE.Mesh(pipeGeo, exhaustMat);
+                pipe.position.set(off[0], 0.6 + off[1], -2.31); // Slightly protruding
+                group.add(pipe);
+            });
+
+            // 7. Tail Lights (Triple vertical strips or circles)
+            const tlGeo = new THREE.BoxGeometry(0.1, 0.4, 0.1);
+            const tlL = new THREE.Mesh(tlGeo, tailLightMat);
+            tlL.position.set(-1.4, 0.7, -1.9);
+            group.add(tlL);
+            const tlR = new THREE.Mesh(tlGeo, tailLightMat);
+            tlR.position.set(1.4, 0.7, -1.9);
+            group.add(tlR);
+
+            // 8. Wheels (Wider/Lower)
+            const wheelGeo = new THREE.BoxGeometry(0.6, 0.8, 0.8);
+            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9 });
+            const rimMat = new THREE.MeshStandardMaterial({ color: 0x000000 }); // Black rims
+
+            const positions = [
+                { x: -1.3, z: 1.4 }, { x: 1.3, z: 1.4 },
+                { x: -1.35, z: -1.2 }, { x: 1.35, z: -1.2 }
+            ];
+
+            positions.forEach(pos => {
+                const wheel = new THREE.Mesh(wheelGeo, wheelMat);
+                wheel.position.set(pos.x, 0.4, pos.z);
+                group.add(wheel);
+
+                // Rim detail
+                const rim = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, 0.5), rimMat);
+                rim.position.set(pos.x + (pos.x > 0 ? 0.3 : -0.3), 0.4, pos.z);
+                group.add(rim);
+            });
+
+            return group;
+        }
+
+        function createPlayer() {
+            // Physics container
+            player = new THREE.Group();
+            player.position.set(0, PLAYER_BASE_Y, 0);
+            scene.add(player);
+
+            // Load default car
+            loadCarModel('truck');
+        }
+
+        function loadCarModel(type) {
+            // Remove existing mesh if any
+            if (currentCarMesh) {
+                player.remove(currentCarMesh);
+            }
+
+            carType = type;
+
+            if (type === 'truck') {
+                currentCarMesh = buildTruckMesh();
+                currentCarMesh.scale.set(2.1, 1.5, 1.5);
+                // Adjust physics constants for Truck
+                PLAYER_SPEED = 0.25;
+                MAX_SPEED = 2.0;
+            } else if (type === 'hypercar') {
+                currentCarMesh = buildHypercarMesh();
+                currentCarMesh.scale.set(1.8, 1.8, 1.8); // Scale to fit world
+                // Adjust physics constants for Hypercar
+                PLAYER_SPEED = 0.45; // Faster acceleration
+                MAX_SPEED = 3.5; // Higher top speed
+            }
+
+            // Enable shadows for the new mesh
+            currentCarMesh.traverse((child) => {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                }
+            });
+
+            player.add(currentCarMesh);
+        }
+
+        function toggleCarModel() {
+            const newType = (carType === 'truck') ? 'hypercar' : 'truck';
+            loadCarModel(newType);
+
+            // Little bounce effect
+            velocity.y = 0.5;
+            isAirborne = true;
+
+            // Update UI to show the *other* car
+            updateMiniatureModel();
+        }
+
+        function onMouseMoveCam(e) {
+            const dx = e.clientX - camLastPos.x;
+            const dy = e.clientY - camLastPos.y;
+            updateCameraAngle(dx, dy);
+            camLastPos = { x: e.clientX, y: e.clientY };
+        }
+
+        // Mouse Down for Desktop Interactions
+        function onMouseDown(e) {
+            // Check UI first
+            if (checkMiniatureClick(e.clientX, e.clientY)) {
+                return; // Handled
+            }
+
+            if (e.target === centerBtn) return;
+
+            // Otherwise Camera Drag
+            if (e.clientX < window.innerWidth / 2) {
+                // Logic handled by joystick logic usually
+            } else {
+                isManualCamera = true;
+                manualCamTimer = 120;
+                camLastPos = { x: e.clientX, y: e.clientY };
+                document.addEventListener('mousemove', onMouseMoveCam);
+                document.addEventListener('mouseup', () => {
+                    document.removeEventListener('mousemove', onMouseMoveCam);
+                });
+            }
+        }
+
+        function onTouchStart(e) {
+            e.preventDefault();
+            const touches = e.changedTouches;
+            const zoneRect = movementZone.getBoundingClientRect();
+            const zoneCenter = {
+                x: zoneRect.left + zoneRect.width / 2,
+                y: zoneRect.top + zoneRect.height / 2
+            };
+
+            for (let i = 0; i < touches.length; i++) {
+                const t = touches[i];
+
+                // Check UI click
+                if (checkMiniatureClick(t.clientX, t.clientY)) continue;
+
+                const dx = t.clientX - zoneCenter.x;
+                const dy = t.clientY - zoneCenter.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (moveTouchId === null && dist < joystickRadius * 1.5) {
+                    moveTouchId = t.identifier;
+                    updateJoystick(t.clientX, t.clientY, zoneCenter);
+                } else if (camTouchId === null && t.target !== centerBtn) {
+                    camTouchId = t.identifier;
+                    isManualCamera = true;
+                    manualCamTimer = 120;
+                    camLastPos = { x: t.clientX, y: t.clientY };
+                }
+            }
+        }
+
+        function onTouchMove(e) {
+            e.preventDefault();
+            const touches = e.changedTouches;
+            const zoneRect = movementZone.getBoundingClientRect();
+            const zoneCenter = {
+                x: zoneRect.left + zoneRect.width / 2,
+                y: zoneRect.top + zoneRect.height / 2
+            };
+
+            for (let i = 0; i < touches.length; i++) {
+                const t = touches[i];
+                if (t.identifier === moveTouchId) {
+                    updateJoystick(t.clientX, t.clientY, zoneCenter);
+                } else if (t.identifier === camTouchId) {
+                    const dx = t.clientX - camLastPos.x;
+                    const dy = t.clientY - camLastPos.y;
+                    updateCameraAngle(dx, dy);
+                    camLastPos = { x: t.clientX, y: t.clientY };
+                    isManualCamera = true;
+                    manualCamTimer = 120;
+                }
+            }
+        }
+
+        function onTouchEnd(e) {
+            e.preventDefault();
+            const touches = e.changedTouches;
+            for (let i = 0; i < touches.length; i++) {
+                if (touches[i].identifier === moveTouchId) {
+                    moveTouchId = null;
+                    moveInput = { x: 0, y: 0 };
+                    stickKnob.style.transform = `translate(-50%, -50%)`;
+                }
+                if (touches[i].identifier === camTouchId) {
+                    camTouchId = null;
+                }
+            }
+        }
+
+        function updateJoystick(clientX, clientY, center) {
+            let dx = clientX - center.x;
+            let dy = clientY - center.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            if (distance > joystickRadius) {
+                const ratio = joystickRadius / distance;
+                dx *= ratio;
+                dy *= ratio;
+            }
+            stickKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+            moveInput.x = dx / joystickRadius;
+            moveInput.y = dy / joystickRadius;
+        }
+
+        function updateCameraAngle(dx, dy) {
+            const sensitivity = 0.005;
+            cameraAngle -= dx * sensitivity;
+            cameraVerticalAngle -= dy * sensitivity;
+            cameraVerticalAngle = Math.max(0.1, Math.min(Math.PI / 2 - 0.1, cameraVerticalAngle));
+        }
+
+        function centerCamera() {
+            if (!player) return;
+            cameraAngle = player.rotation.y + Math.PI;
+            cameraVerticalAngle = 0.5;
+            isManualCamera = false;
+            manualCamTimer = 0;
+        }
+
+        function updateHeadingIndicator() {
+            if (!player) return;
+            const carRot = player.rotation.y;
+            const camRot = cameraAngle;
+            const diff = carRot - camRot;
+            const screenX = Math.sin(diff);
+            const screenY = -Math.cos(diff);
+            const angleRad = Math.atan2(screenX, screenY);
+            const angleDeg = angleRad * (180 / Math.PI);
+            headingArrow.style.transform = `rotate(${angleDeg}deg)`;
+        }
+
+        // --- Game Loop Logic ---
+        function shortestAngleDist(a, b) {
+            let diff = b - a;
+            while (diff > Math.PI) diff -= Math.PI * 2;
+            while (diff < -Math.PI) diff += Math.PI * 2;
+            return diff;
+        }
+
+        function updatePhysics() {
+            if (isGameOver) return;
+
+            // Steering
+            if (Math.abs(moveInput.x) > 0.1) {
+                // Hypercar turns sharper at speed
+                const turnFactor = carType === 'hypercar' ? 0.09 : 0.07;
+                player.rotation.y -= moveInput.x * turnFactor;
+            }
+
+            // Gas/Brake
+            if (Math.abs(moveInput.y) > 0.1) {
+                const throttle = -moveInput.y;
+                const rotation = player.rotation.y;
+                const accelX = Math.sin(rotation) * throttle * PLAYER_SPEED;
+                const accelZ = Math.cos(rotation) * throttle * PLAYER_SPEED;
+                velocity.x += accelX;
+                velocity.z += accelZ;
+            }
+
+            // Friction (Horizontal)
+            velocity.x *= FRICTION;
+            velocity.z *= FRICTION;
+
+            // Gravity (Vertical)
+            velocity.y -= GRAVITY;
+
+            // Limit horizontal speed
+            const hSpeed = Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
+            if (hSpeed > MAX_SPEED) {
+                const ratio = MAX_SPEED / hSpeed;
+                velocity.x *= ratio;
+                velocity.z *= ratio;
+            }
+
+            // Apply Velocity
+            const prevPos = player.position.clone();
+            player.position.add(velocity);
+
+            // Ground Collision
+            if (player.position.y < PLAYER_BASE_Y) {
+                player.position.y = PLAYER_BASE_Y;
+                velocity.y = 0;
+                isAirborne = false;
+            } else {
+                isAirborne = true;
+            }
+
+            // Object Collisions
+            const pRadiusSq = 4.0; // Car radius roughly 2x2
+
+            for (let i = 0; i < staticObstacles.length; i++) {
+                const obs = staticObstacles[i];
+
+                // Vertical clearance check: If player is above the building, no collision
+                if (player.position.y > obs.height) continue;
+
+                const dx = player.position.x - obs.x;
+                const dz = player.position.z - obs.z;
+                const distSq = dx * dx + dz * dz;
+
+                if (distSq < obs.radiusSq + pRadiusSq) {
+
+                    // CRASH LOGIC
+                    explode(player.position, 0xff4400);
+                    explode(player.position, 0xffee00);
+
+                    isGameOver = true;
+                    player.visible = false;
+                    velocity.set(0, 0, 0);
+
+                    // Update UI
+                    const instr = document.querySelector('.instructions');
+                    const oldText = instr.innerHTML;
+                    instr.innerHTML = "<span style='color:red; font-size:20px; font-weight:bold;'>CRASHED!</span>";
+                    instr.style.opacity = 1;
+                    instr.style.animation = 'none';
+
+                    setTimeout(() => resetGame(oldText), 3000);
+                    return;
+                }
+            }
+        }
+
+        function resetGame(oldText) {
+            isGameOver = false;
+            player.visible = true;
+            player.position.set(0, PLAYER_BASE_Y, 0);
+            player.rotation.set(0, 0, 0);
+            velocity.set(0, 0, 0);
+            moveInput = { x: 0, y: 0 }; // Reset stick input
+
+            // Reset Score
+            score = 0;
+            scoreElement.innerText = "Score: 0";
+
+            // Reset Camera
+            centerCamera();
+
+            // Reset UI
+            const instr = document.querySelector('.instructions');
+            instr.innerHTML = oldText || "Infinite Procedural Map<br>Left Stick: Drive & Steer";
+            // Restart fade out
+            instr.style.animation = 'none';
+            instr.offsetHeight; /* trigger reflow */
+            instr.style.animation = 'fadeOut 5s forwards';
+            instr.style.animationDelay = '2s';
+        }
+
+        function updatePedestrians() {
+            if (isGameOver) return; // Stop updating pedestrians when dead
+            const time = Date.now() * 0.005;
+            const playerPos = player.position;
+            const SPAWN_RANGE = 300; // Keep them within this box around player
+
+            // Clear active list
+            activeObstacles.length = 0;
+
+            for (let i = 0; i < allPedestrians.length; i++) {
+                const ped = allPedestrians[i];
+
+                // 1. Move
+                ped.position.add(ped.velocity);
+
+                // 2. Infinite Wrapping (Treadmill Effect)
+                // If too far left/right/front/back, wrap to other side
+                if (ped.position.x > playerPos.x + SPAWN_RANGE) ped.position.x -= SPAWN_RANGE * 2;
+                if (ped.position.x < playerPos.x - SPAWN_RANGE) ped.position.x += SPAWN_RANGE * 2;
+                if (ped.position.z > playerPos.z + SPAWN_RANGE) ped.position.z -= SPAWN_RANGE * 2;
+                if (ped.position.z < playerPos.z - SPAWN_RANGE) ped.position.z += SPAWN_RANGE * 2;
+
+                // 3. Cull & Render
+                const dx = ped.position.x - playerPos.x;
+                const dz = ped.position.z - playerPos.z;
+                const distSq = dx * dx + dz * dz;
+
+                if (distSq < CULL_DIST_SQ) {
+                    // Show
+                    if (!ped.mesh) {
+                        ped.mesh = buildPedestrianMesh(ped);
+                        ped.mesh.rotation.y = ped.rotation;
+                    }
+                    if (!ped.isActive) {
+                        scene.add(ped.mesh);
+                        ped.isActive = true;
+                    }
+                    ped.mesh.position.copy(ped.position);
+
+                    // Animation
+                    const phase = time + ped.animPhase;
+                    const swing = Math.sin(phase) * 0.6;
+                    ped.mesh.userData.limbs.legL.rotation.x = swing;
+                    ped.mesh.userData.limbs.legR.rotation.x = -swing;
+                    ped.mesh.userData.limbs.armL.rotation.x = -swing;
+                    ped.mesh.userData.limbs.armR.rotation.x = swing;
+
+                    activeObstacles.push(ped);
+                } else {
+                    // Hide
+                    if (ped.isActive) {
+                        scene.remove(ped.mesh);
+                        ped.isActive = false;
+                    }
+                }
+            }
+        }
+
+        function checkCollisions() {
+            if (isGameOver) return;
+            const collisionThresholdSq = 16.0;
+
+            for (let i = activeObstacles.length - 1; i >= 0; i--) {
+                const pedData = activeObstacles[i];
+
+                const dx = player.position.x - pedData.position.x;
+                const dz = player.position.z - pedData.position.z;
+                const distSq = dx * dx + dz * dz;
+
+                if (distSq < collisionThresholdSq) {
+                    explode(pedData.position);
+
+                    // Teleport away instead of deleting
+                    pedData.position.x = player.position.x + (Math.random() - 0.5) * 300;
+                    pedData.position.z = player.position.z + (Math.random() - 0.5) * 300;
+
+                    // Ensure they spawn outside view initially
+                    // (Simple random respawn for now)
+
+                    if (pedData.isActive) {
+                        scene.remove(pedData.mesh);
+                        pedData.isActive = false;
+                    }
+
+                    score++;
+                    scoreElement.innerText = "Score: " + score;
+                }
+            }
+        }
+
+        function explode(pos, color = 0xffffff) {
+            const pGeo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+            const pMat = new THREE.MeshBasicMaterial({ color: color });
+            for (let k = 0; k < 8; k++) {
+                const p = new THREE.Mesh(pGeo, pMat);
+                p.position.copy(pos);
+                p.position.y += 1.5;
+                p.userData.velocity = new THREE.Vector3(
+                    (Math.random() - 0.5) * 1.0,
+                    Math.random() * 1.0 + 0.2,
+                    (Math.random() - 0.5) * 1.0
+                );
+                p.userData.life = 1.0;
+                scene.add(p);
+                particles.push(p);
+            }
+        }
+
+        function updateParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.position.add(p.userData.velocity);
+                p.userData.velocity.y -= 0.03;
+                p.rotation.x += 0.1;
+                p.rotation.y += 0.1;
+                if (p.position.y < 0) {
+                    p.userData.velocity.y *= -0.5;
+                    p.position.y = 0;
+                }
+                p.userData.life -= 0.05;
+                p.scale.setScalar(p.userData.life);
+                if (p.userData.life <= 0) {
+                    scene.remove(p);
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        function updateCamera() {
+            if (isManualCamera) {
+                manualCamTimer--;
+                if (manualCamTimer <= 0) isManualCamera = false;
+            } else {
+                if (velocity.length() > 0.1) {
+                    const targetAngle = player.rotation.y + Math.PI;
+                    const dist = shortestAngleDist(cameraAngle, targetAngle);
+                    cameraAngle += dist * 0.05;
+                    const targetPitch = 0.5;
+                    cameraVerticalAngle += (targetPitch - cameraVerticalAngle) * 0.02;
+                }
+            }
+
+            const hDist = CAMERA_DIST * Math.cos(cameraVerticalAngle);
+            const vDist = CAMERA_DIST * Math.sin(cameraVerticalAngle);
+            const offsetX = hDist * Math.sin(cameraAngle);
+            const offsetZ = hDist * Math.cos(cameraAngle);
+            const targetPos = new THREE.Vector3(
+                player.position.x + offsetX,
+                player.position.y + vDist,
+                player.position.z + offsetZ
+            );
+            camera.position.lerp(targetPos, 0.1);
+            camera.lookAt(player.position);
+        }
+
+        function updateFPS() {
+            frameCount++;
+            const now = performance.now();
+            if (now - lastTime >= 1000) {
+                fpsElement.innerText = "FPS: " + frameCount;
+                frameCount = 0;
+                lastTime = now;
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            updateFPS();
+
+            if (player) {
+                updatePhysics();
+                updateChunks(); // Procedural Map Generation
+                updatePedestrians();
+                checkCollisions();
+                updateParticles();
+                updateCamera();
+                updateHeadingIndicator();
+
+                // Update Sun Position to follow player (infinite shadows)
+                if (scene.userData.sun) {
+                    scene.userData.sun.position.set(player.position.x + 50, 100, player.position.z + 50);
+                    scene.userData.sun.target.position.copy(player.position);
+                    scene.userData.sun.target.updateMatrixWorld();
+                }
+
+                // Bounce anim only if on ground
+                if (!isAirborne) {
+                    const speed = Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
+                    if (speed > 0.01) {
+                        // Blend physics Y with bounce (Suspension)
+                        const bounceFreq = carType === 'hypercar' ? 0.03 : 0.015; // Stiffer suspension on super car
+                        const bounceAmp = carType === 'hypercar' ? 0.02 : 0.05;
+                        player.position.y = PLAYER_BASE_Y + Math.sin(Date.now() * bounceFreq) * bounceAmp;
+                    }
+                }
+
+                // Update coords
+                coordElement.innerText = `X: ${Math.round(player.position.x)} Z: ${Math.round(player.position.z)}`;
+            }
+
+            // --- RENDER MAIN SCENE ---
+            renderer.clear();
+            renderer.render(scene, camera);
+
+            // --- RENDER UI SCENE ---
+            if (miniatureGroup) {
+                // Rotate miniature
+                miniatureGroup.rotation.y += 0.02;
+            }
+            renderer.clearDepth(); // Clear depth so UI renders ON TOP
+            renderer.render(uiScene, uiCamera);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+
+            // Update UI camera too
+            uiCamera.aspect = window.innerWidth / window.innerHeight;
+            uiCamera.updateProjectionMatrix();
+            updateMiniaturePosition();
+
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+    </script>
+</body>
+
+</html>
