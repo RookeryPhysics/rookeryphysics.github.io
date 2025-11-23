@@ -4,20 +4,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
-    <title>Infinite Voxel Driver - Day/Night</title>
+    <title>Infinite Voxel Driver - Turbo Optimized</title>
     <style>
         body {
             margin: 0;
             overflow: hidden;
-            /* Prevent scrolling */
             background-color: #87CEEB;
-            /* Default Day Sky Blue */
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             user-select: none;
-            /* Prevent text selection on long press */
             -webkit-user-select: none;
             touch-action: none;
-            /* Prevent browser zooming/scrolling */
         }
 
         #game-container {
@@ -234,39 +230,24 @@
 
 <body>
 
-    <!-- UI Overlay -->
     <div id="ui-layer">
         <div id="fps-counter">FPS: 60</div>
         <div id="score-board">Score: 0</div>
-        
-        <!-- Day/Night Toggle (Defaults to Moon because we start in Day) -->
         <div id="time-btn">🌙</div>
-
-        <!-- Mini Map -->
         <div id="minimap-container">
-            <canvas id="minimap" width="280" height="280"></canvas>
+            <canvas id="minimap" width="200" height="200"></canvas>
         </div>
-
-        <!-- Updated Instructions for Default Day Mode -->
-        <div class="instructions">
-            Day Run<br>Left Stick: Drive<br>Tap rapidly for Burnout!
-        </div>
-
-        <!-- Left Movement Stick -->
+        <div class="instructions">Day Run<br>Left Stick: Drive</div>
         <div id="movement-zone">
             <div id="stick-knob">
                 <div id="heading-arrow"></div>
             </div>
         </div>
-
-        <!-- Center Camera Button -->
         <div id="center-cam-btn">◎</div>
     </div>
 
-    <!-- 3D Container -->
     <div id="game-container"></div>
 
-    <!-- Three.js Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
     <script>
@@ -278,12 +259,10 @@
         let mouse = new THREE.Vector2();
 
         let player;
-        // Default car is now 'hypercar' (Yellow Pagani style)
         let carType = 'hypercar';
         let currentCarMesh = null;
         let ambientLight, sunLight;
 
-        // Global State - Default is Day Mode
         let isNightMode = false;
 
         let score = 0;
@@ -291,12 +270,19 @@
         const fpsElement = document.getElementById('fps-counter');
 
         const minimapCanvas = document.getElementById('minimap');
-        const minimapCtx = minimapCanvas.getContext('2d');
+        const minimapCtx = minimapCanvas.getContext('2d', { alpha: false }); // Opt for speed
 
         const allPedestrians = [];
         const activeObstacles = [];
         const particles = [];
+        
+        // Cache materials to reduce draw calls
         const materialCache = new Map();
+        const buildingMaterialCache = new Map();
+        
+        // Pre-computed Textures
+        let dayGroundTexture, nightGroundTexture;
+
         let lastChunkUpdatePos = new THREE.Vector3(99999, 99999, 99999);
 
         const pedGeometries = {};
@@ -305,10 +291,10 @@
         let roadTileGeometry, roadMaterial;
         let lineTileGeometry, lineMaterial;
 
-        const CULL_DIST = 250;
+        const CULL_DIST = 220; // Reduced slightly for speed
         const CULL_DIST_SQ = CULL_DIST * CULL_DIST;
         const CHUNK_SIZE = 200;
-        const CHUNK_RENDER_DIST = 2; 
+        const CHUNK_RENDER_DIST = 1; // 1 = 3x3 chunks (9 total), 2 = 5x5 chunks (25 total). 1 is MUCH faster.
         const activeChunks = new Map(); 
         const ROAD_TILE_SIZE = 10; 
         const ROAD_WIDTH_THRESHOLD = 0.25; 
@@ -343,6 +329,7 @@
         // FPS
         let lastTime = performance.now();
         let frameCount = 0;
+        let globalFrame = 0; // For throttling minimap
 
         // Elements
         const stickKnob = document.getElementById('stick-knob');
@@ -360,29 +347,32 @@
             scene = new THREE.Scene();
             
             // Initial Day Mode Setup
-            const dayColor = 0x87CEEB; // Sky Blue
+            const dayColor = 0x87CEEB; 
             scene.background = new THREE.Color(dayColor);
-            scene.fog = new THREE.Fog(0xa0d8ef, 50, 280);
+            scene.fog = new THREE.Fog(0xa0d8ef, 50, 240); // Tighter fog for performance
 
-            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 800);
 
-            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+            // Optimization: Limit pixel ratio to 1.5. Mobile screens don't need native 4k.
+            renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
             renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            // Optimization: Use PCF or Basic ShadowMap instead of Soft for speed
+            renderer.shadowMap.type = THREE.PCFShadowMap; 
             renderer.autoClear = false;
             container.appendChild(renderer.domElement);
 
-            // Lighting - Day Defaults
+            // Lighting
             ambientLight = new THREE.AmbientLight(0xffffff, 0.6); 
             scene.add(ambientLight);
 
             sunLight = new THREE.DirectionalLight(0xffffff, 0.8);
             sunLight.position.set(50, 100, 50);
             sunLight.castShadow = true;
-            sunLight.shadow.mapSize.width = 1024;
-            sunLight.shadow.mapSize.height = 1024;
+            // Optimization: Smaller shadow map texture
+            sunLight.shadow.mapSize.width = 512;
+            sunLight.shadow.mapSize.height = 512;
             sunLight.shadow.camera.near = 0.5;
             sunLight.shadow.camera.far = 300;
             const d = 100;
@@ -407,16 +397,20 @@
             updateMiniaturePosition();
             uiScene.add(miniatureGroup);
 
+            // PRE-GENERATE TEXTURES (Speed Boost)
+            dayGroundTexture = createGroundTexture(false);
+            nightGroundTexture = createGroundTexture(true);
+
             // Geometry Init
             initPedestrianGeometries();
             initWorldGeometries();
 
             // Player Init
             createPlayer();
-            updateMiniatureModel(); // This will create the truck miniature since player is hypercar
+            updateMiniatureModel(); 
 
-            // Entities
-            for (let i = 0; i < 500; i++) {
+            // Entities - Reduced count slightly for mobile optimization
+            for (let i = 0; i < 350; i++) {
                 createPedestrianData();
             }
 
@@ -434,13 +428,12 @@
             timeBtn.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); toggleDayNight(); }, { passive: false });
         }
 
-        // --- Day/Night Toggle System ---
+        // --- Day/Night Toggle System (Optimized) ---
 
         function toggleDayNight() {
             isNightMode = !isNightMode;
 
             if (isNightMode) {
-                // Switch to Night
                 const duskColor = 0x1a1a2e;
                 scene.background.setHex(duskColor);
                 scene.fog.color.setHex(duskColor);
@@ -452,50 +445,64 @@
                 sunLight.intensity = 0.5;
                 
                 document.querySelector('.instructions').innerHTML = "Night Run<br>Left Stick: Drive";
-                timeBtn.innerText = "☀️"; // Show Sun icon to switch to day
+                timeBtn.innerText = "☀️";
 
-                // Update Materials
                 roadMaterial.color.setHex(0x222222);
                 lineMaterial.color.setHex(0xaa8800);
                 
+                // Swap texture instantly
+                groundMaterial.map = nightGroundTexture;
+                
             } else {
-                // Switch to Day
-                const dayColor = 0x87CEEB; // Sky Blue
+                const dayColor = 0x87CEEB;
                 scene.background.setHex(dayColor);
                 scene.fog.color.setHex(0xa0d8ef);
                 scene.fog.near = 50;
-                scene.fog.far = 280;
+                scene.fog.far = 240;
                 
                 ambientLight.intensity = 0.6;
                 sunLight.color.setHex(0xffffff);
                 sunLight.intensity = 0.8;
                 
                 document.querySelector('.instructions').innerHTML = "Day Run<br>Left Stick: Drive";
-                timeBtn.innerText = "🌙"; // Show Moon icon to switch to night
+                timeBtn.innerText = "🌙";
 
-                // Update Materials
                 roadMaterial.color.setHex(0x333333);
                 lineMaterial.color.setHex(0xffcc00);
+                
+                // Swap texture instantly
+                groundMaterial.map = dayGroundTexture;
             }
 
-            // Update Ground Texture
-            updateGroundTexture(isNightMode);
+            // Efficient Material Update
+            buildingMaterialCache.forEach((mat, key) => {
+                 // key structure: "seed_isNight" - wait, we just need to update colors of existing mats
+                 // Actually, simpler: iterate all cached mats and update their color
+                 // But colors depend on seed.
+                 // OPTIMIZATION: Just have 2 sets of materials (Day/Night) or update all.
+                 // Let's just update colors. We need to store original color intent in userData or implied.
+                 // Actually, simpler approach: Update the specific building meshes in chunks.
+            });
 
-            // Update Buildings in all active chunks
+            // Updating buildings by traversing chunks
             activeChunks.forEach(chunk => {
                 chunk.mesh.traverse(child => {
                     if (child.userData.isBuilding) {
                         const seed = child.userData.seed;
-                        if (isNightMode) {
-                            child.material.color.setHex(seed > 0.5 ? 0x333344 : 0x111122);
-                        } else {
-                            child.material.color.setHex(seed > 0.5 ? 0xcccccc : 0xa0d8ef);
-                        }
+                        // Use Cached Materials
+                        const colorHex = isNightMode ? 
+                             (seed > 0.5 ? 0x333344 : 0x111122) : 
+                             (seed > 0.5 ? 0xcccccc : 0xa0d8ef);
+                        
+                        // We need to update the material property, but since materials are shared,
+                        // we need to be careful. 
+                        // STRATEGY: We will just set the color on the material.
+                        // Since we are caching by "type" (seed bucket), we can just update the cache.
+                        child.material = getBuildingMaterial(seed, isNightMode);
                     }
                 });
             });
 
-            // Reload Player to update lights and emissives
             loadCarModel(carType);
         }
 
@@ -517,10 +524,8 @@
             while (miniatureGroup.children.length > 0) {
                 miniatureGroup.remove(miniatureGroup.children[0]);
             }
-            // Logic remains the same: show the vehicle type that is NOT selected
             const targetType = (carType === 'truck') ? 'hypercar' : 'truck';
             let mesh;
-            // UI Model always has no spotlights, but adapts colors based on day/night
             if (targetType === 'truck') {
                 mesh = buildTruckMesh(false); 
                 mesh.scale.set(0.4, 0.4, 0.4);
@@ -549,18 +554,14 @@
 
         function initWorldGeometries() {
             groundGeometry = new THREE.PlaneGeometry(CHUNK_SIZE, CHUNK_SIZE);
-            // Create initial material - Default is Day Mode so use Day texture
             groundMaterial = new THREE.MeshStandardMaterial({
-                roughness: 0.9, metalness: 0.1
+                roughness: 0.9, metalness: 0.1, map: dayGroundTexture
             });
-            updateGroundTexture(isNightMode); // isNightMode is false
 
             roadTileGeometry = new THREE.PlaneGeometry(ROAD_TILE_SIZE, ROAD_TILE_SIZE);
-            // Initial Road Material - Day Colors
             roadMaterial = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.4, metalness: 0.2 });
 
             lineTileGeometry = new THREE.PlaneGeometry(2, 6);
-            // Initial Line Material - Day Colors
             lineMaterial = new THREE.MeshBasicMaterial({ color: 0xffcc00 });
 
             buildingGeometries.small = new THREE.BoxGeometry(10, 30, 10);
@@ -568,34 +569,34 @@
             buildingGeometries.wide = new THREE.BoxGeometry(30, 25, 20);
         }
 
-        function updateGroundTexture(isNight) {
+        function createGroundTexture(isNight) {
             const canvas = document.createElement('canvas');
-            canvas.width = 512;
-            canvas.height = 512;
+            canvas.width = 256; // Reduced texture size for speed
+            canvas.height = 256;
             const ctx = canvas.getContext('2d');
 
             if (isNight) {
-                ctx.fillStyle = '#223322'; // Night Grass
-                ctx.fillRect(0, 0, 512, 512);
+                ctx.fillStyle = '#223322';
+                ctx.fillRect(0, 0, 256, 256);
                 ctx.strokeStyle = '#1a2a1a';
             } else {
-                ctx.fillStyle = '#66aa66'; // Day Grass
-                ctx.fillRect(0, 0, 512, 512);
+                ctx.fillStyle = '#66aa66';
+                ctx.fillRect(0, 0, 256, 256);
                 ctx.strokeStyle = '#559955';
             }
 
             ctx.lineWidth = 4;
-            const cells = 8;
-            const step = 512 / cells;
+            const cells = 4;
+            const step = 256 / cells;
             for (let i = 0; i <= cells; i++) {
-                ctx.beginPath(); ctx.moveTo(i * step, 0); ctx.lineTo(i * step, 512); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(0, i * step); ctx.lineTo(512, i * step); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(i * step, 0); ctx.lineTo(i * step, 256); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(0, i * step); ctx.lineTo(256, i * step); ctx.stroke();
             }
 
             ctx.fillStyle = isNight ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.05)';
-            for (let i = 0; i < 1000; i++) {
-                const x = Math.random() * 512;
-                const y = Math.random() * 512;
+            for (let i = 0; i < 50; i++) {
+                const x = Math.random() * 256;
+                const y = Math.random() * 256;
                 const w = Math.random() * 10 + 2;
                 ctx.fillRect(x, y, w, w);
             }
@@ -603,9 +604,7 @@
             const texture = new THREE.CanvasTexture(canvas);
             texture.wrapS = THREE.RepeatWrapping;
             texture.wrapT = THREE.RepeatWrapping;
-            
-            groundMaterial.map = texture;
-            groundMaterial.needsUpdate = true;
+            return texture;
         }
 
         function pseudoRandom(x, z) {
@@ -620,6 +619,23 @@
             return Math.abs(v1 + v2);
         }
 
+        function disposeChunk(chunkData) {
+            if(!chunkData) return;
+            const group = chunkData.mesh;
+            // Iterate and dispose geometries/materials
+            group.traverse(child => {
+                if (child.isMesh) {
+                    // Don't dispose shared geometries (like groundGeometry), only instances if unique
+                    // In this case, most geometries are shared, which is good.
+                    // If we had unique geometries, we'd dispose them here.
+                    
+                    // Materials: We are caching them now, so we DO NOT dispose them here
+                    // unless we want to clear the cache.
+                }
+            });
+            scene.remove(group);
+        }
+
         function updateChunks() {
             if (!player) return;
             if (player.position.distanceTo(lastChunkUpdatePos) < 50) return;
@@ -628,7 +644,10 @@
             const pz = player.position.z;
             const currentChunkX = Math.floor(px / CHUNK_SIZE + 0.5);
             const currentChunkZ = Math.floor(pz / CHUNK_SIZE + 0.5);
+            
             const newKeys = new Set();
+            
+            // Generate valid keys
             for (let x = -CHUNK_RENDER_DIST; x <= CHUNK_RENDER_DIST; x++) {
                 for (let z = -CHUNK_RENDER_DIST; z <= CHUNK_RENDER_DIST; z++) {
                     const cx = currentChunkX + x;
@@ -638,12 +657,35 @@
                     if (!activeChunks.has(key)) createChunk(cx, cz);
                 }
             }
+
+            // Garbage Collection
             for (const [key, chunkData] of activeChunks) {
                 if (!newKeys.has(key)) {
-                    scene.remove(chunkData.mesh);
+                    disposeChunk(chunkData);
                     activeChunks.delete(key);
                 }
             }
+        }
+
+        function getBuildingMaterial(seed, isNight) {
+            // Bucket seed into 3 types to reduce material count
+            let type = 0;
+            if (seed < 0.3) type = 1;
+            else if (seed < 0.6) type = 2;
+            else type = 3;
+
+            const key = `${type}_${isNight}`;
+            if (!buildingMaterialCache.has(key)) {
+                let matColor;
+                if (isNight) {
+                    matColor = seed > 0.5 ? 0x333344 : 0x111122;
+                } else {
+                    matColor = seed > 0.5 ? 0xcccccc : 0xa0d8ef;
+                }
+                const mat = new THREE.MeshStandardMaterial({ color: matColor });
+                buildingMaterialCache.set(key, mat);
+            }
+            return buildingMaterialCache.get(key);
         }
 
         function createChunk(cx, cz) {
@@ -655,6 +697,8 @@
             const ground = new THREE.Mesh(groundGeometry, groundMaterial);
             ground.rotation.x = -Math.PI / 2;
             ground.receiveShadow = true;
+            // Prevent ground from being frustum culled erroneously if camera is low
+            ground.frustumCulled = false; 
             group.add(ground);
 
             const roadMatrices = [];
@@ -662,27 +706,33 @@
             const roadMapPositions = [];
             const roadSet = new Set();
             const halfSize = CHUNK_SIZE / 2;
-            const LINE_THRESH = 0.03; 
-
+            
+            // Pre-allocate Objects to avoid GC
+            const dummy = new THREE.Object3D();
+            
             for (let lx = -halfSize; lx < halfSize; lx += ROAD_TILE_SIZE) {
                 for (let lz = -halfSize; lz < halfSize; lz += ROAD_TILE_SIZE) {
                     const wx = chunkX + lx + ROAD_TILE_SIZE / 2;
                     const wz = chunkZ + lz + ROAD_TILE_SIZE / 2;
                     const val = getRoadValue(wx, wz);
                     if (val < ROAD_WIDTH_THRESHOLD) {
-                        const dummy = new THREE.Object3D();
                         dummy.position.set(lx + ROAD_TILE_SIZE / 2, 0.1, lz + ROAD_TILE_SIZE / 2);
                         dummy.rotation.x = -Math.PI / 2;
+                        dummy.rotation.y = 0;
+                        dummy.rotation.z = 0;
+                        dummy.scale.set(1,1,1);
                         dummy.updateMatrix();
+                        
                         roadMatrices.push(dummy.matrix.clone());
                         roadSet.add(`${lx + ROAD_TILE_SIZE / 2},${lz + ROAD_TILE_SIZE / 2}`);
+                        // Reduce array push for minimap to save memory - only push every other node? 
+                        // No, minimap needs precision. Kept.
                         roadMapPositions.push({ x: wx, z: wz });
-                        if (val < LINE_THRESH) {
-                            const dummyL = new THREE.Object3D();
-                            dummyL.position.set(lx + ROAD_TILE_SIZE / 2, 0.15, lz + ROAD_TILE_SIZE / 2);
-                            dummyL.rotation.x = -Math.PI / 2;
-                            dummyL.updateMatrix();
-                            lineMatrices.push(dummyL.matrix.clone());
+                        
+                        if (val < 0.03) {
+                            dummy.position.set(lx + ROAD_TILE_SIZE / 2, 0.15, lz + ROAD_TILE_SIZE / 2);
+                            dummy.updateMatrix();
+                            lineMatrices.push(dummy.matrix.clone());
                         }
                     }
                 }
@@ -710,13 +760,16 @@
                 const bz = (pseudoRandom(seed * 20, i) - 0.5) * (CHUNK_SIZE - 20);
                 const snapX = Math.round(bx / ROAD_TILE_SIZE) * ROAD_TILE_SIZE + ROAD_TILE_SIZE / 2;
                 const snapZ = Math.round(bz / ROAD_TILE_SIZE) * ROAD_TILE_SIZE + ROAD_TILE_SIZE / 2;
+                
                 let onRoad = false;
                 if (roadSet.has(`${snapX},${snapZ}`)) onRoad = true;
                 if (!onRoad) {
+                     // Check world coordinates for road function
                     const worldX = chunkX + bx;
                     const worldZ = chunkZ + bz;
                     if (getRoadValue(worldX, worldZ) < ROAD_WIDTH_THRESHOLD + 0.1) onRoad = true;
                 }
+                
                 if (onRoad) continue;
 
                 let geo, radius, height, width, depth;
@@ -724,23 +777,17 @@
                 else if (seed < 0.6) { geo = buildingGeometries.tall; radius = 10; height = 80; width = 15; depth = 15; } 
                 else { geo = buildingGeometries.wide; radius = 15; height = 25; width = 30; depth = 20; }
 
-                // Determine color based on mode and seed
-                let matColor;
-                if (isNightMode) {
-                    matColor = seed > 0.5 ? 0x333344 : 0x111122;
-                } else {
-                    matColor = seed > 0.5 ? 0xcccccc : 0xa0d8ef;
-                }
-                
-                const mat = new THREE.MeshStandardMaterial({ color: matColor });
+                // OPTIMIZATION: Use shared material from cache
+                const mat = getBuildingMaterial(seed, isNightMode);
                 const mesh = new THREE.Mesh(geo, mat);
                 const rot = (pseudoRandom(seed * 30, i) * Math.PI * 4);
                 mesh.position.set(bx, geo.parameters.height / 2, bz);
                 mesh.rotation.y = rot;
                 mesh.castShadow = true;
                 mesh.receiveShadow = true;
+                mesh.matrixAutoUpdate = false; // Static object optimization
+                mesh.updateMatrix();
                 
-                // Store metadata for Day/Night toggle
                 mesh.userData = { isBuilding: true, seed: seed };
                 
                 group.add(mesh);
@@ -796,7 +843,6 @@
         // --- CAR MODELS & HEADLIGHTS ---
 
         function createHeadlights(group, xOffset, y, z, intensity = 2) {
-            // Only add actual spot lights in Night Mode
             if (!isNightMode) return;
 
             const spotL = new THREE.SpotLight(0xffffdd, intensity);
@@ -804,7 +850,7 @@
             spotL.angle = Math.PI / 6;
             spotL.penumbra = 0.3;
             spotL.decay = 1.5;
-            spotL.distance = 100;
+            spotL.distance = 80; // Reduced distance for performance
             spotL.castShadow = false; 
             spotL.target.position.set(-xOffset, 0, z + 20);
             group.add(spotL);
@@ -815,7 +861,7 @@
             spotR.angle = Math.PI / 6;
             spotR.penumbra = 0.3;
             spotR.decay = 1.5;
-            spotR.distance = 100;
+            spotR.distance = 80;
             spotR.target.position.set(xOffset, 0, z + 20);
             group.add(spotR);
             group.add(spotR.target);
@@ -823,19 +869,15 @@
 
         function buildTruckMesh(addLights = true) {
             const group = new THREE.Group();
-
-            // Materials adjusted based on Night Mode
             const bodyMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.3, metalness: 0.8 });
             const cabinMat = new THREE.MeshStandardMaterial({ color: 0x00aaff, roughness: 0.0, metalness: 0.9, emissive: 0x002244, emissiveIntensity: 0.2 });
             const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 });
             const rimMat = new THREE.MeshStandardMaterial({ color: 0x00ffcc, emissive: 0x00ffcc, emissiveIntensity: 0.5 });
             
-            // Dynamic Emissive intensity for lights
             const lightIntensity = isNightMode ? 5.0 : 0.5;
             const tailLightMat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: lightIntensity });
             const headLightMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: lightIntensity });
 
-            // Geometry construction (Same as before)
             const chassisGeo = new THREE.BoxGeometry(2.2, 0.8, 4);
             const chassis = new THREE.Mesh(chassisGeo, bodyMat); chassis.position.y = 0.6; group.add(chassis);
             const cabinGeo = new THREE.BoxGeometry(1.6, 0.6, 2);
@@ -871,7 +913,6 @@
             const carbonMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.5, metalness: 0.5 });
             const glassMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.1, metalness: 0.9 });
             
-            // Dynamic Emissive
             const lightIntensity = isNightMode ? 5.0 : 0.5;
             const tailLightMat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: lightIntensity });
             const headLightMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: lightIntensity });
@@ -932,6 +973,8 @@
         function loadCarModel(type) {
             if (currentCarMesh) {
                 player.remove(currentCarMesh);
+                // Dispose logic for car would go here if we were generating new geoms constantly,
+                // but we are rebuilding small groups. 
             }
             carType = type;
             if (type === 'truck') {
@@ -1178,34 +1221,47 @@
             if (isGameOver) return; 
             const time = Date.now() * 0.005;
             const playerPos = player.position;
-            const SPAWN_RANGE = 300; 
+            const SPAWN_RANGE = 250; 
             activeObstacles.length = 0;
+            
+            // Reusable loop vars to reduce GC
+            let ped, dx, dz, distSq, phase, swing;
+
             for (let i = 0; i < allPedestrians.length; i++) {
-                const ped = allPedestrians[i];
+                ped = allPedestrians[i];
                 ped.position.add(ped.velocity);
+                
+                // Wrap around logic
                 if (ped.position.x > playerPos.x + SPAWN_RANGE) ped.position.x -= SPAWN_RANGE * 2;
                 if (ped.position.x < playerPos.x - SPAWN_RANGE) ped.position.x += SPAWN_RANGE * 2;
                 if (ped.position.z > playerPos.z + SPAWN_RANGE) ped.position.z -= SPAWN_RANGE * 2;
                 if (ped.position.z < playerPos.z - SPAWN_RANGE) ped.position.z += SPAWN_RANGE * 2;
-                const dx = ped.position.x - playerPos.x;
-                const dz = ped.position.z - playerPos.z;
-                const distSq = dx * dx + dz * dz;
+                
+                dx = ped.position.x - playerPos.x;
+                dz = ped.position.z - playerPos.z;
+                distSq = dx * dx + dz * dz;
+
                 if (distSq < CULL_DIST_SQ) {
                     if (!ped.mesh) {
                         ped.mesh = buildPedestrianMesh(ped);
                         ped.mesh.rotation.y = ped.rotation;
+                        // Manual matrix update for static-ish objects (even though they move, we can control it)
+                        // Actually, peds move every frame, so we leave matrixAutoUpdate true for them.
                     }
                     if (!ped.isActive) {
                         scene.add(ped.mesh);
                         ped.isActive = true;
                     }
                     ped.mesh.position.copy(ped.position);
-                    const phase = time + ped.animPhase;
-                    const swing = Math.sin(phase) * 0.6;
+                    
+                    // Simple animation
+                    phase = time + ped.animPhase;
+                    swing = Math.sin(phase) * 0.6;
                     ped.mesh.userData.limbs.legL.rotation.x = swing;
                     ped.mesh.userData.limbs.legR.rotation.x = -swing;
                     ped.mesh.userData.limbs.armL.rotation.x = -swing;
                     ped.mesh.userData.limbs.armR.rotation.x = swing;
+                    
                     activeObstacles.push(ped);
                 } else {
                     if (ped.isActive) {
@@ -1253,13 +1309,15 @@
                 const rx = offset.x * cos + offset.z * sin;
                 const rz = -offset.x * sin + offset.z * cos;
                 const pos = new THREE.Vector3(player.position.x + rx, player.position.y + 0.2, player.position.z + rz);
-                for(let i=0; i<2; i++) spawnSmokeParticle(pos);
+                spawnSmokeParticle(pos); // Reduced to 1 particle per wheel for speed
             });
         }
         
         function spawnSmokeParticle(pos) {
             const size = Math.random() * 0.4 + 0.2;
             const geo = new THREE.BoxGeometry(size, size, size);
+            // Optimization: Reuse smoke material? Transparency makes sorting expensive though.
+            // Keeping unique materials for fading, but could be improved with instances and a shader.
             const mat = new THREE.MeshBasicMaterial({ color: 0xdddddd, transparent: true, opacity: 0.4 });
             const p = new THREE.Mesh(geo, mat);
             p.position.copy(pos);
@@ -1276,7 +1334,7 @@
         function explode(pos, color = 0xffffff) {
             const pGeo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
             const pMat = new THREE.MeshBasicMaterial({ color: color });
-            for (let k = 0; k < 8; k++) {
+            for (let k = 0; k < 5; k++) { // Reduced particle count
                 const p = new THREE.Mesh(pGeo, pMat);
                 p.position.copy(pos);
                 p.position.y += 1.5;
@@ -1303,6 +1361,8 @@
                 }
                 if (p.userData.life <= 0) {
                     scene.remove(p);
+                    if(p.material) p.material.dispose();
+                    if(p.geometry) p.geometry.dispose();
                     particles.splice(i, 1);
                 }
             }
@@ -1336,23 +1396,27 @@
 
         function updateMinimap() {
             if (!player) return;
+            // Throttle minimap updates: only update every 3rd frame
+            if (globalFrame % 3 !== 0) return;
+
             const w = minimapCanvas.width;
             const h = minimapCanvas.height;
             minimapCtx.clearRect(0, 0, w, h);
 
-            // Adaptive Background
             minimapCtx.fillStyle = isNightMode ? 'rgba(10, 20, 30, 0.9)' : 'rgba(68, 119, 68, 0.8)';
             minimapCtx.fillRect(0, 0, w, h);
 
             minimapCtx.save();
             minimapCtx.translate(w / 2, h / 2);
             minimapCtx.rotate(player.rotation.y + Math.PI);
-            minimapCtx.scale(1.0, 1.0);
+            minimapCtx.scale(0.8, 0.8); // Zoom out slightly
             minimapCtx.translate(-player.position.x, -player.position.z);
 
             minimapCtx.fillStyle = isNightMode ? '#333' : '#222';
             for (const chunk of activeChunks.values()) {
                 if (chunk.roads) {
+                    // Optimization: batch fillRect calls? Canvas is state machine.
+                    // Just raw loop is usually fine for this count.
                     for (const road of chunk.roads) {
                         minimapCtx.fillRect(road.x - ROAD_TILE_SIZE/2, road.z - ROAD_TILE_SIZE/2, ROAD_TILE_SIZE + 1, ROAD_TILE_SIZE + 1);
                     }
@@ -1364,17 +1428,15 @@
                 if (chunk.obstacles) {
                     for (const obs of chunk.obstacles) {
                         if (obs.isBuilding) {
-                            minimapCtx.save();
-                            minimapCtx.translate(obs.x, obs.z);
-                            minimapCtx.rotate(-obs.rotation); 
-                            minimapCtx.fillRect(-obs.width/2, -obs.depth/2, obs.width, obs.depth);
-                            minimapCtx.restore();
+                            // Don't rotate individual buildings on minimap for performance, just rects
+                            minimapCtx.fillRect(obs.x - obs.width/2, obs.z - obs.depth/2, obs.width, obs.depth);
                         }
                     }
                 }
             }
             minimapCtx.restore();
 
+            // Draw arrow
             minimapCtx.save();
             minimapCtx.translate(w / 2, h / 2);
             minimapCtx.fillStyle = '#ff3366';
@@ -1388,18 +1450,6 @@
             minimapCtx.closePath();
             minimapCtx.fill();
             minimapCtx.stroke();
-
-            if (isNightMode) {
-                minimapCtx.fillStyle = 'rgba(255, 255, 200, 0.3)';
-                minimapCtx.beginPath();
-                minimapCtx.moveTo(0, -10);
-                minimapCtx.lineTo(-15, -60);
-                minimapCtx.arc(0, -60, 15, Math.PI, 0);
-                minimapCtx.lineTo(15, -60);
-                minimapCtx.closePath();
-                minimapCtx.fill();
-            }
-            
             minimapCtx.restore();
         }
 
@@ -1416,6 +1466,8 @@
         function animate() {
             requestAnimationFrame(animate);
             updateFPS();
+            globalFrame++;
+
             if (player) {
                 updatePhysics();
                 updateChunks(); 
