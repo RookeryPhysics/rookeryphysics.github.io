@@ -4,14 +4,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
-    <title>Infinite Voxel Driver</title>
+    <title>Infinite Voxel Driver - Day/Night</title>
     <style>
         body {
             margin: 0;
             overflow: hidden;
             /* Prevent scrolling */
             background-color: #87CEEB;
-            /* Sky blue fallback */
+            /* Default Day Sky Blue */
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             user-select: none;
             /* Prevent text selection on long press */
@@ -42,7 +42,6 @@
         .instructions {
             position: absolute;
             top: 100px;
-            /* Moved down slightly to avoid map overlap */
             left: 50%;
             transform: translateX(-50%);
             background: rgba(0, 0, 0, 0.5);
@@ -62,43 +61,35 @@
 
         /* --- Controls Layout --- */
 
-        /* Left Zone - Movement */
         #movement-zone {
             position: absolute;
             bottom: 30px;
-            /* Moved up slightly */
             left: 30px;
             width: 180px;
-            /* Bigger zone */
             height: 180px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
             border-radius: 50%;
             pointer-events: auto;
-            /* Catch touches */
         }
 
-        /* Stick Graphic */
         #stick-knob {
             position: absolute;
             top: 50%;
             left: 50%;
             width: 60px;
-            /* Bigger knob */
             height: 60px;
             background: rgba(255, 255, 255, 0.8);
             border-radius: 50%;
             transform: translate(-50%, -50%);
             pointer-events: none;
-            /* Let clicks pass to zone */
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
             display: flex;
             justify-content: center;
             align-items: center;
             position: relative;
         }
 
-        /* Heading Arrow Indicator Container */
         #heading-arrow {
             position: absolute;
             top: 50%;
@@ -106,11 +97,9 @@
             width: 0;
             height: 0;
             transform-origin: center center;
-            /* Will be rotated via JS */
             z-index: 10;
         }
 
-        /* Arrow Shaft */
         #heading-arrow::before {
             content: '';
             position: absolute;
@@ -118,14 +107,11 @@
             height: 14px;
             background-color: #ff3366;
             left: -3px;
-            /* Center horizontally */
             bottom: 2px;
-            /* Start slightly above center */
             border-radius: 3px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
 
-        /* Arrow Head */
         #heading-arrow::after {
             content: '';
             position: absolute;
@@ -135,20 +121,17 @@
             border-right: 10px solid transparent;
             border-bottom: 16px solid #ff3366;
             left: -10px;
-            /* Center horizontally */
             bottom: 14px;
-            /* Place on top of shaft */
             filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.3));
         }
 
-        /* Center Camera Button */
         #center-cam-btn {
             position: absolute;
             bottom: 40px;
             right: 40px;
             width: 60px;
             height: 60px;
-            background: rgba(0, 0, 0, 0.3);
+            background: rgba(0, 0, 0, 0.5);
             border: 2px solid rgba(255, 255, 255, 0.4);
             border-radius: 50%;
             color: white;
@@ -168,20 +151,45 @@
             transform: scale(0.95);
         }
 
-        /* Score Display */
+        /* --- Day/Night Toggle Button --- */
+        #time-btn {
+            position: absolute;
+            top: 60px;
+            left: 20px;
+            width: 50px;
+            height: 50px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            color: white;
+            font-size: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            pointer-events: auto;
+            backdrop-filter: blur(4px);
+            z-index: 20;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        #time-btn:active {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(0.95);
+        }
+
         #score-board {
             position: absolute;
             top: 20px;
             right: 20px;
-            color: white;
+            color: #ffcc00;
             font-size: 24px;
             font-weight: bold;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
             pointer-events: none;
             z-index: 10;
         }
 
-        /* FPS Counter */
         #fps-counter {
             position: absolute;
             top: 20px;
@@ -189,26 +197,25 @@
             color: #00ff00;
             font-family: monospace;
             font-size: 16px;
-            background: rgba(0, 0, 0, 0.6);
+            background: rgba(0, 0, 0, 0.8);
             padding: 4px 8px;
             border-radius: 4px;
             pointer-events: none;
             z-index: 10;
         }
 
-        /* --- Mini Map Styles --- */
         #minimap-container {
             position: absolute;
             top: 20px;
-            left: 130px; /* Positioned to the right of FPS/Coords */
-            width: 80px; /* Smaller Size */
-            height: 80px; /* Smaller Size */
+            left: 130px; 
+            width: 80px; 
+            height: 80px; 
             border-radius: 50%;
-            border: 2px solid rgba(255, 255, 255, 0.5);
-            background: transparent;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            background: #000;
             overflow: hidden;
             z-index: 10;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.8);
             pointer-events: none;
         }
 
@@ -219,13 +226,8 @@
         }
 
         @keyframes fadeOut {
-            from {
-                opacity: 1;
-            }
-
-            to {
-                opacity: 0;
-            }
+            from { opacity: 1; }
+            to { opacity: 0; }
         }
     </style>
 </head>
@@ -237,13 +239,17 @@
         <div id="fps-counter">FPS: 60</div>
         <div id="score-board">Score: 0</div>
         
+        <!-- Day/Night Toggle (Defaults to Moon because we start in Day) -->
+        <div id="time-btn">🌙</div>
+
         <!-- Mini Map -->
         <div id="minimap-container">
-            <canvas id="minimap" width="280" height="280"></canvas> <!-- High res canvas for crisp lines -->
+            <canvas id="minimap" width="280" height="280"></canvas>
         </div>
 
+        <!-- Updated Instructions for Default Day Mode -->
         <div class="instructions">
-            Infinite Procedural Map<br>Left Stick: Drive<br>Tap rapidly for Burnout!
+            Day Run<br>Left Stick: Drive<br>Tap rapidly for Burnout!
         </div>
 
         <!-- Left Movement Stick -->
@@ -266,51 +272,48 @@
     <script>
         // --- Variables ---
         let scene, camera, renderer;
-        // UI Scene Variables (For the 3D car button)
-        let uiScene, uiCamera, uiLight;
+        let uiScene, uiCamera;
         let miniatureGroup;
         let raycaster = new THREE.Raycaster();
         let mouse = new THREE.Vector2();
 
         let player;
-        let carType = 'truck'; // 'truck' or 'hypercar'
-        let currentCarMesh = null; // Reference to the actual graphical mesh inside player group
+        // Default car is now 'hypercar' (Yellow Pagani style)
+        let carType = 'hypercar';
+        let currentCarMesh = null;
+        let ambientLight, sunLight;
+
+        // Global State - Default is Day Mode
+        let isNightMode = false;
 
         let score = 0;
         const scoreElement = document.getElementById('score-board');
         const fpsElement = document.getElementById('fps-counter');
 
-        // Minimap Variables
         const minimapCanvas = document.getElementById('minimap');
         const minimapCtx = minimapCanvas.getContext('2d');
 
-        // Game Objects Lists
-        const allPedestrians = []; // Stores data for ALL pedestrians
-        const activeObstacles = []; // Pedestrians currently in scene
-        // const staticObstacles = []; // REMOVED: Optimization - Use activeChunks directly
+        const allPedestrians = [];
+        const activeObstacles = [];
         const particles = [];
-
-        // Optimization: Shared Geometries & Materials
         const materialCache = new Map();
         let lastChunkUpdatePos = new THREE.Vector3(99999, 99999, 99999);
 
         const pedGeometries = {};
         const buildingGeometries = {};
-        let groundGeometry, groundMaterial; // Shared for chunks
+        let groundGeometry, groundMaterial;
         let roadTileGeometry, roadMaterial;
         let lineTileGeometry, lineMaterial;
 
         const CULL_DIST = 250;
         const CULL_DIST_SQ = CULL_DIST * CULL_DIST;
-
-        // Infinite Map Settings
         const CHUNK_SIZE = 200;
-        const CHUNK_RENDER_DIST = 2; // Radius of chunks to render (2 = 5x5 grid)
-        const activeChunks = new Map(); // Stores active chunks by "x,z" key
-        const ROAD_TILE_SIZE = 10; // Size of road grid cells
-        const ROAD_WIDTH_THRESHOLD = 0.25; // Defines how wide the road is in the noise function
+        const CHUNK_RENDER_DIST = 2; 
+        const activeChunks = new Map(); 
+        const ROAD_TILE_SIZE = 10; 
+        const ROAD_WIDTH_THRESHOLD = 0.25; 
 
-        // Physics/Game Config
+        // Physics
         let PLAYER_SPEED = 0.25;
         const FRICTION = 0.80;
         let MAX_SPEED = 2.0;
@@ -319,35 +322,34 @@
         let isGameOver = false;
         let isAirborne = false;
 
-        // Movement State
-        const velocity = new THREE.Vector3(); // x, y (vertical), z
-        let moveInput = { x: 0, y: 0 }; // -1 to 1
+        // Movement
+        const velocity = new THREE.Vector3(); 
+        let moveInput = { x: 0, y: 0 }; 
 
-        // Camera State
+        // Camera
         let cameraAngle = 0;
         let cameraVerticalAngle = 0.5;
         const CAMERA_DIST = 25;
         let isManualCamera = false;
         let manualCamTimer = 0;
 
-        // Touch Input State
+        // Input
         let moveTouchId = null;
         let camTouchId = null;
         let camLastPos = { x: 0, y: 0 };
         const joystickRadius = 90;
-        
-        // Tap for Smoke Logic
         let lastTapTime = 0;
 
-        // FPS Counting
+        // FPS
         let lastTime = performance.now();
         let frameCount = 0;
 
-        // DOM Elements
+        // Elements
         const stickKnob = document.getElementById('stick-knob');
         const headingArrow = document.getElementById('heading-arrow');
         const movementZone = document.getElementById('movement-zone');
         const centerBtn = document.getElementById('center-cam-btn');
+        const timeBtn = document.getElementById('time-btn');
 
         init();
         animate();
@@ -355,164 +357,187 @@
         function init() {
             const container = document.getElementById('game-container');
 
-            // 1. Main Scene Setup
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0xa0d8ef);
+            
+            // Initial Day Mode Setup
+            const dayColor = 0x87CEEB; // Sky Blue
+            scene.background = new THREE.Color(dayColor);
             scene.fog = new THREE.Fog(0xa0d8ef, 50, 280);
 
-            // 2. Camera Setup
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
 
-            // 3. Renderer
             renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-            renderer.autoClear = false; // Important for overlaying the UI scene
+            renderer.autoClear = false;
             container.appendChild(renderer.domElement);
 
-            // 4. Lighting
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            // Lighting - Day Defaults
+            ambientLight = new THREE.AmbientLight(0xffffff, 0.6); 
             scene.add(ambientLight);
 
-            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            dirLight.position.set(50, 100, 50);
-            dirLight.castShadow = true;
-            // Shadow settings
-            dirLight.shadow.mapSize.width = 1024;
-            dirLight.shadow.mapSize.height = 1024;
-            dirLight.shadow.camera.near = 0.5;
-            dirLight.shadow.camera.far = 300;
+            sunLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            sunLight.position.set(50, 100, 50);
+            sunLight.castShadow = true;
+            sunLight.shadow.mapSize.width = 1024;
+            sunLight.shadow.mapSize.height = 1024;
+            sunLight.shadow.camera.near = 0.5;
+            sunLight.shadow.camera.far = 300;
             const d = 100;
-            dirLight.shadow.camera.left = -d;
-            dirLight.shadow.camera.right = d;
-            dirLight.shadow.camera.top = d;
-            dirLight.shadow.camera.bottom = -d;
-            scene.add(dirLight);
-            scene.userData.sun = dirLight;
+            sunLight.shadow.camera.left = -d;
+            sunLight.shadow.camera.right = d;
+            sunLight.shadow.camera.top = d;
+            sunLight.shadow.camera.bottom = -d;
+            scene.add(sunLight);
 
-            // --- 5. UI Scene Setup (Miniature) ---
+            // UI Scene
             uiScene = new THREE.Scene();
             uiCamera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
             uiCamera.position.z = 10;
 
-            // Add Light to UI Scene so the miniature is visible
             const uiAmb = new THREE.AmbientLight(0xffffff, 0.8);
             uiScene.add(uiAmb);
             const uiDir = new THREE.DirectionalLight(0xffffff, 1.0);
             uiDir.position.set(2, 5, 5);
             uiScene.add(uiDir);
 
-            // Miniature Container
             miniatureGroup = new THREE.Group();
-            // Position it in bottom right corner relative to camera view
-            // NOTE: We adjust this in animate or resize to handle aspect ratios, 
-            // but for now a rough guess in 3D space works for Perspective camera
             updateMiniaturePosition();
             uiScene.add(miniatureGroup);
 
-            // 6. Initialize Geometries
+            // Geometry Init
             initPedestrianGeometries();
             initWorldGeometries();
 
-            // 7. Player
+            // Player Init
             createPlayer();
+            updateMiniatureModel(); // This will create the truck miniature since player is hypercar
 
-            // Initialize Miniature (Show the option you CAN switch to)
-            updateMiniatureModel();
-
-            // 8. Entities (Virtual Pool)
+            // Entities
             for (let i = 0; i < 500; i++) {
                 createPedestrianData();
             }
 
-            // 9. Listeners
+            // Events
             window.addEventListener('resize', onWindowResize);
             document.addEventListener('touchstart', onTouchStart, { passive: false });
             document.addEventListener('touchmove', onTouchMove, { passive: false });
             document.addEventListener('touchend', onTouchEnd, { passive: false });
-            document.addEventListener('mousedown', onMouseDown); // Add mouse support for miniature
+            document.addEventListener('mousedown', onMouseDown); 
 
-            centerBtn.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                centerCamera();
-            }, { passive: false });
+            centerBtn.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); centerCamera(); }, { passive: false });
+            centerBtn.addEventListener('mousedown', (e) => { e.stopPropagation(); centerCamera(); });
 
-            centerBtn.addEventListener('mousedown', (e) => {
-                e.stopPropagation();
-                centerCamera();
-            });
+            timeBtn.addEventListener('mousedown', (e) => { e.stopPropagation(); toggleDayNight(); });
+            timeBtn.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); toggleDayNight(); }, { passive: false });
         }
 
-        // --- Miniature UI Logic ---
+        // --- Day/Night Toggle System ---
+
+        function toggleDayNight() {
+            isNightMode = !isNightMode;
+
+            if (isNightMode) {
+                // Switch to Night
+                const duskColor = 0x1a1a2e;
+                scene.background.setHex(duskColor);
+                scene.fog.color.setHex(duskColor);
+                scene.fog.near = 30;
+                scene.fog.far = 180;
+                
+                ambientLight.intensity = 0.2;
+                sunLight.color.setHex(0xaaccff);
+                sunLight.intensity = 0.5;
+                
+                document.querySelector('.instructions').innerHTML = "Night Run<br>Left Stick: Drive";
+                timeBtn.innerText = "☀️"; // Show Sun icon to switch to day
+
+                // Update Materials
+                roadMaterial.color.setHex(0x222222);
+                lineMaterial.color.setHex(0xaa8800);
+                
+            } else {
+                // Switch to Day
+                const dayColor = 0x87CEEB; // Sky Blue
+                scene.background.setHex(dayColor);
+                scene.fog.color.setHex(0xa0d8ef);
+                scene.fog.near = 50;
+                scene.fog.far = 280;
+                
+                ambientLight.intensity = 0.6;
+                sunLight.color.setHex(0xffffff);
+                sunLight.intensity = 0.8;
+                
+                document.querySelector('.instructions').innerHTML = "Day Run<br>Left Stick: Drive";
+                timeBtn.innerText = "🌙"; // Show Moon icon to switch to night
+
+                // Update Materials
+                roadMaterial.color.setHex(0x333333);
+                lineMaterial.color.setHex(0xffcc00);
+            }
+
+            // Update Ground Texture
+            updateGroundTexture(isNightMode);
+
+            // Update Buildings in all active chunks
+            activeChunks.forEach(chunk => {
+                chunk.mesh.traverse(child => {
+                    if (child.userData.isBuilding) {
+                        const seed = child.userData.seed;
+                        if (isNightMode) {
+                            child.material.color.setHex(seed > 0.5 ? 0x333344 : 0x111122);
+                        } else {
+                            child.material.color.setHex(seed > 0.5 ? 0xcccccc : 0xa0d8ef);
+                        }
+                    }
+                });
+            });
+
+            // Reload Player to update lights and emissives
+            loadCarModel(carType);
+        }
+
+        // --- Miniature UI ---
 
         function updateMiniaturePosition() {
-            // Position the miniature based on screen aspect ratio to keep it in the corner
             const aspect = window.innerWidth / window.innerHeight;
-            // Adjust X based on aspect ratio to stay in corner
-            // Z is fixed at 10 (camera distance)
-            // Camera FOV 50 means visible height at Z=0 (camera at 10) is approx 9.3 units
             const visibleHeight = 2 * Math.tan((uiCamera.fov * Math.PI / 180) / 2) * uiCamera.position.z;
             const visibleWidth = visibleHeight * aspect;
-
-            // Convert pixels to 3D units for precise alignment with DOM elements
             const unitsPerPixel = visibleHeight / window.innerHeight;
-
-            // Target Position Logic:
-            // The Reset Button is at Bottom: 40px, Height: 60px -> Top Edge is 100px.
-            // We want the miniature center to be slightly above that. 
-            // 100px (button top) + 30px (half icon size) + 20px (padding) = 150px from bottom.
-            // Center alignment: Button is Right: 40px + 30px (half width) = 70px from right.
-
             const yOffsetPixels = 160;
             const xOffsetPixels = 70;
-
             const x = visibleWidth / 2 - (xOffsetPixels * unitsPerPixel);
             const y = -visibleHeight / 2 + (yOffsetPixels * unitsPerPixel);
-
             miniatureGroup.position.set(x, y, 0);
         }
 
         function updateMiniatureModel() {
-            // Clear previous
             while (miniatureGroup.children.length > 0) {
                 miniatureGroup.remove(miniatureGroup.children[0]);
             }
-
-            // Logic: Show the vehicle we are NOT currently driving
+            // Logic remains the same: show the vehicle type that is NOT selected
             const targetType = (carType === 'truck') ? 'hypercar' : 'truck';
-
             let mesh;
+            // UI Model always has no spotlights, but adapts colors based on day/night
             if (targetType === 'truck') {
-                mesh = buildTruckMesh();
-                // Significantly reduced scale for button size
+                mesh = buildTruckMesh(false); 
                 mesh.scale.set(0.4, 0.4, 0.4);
             } else {
-                mesh = buildHypercarMesh();
-                // Significantly reduced scale for button size
+                mesh = buildHypercarMesh(false);
                 mesh.scale.set(0.35, 0.35, 0.35);
             }
-
-            // Center the mesh visually in the group
             mesh.position.y = -0.5;
-
-            // Make it spin automatically in animate loop
             miniatureGroup.add(mesh);
             miniatureGroup.userData.targetType = targetType;
         }
 
         function checkMiniatureClick(clientX, clientY) {
-            // Convert to Normalized Device Coordinates (-1 to +1)
             mouse.x = (clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(clientY / window.innerHeight) * 2 + 1;
-
             raycaster.setFromCamera(mouse, uiCamera);
-
-            // Raycast against the miniature group
             const intersects = raycaster.intersectObjects(miniatureGroup.children, true);
-
             if (intersects.length > 0) {
                 toggleCarModel();
                 return true;
@@ -523,31 +548,51 @@
         // --- Infinite Map System ---
 
         function initWorldGeometries() {
-            // 1. Procedural Grid Texture (Ground)
+            groundGeometry = new THREE.PlaneGeometry(CHUNK_SIZE, CHUNK_SIZE);
+            // Create initial material - Default is Day Mode so use Day texture
+            groundMaterial = new THREE.MeshStandardMaterial({
+                roughness: 0.9, metalness: 0.1
+            });
+            updateGroundTexture(isNightMode); // isNightMode is false
+
+            roadTileGeometry = new THREE.PlaneGeometry(ROAD_TILE_SIZE, ROAD_TILE_SIZE);
+            // Initial Road Material - Day Colors
+            roadMaterial = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.4, metalness: 0.2 });
+
+            lineTileGeometry = new THREE.PlaneGeometry(2, 6);
+            // Initial Line Material - Day Colors
+            lineMaterial = new THREE.MeshBasicMaterial({ color: 0xffcc00 });
+
+            buildingGeometries.small = new THREE.BoxGeometry(10, 30, 10);
+            buildingGeometries.tall = new THREE.BoxGeometry(15, 80, 15);
+            buildingGeometries.wide = new THREE.BoxGeometry(30, 25, 20);
+        }
+
+        function updateGroundTexture(isNight) {
             const canvas = document.createElement('canvas');
             canvas.width = 512;
             canvas.height = 512;
             const ctx = canvas.getContext('2d');
 
-            // Base Color
-            ctx.fillStyle = '#66aa66'; // Grass Green
-            ctx.fillRect(0, 0, 512, 512);
+            if (isNight) {
+                ctx.fillStyle = '#223322'; // Night Grass
+                ctx.fillRect(0, 0, 512, 512);
+                ctx.strokeStyle = '#1a2a1a';
+            } else {
+                ctx.fillStyle = '#66aa66'; // Day Grass
+                ctx.fillRect(0, 0, 512, 512);
+                ctx.strokeStyle = '#559955';
+            }
 
-            // Grid Lines
-            ctx.strokeStyle = '#559955';
             ctx.lineWidth = 4;
-
-            // Draw Grid 
             const cells = 8;
             const step = 512 / cells;
-
             for (let i = 0; i <= cells; i++) {
                 ctx.beginPath(); ctx.moveTo(i * step, 0); ctx.lineTo(i * step, 512); ctx.stroke();
                 ctx.beginPath(); ctx.moveTo(0, i * step); ctx.lineTo(512, i * step); ctx.stroke();
             }
 
-            // Add some noise
-            ctx.fillStyle = 'rgba(0,0,0,0.05)';
+            ctx.fillStyle = isNight ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.05)';
             for (let i = 0; i < 1000; i++) {
                 const x = Math.random() * 512;
                 const y = Math.random() * 512;
@@ -558,80 +603,44 @@
             const texture = new THREE.CanvasTexture(canvas);
             texture.wrapS = THREE.RepeatWrapping;
             texture.wrapT = THREE.RepeatWrapping;
-
-            groundGeometry = new THREE.PlaneGeometry(CHUNK_SIZE, CHUNK_SIZE);
-            groundMaterial = new THREE.MeshStandardMaterial({
-                map: texture, roughness: 0.9, metalness: 0.1
-            });
-
-            // Road Geometries
-            roadTileGeometry = new THREE.PlaneGeometry(ROAD_TILE_SIZE, ROAD_TILE_SIZE);
-            roadMaterial = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.5, metalness: 0.1 });
-
-            lineTileGeometry = new THREE.PlaneGeometry(2, 6);
-            lineMaterial = new THREE.MeshBasicMaterial({ color: 0xffcc00 });
-
-            // Building Geometries
-            // Increased heights for all building types
-            buildingGeometries.small = new THREE.BoxGeometry(10, 30, 10);
-            buildingGeometries.tall = new THREE.BoxGeometry(15, 80, 15);
-            buildingGeometries.wide = new THREE.BoxGeometry(30, 25, 20);
+            
+            groundMaterial.map = texture;
+            groundMaterial.needsUpdate = true;
         }
 
-        // Deterministic pseudo-random for chunk generation
         function pseudoRandom(x, z) {
             const val = Math.sin(x * 12.9898 + z * 78.233) * 43758.5453;
             return val - Math.floor(val);
         }
 
-        // Function to determine if a point is on a "Highway"
         function getRoadValue(x, z) {
-            // Scale controls the size of the curves. Smaller = bigger curves.
             const scale = 0.005;
-
-            // We sum a few sine waves to get organic looking curves
-            // The logic: if (sin(x) + cos(z)) is close to 0, it's a "ridge" or road.
             const v1 = Math.sin(x * scale) + Math.cos(z * scale);
             const v2 = Math.sin(x * scale * 0.5 + z * scale * 0.2) * 0.5;
-
-            // The absolute value creates the "road" corridor where values are near zero
             return Math.abs(v1 + v2);
         }
 
         function updateChunks() {
             if (!player) return;
-
-            // Optimization: Throttle updates
             if (player.position.distanceTo(lastChunkUpdatePos) < 50) return;
             lastChunkUpdatePos.copy(player.position);
-
             const px = player.position.x;
             const pz = player.position.z;
-
             const currentChunkX = Math.floor(px / CHUNK_SIZE + 0.5);
             const currentChunkZ = Math.floor(pz / CHUNK_SIZE + 0.5);
-
             const newKeys = new Set();
-
-            // Generate chunks in range
             for (let x = -CHUNK_RENDER_DIST; x <= CHUNK_RENDER_DIST; x++) {
                 for (let z = -CHUNK_RENDER_DIST; z <= CHUNK_RENDER_DIST; z++) {
                     const cx = currentChunkX + x;
                     const cz = currentChunkZ + z;
                     const key = `${cx},${cz}`;
                     newKeys.add(key);
-
-                    if (!activeChunks.has(key)) {
-                        createChunk(cx, cz);
-                    }
+                    if (!activeChunks.has(key)) createChunk(cx, cz);
                 }
             }
-
-            // Remove old chunks
             for (const [key, chunkData] of activeChunks) {
                 if (!newKeys.has(key)) {
                     scene.remove(chunkData.mesh);
-                    // No need to splice staticObstacles anymore
                     activeChunks.delete(key);
                 }
             }
@@ -639,61 +648,39 @@
 
         function createChunk(cx, cz) {
             const group = new THREE.Group();
-
-            // Chunk base position
             const chunkX = cx * CHUNK_SIZE;
             const chunkZ = cz * CHUNK_SIZE;
             group.position.set(chunkX, 0, chunkZ);
 
-            // 1. Ground
             const ground = new THREE.Mesh(groundGeometry, groundMaterial);
             ground.rotation.x = -Math.PI / 2;
             ground.receiveShadow = true;
             group.add(ground);
 
-            // 2. Generate Highways
-            // We use InstancedMesh for performance since there are many tiles
             const roadMatrices = [];
             const lineMatrices = [];
-            
-            // For Minimap: store world coordinates of road tiles
             const roadMapPositions = [];
-
-            // Track where roads are so we don't put buildings there
-            // Key format: "localX,localZ"
             const roadSet = new Set();
-
             const halfSize = CHUNK_SIZE / 2;
-            const LINE_THRESH = 0.03; // How wide the center line is
+            const LINE_THRESH = 0.03; 
 
-            // Iterate over grid in the chunk
             for (let lx = -halfSize; lx < halfSize; lx += ROAD_TILE_SIZE) {
                 for (let lz = -halfSize; lz < halfSize; lz += ROAD_TILE_SIZE) {
                     const wx = chunkX + lx + ROAD_TILE_SIZE / 2;
                     const wz = chunkZ + lz + ROAD_TILE_SIZE / 2;
-
                     const val = getRoadValue(wx, wz);
-
                     if (val < ROAD_WIDTH_THRESHOLD) {
-                        // It's a road
                         const dummy = new THREE.Object3D();
                         dummy.position.set(lx + ROAD_TILE_SIZE / 2, 0.1, lz + ROAD_TILE_SIZE / 2);
                         dummy.rotation.x = -Math.PI / 2;
                         dummy.updateMatrix();
                         roadMatrices.push(dummy.matrix.clone());
-
                         roadSet.add(`${lx + ROAD_TILE_SIZE / 2},${lz + ROAD_TILE_SIZE / 2}`);
-                        
-                        // Save for minimap (World Coordinates)
                         roadMapPositions.push({ x: wx, z: wz });
-
-                        // Center line
                         if (val < LINE_THRESH) {
                             const dummyL = new THREE.Object3D();
                             dummyL.position.set(lx + ROAD_TILE_SIZE / 2, 0.15, lz + ROAD_TILE_SIZE / 2);
                             dummyL.rotation.x = -Math.PI / 2;
-                            // Add a random rotation to lines to make them look less grid-like? 
-                            // No, grid alignment is better for voxel style unless we do complex meshing.
                             dummyL.updateMatrix();
                             lineMatrices.push(dummyL.matrix.clone());
                         }
@@ -704,117 +691,67 @@
             if (roadMatrices.length > 0) {
                 const roadMesh = new THREE.InstancedMesh(roadTileGeometry, roadMaterial, roadMatrices.length);
                 roadMesh.receiveShadow = true;
-                for (let i = 0; i < roadMatrices.length; i++) {
-                    roadMesh.setMatrixAt(i, roadMatrices[i]);
-                }
+                for (let i = 0; i < roadMatrices.length; i++) roadMesh.setMatrixAt(i, roadMatrices[i]);
                 group.add(roadMesh);
             }
-
             if (lineMatrices.length > 0) {
                 const lineMesh = new THREE.InstancedMesh(lineTileGeometry, lineMaterial, lineMatrices.length);
-                for (let i = 0; i < lineMatrices.length; i++) {
-                    lineMesh.setMatrixAt(i, lineMatrices[i]);
-                }
+                for (let i = 0; i < lineMatrices.length; i++) lineMesh.setMatrixAt(i, lineMatrices[i]);
                 group.add(lineMesh);
             }
 
-            // 3. Procedural Buildings
             let seed = pseudoRandom(cx, cz);
             const obstacles = [];
-
-            // 10% chance of being an "Dense" chunk, else "Rural"
             const numObjects = seed > 0.8 ? 15 : (seed > 0.4 ? 4 : 2);
 
             for (let i = 0; i < numObjects; i++) {
                 seed = pseudoRandom(seed, i);
-
-                // Random pos within chunk
                 const bx = (pseudoRandom(seed * 10, i) - 0.5) * (CHUNK_SIZE - 20);
                 const bz = (pseudoRandom(seed * 20, i) - 0.5) * (CHUNK_SIZE - 20);
-
-                // Snap to road grid for checking
                 const snapX = Math.round(bx / ROAD_TILE_SIZE) * ROAD_TILE_SIZE + ROAD_TILE_SIZE / 2;
                 const snapZ = Math.round(bz / ROAD_TILE_SIZE) * ROAD_TILE_SIZE + ROAD_TILE_SIZE / 2;
-
-                // Check if this spot or neighbors are road
                 let onRoad = false;
                 if (roadSet.has(`${snapX},${snapZ}`)) onRoad = true;
-
-                // Extra check: check actual world coord against road function just in case
                 if (!onRoad) {
                     const worldX = chunkX + bx;
                     const worldZ = chunkZ + bz;
-                    if (getRoadValue(worldX, worldZ) < ROAD_WIDTH_THRESHOLD + 0.1) {
-                        onRoad = true; // Buffer zone
-                    }
+                    if (getRoadValue(worldX, worldZ) < ROAD_WIDTH_THRESHOLD + 0.1) onRoad = true;
                 }
-
-                if (onRoad) continue; // Don't place building
+                if (onRoad) continue;
 
                 let geo, radius, height, width, depth;
+                if (seed < 0.3) { geo = buildingGeometries.small; radius = 8; height = 30; width = 10; depth = 10; } 
+                else if (seed < 0.6) { geo = buildingGeometries.tall; radius = 10; height = 80; width = 15; depth = 15; } 
+                else { geo = buildingGeometries.wide; radius = 15; height = 25; width = 30; depth = 20; }
 
-                // Select building type randomly
-                if (seed < 0.3) {
-                    geo = buildingGeometries.small;
-                    radius = 8;
-                    height = 30;
-                    width = 10; depth = 10;
-                } else if (seed < 0.6) {
-                    geo = buildingGeometries.tall;
-                    radius = 10;
-                    height = 80;
-                    width = 15; depth = 15;
+                // Determine color based on mode and seed
+                let matColor;
+                if (isNightMode) {
+                    matColor = seed > 0.5 ? 0x333344 : 0x111122;
                 } else {
-                    geo = buildingGeometries.wide;
-                    radius = 15;
-                    height = 25;
-                    width = 30; depth = 20;
+                    matColor = seed > 0.5 ? 0xcccccc : 0xa0d8ef;
                 }
-
-                // New Color Selection: Light Grey or Sky Blue
-                const matColor = seed > 0.5 ? 0xcccccc : 0xa0d8ef;
-
+                
                 const mat = new THREE.MeshStandardMaterial({ color: matColor });
                 const mesh = new THREE.Mesh(geo, mat);
-
-                // Rotation
                 const rot = (pseudoRandom(seed * 30, i) * Math.PI * 4);
-
-                // Position based on new height
                 mesh.position.set(bx, geo.parameters.height / 2, bz);
                 mesh.rotation.y = rot;
-
                 mesh.castShadow = true;
                 mesh.receiveShadow = true;
+                
+                // Store metadata for Day/Night toggle
+                mesh.userData = { isBuilding: true, seed: seed };
+                
                 group.add(mesh);
-
-                // Add collision data
-                const worldX = chunkX + bx;
-                const worldZ = chunkZ + bz;
-
-                obstacles.push({
-                    x: worldX,
-                    z: worldZ,
-                    radiusSq: radius * radius,
-                    isBuilding: true,
-                    rotation: rot,
-                    height: height,
-                    width: width, // Store for minimap
-                    depth: depth // Store for minimap
-                });
+                obstacles.push({ x: chunkX + bx, z: chunkZ + bz, radiusSq: radius * radius, isBuilding: true, rotation: rot, height: height, width: width, depth: depth });
             }
 
             scene.add(group);
-
-            // Store chunk data
-            activeChunks.set(`${cx},${cz}`, {
-                mesh: group,
-                obstacles: obstacles,
-                roads: roadMapPositions // Store road positions for minimap
-            });
+            activeChunks.set(`${cx},${cz}`, { mesh: group, obstacles: obstacles, roads: roadMapPositions });
         }
-        // --- Entities ---
 
+        // --- Entities ---
         function initPedestrianGeometries() {
             pedGeometries.head = new THREE.BoxGeometry(0.6, 0.6, 0.6);
             pedGeometries.body = new THREE.BoxGeometry(0.8, 1.2, 0.5);
@@ -823,325 +760,203 @@
             pedGeometries.leg = new THREE.BoxGeometry(0.3, 1.2, 0.3);
             pedGeometries.leg.translate(0, -0.6, 0);
         }
-
         function createPedestrianData() {
-            // Start random
             const angle = Math.random() * Math.PI * 2;
             const dist = Math.random() * 200 + 50;
-
             const pedData = {
                 position: new THREE.Vector3(Math.sin(angle) * dist, 2.0, Math.cos(angle) * dist),
                 velocity: new THREE.Vector3((Math.random() - 0.5) * 0.2, 0, (Math.random() - 0.5) * 0.2),
                 rotation: Math.random() * Math.PI * 2,
                 animPhase: Math.random() * 100,
-                isActive: false,
-                mesh: null,
-                colors: {
-                    shirt: Math.random() * 0xffffff,
-                    pants: Math.random() * 0xffffff,
-                    skin: 0xffccaa
-                }
+                isActive: false, mesh: null,
+                colors: { shirt: Math.random() * 0xffffff, pants: Math.random() * 0xffffff, skin: 0xffccaa }
             };
             allPedestrians.push(pedData);
         }
-
         function getCachedMaterial(colorHex) {
             const hex = Math.floor(colorHex);
-            if (!materialCache.has(hex)) {
-                materialCache.set(hex, new THREE.MeshStandardMaterial({ color: hex }));
-            }
+            if (!materialCache.has(hex)) materialCache.set(hex, new THREE.MeshStandardMaterial({ color: hex }));
             return materialCache.get(hex);
         }
-
         function buildPedestrianMesh(data) {
             const group = new THREE.Group();
-
             const skinMat = getCachedMaterial(data.colors.skin);
             const shirtMat = getCachedMaterial(data.colors.shirt);
             const pantsMat = getCachedMaterial(data.colors.pants);
-
-            const head = new THREE.Mesh(pedGeometries.head, skinMat);
-            head.position.y = 0.9;
-            head.castShadow = true;
-            group.add(head);
-
-            const body = new THREE.Mesh(pedGeometries.body, shirtMat);
-            body.position.y = 0;
-            body.castShadow = true;
-            group.add(body);
-
-            const armL = new THREE.Mesh(pedGeometries.arm, shirtMat);
-            armL.position.set(-0.55, 0.4, 0);
-            armL.castShadow = true;
-            group.add(armL);
-
-            const armR = new THREE.Mesh(pedGeometries.arm, shirtMat);
-            armR.position.set(0.55, 0.4, 0);
-            armR.castShadow = true;
-            group.add(armR);
-
-            const legL = new THREE.Mesh(pedGeometries.leg, pantsMat);
-            legL.position.set(-0.25, -0.6, 0);
-            legL.castShadow = true;
-            group.add(legL);
-
-            const legR = new THREE.Mesh(pedGeometries.leg, pantsMat);
-            legR.position.set(0.25, -0.6, 0);
-            legR.castShadow = true;
-            group.add(legR);
-
+            const head = new THREE.Mesh(pedGeometries.head, skinMat); head.position.y = 0.9; head.castShadow = true; group.add(head);
+            const body = new THREE.Mesh(pedGeometries.body, shirtMat); body.position.y = 0; body.castShadow = true; group.add(body);
+            const armL = new THREE.Mesh(pedGeometries.arm, shirtMat); armL.position.set(-0.55, 0.4, 0); armL.castShadow = true; group.add(armL);
+            const armR = new THREE.Mesh(pedGeometries.arm, shirtMat); armR.position.set(0.55, 0.4, 0); armR.castShadow = true; group.add(armR);
+            const legL = new THREE.Mesh(pedGeometries.leg, pantsMat); legL.position.set(-0.25, -0.6, 0); legL.castShadow = true; group.add(legL);
+            const legR = new THREE.Mesh(pedGeometries.leg, pantsMat); legR.position.set(0.25, -0.6, 0); legR.castShadow = true; group.add(legR);
             group.userData = { limbs: { armL, armR, legL, legR } };
             return group;
         }
 
-        // --- CAR MODELS ---
+        // --- CAR MODELS & HEADLIGHTS ---
 
-        function buildTruckMesh() {
+        function createHeadlights(group, xOffset, y, z, intensity = 2) {
+            // Only add actual spot lights in Night Mode
+            if (!isNightMode) return;
+
+            const spotL = new THREE.SpotLight(0xffffdd, intensity);
+            spotL.position.set(-xOffset, y, z);
+            spotL.angle = Math.PI / 6;
+            spotL.penumbra = 0.3;
+            spotL.decay = 1.5;
+            spotL.distance = 100;
+            spotL.castShadow = false; 
+            spotL.target.position.set(-xOffset, 0, z + 20);
+            group.add(spotL);
+            group.add(spotL.target);
+
+            const spotR = new THREE.SpotLight(0xffffdd, intensity);
+            spotR.position.set(xOffset, y, z);
+            spotR.angle = Math.PI / 6;
+            spotR.penumbra = 0.3;
+            spotR.decay = 1.5;
+            spotR.distance = 100;
+            spotR.target.position.set(xOffset, 0, z + 20);
+            group.add(spotR);
+            group.add(spotR.target);
+        }
+
+        function buildTruckMesh(addLights = true) {
             const group = new THREE.Group();
 
-            // Materials
+            // Materials adjusted based on Night Mode
             const bodyMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.3, metalness: 0.8 });
-            const cabinMat = new THREE.MeshStandardMaterial({ color: 0x00aaff, roughness: 0.0, metalness: 0.9, emissive: 0x004466 });
+            const cabinMat = new THREE.MeshStandardMaterial({ color: 0x00aaff, roughness: 0.0, metalness: 0.9, emissive: 0x002244, emissiveIntensity: 0.2 });
             const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 });
             const rimMat = new THREE.MeshStandardMaterial({ color: 0x00ffcc, emissive: 0x00ffcc, emissiveIntensity: 0.5 });
-            const tailLightMat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 2 });
-            const headLightMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 2 });
+            
+            // Dynamic Emissive intensity for lights
+            const lightIntensity = isNightMode ? 5.0 : 0.5;
+            const tailLightMat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: lightIntensity });
+            const headLightMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: lightIntensity });
 
-            // Chassis
+            // Geometry construction (Same as before)
             const chassisGeo = new THREE.BoxGeometry(2.2, 0.8, 4);
-            const chassis = new THREE.Mesh(chassisGeo, bodyMat);
-            chassis.position.y = 0.6;
-            group.add(chassis);
-
-            // Cabin
+            const chassis = new THREE.Mesh(chassisGeo, bodyMat); chassis.position.y = 0.6; group.add(chassis);
             const cabinGeo = new THREE.BoxGeometry(1.6, 0.6, 2);
-            const cabin = new THREE.Mesh(cabinGeo, cabinMat);
-            cabin.position.set(0, 1.2, 0);
-            group.add(cabin);
-
-            // Spoiler
+            const cabin = new THREE.Mesh(cabinGeo, cabinMat); cabin.position.set(0, 1.2, 0); group.add(cabin);
             const spoilerStalkGeo = new THREE.BoxGeometry(0.2, 0.5, 0.5);
             const spoilerWingGeo = new THREE.BoxGeometry(2.4, 0.1, 0.8);
-
-            const stalkL = new THREE.Mesh(spoilerStalkGeo, bodyMat);
-            stalkL.position.set(-0.8, 1.1, -1.8);
-            group.add(stalkL);
-            const stalkR = new THREE.Mesh(spoilerStalkGeo, bodyMat);
-            stalkR.position.set(0.8, 1.1, -1.8);
-            group.add(stalkR);
-            const wing = new THREE.Mesh(spoilerWingGeo, bodyMat);
-            wing.position.set(0, 1.4, -1.8);
-            group.add(wing);
-
-            // Wheels
+            const stalkL = new THREE.Mesh(spoilerStalkGeo, bodyMat); stalkL.position.set(-0.8, 1.1, -1.8); group.add(stalkL);
+            const stalkR = new THREE.Mesh(spoilerStalkGeo, bodyMat); stalkR.position.set(0.8, 1.1, -1.8); group.add(stalkR);
+            const wing = new THREE.Mesh(spoilerWingGeo, bodyMat); wing.position.set(0, 1.4, -1.8); group.add(wing);
             const wheelGeo = new THREE.BoxGeometry(0.4, 0.8, 0.8);
-            const positions = [
-                { x: -1.2, z: 1.2 }, { x: 1.2, z: 1.2 },
-                { x: -1.2, z: -1.2 }, { x: 1.2, z: -1.2 }
-            ];
-
+            const positions = [{ x: -1.2, z: 1.2 }, { x: 1.2, z: 1.2 }, { x: -1.2, z: -1.2 }, { x: 1.2, z: -1.2 }];
             positions.forEach(pos => {
-                const wheel = new THREE.Mesh(wheelGeo, wheelMat);
-                wheel.position.set(pos.x, 0.4, pos.z);
-                group.add(wheel);
-                const rim = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.4, 0.4), rimMat);
-                rim.position.set(pos.x + (pos.x > 0 ? 0.2 : -0.2), 0.4, pos.z);
-                group.add(rim);
+                const wheel = new THREE.Mesh(wheelGeo, wheelMat); wheel.position.set(pos.x, 0.4, pos.z); group.add(wheel);
+                const rim = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.4, 0.4), rimMat); rim.position.set(pos.x + (pos.x > 0 ? 0.2 : -0.2), 0.4, pos.z); group.add(rim);
             });
-
-            // Lights
             const headLightGeo = new THREE.BoxGeometry(0.6, 0.2, 0.1);
-            const headL = new THREE.Mesh(headLightGeo, headLightMat);
-            headL.position.set(-0.6, 0.7, 2.0);
-            group.add(headL);
-            const headR = new THREE.Mesh(headLightGeo, headLightMat);
-            headR.position.set(0.6, 0.7, 2.0);
-            group.add(headR);
+            const headL = new THREE.Mesh(headLightGeo, headLightMat); headL.position.set(-0.6, 0.7, 2.0); group.add(headL);
+            const headR = new THREE.Mesh(headLightGeo, headLightMat); headR.position.set(0.6, 0.7, 2.0); group.add(headR);
             const tailGeo = new THREE.BoxGeometry(2.0, 0.2, 0.1);
-            const tail = new THREE.Mesh(tailGeo, tailLightMat);
-            tail.position.set(0, 0.8, -2.0);
-            group.add(tail);
+            const tail = new THREE.Mesh(tailGeo, tailLightMat); tail.position.set(0, 0.8, -2.0); group.add(tail);
+
+            if (addLights) {
+                createHeadlights(group, 0.6, 0.7, 2.1, 8.0);
+            }
 
             return group;
         }
 
-        function buildHypercarMesh() {
+        function buildHypercarMesh(addLights = true) {
             const group = new THREE.Group();
-
-            // Materials - Yellow Pagani Style
-            const bodyColor = 0xFFD700; // Bright Gold/Yellow
-            const carbonColor = 0x111111;
-            const glassColor = 0x111111;
-
+            const bodyColor = 0xFFD700;
             const bodyMat = new THREE.MeshStandardMaterial({ color: bodyColor, roughness: 0.2, metalness: 0.6 });
-            const carbonMat = new THREE.MeshStandardMaterial({ color: carbonColor, roughness: 0.5, metalness: 0.5 });
-            const glassMat = new THREE.MeshStandardMaterial({ color: glassColor, roughness: 0.1, metalness: 0.9 });
-            const tailLightMat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 2 });
-            const exhaustMat = new THREE.MeshStandardMaterial({ color: 0x8888ff, metalness: 1.0, roughness: 0.2 });
+            const carbonMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.5, metalness: 0.5 });
+            const glassMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.1, metalness: 0.9 });
+            
+            // Dynamic Emissive
+            const lightIntensity = isNightMode ? 5.0 : 0.5;
+            const tailLightMat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: lightIntensity });
+            const headLightMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: lightIntensity });
+            const exhaustMat = new THREE.MeshStandardMaterial({ color: 0x8888ff, metalness: 1.0, roughness: 0.2, emissive: 0x2222ff, emissiveIntensity: isNightMode ? 2.0 : 0.5 });
 
-            // 1. Low Main Chassis
-            // Length: 4.5, Width: 2.0, Height: 0.5
             const chassisGeo = new THREE.BoxGeometry(2.0, 0.5, 4.4);
-            const chassis = new THREE.Mesh(chassisGeo, bodyMat);
-            chassis.position.y = 0.5;
-            group.add(chassis);
-
-            // 2. Bubble Cabin (Teardrop shape approximation with voxels)
-            // Center Cabin
+            const chassis = new THREE.Mesh(chassisGeo, bodyMat); chassis.position.y = 0.5; group.add(chassis);
             const cabinGeo = new THREE.BoxGeometry(1.4, 0.5, 2.0);
-            const cabin = new THREE.Mesh(cabinGeo, glassMat);
-            cabin.position.set(0, 1.0, 0.2); // Slightly forward
-            group.add(cabin);
-
-            // 3. Wide Wheel Arches (Fenders)
+            const cabin = new THREE.Mesh(cabinGeo, glassMat); cabin.position.set(0, 1.0, 0.2); group.add(cabin);
             const fenderGeoFront = new THREE.BoxGeometry(0.8, 0.6, 1.2);
             const fenderGeoRear = new THREE.BoxGeometry(0.9, 0.7, 1.4);
-
-            // Front Left
-            const fl = new THREE.Mesh(fenderGeoFront, bodyMat);
-            fl.position.set(-1.2, 0.5, 1.4);
-            group.add(fl);
-            // Front Right
-            const fr = new THREE.Mesh(fenderGeoFront, bodyMat);
-            fr.position.set(1.2, 0.5, 1.4);
-            group.add(fr);
-            // Rear Left (Wider hips)
-            const rl = new THREE.Mesh(fenderGeoRear, bodyMat);
-            rl.position.set(-1.25, 0.6, -1.2);
-            group.add(rl);
-            // Rear Right
-            const rr = new THREE.Mesh(fenderGeoRear, bodyMat);
-            rr.position.set(1.25, 0.6, -1.2);
-            group.add(rr);
-
-            // 4. Side Skirts (Carbon)
+            const fl = new THREE.Mesh(fenderGeoFront, bodyMat); fl.position.set(-1.2, 0.5, 1.4); group.add(fl);
+            const fr = new THREE.Mesh(fenderGeoFront, bodyMat); fr.position.set(1.2, 0.5, 1.4); group.add(fr);
+            const rl = new THREE.Mesh(fenderGeoRear, bodyMat); rl.position.set(-1.25, 0.6, -1.2); group.add(rl);
+            const rr = new THREE.Mesh(fenderGeoRear, bodyMat); rr.position.set(1.25, 0.6, -1.2); group.add(rr);
             const skirtGeo = new THREE.BoxGeometry(0.4, 0.2, 2.0);
-            const skirtL = new THREE.Mesh(skirtGeo, carbonMat);
-            skirtL.position.set(-1.1, 0.3, 0.1);
-            group.add(skirtL);
-            const skirtR = new THREE.Mesh(skirtGeo, carbonMat);
-            skirtR.position.set(1.1, 0.3, 0.1);
-            group.add(skirtR);
-
-            // 5. Huge Rear Wing (Pagani style active aero flaps + wing)
-            // Central pillars
+            const skirtL = new THREE.Mesh(skirtGeo, carbonMat); skirtL.position.set(-1.1, 0.3, 0.1); group.add(skirtL);
+            const skirtR = new THREE.Mesh(skirtGeo, carbonMat); skirtR.position.set(1.1, 0.3, 0.1); group.add(skirtR);
             const wingPillarGeo = new THREE.BoxGeometry(0.2, 0.6, 0.4);
-            const wpL = new THREE.Mesh(wingPillarGeo, carbonMat);
-            wpL.position.set(-0.5, 0.8, -1.8);
-            group.add(wpL);
-            const wpR = new THREE.Mesh(wingPillarGeo, carbonMat);
-            wpR.position.set(0.5, 0.8, -1.8);
-            group.add(wpR);
-
-            // The Wing Blade
+            const wpL = new THREE.Mesh(wingPillarGeo, carbonMat); wpL.position.set(-0.5, 0.8, -1.8); group.add(wpL);
+            const wpR = new THREE.Mesh(wingPillarGeo, carbonMat); wpR.position.set(0.5, 0.8, -1.8); group.add(wpR);
             const wingBladeGeo = new THREE.BoxGeometry(2.6, 0.1, 0.8);
-            const wing = new THREE.Mesh(wingBladeGeo, carbonMat);
-            wing.position.set(0, 1.1, -1.9);
-            group.add(wing);
-
-            // 6. Distinctive Center Quad Exhaust
+            const wing = new THREE.Mesh(wingBladeGeo, carbonMat); wing.position.set(0, 1.1, -1.9); group.add(wing);
             const exhaustBoxGeo = new THREE.BoxGeometry(0.6, 0.4, 0.1);
-            const exhaustBox = new THREE.Mesh(exhaustBoxGeo, carbonMat);
-            exhaustBox.position.set(0, 0.6, -2.25);
-            group.add(exhaustBox);
-
-            // The pipes (4 small dots/voxels)
+            const exhaustBox = new THREE.Mesh(exhaustBoxGeo, carbonMat); exhaustBox.position.set(0, 0.6, -2.25); group.add(exhaustBox);
             const pipeGeo = new THREE.BoxGeometry(0.1, 0.1, 0.1);
-            const pipeOffsets = [
-                [-0.15, 0.1], [0.15, 0.1],
-                [-0.15, -0.1], [0.15, -0.1]
-            ];
-            pipeOffsets.forEach(off => {
-                const pipe = new THREE.Mesh(pipeGeo, exhaustMat);
-                pipe.position.set(off[0], 0.6 + off[1], -2.31); // Slightly protruding
-                group.add(pipe);
+            [[-0.15, 0.1], [0.15, 0.1], [-0.15, -0.1], [0.15, -0.1]].forEach(off => {
+                const pipe = new THREE.Mesh(pipeGeo, exhaustMat); pipe.position.set(off[0], 0.6 + off[1], -2.31); group.add(pipe);
             });
-
-            // 7. Tail Lights (Triple vertical strips or circles)
             const tlGeo = new THREE.BoxGeometry(0.1, 0.4, 0.1);
-            const tlL = new THREE.Mesh(tlGeo, tailLightMat);
-            tlL.position.set(-1.4, 0.7, -1.9);
-            group.add(tlL);
-            const tlR = new THREE.Mesh(tlGeo, tailLightMat);
-            tlR.position.set(1.4, 0.7, -1.9);
-            group.add(tlR);
-
-            // 8. Wheels (Wider/Lower)
+            const tlL = new THREE.Mesh(tlGeo, tailLightMat); tlL.position.set(-1.4, 0.7, -1.9); group.add(tlL);
+            const tlR = new THREE.Mesh(tlGeo, tailLightMat); tlR.position.set(1.4, 0.7, -1.9); group.add(tlR);
+            const hlGeo = new THREE.BoxGeometry(0.6, 0.1, 0.2);
+            const hlL = new THREE.Mesh(hlGeo, headLightMat); hlL.position.set(-1.0, 0.5, 2.0); group.add(hlL);
+            const hlR = new THREE.Mesh(hlGeo, headLightMat); hlR.position.set(1.0, 0.5, 2.0); group.add(hlR);
             const wheelGeo = new THREE.BoxGeometry(0.6, 0.8, 0.8);
             const wheelMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9 });
-            const rimMat = new THREE.MeshStandardMaterial({ color: 0x000000 }); // Black rims
-
-            const positions = [
-                { x: -1.3, z: 1.4 }, { x: 1.3, z: 1.4 },
-                { x: -1.35, z: -1.2 }, { x: 1.35, z: -1.2 }
-            ];
-
-            positions.forEach(pos => {
-                const wheel = new THREE.Mesh(wheelGeo, wheelMat);
-                wheel.position.set(pos.x, 0.4, pos.z);
-                group.add(wheel);
-
-                // Rim detail
-                const rim = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, 0.5), rimMat);
-                rim.position.set(pos.x + (pos.x > 0 ? 0.3 : -0.3), 0.4, pos.z);
-                group.add(rim);
+            const rimMat = new THREE.MeshStandardMaterial({ color: 0x000000 }); 
+            [{ x: -1.3, z: 1.4 }, { x: 1.3, z: 1.4 }, { x: -1.35, z: -1.2 }, { x: 1.35, z: -1.2 }].forEach(pos => {
+                const wheel = new THREE.Mesh(wheelGeo, wheelMat); wheel.position.set(pos.x, 0.4, pos.z); group.add(wheel);
+                const rim = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, 0.5), rimMat); rim.position.set(pos.x + (pos.x > 0 ? 0.3 : -0.3), 0.4, pos.z); group.add(rim);
             });
 
+            if(addLights) {
+                createHeadlights(group, 1.0, 0.5, 2.0, 10.0);
+            }
             return group;
         }
 
         function createPlayer() {
-            // Physics container
             player = new THREE.Group();
             player.position.set(0, PLAYER_BASE_Y, 0);
             scene.add(player);
-
-            // Load default car
-            loadCarModel('truck');
+            // Default to hypercar
+            loadCarModel('hypercar');
         }
 
         function loadCarModel(type) {
-            // Remove existing mesh if any
             if (currentCarMesh) {
                 player.remove(currentCarMesh);
             }
-
             carType = type;
-
             if (type === 'truck') {
-                currentCarMesh = buildTruckMesh();
+                currentCarMesh = buildTruckMesh(true);
                 currentCarMesh.scale.set(2.1, 1.5, 1.5);
-                // Adjust physics constants for Truck
-                PLAYER_SPEED = 0.25;
-                MAX_SPEED = 2.0;
+                PLAYER_SPEED = 0.25; MAX_SPEED = 2.0;
             } else if (type === 'hypercar') {
-                currentCarMesh = buildHypercarMesh();
-                currentCarMesh.scale.set(1.8, 1.8, 1.8); // Scale to fit world
-                // Adjust physics constants for Hypercar
-                PLAYER_SPEED = 0.45; // Faster acceleration
-                MAX_SPEED = 3.5; // Higher top speed
+                currentCarMesh = buildHypercarMesh(true);
+                currentCarMesh.scale.set(1.8, 1.8, 1.8);
+                PLAYER_SPEED = 0.45; MAX_SPEED = 3.5;
             }
-
-            // Enable shadows for the new mesh
             currentCarMesh.traverse((child) => {
                 if (child.isMesh) {
                     child.castShadow = true;
                     child.receiveShadow = true;
                 }
             });
-
             player.add(currentCarMesh);
         }
 
         function toggleCarModel() {
             const newType = (carType === 'truck') ? 'hypercar' : 'truck';
             loadCarModel(newType);
-
-            // Little bounce effect
             velocity.y = 0.5;
             isAirborne = true;
-
-            // Update UI to show the *other* car
             updateMiniatureModel();
         }
 
@@ -1152,33 +967,19 @@
             camLastPos = { x: e.clientX, y: e.clientY };
         }
 
-        // Mouse Down for Desktop Interactions
         function onMouseDown(e) {
-            // Check UI first
-            if (checkMiniatureClick(e.clientX, e.clientY)) {
-                return; // Handled
-            }
-
-            if (e.target === centerBtn) return;
-
-            // Check for rapid click
+            if (checkMiniatureClick(e.clientX, e.clientY)) return;
+            if (e.target === centerBtn || e.target === timeBtn) return;
             const now = Date.now();
-            if (now - lastTapTime < 250) {
-                emitWheelSmoke();
-            }
+            if (now - lastTapTime < 250) emitWheelSmoke();
             lastTapTime = now;
-
-            // Otherwise Camera Drag
             if (e.clientX < window.innerWidth / 2) {
-                // Logic handled by joystick logic usually
             } else {
                 isManualCamera = true;
                 manualCamTimer = 120;
                 camLastPos = { x: e.clientX, y: e.clientY };
                 document.addEventListener('mousemove', onMouseMoveCam);
-                document.addEventListener('mouseup', () => {
-                    document.removeEventListener('mousemove', onMouseMoveCam);
-                });
+                document.addEventListener('mouseup', () => { document.removeEventListener('mousemove', onMouseMoveCam); });
             }
         }
 
@@ -1186,30 +987,20 @@
             e.preventDefault();
             const touches = e.changedTouches;
             const zoneRect = movementZone.getBoundingClientRect();
-            const zoneCenter = {
-                x: zoneRect.left + zoneRect.width / 2,
-                y: zoneRect.top + zoneRect.height / 2
-            };
-            
-            // --- Rapid Tap Detection ---
+            const zoneCenter = { x: zoneRect.left + zoneRect.width / 2, y: zoneRect.top + zoneRect.height / 2 };
             const now = Date.now();
-            if (now - lastTapTime < 250) {
-                // Double tap detected implies rapid tapping
-                emitWheelSmoke();
-            }
+            if (now - lastTapTime < 250) emitWheelSmoke();
             lastTapTime = now;
-            // ---------------------------
-
             for (let i = 0; i < touches.length; i++) {
                 const t = touches[i];
-
-                // Check UI click
                 if (checkMiniatureClick(t.clientX, t.clientY)) continue;
-
+                if (t.target === timeBtn) {
+                     toggleDayNight();
+                     continue;
+                }
                 const dx = t.clientX - zoneCenter.x;
                 const dy = t.clientY - zoneCenter.y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
-
                 if (moveTouchId === null && dist < joystickRadius * 1.5) {
                     moveTouchId = t.identifier;
                     updateJoystick(t.clientX, t.clientY, zoneCenter);
@@ -1226,11 +1017,7 @@
             e.preventDefault();
             const touches = e.changedTouches;
             const zoneRect = movementZone.getBoundingClientRect();
-            const zoneCenter = {
-                x: zoneRect.left + zoneRect.width / 2,
-                y: zoneRect.top + zoneRect.height / 2
-            };
-
+            const zoneCenter = { x: zoneRect.left + zoneRect.width / 2, y: zoneRect.top + zoneRect.height / 2 };
             for (let i = 0; i < touches.length; i++) {
                 const t = touches[i];
                 if (t.identifier === moveTouchId) {
@@ -1255,9 +1042,7 @@
                     moveInput = { x: 0, y: 0 };
                     stickKnob.style.transform = `translate(-50%, -50%)`;
                 }
-                if (touches[i].identifier === camTouchId) {
-                    camTouchId = null;
-                }
+                if (touches[i].identifier === camTouchId) camTouchId = null;
             }
         }
 
@@ -1302,7 +1087,6 @@
             headingArrow.style.transform = `rotate(${angleDeg}deg)`;
         }
 
-        // --- Game Loop Logic ---
         function shortestAngleDist(a, b) {
             let diff = b - a;
             while (diff > Math.PI) diff -= Math.PI * 2;
@@ -1312,24 +1096,11 @@
 
         function updatePhysics() {
             if (isGameOver) return;
-
-            // Steering
             if (Math.abs(moveInput.x) > 0.1) {
-                // Hypercar turns sharper at speed
-                // Reduced sensitivity: 0.09 -> 0.05, 0.07 -> 0.04
                 const turnFactor = carType === 'hypercar' ? 0.05 : 0.04;
                 player.rotation.y -= moveInput.x * turnFactor;
-                
-                // Spin/Drift Smoke: If turning hard
-                if (Math.abs(moveInput.x) > 0.85) {
-                    // Random chance to emit to prevent particle overload
-                    if (Math.random() < 0.25) {
-                        emitWheelSmoke();
-                    }
-                }
+                if (Math.abs(moveInput.x) > 0.85 && Math.random() < 0.25) emitWheelSmoke();
             }
-
-            // Gas/Brake
             if (Math.abs(moveInput.y) > 0.1) {
                 const throttle = -moveInput.y;
                 const rotation = player.rotation.y;
@@ -1338,27 +1109,18 @@
                 velocity.x += accelX;
                 velocity.z += accelZ;
             }
-
-            // Friction (Horizontal)
             velocity.x *= FRICTION;
             velocity.z *= FRICTION;
-
-            // Gravity (Vertical)
             velocity.y -= GRAVITY;
 
-            // Limit horizontal speed
             const hSpeed = Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
             if (hSpeed > MAX_SPEED) {
                 const ratio = MAX_SPEED / hSpeed;
                 velocity.x *= ratio;
                 velocity.z *= ratio;
             }
-
-            // Apply Velocity
-            const prevPos = player.position.clone();
             player.position.add(velocity);
 
-            // Ground Collision
             if (player.position.y < PLAYER_BASE_Y) {
                 player.position.y = PLAYER_BASE_Y;
                 velocity.y = 0;
@@ -1367,40 +1129,26 @@
                 isAirborne = true;
             }
 
-            // Object Collisions
-            const pRadiusSq = 4.0; // Car radius roughly 2x2
-
-            // Optimization: Iterate over chunks instead of global list
+            const pRadiusSq = 4.0; 
             for (const chunk of activeChunks.values()) {
                 if (!chunk.obstacles) continue;
-
                 for (let i = 0; i < chunk.obstacles.length; i++) {
                     const obs = chunk.obstacles[i];
-
-                    // Vertical clearance check: If player is above the building, no collision
                     if (player.position.y > obs.height) continue;
-
                     const dx = player.position.x - obs.x;
                     const dz = player.position.z - obs.z;
                     const distSq = dx * dx + dz * dz;
-
                     if (distSq < obs.radiusSq + pRadiusSq) {
-
-                        // CRASH LOGIC
                         explode(player.position, 0xff4400);
                         explode(player.position, 0xffee00);
-
                         isGameOver = true;
                         player.visible = false;
                         velocity.set(0, 0, 0);
-
-                        // Update UI
                         const instr = document.querySelector('.instructions');
                         const oldText = instr.innerHTML;
                         instr.innerHTML = "<span style='color:red; font-size:20px; font-weight:bold;'>CRASHED!</span>";
                         instr.style.opacity = 1;
                         instr.style.animation = 'none';
-
                         setTimeout(() => resetGame(oldText), 3000);
                         return;
                     }
@@ -1414,54 +1162,35 @@
             player.position.set(0, PLAYER_BASE_Y, 0);
             player.rotation.set(0, 0, 0);
             velocity.set(0, 0, 0);
-            moveInput = { x: 0, y: 0 }; // Reset stick input
-
-            // Reset Score
+            moveInput = { x: 0, y: 0 }; 
             score = 0;
             scoreElement.innerText = "Score: 0";
-
-            // Reset Camera
             centerCamera();
-
-            // Reset UI
             const instr = document.querySelector('.instructions');
-            instr.innerHTML = oldText || "Infinite Procedural Map<br>Left Stick: Drive & Steer";
-            // Restart fade out
+            instr.innerHTML = oldText || (isNightMode ? "Night Run<br>Left Stick: Drive" : "Day Run<br>Left Stick: Drive");
             instr.style.animation = 'none';
-            instr.offsetHeight; /* trigger reflow */
+            instr.offsetHeight; 
             instr.style.animation = 'fadeOut 5s forwards';
             instr.style.animationDelay = '2s';
         }
 
         function updatePedestrians() {
-            if (isGameOver) return; // Stop updating pedestrians when dead
+            if (isGameOver) return; 
             const time = Date.now() * 0.005;
             const playerPos = player.position;
-            const SPAWN_RANGE = 300; // Keep them within this box around player
-
-            // Clear active list
+            const SPAWN_RANGE = 300; 
             activeObstacles.length = 0;
-
             for (let i = 0; i < allPedestrians.length; i++) {
                 const ped = allPedestrians[i];
-
-                // 1. Move
                 ped.position.add(ped.velocity);
-
-                // 2. Infinite Wrapping (Treadmill Effect)
-                // If too far left/right/front/back, wrap to other side
                 if (ped.position.x > playerPos.x + SPAWN_RANGE) ped.position.x -= SPAWN_RANGE * 2;
                 if (ped.position.x < playerPos.x - SPAWN_RANGE) ped.position.x += SPAWN_RANGE * 2;
                 if (ped.position.z > playerPos.z + SPAWN_RANGE) ped.position.z -= SPAWN_RANGE * 2;
                 if (ped.position.z < playerPos.z - SPAWN_RANGE) ped.position.z += SPAWN_RANGE * 2;
-
-                // 3. Cull & Render
                 const dx = ped.position.x - playerPos.x;
                 const dz = ped.position.z - playerPos.z;
                 const distSq = dx * dx + dz * dz;
-
                 if (distSq < CULL_DIST_SQ) {
-                    // Show
                     if (!ped.mesh) {
                         ped.mesh = buildPedestrianMesh(ped);
                         ped.mesh.rotation.y = ped.rotation;
@@ -1471,18 +1200,14 @@
                         ped.isActive = true;
                     }
                     ped.mesh.position.copy(ped.position);
-
-                    // Animation
                     const phase = time + ped.animPhase;
                     const swing = Math.sin(phase) * 0.6;
                     ped.mesh.userData.limbs.legL.rotation.x = swing;
                     ped.mesh.userData.limbs.legR.rotation.x = -swing;
                     ped.mesh.userData.limbs.armL.rotation.x = -swing;
                     ped.mesh.userData.limbs.armR.rotation.x = swing;
-
                     activeObstacles.push(ped);
                 } else {
-                    // Hide
                     if (ped.isActive) {
                         scene.remove(ped.mesh);
                         ped.isActive = false;
@@ -1494,106 +1219,56 @@
         function checkCollisions() {
             if (isGameOver) return;
             const collisionThresholdSq = 16.0;
-
             for (let i = activeObstacles.length - 1; i >= 0; i--) {
                 const pedData = activeObstacles[i];
-
                 const dx = player.position.x - pedData.position.x;
                 const dz = player.position.z - pedData.position.z;
                 const distSq = dx * dx + dz * dz;
-
                 if (distSq < collisionThresholdSq) {
                     explode(pedData.position);
-
-                    // Teleport away instead of deleting
                     pedData.position.x = player.position.x + (Math.random() - 0.5) * 300;
                     pedData.position.z = player.position.z + (Math.random() - 0.5) * 300;
-
-                    // Ensure they spawn outside view initially
-                    // (Simple random respawn for now)
-
                     if (pedData.isActive) {
                         scene.remove(pedData.mesh);
                         pedData.isActive = false;
                     }
-
                     score++;
                     scoreElement.innerText = "Score: " + score;
                 }
             }
         }
         
-        // --- SMOKE / PARTICLE SYSTEM ---
-        
         function emitWheelSmoke() {
             if (!player) return;
-            
-            // Define local wheel positions based on car type
             let wheelOffsets = [];
-            
             if (carType === 'truck') {
-                // Approximate truck wheel positions
-                wheelOffsets = [
-                    {x: -1.2, z: 1.2}, {x: 1.2, z: 1.2},
-                    {x: -1.2, z: -1.2}, {x: 1.2, z: -1.2}
-                ];
+                wheelOffsets = [{x: -1.2, z: 1.2}, {x: 1.2, z: 1.2}, {x: -1.2, z: -1.2}, {x: 1.2, z: -1.2}];
             } else {
-                // Hypercar wheel positions
-                wheelOffsets = [
-                    {x: -1.3, z: 1.4}, {x: 1.3, z: 1.4},
-                    {x: -1.35, z: -1.2}, {x: 1.35, z: -1.2}
-                ];
+                wheelOffsets = [{x: -1.3, z: 1.4}, {x: 1.3, z: 1.4}, {x: -1.35, z: -1.2}, {x: 1.35, z: -1.2}];
             }
-            
             const carRot = player.rotation.y;
             const cos = Math.cos(carRot);
             const sin = Math.sin(carRot);
-            
             wheelOffsets.forEach(offset => {
-                // Rotate offset
                 const rx = offset.x * cos + offset.z * sin;
                 const rz = -offset.x * sin + offset.z * cos;
-                
-                // Absolute position
-                const pos = new THREE.Vector3(
-                    player.position.x + rx,
-                    player.position.y + 0.2, // Emit from near ground
-                    player.position.z + rz
-                );
-                
-                // Spawn a few particles per wheel per tap
-                for(let i=0; i<2; i++) {
-                    spawnSmokeParticle(pos);
-                }
+                const pos = new THREE.Vector3(player.position.x + rx, player.position.y + 0.2, player.position.z + rz);
+                for(let i=0; i<2; i++) spawnSmokeParticle(pos);
             });
         }
         
         function spawnSmokeParticle(pos) {
             const size = Math.random() * 0.4 + 0.2;
             const geo = new THREE.BoxGeometry(size, size, size);
-            // Semi-transparent grey
-            const mat = new THREE.MeshBasicMaterial({ 
-                color: 0xdddddd, 
-                transparent: true, 
-                opacity: 0.6 
-            });
+            const mat = new THREE.MeshBasicMaterial({ color: 0xdddddd, transparent: true, opacity: 0.4 });
             const p = new THREE.Mesh(geo, mat);
             p.position.copy(pos);
-            
-            // Add some jitter
             p.position.x += (Math.random() - 0.5) * 0.5;
             p.position.z += (Math.random() - 0.5) * 0.5;
-            
             p.userData = {
-                type: 'smoke',
-                life: 1.0,
-                velocity: new THREE.Vector3(
-                    (Math.random() - 0.5) * 0.05,
-                    0.05 + Math.random() * 0.05, // Upward drift
-                    (Math.random() - 0.5) * 0.05
-                )
+                type: 'smoke', life: 1.0,
+                velocity: new THREE.Vector3((Math.random() - 0.5) * 0.05, 0.05 + Math.random() * 0.05, (Math.random() - 0.5) * 0.05)
             };
-            
             scene.add(p);
             particles.push(p);
         }
@@ -1606,13 +1281,8 @@
                 p.position.copy(pos);
                 p.position.y += 1.5;
                 p.userData = {
-                    type: 'debris',
-                    life: 1.0,
-                    velocity: new THREE.Vector3(
-                        (Math.random() - 0.5) * 1.0,
-                        Math.random() * 1.0 + 0.2,
-                        (Math.random() - 0.5) * 1.0
-                    )
+                    type: 'debris', life: 1.0,
+                    velocity: new THREE.Vector3((Math.random() - 0.5) * 1.0, Math.random() * 1.0 + 0.2, (Math.random() - 0.5) * 1.0)
                 };
                 scene.add(p);
                 particles.push(p);
@@ -1623,27 +1293,14 @@
             for (let i = particles.length - 1; i >= 0; i--) {
                 const p = particles[i];
                 p.position.add(p.userData.velocity);
-                
                 if (p.userData.type === 'smoke') {
-                    // Smoke Physics: Rise, Expand, Fade
-                    p.rotation.x += 0.05;
-                    p.rotation.y += 0.05;
-                    p.scale.addScalar(0.04); // Grow
-                    p.userData.life -= 0.025;
-                    if(p.material.opacity > 0) p.material.opacity = p.userData.life * 0.6;
+                    p.rotation.x += 0.05; p.rotation.y += 0.05; p.scale.addScalar(0.04); p.userData.life -= 0.025;
+                    if(p.material.opacity > 0) p.material.opacity = p.userData.life * 0.4;
                 } else {
-                    // Debris Physics: Gravity, Bounce
-                    p.userData.velocity.y -= 0.03;
-                    p.rotation.x += 0.1;
-                    p.rotation.y += 0.1;
-                    if (p.position.y < 0) {
-                        p.userData.velocity.y *= -0.5;
-                        p.position.y = 0;
-                    }
-                    p.userData.life -= 0.05;
-                    p.scale.setScalar(p.userData.life);
+                    p.userData.velocity.y -= 0.03; p.rotation.x += 0.1; p.rotation.y += 0.1;
+                    if (p.position.y < 0) { p.userData.velocity.y *= -0.5; p.position.y = 0; }
+                    p.userData.life -= 0.05; p.scale.setScalar(p.userData.life);
                 }
-
                 if (p.userData.life <= 0) {
                     scene.remove(p);
                     particles.splice(i, 1);
@@ -1664,7 +1321,6 @@
                     cameraVerticalAngle += (targetPitch - cameraVerticalAngle) * 0.02;
                 }
             }
-
             const hDist = CAMERA_DIST * Math.cos(cameraVerticalAngle);
             const vDist = CAMERA_DIST * Math.sin(cameraVerticalAngle);
             const offsetX = hDist * Math.sin(cameraAngle);
@@ -1678,86 +1334,71 @@
             camera.lookAt(player.position);
         }
 
-        // --- NEW: Minimap Update Function ---
         function updateMinimap() {
             if (!player) return;
-
-            // Clear canvas
             const w = minimapCanvas.width;
             const h = minimapCanvas.height;
             minimapCtx.clearRect(0, 0, w, h);
 
-            // Fill Background (Grass)
-            minimapCtx.fillStyle = 'rgba(68, 119, 68, 0.5)'; // Translucent green
+            // Adaptive Background
+            minimapCtx.fillStyle = isNightMode ? 'rgba(10, 20, 30, 0.9)' : 'rgba(68, 119, 68, 0.8)';
             minimapCtx.fillRect(0, 0, w, h);
 
             minimapCtx.save();
-            
-            // 1. Center logic
             minimapCtx.translate(w / 2, h / 2);
-
-            // 2. Rotation logic (Forward is UP on the map)
-            // We rotate the entire world context opposite to player rotation
             minimapCtx.rotate(player.rotation.y + Math.PI);
-
-            // 3. Scaling (Zoom level)
-            const zoom = 1.0; 
-            minimapCtx.scale(zoom, zoom);
-
-            // 4. Position offset (Move world relative to player)
+            minimapCtx.scale(1.0, 1.0);
             minimapCtx.translate(-player.position.x, -player.position.z);
 
-            // 5. Draw Chunks (Roads and Buildings)
-            // We only draw active chunks.
-            
-            // Draw Roads first
-            minimapCtx.fillStyle = '#222222'; // Dark Grey Roads
+            minimapCtx.fillStyle = isNightMode ? '#333' : '#222';
             for (const chunk of activeChunks.values()) {
                 if (chunk.roads) {
                     for (const road of chunk.roads) {
-                        // Draw a slightly larger square to prevent gaps
                         minimapCtx.fillRect(road.x - ROAD_TILE_SIZE/2, road.z - ROAD_TILE_SIZE/2, ROAD_TILE_SIZE + 1, ROAD_TILE_SIZE + 1);
                     }
                 }
             }
 
-            // Draw Buildings
-            minimapCtx.fillStyle = '#87CEEB'; // Sky Blue Buildings (match UI theme)
+            minimapCtx.fillStyle = isNightMode ? '#445566' : '#87CEEB';
             for (const chunk of activeChunks.values()) {
                 if (chunk.obstacles) {
                     for (const obs of chunk.obstacles) {
                         if (obs.isBuilding) {
                             minimapCtx.save();
                             minimapCtx.translate(obs.x, obs.z);
-                            minimapCtx.rotate(-obs.rotation); // Negative because canvas Y is down? No, standard 2D rotation.
-                            // Draw centered rectangle
+                            minimapCtx.rotate(-obs.rotation); 
                             minimapCtx.fillRect(-obs.width/2, -obs.depth/2, obs.width, obs.depth);
                             minimapCtx.restore();
                         }
                     }
                 }
             }
-
             minimapCtx.restore();
 
-            // 6. Draw Player (Static at center)
             minimapCtx.save();
             minimapCtx.translate(w / 2, h / 2);
-            
-            // Draw Arrow
             minimapCtx.fillStyle = '#ff3366';
             minimapCtx.strokeStyle = '#ffffff';
             minimapCtx.lineWidth = 2;
-            
             minimapCtx.beginPath();
-            minimapCtx.moveTo(0, -10); // Tip (Pointing Up)
-            minimapCtx.lineTo(8, 10);  // Bottom Right
-            minimapCtx.lineTo(0, 6);   // Indent
-            minimapCtx.lineTo(-8, 10); // Bottom Left
+            minimapCtx.moveTo(0, -10); 
+            minimapCtx.lineTo(8, 10);  
+            minimapCtx.lineTo(0, 6);   
+            minimapCtx.lineTo(-8, 10); 
             minimapCtx.closePath();
-            
             minimapCtx.fill();
             minimapCtx.stroke();
+
+            if (isNightMode) {
+                minimapCtx.fillStyle = 'rgba(255, 255, 200, 0.3)';
+                minimapCtx.beginPath();
+                minimapCtx.moveTo(0, -10);
+                minimapCtx.lineTo(-15, -60);
+                minimapCtx.arc(0, -60, 15, Math.PI, 0);
+                minimapCtx.lineTo(15, -60);
+                minimapCtx.closePath();
+                minimapCtx.fill();
+            }
             
             minimapCtx.restore();
         }
@@ -1775,64 +1416,46 @@
         function animate() {
             requestAnimationFrame(animate);
             updateFPS();
-
             if (player) {
                 updatePhysics();
-                updateChunks(); // Procedural Map Generation
+                updateChunks(); 
                 updatePedestrians();
                 checkCollisions();
                 updateParticles();
                 updateCamera();
                 updateHeadingIndicator();
-                updateMinimap(); // Update the 2D map
-
-                // Update Sun Position to follow player (infinite shadows)
-                if (scene.userData.sun) {
-                    scene.userData.sun.position.set(player.position.x + 50, 100, player.position.z + 50);
-                    scene.userData.sun.target.position.copy(player.position);
-                    scene.userData.sun.target.updateMatrixWorld();
+                updateMinimap(); 
+                if (sunLight) {
+                    sunLight.position.set(player.position.x + 50, 100, player.position.z + 50);
+                    sunLight.target.position.copy(player.position);
+                    sunLight.target.updateMatrixWorld();
                 }
-
-                // Bounce anim only if on ground
                 if (!isAirborne) {
                     const speed = Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
                     if (speed > 0.01) {
-                        // Blend physics Y with bounce (Suspension)
-                        const bounceFreq = carType === 'hypercar' ? 0.03 : 0.015; // Stiffer suspension on super car
+                        const bounceFreq = carType === 'hypercar' ? 0.03 : 0.015; 
                         const bounceAmp = carType === 'hypercar' ? 0.02 : 0.05;
                         player.position.y = PLAYER_BASE_Y + Math.sin(Date.now() * bounceFreq) * bounceAmp;
                     }
                 }
             }
-
-            // --- RENDER MAIN SCENE ---
             renderer.clear();
             renderer.render(scene, camera);
-
-            // --- RENDER UI SCENE ---
-            if (miniatureGroup) {
-                // Rotate miniature
-                miniatureGroup.rotation.y += 0.02;
-            }
-            renderer.clearDepth(); // Clear depth so UI renders ON TOP
+            if (miniatureGroup) miniatureGroup.rotation.y += 0.02;
+            renderer.clearDepth(); 
             renderer.render(uiScene, uiCamera);
         }
 
         function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
-
-            // Update UI camera too
             uiCamera.aspect = window.innerWidth / window.innerHeight;
             uiCamera.updateProjectionMatrix();
             updateMiniaturePosition();
-
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
     </script>
 </body>
 
 </html>
-
-
 
