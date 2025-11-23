@@ -41,8 +41,8 @@
 
         .instructions {
             position: absolute;
-            top: 60px;
-            /* Below score */
+            top: 100px;
+            /* Moved down slightly to avoid map overlap */
             left: 50%;
             transform: translateX(-50%);
             background: rgba(0, 0, 0, 0.5);
@@ -56,6 +56,8 @@
             animation: fadeOut 5s forwards;
             animation-delay: 5s;
             width: 80%;
+            max-width: 400px;
+            z-index: 15;
         }
 
         /* --- Controls Layout --- */
@@ -194,18 +196,26 @@
             z-index: 10;
         }
 
-        #coord-display {
+        /* --- Mini Map Styles --- */
+        #minimap-container {
             position: absolute;
-            top: 45px;
-            left: 20px;
-            color: #ffff00;
-            font-family: monospace;
-            font-size: 14px;
-            background: rgba(0, 0, 0, 0.6);
-            padding: 4px 8px;
-            border-radius: 4px;
-            pointer-events: none;
+            top: 20px;
+            left: 130px; /* Positioned to the right of FPS/Coords */
+            width: 80px; /* Smaller Size */
+            height: 80px; /* Smaller Size */
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            background: transparent;
+            overflow: hidden;
             z-index: 10;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            pointer-events: none;
+        }
+
+        #minimap {
+            width: 100%;
+            height: 100%;
+            display: block;
         }
 
         @keyframes fadeOut {
@@ -225,10 +235,15 @@
     <!-- UI Overlay -->
     <div id="ui-layer">
         <div id="fps-counter">FPS: 60</div>
-        <div id="coord-display">X: 0 Z: 0</div>
         <div id="score-board">Score: 0</div>
+        
+        <!-- Mini Map -->
+        <div id="minimap-container">
+            <canvas id="minimap" width="280" height="280"></canvas> <!-- High res canvas for crisp lines -->
+        </div>
+
         <div class="instructions">
-            Infinite Procedural Map<br>Left Stick: Drive<br>Click the 3D car icon to switch!
+            Infinite Procedural Map<br>Left Stick: Drive<br>Tap rapidly for Burnout!
         </div>
 
         <!-- Left Movement Stick -->
@@ -264,7 +279,10 @@
         let score = 0;
         const scoreElement = document.getElementById('score-board');
         const fpsElement = document.getElementById('fps-counter');
-        const coordElement = document.getElementById('coord-display');
+
+        // Minimap Variables
+        const minimapCanvas = document.getElementById('minimap');
+        const minimapCtx = minimapCanvas.getContext('2d');
 
         // Game Objects Lists
         const allPedestrians = []; // Stores data for ALL pedestrians
@@ -317,6 +335,9 @@
         let camTouchId = null;
         let camLastPos = { x: 0, y: 0 };
         const joystickRadius = 90;
+        
+        // Tap for Smoke Logic
+        let lastTapTime = 0;
 
         // FPS Counting
         let lastTime = performance.now();
@@ -634,6 +655,9 @@
             // We use InstancedMesh for performance since there are many tiles
             const roadMatrices = [];
             const lineMatrices = [];
+            
+            // For Minimap: store world coordinates of road tiles
+            const roadMapPositions = [];
 
             // Track where roads are so we don't put buildings there
             // Key format: "localX,localZ"
@@ -659,6 +683,9 @@
                         roadMatrices.push(dummy.matrix.clone());
 
                         roadSet.add(`${lx + ROAD_TILE_SIZE / 2},${lz + ROAD_TILE_SIZE / 2}`);
+                        
+                        // Save for minimap (World Coordinates)
+                        roadMapPositions.push({ x: wx, z: wz });
 
                         // Center line
                         if (val < LINE_THRESH) {
@@ -724,21 +751,24 @@
 
                 if (onRoad) continue; // Don't place building
 
-                let geo, radius, height;
+                let geo, radius, height, width, depth;
 
                 // Select building type randomly
                 if (seed < 0.3) {
                     geo = buildingGeometries.small;
                     radius = 8;
                     height = 30;
+                    width = 10; depth = 10;
                 } else if (seed < 0.6) {
                     geo = buildingGeometries.tall;
                     radius = 10;
                     height = 80;
+                    width = 15; depth = 15;
                 } else {
                     geo = buildingGeometries.wide;
                     radius = 15;
                     height = 25;
+                    width = 30; depth = 20;
                 }
 
                 // New Color Selection: Light Grey or Sky Blue
@@ -768,7 +798,9 @@
                     radiusSq: radius * radius,
                     isBuilding: true,
                     rotation: rot,
-                    height: height
+                    height: height,
+                    width: width, // Store for minimap
+                    depth: depth // Store for minimap
                 });
             }
 
@@ -777,11 +809,9 @@
             // Store chunk data
             activeChunks.set(`${cx},${cz}`, {
                 mesh: group,
-                obstacles: obstacles
+                obstacles: obstacles,
+                roads: roadMapPositions // Store road positions for minimap
             });
-
-            // Register obstacles globally - REMOVED for optimization
-            // obstacles.forEach(o => staticObstacles.push(o));
         }
         // --- Entities ---
 
@@ -1131,6 +1161,13 @@
 
             if (e.target === centerBtn) return;
 
+            // Check for rapid click
+            const now = Date.now();
+            if (now - lastTapTime < 250) {
+                emitWheelSmoke();
+            }
+            lastTapTime = now;
+
             // Otherwise Camera Drag
             if (e.clientX < window.innerWidth / 2) {
                 // Logic handled by joystick logic usually
@@ -1153,6 +1190,15 @@
                 x: zoneRect.left + zoneRect.width / 2,
                 y: zoneRect.top + zoneRect.height / 2
             };
+            
+            // --- Rapid Tap Detection ---
+            const now = Date.now();
+            if (now - lastTapTime < 250) {
+                // Double tap detected implies rapid tapping
+                emitWheelSmoke();
+            }
+            lastTapTime = now;
+            // ---------------------------
 
             for (let i = 0; i < touches.length; i++) {
                 const t = touches[i];
@@ -1270,8 +1316,17 @@
             // Steering
             if (Math.abs(moveInput.x) > 0.1) {
                 // Hypercar turns sharper at speed
-                const turnFactor = carType === 'hypercar' ? 0.09 : 0.07;
+                // Reduced sensitivity: 0.09 -> 0.05, 0.07 -> 0.04
+                const turnFactor = carType === 'hypercar' ? 0.05 : 0.04;
                 player.rotation.y -= moveInput.x * turnFactor;
+                
+                // Spin/Drift Smoke: If turning hard
+                if (Math.abs(moveInput.x) > 0.85) {
+                    // Random chance to emit to prevent particle overload
+                    if (Math.random() < 0.25) {
+                        emitWheelSmoke();
+                    }
+                }
             }
 
             // Gas/Brake
@@ -1467,6 +1522,81 @@
                 }
             }
         }
+        
+        // --- SMOKE / PARTICLE SYSTEM ---
+        
+        function emitWheelSmoke() {
+            if (!player) return;
+            
+            // Define local wheel positions based on car type
+            let wheelOffsets = [];
+            
+            if (carType === 'truck') {
+                // Approximate truck wheel positions
+                wheelOffsets = [
+                    {x: -1.2, z: 1.2}, {x: 1.2, z: 1.2},
+                    {x: -1.2, z: -1.2}, {x: 1.2, z: -1.2}
+                ];
+            } else {
+                // Hypercar wheel positions
+                wheelOffsets = [
+                    {x: -1.3, z: 1.4}, {x: 1.3, z: 1.4},
+                    {x: -1.35, z: -1.2}, {x: 1.35, z: -1.2}
+                ];
+            }
+            
+            const carRot = player.rotation.y;
+            const cos = Math.cos(carRot);
+            const sin = Math.sin(carRot);
+            
+            wheelOffsets.forEach(offset => {
+                // Rotate offset
+                const rx = offset.x * cos + offset.z * sin;
+                const rz = -offset.x * sin + offset.z * cos;
+                
+                // Absolute position
+                const pos = new THREE.Vector3(
+                    player.position.x + rx,
+                    player.position.y + 0.2, // Emit from near ground
+                    player.position.z + rz
+                );
+                
+                // Spawn a few particles per wheel per tap
+                for(let i=0; i<2; i++) {
+                    spawnSmokeParticle(pos);
+                }
+            });
+        }
+        
+        function spawnSmokeParticle(pos) {
+            const size = Math.random() * 0.4 + 0.2;
+            const geo = new THREE.BoxGeometry(size, size, size);
+            // Semi-transparent grey
+            const mat = new THREE.MeshBasicMaterial({ 
+                color: 0xdddddd, 
+                transparent: true, 
+                opacity: 0.6 
+            });
+            const p = new THREE.Mesh(geo, mat);
+            p.position.copy(pos);
+            
+            // Add some jitter
+            p.position.x += (Math.random() - 0.5) * 0.5;
+            p.position.z += (Math.random() - 0.5) * 0.5;
+            
+            p.userData = {
+                type: 'smoke',
+                life: 1.0,
+                velocity: new THREE.Vector3(
+                    (Math.random() - 0.5) * 0.05,
+                    0.05 + Math.random() * 0.05, // Upward drift
+                    (Math.random() - 0.5) * 0.05
+                )
+            };
+            
+            scene.add(p);
+            particles.push(p);
+        }
 
         function explode(pos, color = 0xffffff) {
             const pGeo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
@@ -1475,12 +1605,15 @@
                 const p = new THREE.Mesh(pGeo, pMat);
                 p.position.copy(pos);
                 p.position.y += 1.5;
-                p.userData.velocity = new THREE.Vector3(
-                    (Math.random() - 0.5) * 1.0,
-                    Math.random() * 1.0 + 0.2,
-                    (Math.random() - 0.5) * 1.0
-                );
-                p.userData.life = 1.0;
+                p.userData = {
+                    type: 'debris',
+                    life: 1.0,
+                    velocity: new THREE.Vector3(
+                        (Math.random() - 0.5) * 1.0,
+                        Math.random() * 1.0 + 0.2,
+                        (Math.random() - 0.5) * 1.0
+                    )
+                };
                 scene.add(p);
                 particles.push(p);
             }
@@ -1490,15 +1623,27 @@
             for (let i = particles.length - 1; i >= 0; i--) {
                 const p = particles[i];
                 p.position.add(p.userData.velocity);
-                p.userData.velocity.y -= 0.03;
-                p.rotation.x += 0.1;
-                p.rotation.y += 0.1;
-                if (p.position.y < 0) {
-                    p.userData.velocity.y *= -0.5;
-                    p.position.y = 0;
+                
+                if (p.userData.type === 'smoke') {
+                    // Smoke Physics: Rise, Expand, Fade
+                    p.rotation.x += 0.05;
+                    p.rotation.y += 0.05;
+                    p.scale.addScalar(0.04); // Grow
+                    p.userData.life -= 0.025;
+                    if(p.material.opacity > 0) p.material.opacity = p.userData.life * 0.6;
+                } else {
+                    // Debris Physics: Gravity, Bounce
+                    p.userData.velocity.y -= 0.03;
+                    p.rotation.x += 0.1;
+                    p.rotation.y += 0.1;
+                    if (p.position.y < 0) {
+                        p.userData.velocity.y *= -0.5;
+                        p.position.y = 0;
+                    }
+                    p.userData.life -= 0.05;
+                    p.scale.setScalar(p.userData.life);
                 }
-                p.userData.life -= 0.05;
-                p.scale.setScalar(p.userData.life);
+
                 if (p.userData.life <= 0) {
                     scene.remove(p);
                     particles.splice(i, 1);
@@ -1533,6 +1678,90 @@
             camera.lookAt(player.position);
         }
 
+        // --- NEW: Minimap Update Function ---
+        function updateMinimap() {
+            if (!player) return;
+
+            // Clear canvas
+            const w = minimapCanvas.width;
+            const h = minimapCanvas.height;
+            minimapCtx.clearRect(0, 0, w, h);
+
+            // Fill Background (Grass)
+            minimapCtx.fillStyle = 'rgba(68, 119, 68, 0.5)'; // Translucent green
+            minimapCtx.fillRect(0, 0, w, h);
+
+            minimapCtx.save();
+            
+            // 1. Center logic
+            minimapCtx.translate(w / 2, h / 2);
+
+            // 2. Rotation logic (Forward is UP on the map)
+            // We rotate the entire world context opposite to player rotation
+            minimapCtx.rotate(player.rotation.y + Math.PI);
+
+            // 3. Scaling (Zoom level)
+            const zoom = 1.0; 
+            minimapCtx.scale(zoom, zoom);
+
+            // 4. Position offset (Move world relative to player)
+            minimapCtx.translate(-player.position.x, -player.position.z);
+
+            // 5. Draw Chunks (Roads and Buildings)
+            // We only draw active chunks.
+            
+            // Draw Roads first
+            minimapCtx.fillStyle = '#222222'; // Dark Grey Roads
+            for (const chunk of activeChunks.values()) {
+                if (chunk.roads) {
+                    for (const road of chunk.roads) {
+                        // Draw a slightly larger square to prevent gaps
+                        minimapCtx.fillRect(road.x - ROAD_TILE_SIZE/2, road.z - ROAD_TILE_SIZE/2, ROAD_TILE_SIZE + 1, ROAD_TILE_SIZE + 1);
+                    }
+                }
+            }
+
+            // Draw Buildings
+            minimapCtx.fillStyle = '#87CEEB'; // Sky Blue Buildings (match UI theme)
+            for (const chunk of activeChunks.values()) {
+                if (chunk.obstacles) {
+                    for (const obs of chunk.obstacles) {
+                        if (obs.isBuilding) {
+                            minimapCtx.save();
+                            minimapCtx.translate(obs.x, obs.z);
+                            minimapCtx.rotate(-obs.rotation); // Negative because canvas Y is down? No, standard 2D rotation.
+                            // Draw centered rectangle
+                            minimapCtx.fillRect(-obs.width/2, -obs.depth/2, obs.width, obs.depth);
+                            minimapCtx.restore();
+                        }
+                    }
+                }
+            }
+
+            minimapCtx.restore();
+
+            // 6. Draw Player (Static at center)
+            minimapCtx.save();
+            minimapCtx.translate(w / 2, h / 2);
+            
+            // Draw Arrow
+            minimapCtx.fillStyle = '#ff3366';
+            minimapCtx.strokeStyle = '#ffffff';
+            minimapCtx.lineWidth = 2;
+            
+            minimapCtx.beginPath();
+            minimapCtx.moveTo(0, -10); // Tip (Pointing Up)
+            minimapCtx.lineTo(8, 10);  // Bottom Right
+            minimapCtx.lineTo(0, 6);   // Indent
+            minimapCtx.lineTo(-8, 10); // Bottom Left
+            minimapCtx.closePath();
+            
+            minimapCtx.fill();
+            minimapCtx.stroke();
+            
+            minimapCtx.restore();
+        }
+
         function updateFPS() {
             frameCount++;
             const now = performance.now();
@@ -1555,6 +1784,7 @@
                 updateParticles();
                 updateCamera();
                 updateHeadingIndicator();
+                updateMinimap(); // Update the 2D map
 
                 // Update Sun Position to follow player (infinite shadows)
                 if (scene.userData.sun) {
@@ -1573,9 +1803,6 @@
                         player.position.y = PLAYER_BASE_Y + Math.sin(Date.now() * bounceFreq) * bounceAmp;
                     }
                 }
-
-                // Update coords
-                coordElement.innerText = `X: ${Math.round(player.position.x)} Z: ${Math.round(player.position.z)}`;
             }
 
             // --- RENDER MAIN SCENE ---
@@ -1606,3 +1833,6 @@
 </body>
 
 </html>
+
+
+
