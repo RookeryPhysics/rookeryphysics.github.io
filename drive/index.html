@@ -290,11 +290,12 @@
         let groundGeometry, groundMaterial;
         let roadTileGeometry, roadMaterial;
         let lineTileGeometry, lineMaterial;
+        let grassGeometry, grassMaterial;
 
-        const CULL_DIST = 220; // Reduced slightly for speed
+        const CULL_DIST = 220; 
         const CULL_DIST_SQ = CULL_DIST * CULL_DIST;
         const CHUNK_SIZE = 200;
-        const CHUNK_RENDER_DIST = 1; // 1 = 3x3 chunks (9 total), 2 = 5x5 chunks (25 total). 1 is MUCH faster.
+        const CHUNK_RENDER_DIST = 1; 
         const activeChunks = new Map(); 
         const ROAD_TILE_SIZE = 10; 
         const ROAD_WIDTH_THRESHOLD = 0.25; 
@@ -349,7 +350,7 @@
             // Initial Day Mode Setup
             const dayColor = 0x87CEEB; 
             scene.background = new THREE.Color(dayColor);
-            scene.fog = new THREE.Fog(0xa0d8ef, 50, 240); // Tighter fog for performance
+            scene.fog = new THREE.Fog(0xa0d8ef, 50, 240); 
 
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 800);
 
@@ -449,6 +450,7 @@
 
                 roadMaterial.color.setHex(0x222222);
                 lineMaterial.color.setHex(0xaa8800);
+                grassMaterial.color.setHex(0x335533);
                 
                 // Swap texture instantly
                 groundMaterial.map = nightGroundTexture;
@@ -469,35 +471,18 @@
 
                 roadMaterial.color.setHex(0x333333);
                 lineMaterial.color.setHex(0xffcc00);
+                grassMaterial.color.setHex(0x44aa44);
                 
                 // Swap texture instantly
                 groundMaterial.map = dayGroundTexture;
             }
 
-            // Efficient Material Update
-            buildingMaterialCache.forEach((mat, key) => {
-                 // key structure: "seed_isNight" - wait, we just need to update colors of existing mats
-                 // Actually, simpler: iterate all cached mats and update their color
-                 // But colors depend on seed.
-                 // OPTIMIZATION: Just have 2 sets of materials (Day/Night) or update all.
-                 // Let's just update colors. We need to store original color intent in userData or implied.
-                 // Actually, simpler approach: Update the specific building meshes in chunks.
-            });
-
-            // Updating buildings by traversing chunks
+            // Update buildings to swap window textures
             activeChunks.forEach(chunk => {
                 chunk.mesh.traverse(child => {
                     if (child.userData.isBuilding) {
                         const seed = child.userData.seed;
-                        // Use Cached Materials
-                        const colorHex = isNightMode ? 
-                             (seed > 0.5 ? 0x333344 : 0x111122) : 
-                             (seed > 0.5 ? 0xcccccc : 0xa0d8ef);
-                        
-                        // We need to update the material property, but since materials are shared,
-                        // we need to be careful. 
-                        // STRATEGY: We will just set the color on the material.
-                        // Since we are caching by "type" (seed bucket), we can just update the cache.
+                        // Swap entire material reference to cached Day/Night material
                         child.material = getBuildingMaterial(seed, isNightMode);
                     }
                 });
@@ -567,11 +552,20 @@
             buildingGeometries.small = new THREE.BoxGeometry(10, 30, 10);
             buildingGeometries.tall = new THREE.BoxGeometry(15, 80, 15);
             buildingGeometries.wide = new THREE.BoxGeometry(30, 25, 20);
+
+            // Grass Geometry - Thin rectangle standing up
+            grassGeometry = new THREE.PlaneGeometry(0.8, 2.0);
+            // Single standard material for grass (InstancedMesh uses this)
+            grassMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x44aa44, 
+                roughness: 1.0, 
+                side: THREE.DoubleSide // Visible from both sides
+            });
         }
 
         function createGroundTexture(isNight) {
             const canvas = document.createElement('canvas');
-            canvas.width = 256; // Reduced texture size for speed
+            canvas.width = 256; 
             canvas.height = 256;
             const ctx = canvas.getContext('2d');
 
@@ -607,6 +601,57 @@
             return texture;
         }
 
+        // Generate a building texture with windows
+        function createBuildingTexture(seed, isNight) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128; 
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            
+            // Base Color
+            const baseColor = isNight 
+                ? (seed > 0.5 ? '#222233' : '#111122') 
+                : (seed > 0.5 ? '#cccccc' : '#99aadd');
+            
+            ctx.fillStyle = baseColor;
+            ctx.fillRect(0,0, 128, 128);
+
+            // Windows
+            const rows = 8;
+            const cols = 4;
+            const pW = 128 / cols;
+            const pH = 128 / rows;
+            const gap = 6;
+            
+            for(let r=0; r<rows; r++) {
+                for(let c=0; c<cols; c++) {
+                    // Chance for light to be on/off
+                    const lightOn = Math.random() > 0.4;
+                    
+                    if (isNight) {
+                        if (lightOn) {
+                            ctx.fillStyle = Math.random() > 0.5 ? '#ffcc66' : '#ffeeaa'; // Yellow/Warm light
+                        } else {
+                            ctx.fillStyle = '#000000'; // Dark
+                        }
+                    } else {
+                        // Day windows (reflection)
+                        ctx.fillStyle = '#334455'; 
+                    }
+                    
+                    ctx.fillRect((c*pW)+gap, (r*pH)+gap, pW-(gap*2), pH-(gap*2));
+                }
+            }
+
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.wrapS = THREE.RepeatWrapping;
+            tex.wrapT = THREE.RepeatWrapping;
+            // Adjust repeat based on building size is tricky with shared mats, 
+            // so we keep UVs simple or accept stretching. 
+            // BoxGeometry default UVs map 0..1 per face.
+            return tex;
+        }
+
         function pseudoRandom(x, z) {
             const val = Math.sin(x * 12.9898 + z * 78.233) * 43758.5453;
             return val - Math.floor(val);
@@ -625,12 +670,7 @@
             // Iterate and dispose geometries/materials
             group.traverse(child => {
                 if (child.isMesh) {
-                    // Don't dispose shared geometries (like groundGeometry), only instances if unique
-                    // In this case, most geometries are shared, which is good.
-                    // If we had unique geometries, we'd dispose them here.
-                    
-                    // Materials: We are caching them now, so we DO NOT dispose them here
-                    // unless we want to clear the cache.
+                    // Don't dispose shared geometries
                 }
             });
             scene.remove(group);
@@ -676,13 +716,18 @@
 
             const key = `${type}_${isNight}`;
             if (!buildingMaterialCache.has(key)) {
-                let matColor;
-                if (isNight) {
-                    matColor = seed > 0.5 ? 0x333344 : 0x111122;
-                } else {
-                    matColor = seed > 0.5 ? 0xcccccc : 0xa0d8ef;
+                // Generate texture for this bucket
+                const map = createBuildingTexture(seed, isNight);
+                const mat = new THREE.MeshStandardMaterial({ 
+                    map: map,
+                    roughness: 0.3,
+                    metalness: 0.1
+                });
+                if(isNight) {
+                     mat.emissive = new THREE.Color(0x222222); // Slight glow for windows visibility
+                     mat.emissiveMap = map;
+                     mat.emissiveIntensity = 0.5;
                 }
-                const mat = new THREE.MeshStandardMaterial({ color: matColor });
                 buildingMaterialCache.set(key, mat);
             }
             return buildingMaterialCache.get(key);
@@ -725,8 +770,7 @@
                         
                         roadMatrices.push(dummy.matrix.clone());
                         roadSet.add(`${lx + ROAD_TILE_SIZE / 2},${lz + ROAD_TILE_SIZE / 2}`);
-                        // Reduce array push for minimap to save memory - only push every other node? 
-                        // No, minimap needs precision. Kept.
+                        
                         roadMapPositions.push({ x: wx, z: wz });
                         
                         if (val < 0.03) {
@@ -792,6 +836,56 @@
                 
                 group.add(mesh);
                 obstacles.push({ x: chunkX + bx, z: chunkZ + bz, radiusSq: radius * radius, isBuilding: true, rotation: rot, height: height, width: width, depth: depth });
+            }
+
+            // --- GRASS GENERATION ---
+            // Add InstancedMesh for grass in open fields
+            const grassCount = 400; // Blades per chunk
+            const grassMatrices = [];
+            
+            for(let i=0; i<grassCount; i++) {
+                const rx = (Math.random() - 0.5) * CHUNK_SIZE;
+                const rz = (Math.random() - 0.5) * CHUNK_SIZE;
+                
+                // 1. Check if on road local
+                const sx = Math.round(rx / ROAD_TILE_SIZE) * ROAD_TILE_SIZE + ROAD_TILE_SIZE/2;
+                const sz = Math.round(rz / ROAD_TILE_SIZE) * ROAD_TILE_SIZE + ROAD_TILE_SIZE/2;
+                if (roadSet.has(`${sx},${sz}`)) continue;
+
+                // 2. Check world road func
+                const wx = chunkX + rx;
+                const wz = chunkZ + rz;
+                if (getRoadValue(wx, wz) < ROAD_WIDTH_THRESHOLD + 0.1) continue;
+
+                // 3. Check collision with buildings we just placed
+                let hitBuilding = false;
+                for(let b=0; b<obstacles.length; b++) {
+                    const ob = obstacles[b];
+                    // Simple box check (local coords)
+                    if (rx > ob.x - chunkX - ob.width/1.5 && rx < ob.x - chunkX + ob.width/1.5 &&
+                        rz > ob.z - chunkZ - ob.depth/1.5 && rz < ob.z - chunkZ + ob.depth/1.5) {
+                        hitBuilding = true;
+                        break;
+                    }
+                }
+                if(hitBuilding) continue;
+
+                dummy.position.set(rx, 1.0, rz); // y=1.0 (half height)
+                dummy.rotation.set(0, Math.random() * Math.PI, 0); // Random Y rot
+                dummy.scale.set(1, 1 + Math.random()*0.5, 1); // Random height variation
+                dummy.updateMatrix();
+                grassMatrices.push(dummy.matrix.clone());
+            }
+
+            if (grassMatrices.length > 0) {
+                const grassMesh = new THREE.InstancedMesh(grassGeometry, grassMaterial, grassMatrices.length);
+                grassMesh.receiveShadow = false; // Too expensive for grass
+                for(let i=0; i<grassMatrices.length; i++) grassMesh.setMatrixAt(i, grassMatrices[i]);
+                // Ensure bounding box is correct for frustum culling
+                // FIX: Disable frustum culling because the default bounding sphere is too small 
+                // for instances spread across the chunk, causing them to disappear when the chunk center is off-screen.
+                grassMesh.frustumCulled = false; 
+                group.add(grassMesh);
             }
 
             scene.add(group);
@@ -1510,4 +1604,5 @@
 </body>
 
 </html>
+
 
