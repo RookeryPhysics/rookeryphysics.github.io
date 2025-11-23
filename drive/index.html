@@ -269,10 +269,13 @@
         // Game Objects Lists
         const allPedestrians = []; // Stores data for ALL pedestrians
         const activeObstacles = []; // Pedestrians currently in scene
-        const staticObstacles = []; // Buildings from chunks
+        // const staticObstacles = []; // REMOVED: Optimization - Use activeChunks directly
         const particles = [];
 
-        // Optimization: Shared Geometries
+        // Optimization: Shared Geometries & Materials
+        const materialCache = new Map();
+        let lastChunkUpdatePos = new THREE.Vector3(99999, 99999, 99999);
+
         const pedGeometries = {};
         const buildingGeometries = {};
         let groundGeometry, groundMaterial; // Shared for chunks
@@ -577,6 +580,10 @@
         function updateChunks() {
             if (!player) return;
 
+            // Optimization: Throttle updates
+            if (player.position.distanceTo(lastChunkUpdatePos) < 50) return;
+            lastChunkUpdatePos.copy(player.position);
+
             const px = player.position.x;
             const pz = player.position.z;
 
@@ -603,15 +610,7 @@
             for (const [key, chunkData] of activeChunks) {
                 if (!newKeys.has(key)) {
                     scene.remove(chunkData.mesh);
-
-                    // Remove obstacles associated with this chunk
-                    if (chunkData.obstacles) {
-                        for (const obs of chunkData.obstacles) {
-                            const idx = staticObstacles.indexOf(obs);
-                            if (idx > -1) staticObstacles.splice(idx, 1);
-                        }
-                    }
-
+                    // No need to splice staticObstacles anymore
                     activeChunks.delete(key);
                 }
             }
@@ -781,10 +780,9 @@
                 obstacles: obstacles
             });
 
-            // Register obstacles globally
-            obstacles.forEach(o => staticObstacles.push(o));
+            // Register obstacles globally - REMOVED for optimization
+            // obstacles.forEach(o => staticObstacles.push(o));
         }
-
         // --- Entities ---
 
         function initPedestrianGeometries() {
@@ -817,12 +815,20 @@
             allPedestrians.push(pedData);
         }
 
+        function getCachedMaterial(colorHex) {
+            const hex = Math.floor(colorHex);
+            if (!materialCache.has(hex)) {
+                materialCache.set(hex, new THREE.MeshStandardMaterial({ color: hex }));
+            }
+            return materialCache.get(hex);
+        }
+
         function buildPedestrianMesh(data) {
             const group = new THREE.Group();
 
-            const skinMat = new THREE.MeshStandardMaterial({ color: data.colors.skin });
-            const shirtMat = new THREE.MeshStandardMaterial({ color: data.colors.shirt });
-            const pantsMat = new THREE.MeshStandardMaterial({ color: data.colors.pants });
+            const skinMat = getCachedMaterial(data.colors.skin);
+            const shirtMat = getCachedMaterial(data.colors.shirt);
+            const pantsMat = getCachedMaterial(data.colors.pants);
 
             const head = new THREE.Mesh(pedGeometries.head, skinMat);
             head.position.y = 0.9;
@@ -1309,35 +1315,40 @@
             // Object Collisions
             const pRadiusSq = 4.0; // Car radius roughly 2x2
 
-            for (let i = 0; i < staticObstacles.length; i++) {
-                const obs = staticObstacles[i];
+            // Optimization: Iterate over chunks instead of global list
+            for (const chunk of activeChunks.values()) {
+                if (!chunk.obstacles) continue;
 
-                // Vertical clearance check: If player is above the building, no collision
-                if (player.position.y > obs.height) continue;
+                for (let i = 0; i < chunk.obstacles.length; i++) {
+                    const obs = chunk.obstacles[i];
 
-                const dx = player.position.x - obs.x;
-                const dz = player.position.z - obs.z;
-                const distSq = dx * dx + dz * dz;
+                    // Vertical clearance check: If player is above the building, no collision
+                    if (player.position.y > obs.height) continue;
 
-                if (distSq < obs.radiusSq + pRadiusSq) {
+                    const dx = player.position.x - obs.x;
+                    const dz = player.position.z - obs.z;
+                    const distSq = dx * dx + dz * dz;
 
-                    // CRASH LOGIC
-                    explode(player.position, 0xff4400);
-                    explode(player.position, 0xffee00);
+                    if (distSq < obs.radiusSq + pRadiusSq) {
 
-                    isGameOver = true;
-                    player.visible = false;
-                    velocity.set(0, 0, 0);
+                        // CRASH LOGIC
+                        explode(player.position, 0xff4400);
+                        explode(player.position, 0xffee00);
 
-                    // Update UI
-                    const instr = document.querySelector('.instructions');
-                    const oldText = instr.innerHTML;
-                    instr.innerHTML = "<span style='color:red; font-size:20px; font-weight:bold;'>CRASHED!</span>";
-                    instr.style.opacity = 1;
-                    instr.style.animation = 'none';
+                        isGameOver = true;
+                        player.visible = false;
+                        velocity.set(0, 0, 0);
 
-                    setTimeout(() => resetGame(oldText), 3000);
-                    return;
+                        // Update UI
+                        const instr = document.querySelector('.instructions');
+                        const oldText = instr.innerHTML;
+                        instr.innerHTML = "<span style='color:red; font-size:20px; font-weight:bold;'>CRASHED!</span>";
+                        instr.style.opacity = 1;
+                        instr.style.animation = 'none';
+
+                        setTimeout(() => resetGame(oldText), 3000);
+                        return;
+                    }
                 }
             }
         }
