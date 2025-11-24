@@ -1300,7 +1300,8 @@
                 mesh: mesh,
                 speed: 0.4 + Math.random() * 0.2, // Random speed
                 laneDir: isPositiveLane ? 1 : -1, // +1 for positive raw road value, -1 for negative
-                velocity: new THREE.Vector3()
+                velocity: new THREE.Vector3(),
+                color: col // Store color for explosion
             });
         }
 
@@ -1552,6 +1553,8 @@
             }
 
             const pRadiusSq = 4.0; 
+            
+            // --- Building Collisions ---
             for (const chunk of activeChunks.values()) {
                 if (!chunk.obstacles) continue;
                 for (let i = 0; i < chunk.obstacles.length; i++) {
@@ -1563,19 +1566,40 @@
                     if (distSq < obs.radiusSq + pRadiusSq) {
                         explode(player.position, 0xff4400);
                         explode(player.position, 0xffee00);
-                        isGameOver = true;
-                        player.visible = false;
-                        velocity.set(0, 0, 0);
-                        const instr = document.querySelector('.instructions');
-                        const oldText = instr.innerHTML;
-                        instr.innerHTML = "<span style='color:red; font-size:20px; font-weight:bold;'>CRASHED!</span>";
-                        instr.style.opacity = 1;
-                        instr.style.animation = 'none';
-                        setTimeout(() => resetGame(oldText), 3000);
+                        triggerGameOver();
                         return;
                     }
                 }
             }
+            
+            // --- Traffic Collisions ---
+            const trafficCollisionDistSq = 12.0; // Approx 3.5^2
+            for(let i=0; i<trafficVehicles.length; i++) {
+                const npc = trafficVehicles[i];
+                const dx = player.position.x - npc.mesh.position.x;
+                const dz = player.position.z - npc.mesh.position.z;
+                const distSq = dx*dx + dz*dz;
+                
+                if(distSq < trafficCollisionDistSq) {
+                    explode(player.position, 0xff4400);
+                    explode(npc.mesh.position, npc.color); // Use NPC color
+                    npc.mesh.visible = false;
+                    triggerGameOver();
+                    return;
+                }
+            }
+        }
+        
+        function triggerGameOver() {
+            isGameOver = true;
+            player.visible = false;
+            velocity.set(0, 0, 0);
+            const instr = document.querySelector('.instructions');
+            const oldText = instr.innerHTML;
+            instr.innerHTML = "<span style='color:red; font-size:20px; font-weight:bold;'>CRASHED!</span>";
+            instr.style.opacity = 1;
+            instr.style.animation = 'none';
+            setTimeout(() => resetGame(oldText), 3000);
         }
 
         function resetGame(oldText) {
