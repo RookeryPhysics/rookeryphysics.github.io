@@ -169,6 +169,7 @@
             -webkit-tap-highlight-color: transparent;
             user-select: none;
         }
+
         #time-btn:active {
             background: rgba(255, 255, 255, 0.3);
             transform: scale(0.95);
@@ -203,15 +204,15 @@
         #minimap-container {
             position: absolute;
             top: 20px;
-            left: 130px; 
-            width: 80px; 
-            height: 80px; 
+            left: 130px;
+            width: 80px;
+            height: 80px;
             border-radius: 50%;
             border: 2px solid rgba(255, 255, 255, 0.3);
             background: #000;
             overflow: hidden;
             z-index: 10;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.8);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.8);
             pointer-events: none;
         }
 
@@ -222,10 +223,23 @@
         }
 
         @keyframes fadeOut {
-            from { opacity: 1; }
-            to { opacity: 0; }
+            from {
+                opacity: 1;
+            }
+
+            to {
+                opacity: 0;
+            }
         }
     </style>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-MCV5P2FEE7"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+        gtag('config', 'G-MCV5P2FEE7');
+    </script>
 </head>
 
 <body>
@@ -277,11 +291,11 @@
         const activeObstacles = [];
         const particles = [];
         const trafficVehicles = []; // NPC Cars
-        
+
         // Cache materials to reduce draw calls
         const materialCache = new Map();
         const buildingMaterialCache = new Map();
-        
+
         // Pre-computed Textures
         let dayGroundTexture, nightGroundTexture;
         let lightSpotTexture;
@@ -297,13 +311,13 @@
         let poleGeometry, poleMaterial, lightBulbGeometry, lightBulbMaterial;
         let lightSpotGeometry, lightSpotMaterial;
 
-        const CULL_DIST = 220; 
+        const CULL_DIST = 220;
         const CULL_DIST_SQ = CULL_DIST * CULL_DIST;
         const CHUNK_SIZE = 200;
-        const CHUNK_RENDER_DIST = 1; 
-        const activeChunks = new Map(); 
-        const ROAD_TILE_SIZE = 10; 
-        const ROAD_WIDTH_THRESHOLD = 0.25; 
+        const CHUNK_RENDER_DIST = 1;
+        const activeChunks = new Map();
+        const ROAD_TILE_SIZE = 10;
+        const ROAD_WIDTH_THRESHOLD = 0.25;
 
         // Physics
         let PLAYER_SPEED = 0.15;
@@ -316,8 +330,8 @@
         let isAirborne = false;
 
         // Movement
-        const velocity = new THREE.Vector3(); 
-        let moveInput = { x: 0, y: 0 }; 
+        const velocity = new THREE.Vector3();
+        let moveInput = { x: 0, y: 0 };
 
         // Camera
         let cameraAngle = 0;
@@ -352,11 +366,11 @@
             const container = document.getElementById('game-container');
 
             scene = new THREE.Scene();
-            
+
             // Initial Day Mode Setup
-            const dayColor = 0x87CEEB; 
+            const dayColor = 0x87CEEB;
             scene.background = new THREE.Color(dayColor);
-            scene.fog = new THREE.Fog(0xa0d8ef, 50, 240); 
+            scene.fog = new THREE.Fog(0xa0d8ef, 50, 240);
 
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 800);
 
@@ -365,12 +379,12 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
             renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.PCFShadowMap; 
+            renderer.shadowMap.type = THREE.PCFShadowMap;
             renderer.autoClear = false;
             container.appendChild(renderer.domElement);
 
             // Lighting
-            ambientLight = new THREE.AmbientLight(0xffffff, 0.6); 
+            ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
             scene.add(ambientLight);
 
             sunLight = new THREE.DirectionalLight(0xffffff, 0.8);
@@ -413,7 +427,7 @@
 
             // Player Init
             createPlayer();
-            updateMiniatureModel(); 
+            updateMiniatureModel();
 
             // Entities - Reduced count slightly for mobile optimization
             for (let i = 0; i < 350; i++) {
@@ -425,7 +439,7 @@
             document.addEventListener('touchstart', onTouchStart, { passive: false });
             document.addEventListener('touchmove', onTouchMove, { passive: false });
             document.addEventListener('touchend', onTouchEnd, { passive: false });
-            document.addEventListener('mousedown', onMouseDown); 
+            document.addEventListener('mousedown', onMouseDown);
 
             centerBtn.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); centerCamera(); }, { passive: false });
             centerBtn.addEventListener('mousedown', (e) => { e.stopPropagation(); centerCamera(); });
@@ -445,12 +459,12 @@
                 scene.fog.color.setHex(duskColor);
                 scene.fog.near = 30;
                 scene.fog.far = 180;
-                
+
                 // BRIGHTER NIGHT SETTINGS
-                ambientLight.intensity = 0.55; 
+                ambientLight.intensity = 0.55;
                 sunLight.color.setHex(0xaaccff);
-                sunLight.intensity = 0.6; 
-                
+                sunLight.intensity = 0.6;
+
                 document.querySelector('.instructions').innerHTML = "Night Run<br>Left Stick: Drive";
                 timeBtn.innerText = "☀️";
 
@@ -459,21 +473,21 @@
                 grassMaterial.color.setHex(0x335533);
                 lightBulbMaterial.emissiveIntensity = 3.0; // Very bright
                 lightSpotMaterial.opacity = 0.8; // Turn on ground spots
-                
+
                 // Swap texture instantly
                 groundMaterial.map = nightGroundTexture;
-                
+
             } else {
                 const dayColor = 0x87CEEB;
                 scene.background.setHex(dayColor);
                 scene.fog.color.setHex(0xa0d8ef);
                 scene.fog.near = 50;
                 scene.fog.far = 240;
-                
+
                 ambientLight.intensity = 0.6;
                 sunLight.color.setHex(0xffffff);
                 sunLight.intensity = 0.8;
-                
+
                 document.querySelector('.instructions').innerHTML = "Day Run<br>Left Stick: Drive";
                 timeBtn.innerText = "🌙";
 
@@ -482,7 +496,7 @@
                 grassMaterial.color.setHex(0x44aa44);
                 lightBulbMaterial.emissiveIntensity = 0.2; // Dim
                 lightSpotMaterial.opacity = 0.0; // Hide ground spots
-                
+
                 // Swap texture instantly
                 groundMaterial.map = dayGroundTexture;
             }
@@ -500,12 +514,12 @@
 
             // Update traffic lights
             trafficVehicles.forEach(npc => {
-                 npc.mesh.traverse(child => {
-                     if(child.isLight) {
-                         // Only enable spotlights at night
-                         child.visible = isNightMode;
-                     }
-                 });
+                npc.mesh.traverse(child => {
+                    if (child.isLight) {
+                        // Only enable spotlights at night
+                        child.visible = isNightMode;
+                    }
+                });
             });
 
             loadCarModel(carType);
@@ -532,7 +546,7 @@
             const targetType = (carType === 'supercar') ? 'hypercar' : 'supercar';
             let mesh;
             if (targetType === 'supercar') {
-                mesh = buildSupercarMesh(false); 
+                mesh = buildSupercarMesh(false);
                 mesh.scale.set(0.4, 0.4, 0.4);
             } else {
                 mesh = buildHypercarMesh(false);
@@ -566,7 +580,7 @@
             grd.addColorStop(0.3, 'rgba(255, 255, 220, 0.3)');
             grd.addColorStop(1, 'rgba(0, 0, 0, 0)');
             ctx.fillStyle = grd;
-            ctx.fillRect(0,0,64,64);
+            ctx.fillRect(0, 0, 64, 64);
             const tex = new THREE.CanvasTexture(canvas);
             return tex;
         }
@@ -589,34 +603,34 @@
 
             // Grass Geometry
             grassGeometry = new THREE.PlaneGeometry(0.8, 2.0);
-            grassMaterial = new THREE.MeshStandardMaterial({ 
-                color: 0x44aa44, 
-                roughness: 1.0, 
+            grassMaterial = new THREE.MeshStandardMaterial({
+                color: 0x44aa44,
+                roughness: 1.0,
                 side: THREE.DoubleSide
             });
 
             // Streetlight Geometries
             const poleH = 14;
             const pGeo = new THREE.CylinderGeometry(0.4, 0.4, poleH);
-            pGeo.translate(0, poleH/2, 0);
+            pGeo.translate(0, poleH / 2, 0);
             poleGeometry = pGeo;
-            
+
             poleMaterial = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.5 });
-            
+
             // Light Bulb (Emissive) - A bit larger
             lightBulbGeometry = new THREE.BoxGeometry(1.5, 0.3, 0.8);
-            lightBulbMaterial = new THREE.MeshStandardMaterial({ 
-                color: 0xffffaa, 
-                emissive: 0xffaa00, 
-                emissiveIntensity: 0.2 
+            lightBulbMaterial = new THREE.MeshStandardMaterial({
+                color: 0xffffaa,
+                emissive: 0xffaa00,
+                emissiveIntensity: 0.2
             });
 
             // Light Spot on Road (Fake volumetric lighting)
             lightSpotTexture = createLightSpotTexture();
-            
+
             // SIGNIFICANTLY WIDENED LIGHT SPOT
-            lightSpotGeometry = new THREE.PlaneGeometry(70, 70); 
-            
+            lightSpotGeometry = new THREE.PlaneGeometry(70, 70);
+
             lightSpotMaterial = new THREE.MeshBasicMaterial({
                 map: lightSpotTexture,
                 transparent: true,
@@ -629,7 +643,7 @@
 
         function createGroundTexture(isNight) {
             const canvas = document.createElement('canvas');
-            canvas.width = 256; 
+            canvas.width = 256;
             canvas.height = 256;
             const ctx = canvas.getContext('2d');
 
@@ -668,17 +682,17 @@
         // Generate a building texture with windows
         function createBuildingTexture(seed, isNight) {
             const canvas = document.createElement('canvas');
-            canvas.width = 128; 
+            canvas.width = 128;
             canvas.height = 128;
             const ctx = canvas.getContext('2d');
-            
+
             // Base Color
-            const baseColor = isNight 
-                ? (seed > 0.5 ? '#222233' : '#111122') 
+            const baseColor = isNight
+                ? (seed > 0.5 ? '#222233' : '#111122')
                 : (seed > 0.5 ? '#cccccc' : '#99aadd');
-            
+
             ctx.fillStyle = baseColor;
-            ctx.fillRect(0,0, 128, 128);
+            ctx.fillRect(0, 0, 128, 128);
 
             // Windows
             const rows = 8;
@@ -686,12 +700,12 @@
             const pW = 128 / cols;
             const pH = 128 / rows;
             const gap = 6;
-            
-            for(let r=0; r<rows; r++) {
-                for(let c=0; c<cols; c++) {
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
                     // Chance for light to be on/off
                     const lightOn = Math.random() > 0.4;
-                    
+
                     if (isNight) {
                         if (lightOn) {
                             ctx.fillStyle = Math.random() > 0.5 ? '#ffcc66' : '#ffeeaa'; // Yellow/Warm light
@@ -700,10 +714,10 @@
                         }
                     } else {
                         // Day windows (reflection)
-                        ctx.fillStyle = '#334455'; 
+                        ctx.fillStyle = '#334455';
                     }
-                    
-                    ctx.fillRect((c*pW)+gap, (r*pH)+gap, pW-(gap*2), pH-(gap*2));
+
+                    ctx.fillRect((c * pW) + gap, (r * pH) + gap, pW - (gap * 2), pH - (gap * 2));
                 }
             }
 
@@ -730,25 +744,25 @@
         function getRoadValue(x, z) {
             return Math.abs(getRawRoadValue(x, z));
         }
-        
+
         // Calculate tangent of the road isoline for smooth traffic flow
         function getRoadTangent(x, z) {
-             const scale = 0.005;
-             // Function f = sin(xs) + cos(zs) + 0.5*sin(xs0.5 + zs0.2)
-             // Derivative wrt x:
-             const dx = scale * Math.cos(x * scale) + 0.5 * scale * 0.5 * Math.cos(x * scale * 0.5 + z * scale * 0.2);
-             // Derivative wrt z:
-             const dz = -scale * Math.sin(z * scale) + 0.5 * scale * 0.2 * Math.cos(x * scale * 0.5 + z * scale * 0.2);
-             
-             // Tangent is perpendicular to gradient (dx, dz).
-             // T = (-dz, dx) or (dz, -dx).
-             const t = new THREE.Vector3(-dz, 0, dx);
-             t.normalize();
-             return t;
+            const scale = 0.005;
+            // Function f = sin(xs) + cos(zs) + 0.5*sin(xs0.5 + zs0.2)
+            // Derivative wrt x:
+            const dx = scale * Math.cos(x * scale) + 0.5 * scale * 0.5 * Math.cos(x * scale * 0.5 + z * scale * 0.2);
+            // Derivative wrt z:
+            const dz = -scale * Math.sin(z * scale) + 0.5 * scale * 0.2 * Math.cos(x * scale * 0.5 + z * scale * 0.2);
+
+            // Tangent is perpendicular to gradient (dx, dz).
+            // T = (-dz, dx) or (dz, -dx).
+            const t = new THREE.Vector3(-dz, 0, dx);
+            t.normalize();
+            return t;
         }
 
         function disposeChunk(chunkData) {
-            if(!chunkData) return;
+            if (!chunkData) return;
             const group = chunkData.mesh;
             // Iterate and dispose geometries/materials
             group.traverse(child => {
@@ -767,9 +781,9 @@
             const pz = player.position.z;
             const currentChunkX = Math.floor(px / CHUNK_SIZE + 0.5);
             const currentChunkZ = Math.floor(pz / CHUNK_SIZE + 0.5);
-            
+
             const newKeys = new Set();
-            
+
             // Generate valid keys
             for (let x = -CHUNK_RENDER_DIST; x <= CHUNK_RENDER_DIST; x++) {
                 for (let z = -CHUNK_RENDER_DIST; z <= CHUNK_RENDER_DIST; z++) {
@@ -801,15 +815,15 @@
             if (!buildingMaterialCache.has(key)) {
                 // Generate texture for this bucket
                 const map = createBuildingTexture(seed, isNight);
-                const mat = new THREE.MeshStandardMaterial({ 
+                const mat = new THREE.MeshStandardMaterial({
                     map: map,
                     roughness: 0.3,
                     metalness: 0.1
                 });
-                if(isNight) {
-                     mat.emissive = new THREE.Color(0x222222); // Slight glow for windows visibility
-                     mat.emissiveMap = map;
-                     mat.emissiveIntensity = 0.5;
+                if (isNight) {
+                    mat.emissive = new THREE.Color(0x222222); // Slight glow for windows visibility
+                    mat.emissiveMap = map;
+                    mat.emissiveIntensity = 0.5;
                 }
                 buildingMaterialCache.set(key, mat);
             }
@@ -825,7 +839,7 @@
             const ground = new THREE.Mesh(groundGeometry, groundMaterial);
             ground.rotation.x = -Math.PI / 2;
             ground.receiveShadow = true;
-            ground.frustumCulled = false; 
+            ground.frustumCulled = false;
             group.add(ground);
 
             const roadMatrices = [];
@@ -834,36 +848,36 @@
             const armMatrices = [];
             const bulbMatrices = [];
             const spotMatrices = [];
-            
+
             const obstacles = [];
             const roadMapPositions = [];
             const roadSet = new Set();
             const halfSize = CHUNK_SIZE / 2;
-            
+
             // Pre-allocate Objects to avoid GC
             const dummy = new THREE.Object3D();
-            
+
             for (let lx = -halfSize; lx < halfSize; lx += ROAD_TILE_SIZE) {
                 for (let lz = -halfSize; lz < halfSize; lz += ROAD_TILE_SIZE) {
                     const wx = chunkX + lx + ROAD_TILE_SIZE / 2;
                     const wz = chunkZ + lz + ROAD_TILE_SIZE / 2;
-                    
+
                     const rawVal = getRawRoadValue(wx, wz);
                     const val = Math.abs(rawVal);
-                    
+
                     if (val < ROAD_WIDTH_THRESHOLD) {
                         // IT IS ROAD
                         dummy.position.set(lx + ROAD_TILE_SIZE / 2, 0.1, lz + ROAD_TILE_SIZE / 2);
                         dummy.rotation.x = -Math.PI / 2;
                         dummy.rotation.y = 0;
                         dummy.rotation.z = 0;
-                        dummy.scale.set(1,1,1);
+                        dummy.scale.set(1, 1, 1);
                         dummy.updateMatrix();
-                        
+
                         roadMatrices.push(dummy.matrix.clone());
                         roadSet.add(`${lx + ROAD_TILE_SIZE / 2},${lz + ROAD_TILE_SIZE / 2}`);
                         roadMapPositions.push({ x: wx, z: wz });
-                        
+
                         if (val < 0.03) {
                             dummy.position.set(lx + ROAD_TILE_SIZE / 2, 0.15, lz + ROAD_TILE_SIZE / 2);
                             dummy.updateMatrix();
@@ -887,7 +901,7 @@
                         const nLeftVal = getRoadValue(wx - ROAD_TILE_SIZE, wz);
                         const nTopVal = getRoadValue(wx, wz + ROAD_TILE_SIZE);
                         const nBottomVal = getRoadValue(wx, wz - ROAD_TILE_SIZE);
-                        
+
                         let placeLight = false;
                         let rotY = 0;
 
@@ -909,7 +923,7 @@
                         if (placeLight) {
                             const pX = lx + ROAD_TILE_SIZE / 2;
                             const pZ = lz + ROAD_TILE_SIZE / 2;
-                            
+
                             // 1. Pole Vertical
                             dummy.position.set(pX, 0, pZ);
                             dummy.rotation.set(0, rotY, 0);
@@ -921,23 +935,23 @@
                             const armLen = 5;
                             const bX = pX + Math.sin(rotY) * armLen;
                             const bZ = pZ + Math.cos(rotY) * armLen;
-                            
+
                             dummy.position.set(bX, 13.5, bZ);
                             dummy.rotation.set(0, rotY, 0);
                             dummy.scale.set(1, 1, 1);
                             dummy.updateMatrix();
                             bulbMatrices.push(dummy.matrix.clone());
-                            
+
                             // 3. Arm 
-                            dummy.position.set(pX + Math.sin(rotY) * (armLen/2), 13.8, pZ + Math.cos(rotY) * (armLen/2));
-                            dummy.rotation.set(Math.PI/2, rotY, 0); // Lay flat
+                            dummy.position.set(pX + Math.sin(rotY) * (armLen / 2), 13.8, pZ + Math.cos(rotY) * (armLen / 2));
+                            dummy.rotation.set(Math.PI / 2, rotY, 0); // Lay flat
                             dummy.scale.set(1, 0.5, 1); // Length 7
                             dummy.updateMatrix();
                             armMatrices.push(dummy.matrix.clone());
 
                             // 4. Light Spot (Ground Glare)
                             dummy.position.set(bX, 0.16, bZ);
-                            dummy.rotation.set(-Math.PI/2, 0, 0); // Flat on ground
+                            dummy.rotation.set(-Math.PI / 2, 0, 0); // Flat on ground
                             dummy.scale.set(1, 1, 1);
                             dummy.updateMatrix();
                             spotMatrices.push(dummy.matrix.clone());
@@ -991,7 +1005,7 @@
                 const bz = (pseudoRandom(seed * 20, i) - 0.5) * (CHUNK_SIZE - 20);
                 const snapX = Math.round(bx / ROAD_TILE_SIZE) * ROAD_TILE_SIZE + ROAD_TILE_SIZE / 2;
                 const snapZ = Math.round(bz / ROAD_TILE_SIZE) * ROAD_TILE_SIZE + ROAD_TILE_SIZE / 2;
-                
+
                 let onRoad = false;
                 if (roadSet.has(`${snapX},${snapZ}`)) onRoad = true;
                 if (!onRoad) {
@@ -999,12 +1013,12 @@
                     const worldZ = chunkZ + bz;
                     if (getRoadValue(worldX, worldZ) < ROAD_WIDTH_THRESHOLD + 0.1) onRoad = true;
                 }
-                
+
                 if (onRoad) continue;
 
                 let geo, radius, height, width, depth;
-                if (seed < 0.3) { geo = buildingGeometries.small; radius = 8; height = 30; width = 10; depth = 10; } 
-                else if (seed < 0.6) { geo = buildingGeometries.tall; radius = 10; height = 80; width = 15; depth = 15; } 
+                if (seed < 0.3) { geo = buildingGeometries.small; radius = 8; height = 30; width = 10; depth = 10; }
+                else if (seed < 0.6) { geo = buildingGeometries.tall; radius = 10; height = 80; width = 15; depth = 15; }
                 else { geo = buildingGeometries.wide; radius = 15; height = 25; width = 30; depth = 20; }
 
                 const mat = getBuildingMaterial(seed, isNightMode);
@@ -1014,25 +1028,25 @@
                 mesh.rotation.y = rot;
                 mesh.castShadow = true;
                 mesh.receiveShadow = true;
-                mesh.matrixAutoUpdate = false; 
+                mesh.matrixAutoUpdate = false;
                 mesh.updateMatrix();
-                
+
                 mesh.userData = { isBuilding: true, seed: seed };
-                
+
                 group.add(mesh);
                 obstacles.push({ x: chunkX + bx, z: chunkZ + bz, radiusSq: radius * radius, isBuilding: true, rotation: rot, height: height, width: width, depth: depth });
             }
 
             // --- GRASS GENERATION ---
-            const grassCount = 400; 
+            const grassCount = 400;
             const grassMatrices = [];
-            
-            for(let i=0; i<grassCount; i++) {
+
+            for (let i = 0; i < grassCount; i++) {
                 const rx = (Math.random() - 0.5) * CHUNK_SIZE;
                 const rz = (Math.random() - 0.5) * CHUNK_SIZE;
-                
-                const sx = Math.round(rx / ROAD_TILE_SIZE) * ROAD_TILE_SIZE + ROAD_TILE_SIZE/2;
-                const sz = Math.round(rz / ROAD_TILE_SIZE) * ROAD_TILE_SIZE + ROAD_TILE_SIZE/2;
+
+                const sx = Math.round(rx / ROAD_TILE_SIZE) * ROAD_TILE_SIZE + ROAD_TILE_SIZE / 2;
+                const sz = Math.round(rz / ROAD_TILE_SIZE) * ROAD_TILE_SIZE + ROAD_TILE_SIZE / 2;
                 if (roadSet.has(`${sx},${sz}`)) continue;
 
                 const wx = chunkX + rx;
@@ -1040,28 +1054,28 @@
                 if (getRoadValue(wx, wz) < ROAD_WIDTH_THRESHOLD + 0.1) continue;
 
                 let hitBuilding = false;
-                for(let b=0; b<obstacles.length; b++) {
+                for (let b = 0; b < obstacles.length; b++) {
                     const ob = obstacles[b];
-                    if (rx > ob.x - chunkX - ob.width/1.5 && rx < ob.x - chunkX + ob.width/1.5 &&
-                        rz > ob.z - chunkZ - ob.depth/1.5 && rz < ob.z - chunkZ + ob.depth/1.5) {
+                    if (rx > ob.x - chunkX - ob.width / 1.5 && rx < ob.x - chunkX + ob.width / 1.5 &&
+                        rz > ob.z - chunkZ - ob.depth / 1.5 && rz < ob.z - chunkZ + ob.depth / 1.5) {
                         hitBuilding = true;
                         break;
                     }
                 }
-                if(hitBuilding) continue;
+                if (hitBuilding) continue;
 
-                dummy.position.set(rx, 1.0, rz); 
-                dummy.rotation.set(0, Math.random() * Math.PI, 0); 
-                dummy.scale.set(1, 1 + Math.random()*0.5, 1); 
+                dummy.position.set(rx, 1.0, rz);
+                dummy.rotation.set(0, Math.random() * Math.PI, 0);
+                dummy.scale.set(1, 1 + Math.random() * 0.5, 1);
                 dummy.updateMatrix();
                 grassMatrices.push(dummy.matrix.clone());
             }
 
             if (grassMatrices.length > 0) {
                 const grassMesh = new THREE.InstancedMesh(grassGeometry, grassMaterial, grassMatrices.length);
-                grassMesh.receiveShadow = false; 
-                for(let i=0; i<grassMatrices.length; i++) grassMesh.setMatrixAt(i, grassMatrices[i]);
-                grassMesh.frustumCulled = false; 
+                grassMesh.receiveShadow = false;
+                for (let i = 0; i < grassMatrices.length; i++) grassMesh.setMatrixAt(i, grassMatrices[i]);
+                grassMesh.frustumCulled = false;
                 group.add(grassMesh);
             }
 
@@ -1120,8 +1134,8 @@
             spotL.angle = Math.PI / 6;
             spotL.penumbra = 0.3;
             spotL.decay = 1.5;
-            spotL.distance = 60; 
-            spotL.castShadow = false; 
+            spotL.distance = 60;
+            spotL.castShadow = false;
             spotL.target.position.set(-xOffset, 0, z + 20);
             spotL.visible = isNightMode;
             spotL.isLight = true;
@@ -1143,14 +1157,14 @@
 
         function buildSupercarMesh(addLights = true, color = null) {
             const group = new THREE.Group();
-            
+
             // Materials
-            const bodyColor = color ? color : 0xffffff; 
+            const bodyColor = color ? color : 0xffffff;
             const bodyMat = new THREE.MeshStandardMaterial({ color: bodyColor, roughness: 0.3, metalness: 0.2 });
             const secondaryMat = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.1, metalness: 0.6 }); // Glossy black accents
             const glassMat = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.0, metalness: 1.0 });
             const rimMat = new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.9, roughness: 0.2 });
-            
+
             const lightIntensity = isNightMode ? 5.0 : 0.5;
             const tailLightMat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: lightIntensity * 1.5 });
             const headLightMat = new THREE.MeshStandardMaterial({ color: 0xaaccff, emissive: 0xaaccff, emissiveIntensity: lightIntensity });
@@ -1166,7 +1180,7 @@
             const cabin = new THREE.Mesh(cabinGeo, glassMat);
             cabin.position.set(0, 0.9, 0.2);
             group.add(cabin);
-            
+
             // Rear Engine Cover / Slats
             const slatGeo = new THREE.BoxGeometry(1.4, 0.05, 1.8);
             const slat = new THREE.Mesh(slatGeo, secondaryMat);
@@ -1178,7 +1192,7 @@
             const fenderGeo = new THREE.BoxGeometry(0.6, 0.6, 1.2);
             const fl = new THREE.Mesh(fenderGeo, bodyMat); fl.position.set(-1.1, 0.5, 1.6); group.add(fl);
             const fr = new THREE.Mesh(fenderGeo, bodyMat); fr.position.set(1.1, 0.5, 1.6); group.add(fr);
-            
+
             const rearFenderGeo = new THREE.BoxGeometry(0.7, 0.7, 1.4);
             const rl = new THREE.Mesh(rearFenderGeo, bodyMat); rl.position.set(-1.15, 0.55, -1.4); group.add(rl);
             const rr = new THREE.Mesh(rearFenderGeo, bodyMat); rr.position.set(1.15, 0.55, -1.4); group.add(rr);
@@ -1187,7 +1201,7 @@
             const wingPillarGeo = new THREE.BoxGeometry(0.1, 0.5, 0.5);
             const pL = new THREE.Mesh(wingPillarGeo, secondaryMat); pL.position.set(-0.6, 0.9, -2.0); group.add(pL);
             const pR = new THREE.Mesh(wingPillarGeo, secondaryMat); pR.position.set(0.6, 0.9, -2.0); group.add(pR);
-            
+
             const wingGeo = new THREE.BoxGeometry(2.8, 0.05, 0.8);
             const wing = new THREE.Mesh(wingGeo, secondaryMat);
             wing.position.set(0, 1.15, -2.1);
@@ -1199,7 +1213,7 @@
             const strip = new THREE.Mesh(stripGeo, tailLightMat);
             strip.position.set(0, 0.6, -2.35);
             group.add(strip);
-            
+
             // Headlights (Angled slits)
             const hlGeo = new THREE.BoxGeometry(0.5, 0.05, 0.2);
             const hlL = new THREE.Mesh(hlGeo, headLightMat); hlL.position.set(-0.9, 0.5, 2.3); hlL.rotation.y = 0.2; group.add(hlL);
@@ -1208,18 +1222,18 @@
             // Wheels
             const wheelGeo = new THREE.BoxGeometry(0.6, 0.8, 0.8); // Using box for style consistency with low poly
             const positions = [
-                {x: -1.2, z: 1.6}, {x: 1.2, z: 1.6}, // Front
-                {x: -1.25, z: -1.4}, {x: 1.25, z: -1.4} // Rear (Wider)
+                { x: -1.2, z: 1.6 }, { x: 1.2, z: 1.6 }, // Front
+                { x: -1.25, z: -1.4 }, { x: 1.25, z: -1.4 } // Rear (Wider)
             ];
-            
+
             positions.forEach(pos => {
                 const w = new THREE.Mesh(wheelGeo, secondaryMat);
                 w.position.set(pos.x, 0.4, pos.z);
                 group.add(w);
-                
+
                 // Rim detail
                 const rim = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, 0.5), rimMat);
-                rim.position.set(pos.x + (pos.x>0?0.26:-0.26), 0.4, pos.z);
+                rim.position.set(pos.x + (pos.x > 0 ? 0.26 : -0.26), 0.4, pos.z);
                 group.add(rim);
             });
 
@@ -1237,7 +1251,7 @@
             const bodyMat = new THREE.MeshStandardMaterial({ color: bodyColor, roughness: 0.2, metalness: 0.6 });
             const carbonMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.5, metalness: 0.5 });
             const glassMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.1, metalness: 0.9 });
-            
+
             const lightIntensity = isNightMode ? 5.0 : 0.5;
             const tailLightMat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: lightIntensity });
             const headLightMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: lightIntensity });
@@ -1275,13 +1289,13 @@
             const hlR = new THREE.Mesh(hlGeo, headLightMat); hlR.position.set(1.0, 0.5, 2.0); group.add(hlR);
             const wheelGeo = new THREE.BoxGeometry(0.6, 0.8, 0.8);
             const wheelMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9 });
-            const rimMat = new THREE.MeshStandardMaterial({ color: 0x000000 }); 
+            const rimMat = new THREE.MeshStandardMaterial({ color: 0x000000 });
             [{ x: -1.3, z: 1.4 }, { x: 1.3, z: 1.4 }, { x: -1.35, z: -1.2 }, { x: 1.35, z: -1.2 }].forEach(pos => {
                 const wheel = new THREE.Mesh(wheelGeo, wheelMat); wheel.position.set(pos.x, 0.4, pos.z); group.add(wheel);
                 const rim = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, 0.5), rimMat); rim.position.set(pos.x + (pos.x > 0 ? 0.3 : -0.3), 0.4, pos.z); group.add(rim);
             });
 
-            if(addLights) {
+            if (addLights) {
                 createHeadlights(group, 1.0, 0.5, 2.0, 10.0);
             }
             return group;
@@ -1293,14 +1307,14 @@
             // Random color
             const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffaa00, 0xaa00aa, 0xffffff, 0x222222];
             const col = colors[Math.floor(Math.random() * colors.length)];
-            
+
             // Reuse supercar mesh but scaled down slightly
             const mesh = buildSupercarMesh(true, col);
             mesh.scale.set(1.6, 1.6, 1.6);
             mesh.position.set(x, y, z);
-            
+
             scene.add(mesh);
-            
+
             trafficVehicles.push({
                 mesh: mesh,
                 speed: 0.4 + Math.random() * 0.2, // Random speed
@@ -1317,10 +1331,10 @@
             for (let i = trafficVehicles.length - 1; i >= 0; i--) {
                 const car = trafficVehicles[i];
                 const mesh = car.mesh;
-                
+
                 // 1. Move
                 const tangent = getRoadTangent(mesh.position.x, mesh.position.z);
-                
+
                 // If laneDir is -1 (negative raw value side), we inverse the tangent flow
                 if (car.laneDir < 0) {
                     tangent.negate();
@@ -1339,7 +1353,7 @@
                 // 4. Culling (Remove if too far)
                 const dx = mesh.position.x - pPos.x;
                 const dz = mesh.position.z - pPos.z;
-                if (dx*dx + dz*dz > CULL_DIST_SQ * 1.5) { // Slightly larger cull dist to prevent pop-in on edges
+                if (dx * dx + dz * dz > CULL_DIST_SQ * 1.5) { // Slightly larger cull dist to prevent pop-in on edges
                     scene.remove(mesh);
                     trafficVehicles.splice(i, 1);
                 }
@@ -1423,8 +1437,8 @@
                 const t = touches[i];
                 if (checkMiniatureClick(t.clientX, t.clientY)) continue;
                 if (t.target === timeBtn) {
-                     toggleDayNight();
-                     continue;
+                    toggleDayNight();
+                    continue;
                 }
                 const dx = t.clientX - zoneCenter.x;
                 const dy = t.clientY - zoneCenter.y;
@@ -1524,7 +1538,7 @@
 
         function updatePhysics() {
             if (isGameOver) return;
-            
+
             let appliedFriction = FRICTION;
 
             if (Math.abs(moveInput.x) > 0.1) {
@@ -1537,7 +1551,7 @@
             if (Math.abs(moveInput.y) > 0.1) {
                 const throttle = -moveInput.y;
                 const rotation = player.rotation.y;
-                
+
                 // Detect Braking: Moving forward but input is backward (or vice versa)
                 // We project velocity onto the car's forward vector
                 const vx = velocity.x;
@@ -1545,7 +1559,7 @@
                 const forwardX = Math.sin(rotation);
                 const forwardZ = Math.cos(rotation);
                 const dot = vx * forwardX + vz * forwardZ;
-                
+
                 // If moving reasonably fast and input opposes movement
                 if ((dot > 0.5 && throttle < -0.1) || (dot < -0.5 && throttle > 0.1)) {
                     appliedFriction = BRAKING_FRICTION;
@@ -1557,7 +1571,7 @@
                 velocity.x += accelX;
                 velocity.z += accelZ;
             }
-            
+
             velocity.x *= appliedFriction;
             velocity.z *= appliedFriction;
             velocity.y -= GRAVITY;
@@ -1578,8 +1592,8 @@
                 isAirborne = true;
             }
 
-            const pRadiusSq = 4.0; 
-            
+            const pRadiusSq = 4.0;
+
             // --- Building Collisions ---
             for (const chunk of activeChunks.values()) {
                 if (!chunk.obstacles) continue;
@@ -1596,16 +1610,16 @@
                     }
                 }
             }
-            
+
             // --- Traffic Collisions ---
             const trafficCollisionDistSq = 12.0; // Approx 3.5^2
-            for(let i=0; i<trafficVehicles.length; i++) {
+            for (let i = 0; i < trafficVehicles.length; i++) {
                 const npc = trafficVehicles[i];
                 const dx = player.position.x - npc.mesh.position.x;
                 const dz = player.position.z - npc.mesh.position.z;
-                const distSq = dx*dx + dz*dz;
-                
-                if(distSq < trafficCollisionDistSq) {
+                const distSq = dx * dx + dz * dz;
+
+                if (distSq < trafficCollisionDistSq) {
                     explode(player.position, 0xff4400);
                     explode(npc.mesh.position, npc.color); // Use NPC color
                     npc.mesh.visible = false;
@@ -1614,7 +1628,7 @@
                 }
             }
         }
-        
+
         function triggerGameOver() {
             isGameOver = true;
             player.visible = false;
@@ -1639,11 +1653,11 @@
             player.position.set(0, PLAYER_BASE_Y, 0);
             player.rotation.set(0, 0, 0);
             velocity.set(0, 0, 0);
-            moveInput = { x: 0, y: 0 }; 
+            moveInput = { x: 0, y: 0 };
             score = 0;
             scoreElement.innerText = "Score: 0";
             centerCamera();
-            
+
             // Clear traffic
             trafficVehicles.forEach(c => scene.remove(c.mesh));
             trafficVehicles.length = 0;
@@ -1651,31 +1665,31 @@
             const instr = document.querySelector('.instructions');
             instr.innerHTML = oldText || (isNightMode ? "Night Run<br>Left Stick: Drive" : "Day Run<br>Left Stick: Drive");
             instr.style.animation = 'none';
-            instr.offsetHeight; 
+            instr.offsetHeight;
             instr.style.animation = 'fadeOut 5s forwards';
             instr.style.animationDelay = '2s';
         }
 
         function updatePedestrians() {
-            if (isGameOver) return; 
+            if (isGameOver) return;
             const time = Date.now() * 0.005;
             const playerPos = player.position;
-            const SPAWN_RANGE = 250; 
+            const SPAWN_RANGE = 250;
             activeObstacles.length = 0;
-            
+
             // Reusable loop vars to reduce GC
             let ped, dx, dz, distSq, phase, swing;
 
             for (let i = 0; i < allPedestrians.length; i++) {
                 ped = allPedestrians[i];
                 ped.position.add(ped.velocity);
-                
+
                 // Wrap around logic
                 if (ped.position.x > playerPos.x + SPAWN_RANGE) ped.position.x -= SPAWN_RANGE * 2;
                 if (ped.position.x < playerPos.x - SPAWN_RANGE) ped.position.x += SPAWN_RANGE * 2;
                 if (ped.position.z > playerPos.z + SPAWN_RANGE) ped.position.z -= SPAWN_RANGE * 2;
                 if (ped.position.z < playerPos.z - SPAWN_RANGE) ped.position.z += SPAWN_RANGE * 2;
-                
+
                 dx = ped.position.x - playerPos.x;
                 dz = ped.position.z - playerPos.z;
                 distSq = dx * dx + dz * dz;
@@ -1690,7 +1704,7 @@
                         ped.isActive = true;
                     }
                     ped.mesh.position.copy(ped.position);
-                    
+
                     // Simple animation
                     phase = time + ped.animPhase;
                     swing = Math.sin(phase) * 0.6;
@@ -1698,7 +1712,7 @@
                     ped.mesh.userData.limbs.legR.rotation.x = -swing;
                     ped.mesh.userData.limbs.armL.rotation.x = -swing;
                     ped.mesh.userData.limbs.armR.rotation.x = swing;
-                    
+
                     activeObstacles.push(ped);
                 } else {
                     if (ped.isActive) {
@@ -1730,14 +1744,14 @@
                 }
             }
         }
-        
+
         function emitWheelSmoke() {
             if (!player) return;
             let wheelOffsets = [];
             if (carType === 'supercar') {
-                wheelOffsets = [{x: -1.2, z: 1.6}, {x: 1.2, z: 1.6}, {x: -1.25, z: -1.4}, {x: 1.25, z: -1.4}];
+                wheelOffsets = [{ x: -1.2, z: 1.6 }, { x: 1.2, z: 1.6 }, { x: -1.25, z: -1.4 }, { x: 1.25, z: -1.4 }];
             } else {
-                wheelOffsets = [{x: -1.3, z: 1.4}, {x: 1.3, z: 1.4}, {x: -1.35, z: -1.2}, {x: 1.35, z: -1.2}];
+                wheelOffsets = [{ x: -1.3, z: 1.4 }, { x: 1.3, z: 1.4 }, { x: -1.35, z: -1.2 }, { x: 1.35, z: -1.2 }];
             }
             const carRot = player.rotation.y;
             const cos = Math.cos(carRot);
@@ -1749,7 +1763,7 @@
                 spawnSmokeParticle(pos); // Reduced to 1 particle per wheel for speed
             });
         }
-        
+
         function spawnSmokeParticle(pos) {
             const size = Math.random() * 0.4 + 0.2;
             const geo = new THREE.BoxGeometry(size, size, size);
@@ -1788,7 +1802,7 @@
                 p.position.add(p.userData.velocity);
                 if (p.userData.type === 'smoke') {
                     p.rotation.x += 0.05; p.rotation.y += 0.05; p.scale.addScalar(0.04); p.userData.life -= 0.025;
-                    if(p.material.opacity > 0) p.material.opacity = p.userData.life * 0.4;
+                    if (p.material.opacity > 0) p.material.opacity = p.userData.life * 0.4;
                 } else {
                     p.userData.velocity.y -= 0.03; p.rotation.x += 0.1; p.rotation.y += 0.1;
                     if (p.position.y < 0) { p.userData.velocity.y *= -0.5; p.position.y = 0; }
@@ -1796,8 +1810,8 @@
                 }
                 if (p.userData.life <= 0) {
                     scene.remove(p);
-                    if(p.material) p.material.dispose();
-                    if(p.geometry) p.geometry.dispose();
+                    if (p.material) p.material.dispose();
+                    if (p.geometry) p.geometry.dispose();
                     particles.splice(i, 1);
                 }
             }
@@ -1851,7 +1865,7 @@
             for (const chunk of activeChunks.values()) {
                 if (chunk.roads) {
                     for (const road of chunk.roads) {
-                        minimapCtx.fillRect(road.x - ROAD_TILE_SIZE/2, road.z - ROAD_TILE_SIZE/2, ROAD_TILE_SIZE + 1, ROAD_TILE_SIZE + 1);
+                        minimapCtx.fillRect(road.x - ROAD_TILE_SIZE / 2, road.z - ROAD_TILE_SIZE / 2, ROAD_TILE_SIZE + 1, ROAD_TILE_SIZE + 1);
                     }
                 }
             }
@@ -1861,12 +1875,12 @@
                 if (chunk.obstacles) {
                     for (const obs of chunk.obstacles) {
                         if (obs.isBuilding) {
-                            minimapCtx.fillRect(obs.x - obs.width/2, obs.z - obs.depth/2, obs.width, obs.depth);
+                            minimapCtx.fillRect(obs.x - obs.width / 2, obs.z - obs.depth / 2, obs.width, obs.depth);
                         }
                     }
                 }
             }
-            
+
             // Draw Traffic on minimap
             minimapCtx.fillStyle = '#ffcc00';
             trafficVehicles.forEach(c => {
@@ -1887,10 +1901,10 @@
             minimapCtx.strokeStyle = '#ffffff';
             minimapCtx.lineWidth = 2;
             minimapCtx.beginPath();
-            minimapCtx.moveTo(0, -10); 
-            minimapCtx.lineTo(8, 10);  
-            minimapCtx.lineTo(0, 6);   
-            minimapCtx.lineTo(-8, 10); 
+            minimapCtx.moveTo(0, -10);
+            minimapCtx.lineTo(8, 10);
+            minimapCtx.lineTo(0, 6);
+            minimapCtx.lineTo(-8, 10);
             minimapCtx.closePath();
             minimapCtx.fill();
             minimapCtx.stroke();
@@ -1914,13 +1928,13 @@
 
             if (player) {
                 updatePhysics();
-                updateChunks(); 
+                updateChunks();
                 updatePedestrians();
                 checkCollisions();
                 updateParticles();
                 updateCamera();
                 updateHeadingIndicator();
-                updateMinimap(); 
+                updateMinimap();
                 updateTraffic(); // NPC update
                 if (sunLight) {
                     sunLight.position.set(player.position.x + 50, 100, player.position.z + 50);
@@ -1930,7 +1944,7 @@
                 if (!isAirborne) {
                     const speed = Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
                     if (speed > 0.01) {
-                        const bounceFreq = carType === 'hypercar' ? 0.03 : 0.015; 
+                        const bounceFreq = carType === 'hypercar' ? 0.03 : 0.015;
                         const bounceAmp = carType === 'hypercar' ? 0.02 : 0.05;
                         player.position.y = PLAYER_BASE_Y + Math.sin(Date.now() * bounceFreq) * bounceAmp;
                     }
@@ -1939,7 +1953,7 @@
             renderer.clear();
             renderer.render(scene, camera);
             if (miniatureGroup) miniatureGroup.rotation.y += 0.02;
-            renderer.clearDepth(); 
+            renderer.clearDepth();
             renderer.render(uiScene, uiCamera);
         }
 
@@ -1953,5 +1967,5 @@
         }
     </script>
 </body>
-</html>
 
+</html>
