@@ -305,8 +305,9 @@
         const ROAD_WIDTH_THRESHOLD = 0.25; 
 
         // Physics
-        let PLAYER_SPEED = 0.25;
-        const FRICTION = 0.80;
+        let PLAYER_SPEED = 0.15;
+        const FRICTION = 0.97;
+        const BRAKING_FRICTION = 0.90;
         let MAX_SPEED = 2.0;
         const PLAYER_BASE_Y = 0.05;
         const GRAVITY = 0.02;
@@ -1359,12 +1360,12 @@
             if (type === 'supercar') {
                 currentCarMesh = buildSupercarMesh(true);
                 currentCarMesh.scale.set(1.8, 1.8, 1.8);
-                // Updated physics for the Black Supercar: Faster than the old truck
-                PLAYER_SPEED = 0.48; MAX_SPEED = 3.8;
+                // Updated physics for the Black Supercar
+                PLAYER_SPEED = 0.18; MAX_SPEED = 3.8;
             } else if (type === 'hypercar') {
                 currentCarMesh = buildHypercarMesh(true);
                 currentCarMesh.scale.set(1.8, 1.8, 1.8);
-                PLAYER_SPEED = 0.45; MAX_SPEED = 3.5;
+                PLAYER_SPEED = 0.16; MAX_SPEED = 3.5;
             }
             currentCarMesh.traverse((child) => {
                 if (child.isMesh) {
@@ -1519,7 +1520,12 @@
 
         function updatePhysics() {
             if (isGameOver) return;
+            
+            let appliedFriction = FRICTION;
+
             if (Math.abs(moveInput.x) > 0.1) {
+                // Scaling turn speed with speed for realism (slower turn at high speeds? or low speeds?)
+                // Arcade style: constant turn usually feels better, but let's keep it simple.
                 const turnFactor = carType === 'hypercar' ? 0.05 : 0.04;
                 player.rotation.y -= moveInput.x * turnFactor;
                 if (Math.abs(moveInput.x) > 0.85 && Math.random() < 0.25) emitWheelSmoke();
@@ -1527,13 +1533,29 @@
             if (Math.abs(moveInput.y) > 0.1) {
                 const throttle = -moveInput.y;
                 const rotation = player.rotation.y;
+                
+                // Detect Braking: Moving forward but input is backward (or vice versa)
+                // We project velocity onto the car's forward vector
+                const vx = velocity.x;
+                const vz = velocity.z;
+                const forwardX = Math.sin(rotation);
+                const forwardZ = Math.cos(rotation);
+                const dot = vx * forwardX + vz * forwardZ;
+                
+                // If moving reasonably fast and input opposes movement
+                if ((dot > 0.5 && throttle < -0.1) || (dot < -0.5 && throttle > 0.1)) {
+                    appliedFriction = BRAKING_FRICTION;
+                    // Add red brake light effect? (Optional visual polish)
+                }
+
                 const accelX = Math.sin(rotation) * throttle * PLAYER_SPEED;
                 const accelZ = Math.cos(rotation) * throttle * PLAYER_SPEED;
                 velocity.x += accelX;
                 velocity.z += accelZ;
             }
-            velocity.x *= FRICTION;
-            velocity.z *= FRICTION;
+            
+            velocity.x *= appliedFriction;
+            velocity.z *= appliedFriction;
             velocity.y -= GRAVITY;
 
             const hSpeed = Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
