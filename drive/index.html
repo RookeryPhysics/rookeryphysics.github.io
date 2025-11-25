@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
-    <title>Infinite Voxel Driver - Traffic Edition</title>
+    <title>Roadst3r</title>
     <style>
         body {
             margin: 0;
@@ -266,6 +266,7 @@
         let isNightMode = false;
 
         let score = 0;
+        let highScore = localStorage.getItem('highScore') || 0;
         const scoreElement = document.getElementById('score-board');
         const fpsElement = document.getElementById('fps-counter');
 
@@ -834,6 +835,7 @@
             const bulbMatrices = [];
             const spotMatrices = [];
             
+            const obstacles = [];
             const roadMapPositions = [];
             const roadSet = new Set();
             const halfSize = CHUNK_SIZE / 2;
@@ -939,6 +941,8 @@
                             dummy.scale.set(1, 1, 1);
                             dummy.updateMatrix();
                             spotMatrices.push(dummy.matrix.clone());
+
+                            obstacles.push({ x: chunkX + pX, z: chunkZ + pZ, radiusSq: 1.0, isLightpost: true, height: 14 });
                         }
                     }
                 }
@@ -978,7 +982,7 @@
             }
 
             let seed = pseudoRandom(cx, cz);
-            const obstacles = [];
+            // obstacles array already initialized above
             const numObjects = seed > 0.8 ? 15 : (seed > 0.4 ? 4 : 2);
 
             for (let i = 0; i < numObjects; i++) {
@@ -1581,7 +1585,6 @@
                 if (!chunk.obstacles) continue;
                 for (let i = 0; i < chunk.obstacles.length; i++) {
                     const obs = chunk.obstacles[i];
-                    if (player.position.y > obs.height) continue;
                     const dx = player.position.x - obs.x;
                     const dz = player.position.z - obs.z;
                     const distSq = dx * dx + dz * dz;
@@ -1616,9 +1619,15 @@
             isGameOver = true;
             player.visible = false;
             velocity.set(0, 0, 0);
+
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('highScore', highScore);
+            }
+
             const instr = document.querySelector('.instructions');
             const oldText = instr.innerHTML;
-            instr.innerHTML = "<span style='color:red; font-size:20px; font-weight:bold;'>CRASHED!</span>";
+            instr.innerHTML = `<span style='color:red; font-size:20px; font-weight:bold;'>CRASHED!</span><br><span style='color:gold; font-size:18px;'>Top Score: ${highScore}</span>`;
             instr.style.opacity = 1;
             instr.style.animation = 'none';
             setTimeout(() => resetGame(oldText), 3000);
