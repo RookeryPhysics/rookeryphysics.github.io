@@ -2166,6 +2166,35 @@
         js.id = id;
         js.src = 'https://sdk.snapkit.com/js/v1/create.js';
         sjs.parentNode.insertBefore(js, sjs);
+        
+        // Add touch event handling for mobile after SDK loads
+        js.onload = function() {
+            setTimeout(function() {
+                const snapButton = document.querySelector('.snapchat-creative-kit-share');
+                if (snapButton) {
+                    // Enable touch events for mobile
+                    snapButton.style.touchAction = 'auto';
+                    snapButton.style.webkitTouchCallout = 'default';
+                    
+                    // Add explicit touch handler that delegates to click
+                    snapButton.addEventListener('touchstart', function(e) {
+                        e.stopPropagation();
+                    }, { passive: true });
+                    
+                    snapButton.addEventListener('touchend', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        // Find and trigger the actual SDK button inside
+                        const sdkButton = snapButton.querySelector('button, a, [role="button"]');
+                        if (sdkButton) {
+                            sdkButton.click();
+                        } else {
+                            snapButton.click();
+                        }
+                    }, { passive: false });
+                }
+            }, 500); // Wait for SDK to inject the button
+        };
         })(document, 'script', 'snapkit-creative-kit-sdk');
     </script>
 </body>
