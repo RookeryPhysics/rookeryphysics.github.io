@@ -6,6 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
     <meta property="og:site_name" content="Roadst3r" />
     <meta property="og:title" content="Voxel Driving Game" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://rookeryphysics.github.io/drive" />
+    <meta property="og:description" content="Arcade voxel driving game. Drift through a procedural city and try to beat your top score." />
+    <meta property="og:image" content="https://rookeryphysics.github.io/drive/img.jpg" />
+    <meta property="og:image:secure_url" content="https://rookeryphysics.github.io/drive/img.jpg" />
+    <!-- Optional width/height; adjust if img.jpg differs -->
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <link rel="canonical" href="https://rookeryphysics.github.io/drive" />
     <title>Roadst3r</title>
     <style>
         body {
@@ -367,11 +376,14 @@
             <button id="share-modal-close">×</button>
             <h2 id="share-modal-title" style="margin:5px 0 10px; font-size:20px; color:#ffffff; text-align:center; font-weight:600; letter-spacing:0.5px;">Share the game!</h2>
             <div id="share-controls" style="display:flex; gap:10px; align-items:center; margin-top:25px;">
-                <input id="share-link" type="text" value="rookeryphysics.github.io/drive" readonly style="flex:1; padding:10px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.08); color:#ffffff; font-size:14px;">
+                <input id="share-link" type="text" value="https://rookeryphysics.github.io/drive" readonly style="flex:1; padding:10px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.08); color:#ffffff; font-size:14px;">
                 <button id="copy-link-btn" style="padding:10px 14px; border-radius:8px; border:1px solid rgba(255,255,255,0.3); background:rgba(0,0,0,0.4); color:#ffffff; cursor:pointer;">Copy</button>
             </div>
             <div class="share-separator" style="margin-top:24px; text-align:center; font-weight:600; color:#ffffff; font-size:12px; opacity:0.85; letter-spacing:2px;">OR</div>
-            <div class="snapchat-creative-kit-share" data-size="large" data-theme="dark" data-share-url="rookeryphysics.github.io/drive" style="display:flex; justify-content:center; align-items:center; margin:24px auto 0;"></div>
+            <div class="snapchat-creative-kit-share" data-size="large" data-theme="dark" data-share-url="https://rookeryphysics.github.io/drive" data-share-text="Come drive this voxel racer!" style="display:flex; justify-content:center; align-items:center; margin:24px auto 0;"></div>
+            <div style="text-align:center; margin-top:12px;">
+                <a id="snap-fallback-link" href="https://www.snapchat.com/compose?attachmentUrl=https%3A%2F%2Frookeryphysics.github.io%2Fdrive" target="_blank" rel="noopener noreferrer" style="color:#ffd300; font-size:12px; opacity:0.9; text-decoration:underline;">Open in Snapchat (fallback)</a>
+            </div>
         </div>
     </div>
 
@@ -478,12 +490,27 @@
         const shareModalClose = document.getElementById('share-modal-close');
         const shareLinkInput = document.getElementById('share-link');
         const copyLinkBtn = document.getElementById('copy-link-btn');
+        const snapShareDiv = document.querySelector('.snapchat-creative-kit-share');
+        const snapFallbackLink = document.getElementById('snap-fallback-link');
 
         init();
         animate();
 
         function init() {
             const container = document.getElementById('game-container');
+
+            // Compute absolute share URL for reliability across domains/hosts
+            const shareUrl = new URL('/drive', window.location.origin).toString().replace(/\/$/, '');
+            if (shareLinkInput) shareLinkInput.value = shareUrl;
+            if (snapShareDiv) {
+                snapShareDiv.setAttribute('data-share-url', shareUrl);
+                if (!snapShareDiv.getAttribute('data-share-text')) {
+                    snapShareDiv.setAttribute('data-share-text', 'Come drive this voxel racer!');
+                }
+            }
+            if (snapFallbackLink) {
+                snapFallbackLink.href = 'https://www.snapchat.com/compose?attachmentUrl=' + encodeURIComponent(shareUrl);
+            }
 
             scene = new THREE.Scene();
 
