@@ -233,6 +233,18 @@
             position: relative;
         }
 
+        /* Allow normal interactions inside modal on mobile */
+        #share-modal,
+        #share-modal * {
+            touch-action: auto;
+        }
+
+        /* Re-enable text selection for the share link input */
+        #share-link {
+            user-select: text;
+            -webkit-user-select: text;
+        }
+
         #share-modal-close {
             position: absolute;
             top: 10px;
@@ -557,6 +569,13 @@
             shareModal.addEventListener('click', (e) => { if (e.target === shareModal) closeShareModal(); });
 
             copyLinkBtn.addEventListener('click', copyShareLink);
+
+            // Mobile touch handlers for modal actions
+            shareModalClose.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); closeShareModal(); }, { passive: false });
+            shareModal.addEventListener('touchstart', (e) => {
+                if (e.target === shareModal) { e.preventDefault(); e.stopPropagation(); closeShareModal(); }
+            }, { passive: false });
+            copyLinkBtn.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); copyShareLink(); }, { passive: false });
         }
 
         // --- Share Modal Functions ---
@@ -570,22 +589,31 @@
 
         function copyShareLink() {
             const text = shareLinkInput.value;
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(text).then(() => {
-                    copyLinkBtn.textContent = 'Copied!';
-                    setTimeout(() => { copyLinkBtn.textContent = 'Copy'; }, 1200);
-                }).catch(() => {
-                    // Fallback
-                    shareLinkInput.select();
-                    document.execCommand('copy');
-                    copyLinkBtn.textContent = 'Copied!';
-                    setTimeout(() => { copyLinkBtn.textContent = 'Copy'; }, 1200);
-                });
-            } else {
-                shareLinkInput.select();
-                document.execCommand('copy');
+            const showCopied = () => {
                 copyLinkBtn.textContent = 'Copied!';
                 setTimeout(() => { copyLinkBtn.textContent = 'Copy'; }, 1200);
+            };
+            const fallbackCopy = () => {
+                try {
+                    const ta = document.createElement('textarea');
+                    ta.value = text;
+                    ta.setAttribute('readonly', '');
+                    ta.style.position = 'fixed';
+                    ta.style.top = '-9999px';
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(ta);
+                    showCopied();
+                } catch (err) {
+                    showCopied();
+                }
+            };
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(showCopied).catch(fallbackCopy);
+            } else {
+                fallbackCopy();
             }
         }
 
@@ -1567,6 +1595,18 @@
         }
 
         function onTouchStart(e) {
+            // If share modal is open and the touch is inside the modal content,
+            // allow default behavior so clicks/taps work as expected.
+            if (shareModal.classList.contains('active')) {
+                if (e.target === shareModal) {
+                    // Tapping on backdrop closes the modal
+                    closeShareModal();
+                    return;
+                }
+                if (e.target.closest && e.target.closest('#share-modal-content')) {
+                    return;
+                }
+            }
             e.preventDefault();
             const touches = e.changedTouches;
             const zoneRect = movementZone.getBoundingClientRect();
