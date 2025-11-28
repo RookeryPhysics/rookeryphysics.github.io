@@ -391,6 +391,8 @@
         let mouse = new THREE.Vector2();
 
         let player;
+        let initialSpawnX = 0;
+        let initialSpawnZ = 0;
         let carType = 'hypercar';
         let currentCarMesh = null;
         let ambientLight, sunLight;
@@ -1566,6 +1568,8 @@
             }
 
             player.position.set(spawnX, PLAYER_BASE_Y, spawnZ);
+            initialSpawnX = spawnX;
+            initialSpawnZ = spawnZ;
             scene.add(player);
             // Default to hypercar
             loadCarModel('hypercar');
@@ -1870,7 +1874,7 @@
         function resetGame(oldText) {
             isGameOver = false;
             player.visible = true;
-            player.position.set(0, PLAYER_BASE_Y, 0);
+            player.position.set(initialSpawnX, PLAYER_BASE_Y, initialSpawnZ);
             player.rotation.set(0, 0, 0);
             velocity.set(0, 0, 0);
             moveInput = { x: 0, y: 0 };
