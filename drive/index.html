@@ -414,8 +414,9 @@
 
         // Snow System
         let snowSystem, snowGeo;
-        const snowCount = 2500;
-        const snowRange = 220;
+        const snowCount = 6000;
+        const snowRange = 400;
+        const lastSnowPlayerPos = new THREE.Vector3();
 
         // Cache materials to reduce draw calls
         const materialCache = new Map();
@@ -1990,18 +1991,16 @@
             const positions = [];
             const velocities = [];
             
-            const startX = player ? player.position.x : 0;
-            const startZ = player ? player.position.z : 0;
-
+            // Spawn locally around (0,0,0)
             for (let i = 0; i < snowCount; i++) {
                 positions.push(
-                    startX + (Math.random() - 0.5) * snowRange,
-                    Math.random() * 60,
-                    startZ + (Math.random() - 0.5) * snowRange
+                    (Math.random() - 0.5) * snowRange,
+                    Math.random() * 60 - 20, // Height variation
+                    (Math.random() - 0.5) * snowRange
                 );
                 velocities.push(
                     (Math.random() - 0.5) * 0.15, // x drift
-                    -Math.random() * 0.2 - 0.1, // y fall speed
+                    -Math.random() * 0.3 - 0.1, // y fall speed (slightly faster)
                     (Math.random() - 0.5) * 0.15  // z drift
                 );
             }
@@ -2012,54 +2011,63 @@
 
             const snowMat = new THREE.PointsMaterial({
                 color: 0xffffff,
-                size: 0.3,
+                size: 0.4, // Slightly larger
                 transparent: true,
-                opacity: 0.6,
+                opacity: 0.7,
                 blending: THREE.AdditiveBlending,
                 depthWrite: false
             });
 
             snowSystem = new THREE.Points(snowGeo, snowMat);
             scene.add(snowSystem);
+            
+            if (player) {
+                snowSystem.position.copy(player.position);
+                lastSnowPlayerPos.copy(player.position);
+            }
         }
 
         function updateSnow() {
             if (!player || !snowSystem) return;
 
+            // Calculate player movement delta
+            const deltaX = player.position.x - lastSnowPlayerPos.x;
+            const deltaY = player.position.y - lastSnowPlayerPos.y;
+            const deltaZ = player.position.z - lastSnowPlayerPos.z;
+
+            // Update system position to match player (Keep box centered)
+            snowSystem.position.copy(player.position);
+            lastSnowPlayerPos.copy(player.position);
+
             const positions = snowGeo.attributes.position.array;
             const velocities = snowGeo.attributes.velocity.array;
-            const playerPos = player.position;
+            const halfRange = snowRange / 2;
 
             for (let i = 0; i < snowCount; i++) {
                 const ix = i * 3;
                 const iy = i * 3 + 1;
                 const iz = i * 3 + 2;
 
-                // Update Position
+                // 1. Apply Velocity (Falling)
                 positions[ix] += velocities[ix];
                 positions[iy] += velocities[iy];
                 positions[iz] += velocities[iz];
 
-                // Reset check (Wrap around player)
-                // We want the snow to stay within snowRange of the player
-                
-                // If it falls below a relative height or drifts too far
-                // Wrap logic: if x > player.x + range/2 -> move to player.x - range/2
-                
-                const halfRange = snowRange / 2;
+                // 2. Shift particles opposite to player movement
+                // This keeps them "stationary" in world space as the system moves
+                positions[ix] -= deltaX;
+                positions[iy] -= deltaY;
+                positions[iz] -= deltaZ;
 
-                if (positions[iy] < playerPos.y - 5) {
-                    positions[iy] = playerPos.y + 50 + Math.random() * 20;
-                    positions[ix] = playerPos.x + (Math.random() - 0.5) * snowRange;
-                    positions[iz] = playerPos.z + (Math.random() - 0.5) * snowRange;
-                }
+                // 3. Wrap around within the local box
+                if (positions[ix] > halfRange) positions[ix] -= snowRange;
+                if (positions[ix] < -halfRange) positions[ix] += snowRange;
 
-                // Horizontal wrapping to keep it around player
-                if (positions[ix] > playerPos.x + halfRange) positions[ix] -= snowRange;
-                if (positions[ix] < playerPos.x - halfRange) positions[ix] += snowRange;
-                
-                if (positions[iz] > playerPos.z + halfRange) positions[iz] -= snowRange;
-                if (positions[iz] < playerPos.z - halfRange) positions[iz] += snowRange;
+                if (positions[iz] > halfRange) positions[iz] -= snowRange;
+                if (positions[iz] < -halfRange) positions[iz] += snowRange;
+
+                if (positions[iy] < -20) positions[iy] += 80; // Wrap height (local)
+                if (positions[iy] > 60) positions[iy] -= 80;
             }
             
             snowGeo.attributes.position.needsUpdate = true;
