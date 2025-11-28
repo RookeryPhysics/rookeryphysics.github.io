@@ -1554,10 +1554,22 @@
 
         function createPlayer() {
             player = new THREE.Group();
-            player.position.set(0, PLAYER_BASE_Y, 0);
+
+            // Find a valid spawn point on the road
+            let spawnX = 0, spawnZ = 0;
+            // Search nearby for a road
+            for (let i = 0; i < 5000; i += 10) {
+                if (getRoadValue(i, 0) < 0.1) { spawnX = i; break; }
+                if (getRoadValue(-i, 0) < 0.1) { spawnX = -i; break; }
+                if (getRoadValue(0, i) < 0.1) { spawnZ = i; break; }
+                if (getRoadValue(0, -i) < 0.1) { spawnZ = -i; break; }
+            }
+
+            player.position.set(spawnX, PLAYER_BASE_Y, spawnZ);
             scene.add(player);
             // Default to hypercar
             loadCarModel('hypercar');
+            centerCamera(); // Center camera after spawning
         }
 
         function loadCarModel(type) {
