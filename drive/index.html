@@ -412,6 +412,11 @@
         const particles = [];
         const trafficVehicles = []; // NPC Cars
 
+        // Snow System
+        let snowSystem, snowGeo;
+        const snowCount = 2500;
+        const snowRange = 220;
+
         // Cache materials to reduce draw calls
         const materialCache = new Map();
         const buildingMaterialCache = new Map();
@@ -568,6 +573,7 @@
             // Player Init
             createPlayer();
             updateMiniatureModel();
+            createSnow();
 
             // Entities - Reduced count slightly for mobile optimization
             for (let i = 0; i < 350; i++) {
@@ -1980,6 +1986,85 @@
             }
         }
 
+        function createSnow() {
+            const positions = [];
+            const velocities = [];
+            
+            const startX = player ? player.position.x : 0;
+            const startZ = player ? player.position.z : 0;
+
+            for (let i = 0; i < snowCount; i++) {
+                positions.push(
+                    startX + (Math.random() - 0.5) * snowRange,
+                    Math.random() * 60,
+                    startZ + (Math.random() - 0.5) * snowRange
+                );
+                velocities.push(
+                    (Math.random() - 0.5) * 0.15, // x drift
+                    -Math.random() * 0.2 - 0.1, // y fall speed
+                    (Math.random() - 0.5) * 0.15  // z drift
+                );
+            }
+
+            snowGeo = new THREE.BufferGeometry();
+            snowGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            snowGeo.setAttribute('velocity', new THREE.Float32BufferAttribute(velocities, 3));
+
+            const snowMat = new THREE.PointsMaterial({
+                color: 0xffffff,
+                size: 0.3,
+                transparent: true,
+                opacity: 0.6,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false
+            });
+
+            snowSystem = new THREE.Points(snowGeo, snowMat);
+            scene.add(snowSystem);
+        }
+
+        function updateSnow() {
+            if (!player || !snowSystem) return;
+
+            const positions = snowGeo.attributes.position.array;
+            const velocities = snowGeo.attributes.velocity.array;
+            const playerPos = player.position;
+
+            for (let i = 0; i < snowCount; i++) {
+                const ix = i * 3;
+                const iy = i * 3 + 1;
+                const iz = i * 3 + 2;
+
+                // Update Position
+                positions[ix] += velocities[ix];
+                positions[iy] += velocities[iy];
+                positions[iz] += velocities[iz];
+
+                // Reset check (Wrap around player)
+                // We want the snow to stay within snowRange of the player
+                
+                // If it falls below a relative height or drifts too far
+                // Wrap logic: if x > player.x + range/2 -> move to player.x - range/2
+                
+                const halfRange = snowRange / 2;
+
+                if (positions[iy] < playerPos.y - 5) {
+                    positions[iy] = playerPos.y + 50 + Math.random() * 20;
+                    positions[ix] = playerPos.x + (Math.random() - 0.5) * snowRange;
+                    positions[iz] = playerPos.z + (Math.random() - 0.5) * snowRange;
+                }
+
+                // Horizontal wrapping to keep it around player
+                if (positions[ix] > playerPos.x + halfRange) positions[ix] -= snowRange;
+                if (positions[ix] < playerPos.x - halfRange) positions[ix] += snowRange;
+                
+                if (positions[iz] > playerPos.z + halfRange) positions[iz] -= snowRange;
+                if (positions[iz] < playerPos.z - halfRange) positions[iz] += snowRange;
+            }
+            
+            snowGeo.attributes.position.needsUpdate = true;
+        }
+
         function updateParticles() {
             for (let i = particles.length - 1; i >= 0; i--) {
                 const p = particles[i];
@@ -2116,6 +2201,7 @@
                 updatePedestrians();
                 checkCollisions();
                 updateParticles();
+                updateSnow();
                 updateCamera();
                 updateHeadingIndicator();
                 updateMinimap();
