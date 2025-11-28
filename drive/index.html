@@ -1816,7 +1816,7 @@
                     const dx = player.position.x - obs.x;
                     const dz = player.position.z - obs.z;
                     const distSq = dx * dx + dz * dz;
-                    if (distSq < obs.radiusSq + pRadiusSq) {
+                    if (distSq < obs.radiusSq + pRadiusSq && player.position.y < obs.height) {
                         explode(player.position, 0xff4400);
                         explode(player.position, 0xffee00);
                         triggerGameOver();
