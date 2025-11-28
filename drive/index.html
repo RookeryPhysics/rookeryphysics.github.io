@@ -846,9 +846,9 @@
                 ctx.fillRect(0, 0, 256, 256);
                 ctx.strokeStyle = '#1a2a1a';
             } else {
-                ctx.fillStyle = '#66aa66';
+                ctx.fillStyle = '#ffffff';
                 ctx.fillRect(0, 0, 256, 256);
-                ctx.strokeStyle = '#559955';
+                ctx.strokeStyle = '#e0e0e0';
             }
 
             ctx.lineWidth = 4;
@@ -1231,47 +1231,7 @@
                 obstacles.push({ x: chunkX + bx, z: chunkZ + bz, radiusSq: radius * radius, isBuilding: true, rotation: rot, height: height, width: width, depth: depth });
             }
 
-            // --- GRASS GENERATION ---
-            const grassCount = 400;
-            const grassMatrices = [];
 
-            for (let i = 0; i < grassCount; i++) {
-                const rx = (Math.random() - 0.5) * CHUNK_SIZE;
-                const rz = (Math.random() - 0.5) * CHUNK_SIZE;
-
-                const sx = Math.round(rx / ROAD_TILE_SIZE) * ROAD_TILE_SIZE + ROAD_TILE_SIZE / 2;
-                const sz = Math.round(rz / ROAD_TILE_SIZE) * ROAD_TILE_SIZE + ROAD_TILE_SIZE / 2;
-                if (roadSet.has(`${sx},${sz}`)) continue;
-
-                const wx = chunkX + rx;
-                const wz = chunkZ + rz;
-                if (getRoadValue(wx, wz) < ROAD_WIDTH_THRESHOLD + 0.1) continue;
-
-                let hitBuilding = false;
-                for (let b = 0; b < obstacles.length; b++) {
-                    const ob = obstacles[b];
-                    if (rx > ob.x - chunkX - ob.width / 1.5 && rx < ob.x - chunkX + ob.width / 1.5 &&
-                        rz > ob.z - chunkZ - ob.depth / 1.5 && rz < ob.z - chunkZ + ob.depth / 1.5) {
-                        hitBuilding = true;
-                        break;
-                    }
-                }
-                if (hitBuilding) continue;
-
-                dummy.position.set(rx, 1.0, rz);
-                dummy.rotation.set(0, Math.random() * Math.PI, 0);
-                dummy.scale.set(1, 1 + Math.random() * 0.5, 1);
-                dummy.updateMatrix();
-                grassMatrices.push(dummy.matrix.clone());
-            }
-
-            if (grassMatrices.length > 0) {
-                const grassMesh = new THREE.InstancedMesh(grassGeometry, grassMaterial, grassMatrices.length);
-                grassMesh.receiveShadow = false;
-                for (let i = 0; i < grassMatrices.length; i++) grassMesh.setMatrixAt(i, grassMatrices[i]);
-                grassMesh.frustumCulled = false;
-                group.add(grassMesh);
-            }
 
             scene.add(group);
             activeChunks.set(`${cx},${cz}`, { mesh: group, obstacles: obstacles, roads: roadMapPositions });
