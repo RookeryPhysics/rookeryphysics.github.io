@@ -460,7 +460,7 @@
 
         // Snow System
         let snowSystem, snowGeo;
-        const snowCount = 4500;
+        const snowCount = 2500;
         const snowRange = 320;
         const lastSnowPlayerPos = new THREE.Vector3();
 
@@ -624,7 +624,7 @@
             createSnow();
 
             // Entities - Reduced count slightly for mobile optimization
-            for (let i = 0; i < 350; i++) {
+            for (let i = 0; i < 200; i++) {
                 createPedestrianData();
             }
 
@@ -1035,7 +1035,7 @@
 
         function updateChunks() {
             if (!player) return;
-            if (player.position.distanceTo(lastChunkUpdatePos) < 50) return;
+            if (player.position.distanceToSquared(lastChunkUpdatePos) < 2500) return;
             lastChunkUpdatePos.copy(player.position);
             const px = player.position.x;
             const pz = player.position.z;
@@ -2181,8 +2181,8 @@
 
         function updateMinimap() {
             if (!player) return;
-            // Throttle minimap updates: only update every 3rd frame
-            if (globalFrame % 3 !== 0) return;
+            // Throttle minimap updates: only update every 10th frame
+            if (globalFrame % 10 !== 0) return;
 
             const w = minimapCanvas.width;
             const h = minimapCanvas.height;
