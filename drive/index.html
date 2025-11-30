@@ -705,6 +705,9 @@
             document.body.classList.toggle('hud-hidden');
             const isHidden = document.body.classList.contains('hud-hidden');
             collapseBtn.innerText = isHidden ? '▶' : '◀';
+            if (miniatureGroup) {
+                miniatureGroup.visible = !isHidden;
+            }
         }
 
         function toggleDayNight() {
