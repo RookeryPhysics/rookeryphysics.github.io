@@ -1437,27 +1437,25 @@
             // Headlights (Angled slits)
             const hlGeo = new THREE.BoxGeometry(0.5, 0.05, 0.2);
             const hlL = new THREE.Mesh(hlGeo, headLightMat); hlL.position.set(-0.9, 0.5, 2.3); hlL.rotation.y = 0.2; group.add(hlL);
-            const hlR = new THREE.Mesh(hlGeo, headLightMat); hlR.position.set(0.9, 0.5, 2.3); hlR.rotation.y = -0.2; group.add(hlR);
-
-            // Wheels
-            const wheelGeo = new THREE.BoxGeometry(0.6, 0.8, 0.8); // Using box for style consistency with low poly
-            const positions = [
-                { x: -1.2, z: 1.6 }, { x: 1.2, z: 1.6 }, // Front
-                { x: -1.25, z: -1.4 }, { x: 1.25, z: -1.4 } // Rear (Wider)
-            ];
-
-            positions.forEach(pos => {
-                const w = new THREE.Mesh(wheelGeo, secondaryMat);
-                w.position.set(pos.x, 0.4, pos.z);
-                group.add(w);
-
-                // Rim detail
-                const rim = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, 0.5), rimMat);
-                rim.position.set(pos.x + (pos.x > 0 ? 0.26 : -0.26), 0.4, pos.z);
-                group.add(rim);
-            });
-
-            if (addLights) {
+                        // Wheels
+                        const wheelGeo = new THREE.BoxGeometry(0.6, 0.8, 0.8); // Using box for style consistency with low poly
+                        const positions = [
+                            { x: -1.2, z: 1.6 }, { x: 1.2, z: 1.6 }, // Front
+                            { x: -1.25, z: -1.4 }, { x: 1.25, z: -1.4 } // Rear (Wider)
+                        ];
+            
+                        positions.forEach(pos => {
+                            const w = new THREE.Mesh(wheelGeo, secondaryMat);
+                            w.position.set(pos.x, 0.4, pos.z);
+                            group.add(w);
+            
+                            // Rim detail
+                            const rim = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, 0.5), rimMat);
+                            rim.position.set(pos.x + (pos.x > 0 ? 0.26 : -0.26), 0.4, pos.z);
+                            group.add(rim);
+                        });
+            
+                        if (addLights) {
                 // Cooler blue-ish headlights for the black car
                 createHeadlights(group, 0.9, 0.5, 2.4, 12.0);
             }
@@ -1507,13 +1505,15 @@
             const hlGeo = new THREE.BoxGeometry(0.6, 0.1, 0.2);
             const hlL = new THREE.Mesh(hlGeo, headLightMat); hlL.position.set(-1.0, 0.5, 2.0); group.add(hlL);
             const hlR = new THREE.Mesh(hlGeo, headLightMat); hlR.position.set(1.0, 0.5, 2.0); group.add(hlR);
-            const wheelGeo = new THREE.BoxGeometry(0.6, 0.8, 0.8);
-            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9 });
-            const rimMat = new THREE.MeshStandardMaterial({ color: 0x000000 });
-            [{ x: -1.32, z: 1.4 }, { x: 1.32, z: 1.4 }, { x: -1.38, z: -1.2 }, { x: 1.38, z: -1.2 }].forEach(pos => {
-                const wheel = new THREE.Mesh(wheelGeo, wheelMat); wheel.position.set(pos.x, 0.4, pos.z); group.add(wheel);
-                const rim = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, 0.5), rimMat); rim.position.set(pos.x + (pos.x > 0 ? 0.3 : -0.3), 0.4, pos.z); group.add(rim);
-            });
+
+            // Wheels
+            const wheelGeo = new THREE.BoxGeometry(0.3, 0.6, 0.6);
+            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.9 });
+
+            const flWheel = new THREE.Mesh(wheelGeo, wheelMat); flWheel.position.set(-1.35, 0.3, 1.4); group.add(flWheel);
+            const frWheel = new THREE.Mesh(wheelGeo, wheelMat); frWheel.position.set(1.35, 0.3, 1.4); group.add(frWheel);
+            const rlWheel = new THREE.Mesh(wheelGeo, wheelMat); rlWheel.position.set(-1.4, 0.35, -1.2); group.add(rlWheel);
+            const rrWheel = new THREE.Mesh(wheelGeo, wheelMat); rrWheel.position.set(1.4, 0.35, -1.2); group.add(rrWheel);
 
             if (addLights) {
                 createHeadlights(group, 1.0, 0.5, 2.0, 10.0);
