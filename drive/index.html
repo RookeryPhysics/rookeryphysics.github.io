@@ -1507,7 +1507,7 @@
             const hlR = new THREE.Mesh(hlGeo, headLightMat); hlR.position.set(1.0, 0.5, 2.0); group.add(hlR);
 
             // Wheels
-            const wheelGeo = new THREE.BoxGeometry(1.0, 0.8, 0.8);
+            const wheelGeo = new THREE.BoxGeometry(0.9, 0.8, 0.8);
             const wheelMat = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.9 });
 
             const flWheel = new THREE.Mesh(wheelGeo, wheelMat); flWheel.position.set(-1.3, 0.4, 1.4); group.add(flWheel);
