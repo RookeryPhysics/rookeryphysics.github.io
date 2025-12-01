@@ -1510,7 +1510,7 @@
             const wheelGeo = new THREE.BoxGeometry(0.6, 0.8, 0.8);
             const wheelMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9 });
             const rimMat = new THREE.MeshStandardMaterial({ color: 0x000000 });
-            [{ x: -1.32, z: 1.4 }, { x: 1.32, z: 1.4 }, { x: -1.35, z: -1.2 }, { x: 1.35, z: -1.2 }].forEach(pos => {
+            [{ x: -1.32, z: 1.4 }, { x: 1.32, z: 1.4 }, { x: -1.38, z: -1.2 }, { x: 1.38, z: -1.2 }].forEach(pos => {
                 const wheel = new THREE.Mesh(wheelGeo, wheelMat); wheel.position.set(pos.x, 0.4, pos.z); group.add(wheel);
                 const rim = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, 0.5), rimMat); rim.position.set(pos.x + (pos.x > 0 ? 0.3 : -0.3), 0.4, pos.z); group.add(rim);
             });
@@ -2001,7 +2001,7 @@
             if (carType === 'supercar') {
                 wheelOffsets = [{ x: -1.2, z: 1.6 }, { x: 1.2, z: 1.6 }, { x: -1.25, z: -1.4 }, { x: 1.25, z: -1.4 }];
             } else {
-                wheelOffsets = [{ x: -1.32, z: 1.4 }, { x: 1.32, z: 1.4 }, { x: -1.35, z: -1.2 }, { x: 1.35, z: -1.2 }];
+                wheelOffsets = [{ x: -1.32, z: 1.4 }, { x: 1.32, z: 1.4 }, { x: -1.38, z: -1.2 }, { x: 1.38, z: -1.2 }];
             }
             const carRot = player.rotation.y;
             const cos = Math.cos(carRot);
