@@ -1,2 +1,2 @@
 # rookeryphysics.github.io
-Web browser game engine.
+Phone games by Michael Oliver McGee
