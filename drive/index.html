@@ -1510,10 +1510,10 @@
             const wheelGeo = new THREE.BoxGeometry(0.6, 0.6, 0.6);
             const wheelMat = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.9 });
 
-            const flWheel = new THREE.Mesh(wheelGeo, wheelMat); flWheel.position.set(-1.6, 0.3, 1.4); group.add(flWheel);
-            const frWheel = new THREE.Mesh(wheelGeo, wheelMat); frWheel.position.set(1.6, 0.3, 1.4); group.add(frWheel);
-            const rlWheel = new THREE.Mesh(wheelGeo, wheelMat); rlWheel.position.set(-1.65, 0.35, -1.2); group.add(rlWheel);
-            const rrWheel = new THREE.Mesh(wheelGeo, wheelMat); rrWheel.position.set(1.65, 0.35, -1.2); group.add(rrWheel);
+            const flWheel = new THREE.Mesh(wheelGeo, wheelMat); flWheel.position.set(-1.1, 0.3, 1.4); group.add(flWheel);
+            const frWheel = new THREE.Mesh(wheelGeo, wheelMat); frWheel.position.set(1.1, 0.3, 1.4); group.add(frWheel);
+            const rlWheel = new THREE.Mesh(wheelGeo, wheelMat); rlWheel.position.set(-1.15, 0.35, -1.2); group.add(rlWheel);
+            const rrWheel = new THREE.Mesh(wheelGeo, wheelMat); rrWheel.position.set(1.15, 0.35, -1.2); group.add(rrWheel);
 
             if (addLights) {
                 createHeadlights(group, 1.0, 0.5, 2.0, 10.0);
