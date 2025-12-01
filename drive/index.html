@@ -2182,7 +2182,7 @@
         function updateMinimap() {
             if (!player) return;
             // Throttle minimap updates: only update every 10th frame
-            if (globalFrame % 10 !== 0) return;
+            if (globalFrame % 4 !== 0) return;
 
             const w = minimapCanvas.width;
             const h = minimapCanvas.height;
