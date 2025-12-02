@@ -945,8 +945,8 @@
         function initVehicleModal() {
             modalScene = new THREE.Scene();
             modalCamera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-            modalCamera.position.set(0, 1.0, 3.5); // Adjusted Y and Z for smaller car
-            modalCamera.lookAt(0, -0.8, 0); // Look lower to shift vehicle up
+            modalCamera.position.set(0, 1.25, 3.5); // Adjusted Y and Z for smaller car and lower car
+            modalCamera.lookAt(0, -1.05, 0); // Look lower to shift vehicle up
 
             const canvas = document.getElementById('modal-canvas');
             modalRenderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
