@@ -132,31 +132,9 @@
             filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.3));
         }
 
-        #center-cam-btn {
-            position: absolute;
-            bottom: 40px;
-            right: 40px;
-            width: 60px;
-            height: 60px;
-            background: rgba(0, 0, 0, 0.5);
-            border: 2px solid rgba(255, 255, 255, 0.4);
-            border-radius: 50%;
-            color: white;
-            font-size: 30px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-            pointer-events: auto;
-            backdrop-filter: blur(4px);
-            z-index: 20;
-            -webkit-tap-highlight-color: transparent;
-        }
 
-        #center-cam-btn:active {
-            background: rgba(255, 255, 255, 0.3);
-            transform: scale(0.95);
-        }
+
+
 
         /* --- Day/Night Toggle Button --- */
         #time-btn {
@@ -338,13 +316,12 @@
         body.hud-hidden #time-btn,
         body.hud-hidden #share-btn,
         body.hud-hidden #minimap-container,
-        body.hud-hidden .instructions,
-        body.hud-hidden #center-cam-btn {
+        body.hud-hidden .instructions {
             opacity: 0;
             pointer-events: none;
         }
         
-        #score-board, #time-btn, #share-btn, #minimap-container, .instructions, #center-cam-btn {
+        #score-board, #time-btn, #share-btn, #minimap-container, .instructions {
             transition: opacity 0.3s ease;
         }
 
@@ -408,7 +385,7 @@
                 <div id="heading-arrow"></div>
             </div>
         </div>
-        <div id="center-cam-btn">◎</div>
+
     </div>
 
     <div id="share-modal">
@@ -528,7 +505,7 @@
         const stickKnob = document.getElementById('stick-knob');
         const headingArrow = document.getElementById('heading-arrow');
         const movementZone = document.getElementById('movement-zone');
-        const centerBtn = document.getElementById('center-cam-btn');
+
         const timeBtn = document.getElementById('time-btn');
         const collapseBtn = document.getElementById('collapse-btn');
         const shareBtn = document.getElementById('share-btn');
@@ -635,8 +612,7 @@
             document.addEventListener('touchend', onTouchEnd, { passive: false });
             document.addEventListener('mousedown', onMouseDown);
 
-            centerBtn.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); centerCamera(); }, { passive: false });
-            centerBtn.addEventListener('mousedown', (e) => { e.stopPropagation(); centerCamera(); });
+
 
             timeBtn.addEventListener('mousedown', (e) => { e.stopPropagation(); toggleDayNight(); });
             timeBtn.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); toggleDayNight(); }, { passive: false });
@@ -1645,7 +1621,7 @@
 
         function onMouseDown(e) {
             if (checkMiniatureClick(e.clientX, e.clientY)) return;
-            if (e.target === centerBtn || e.target === timeBtn || e.target === shareBtn) return;
+            if (e.target === timeBtn || e.target === shareBtn) return;
             const now = Date.now();
             if (now - lastTapTime < 250) emitWheelSmoke();
             lastTapTime = now;
@@ -1696,7 +1672,7 @@
                 if (moveTouchId === null && dist < joystickRadius * 1.5) {
                     moveTouchId = t.identifier;
                     updateJoystick(t.clientX, t.clientY, zoneCenter);
-                } else if (camTouchId === null && t.target !== centerBtn) {
+                } else if (camTouchId === null) {
                     camTouchId = t.identifier;
                     isManualCamera = true;
                     manualCamTimer = 120;
