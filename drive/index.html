@@ -470,10 +470,6 @@
     <div id="vehicle-modal">
         <div id="vehicle-modal-content">
             <button id="vehicle-modal-close">×</button>
-            <div id="vehicle-info">
-                <div id="vehicle-name">Hypercar</div>
-                <div id="vehicle-stats">Top Speed: 200 mph • Handling: 9.5</div>
-            </div>
         </div>
     </div>
 
@@ -498,8 +494,11 @@
         const HOLD_DURATION = 600; // ms
         const vehicleModal = document.getElementById('vehicle-modal');
         const vehicleModalClose = document.getElementById('vehicle-modal-close');
-        const vehicleName = document.getElementById('vehicle-name');
-        const vehicleStats = document.getElementById('vehicle-stats');
+
+        // Modal Car Dragging
+        let isDraggingModalCar = false;
+        let lastDragX = 0;
+        let initialModalCarRotationY = 0; // To store rotation at drag start
 
         let player;
         let initialSpawnX = 0;
@@ -727,14 +726,58 @@
             vehicleModalClose.addEventListener('click', closeVehicleModal);
             vehicleModalClose.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); closeVehicleModal(); }, { passive: false });
             
+            // Event listeners for modal car dragging
+            vehicleModal.addEventListener('mousedown', onModalCarDragStart, false);
+            vehicleModal.addEventListener('mousemove', onModalCarDrag, false);
+            vehicleModal.addEventListener('mouseup', onModalCarDragEnd, false);
+            vehicleModal.addEventListener('mouseleave', onModalCarDragEnd, false); // End drag if mouse leaves modal
+
+            vehicleModal.addEventListener('touchstart', onModalCarDragStart, { passive: false });
+            vehicleModal.addEventListener('touchmove', onModalCarDrag, { passive: false });
+            vehicleModal.addEventListener('touchend', onModalCarDragEnd, { passive: false });
+
             initVehicleModal();
         }
 
         // --- Vehicle Modal Functions ---
+        function onModalCarDragStart(event) {
+            // Only start drag if it's over the car content, not the close button
+            if (event.target === vehicleModalClose) return;
+
+            isDraggingModalCar = true;
+            if (event.touches) { // Touch event
+                lastDragX = event.touches[0].clientX;
+            } else { // Mouse event
+                lastDragX = event.clientX;
+            }
+            initialModalCarRotationY = modalCarGroup.rotation.y;
+            event.preventDefault(); // Prevent default touch behavior like scrolling
+        }
+
+        function onModalCarDrag(event) {
+            if (!isDraggingModalCar) return;
+
+            let currentX;
+            if (event.touches) {
+                currentX = event.touches[0].clientX;
+            } else {
+                currentX = event.clientX;
+            }
+
+            const deltaX = currentX - lastDragX;
+            modalCarGroup.rotation.y = initialModalCarRotationY + (deltaX * 0.01); // Adjust sensitivity as needed
+            lastDragX = currentX;
+            event.preventDefault();
+        }
+
+        function onModalCarDragEnd(event) {
+            isDraggingModalCar = false;
+        }
+
         function initVehicleModal() {
             modalScene = new THREE.Scene();
             modalCamera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-            modalCamera.position.set(0, 2, 8);
+            modalCamera.position.set(0, 2, 10); // Moved back from 8 to 10
             modalCamera.lookAt(0, 0, 0);
 
             // Lights for modal
@@ -764,15 +807,11 @@
             let mesh;
             if (carType === 'supercar') {
                 mesh = buildSupercarMesh(true);
-                vehicleName.innerText = "Night Fury";
-                vehicleStats.innerText = "Class: Supercar • Top Speed: 220 MPH • Handling: 8.5";
             } else {
                 mesh = buildHypercarMesh(true);
-                vehicleName.innerText = "Solar Flare";
-                vehicleStats.innerText = "Class: Hypercar • Top Speed: 240 MPH • Handling: 9.0";
             }
             
-            mesh.scale.set(2.0, 2.0, 2.0);
+            mesh.scale.set(1.2, 1.2, 1.2); // Reduced from 2.0
             
             // Rotate continuously in animate loop
             modalCarGroup.add(mesh);
@@ -2467,7 +2506,7 @@
             renderer.render(uiScene, uiCamera);
 
             if (vehicleModalOpen) {
-                if (modalCarGroup) modalCarGroup.rotation.y += 0.01;
+                // if (modalCarGroup) modalCarGroup.rotation.y += 0.01; // Removed automatic rotation
                 // Render modal scene on top (no clear, just depth clear)
                 renderer.clearDepth();
                 renderer.render(modalScene, modalCamera);
