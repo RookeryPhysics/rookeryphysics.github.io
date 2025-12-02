@@ -1727,6 +1727,7 @@
             // Materials
             const bodyColor = color ? color : 0xffffff;
             const bodyMat = new THREE.MeshStandardMaterial({ color: bodyColor, roughness: 0.3, metalness: 0.2 });
+            const hoodMat = new THREE.MeshStandardMaterial({ color: bodyColor, roughness: 0.3, metalness: 0.2 }); // Separate hood material
             const spoilerMat = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.3, metalness: 0.2 }); // New material for spoiler
             const secondaryMat = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.1, metalness: 0.6 }); // Glossy black accents
             const glassMat = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.0, metalness: 1.0 });
@@ -1736,11 +1737,18 @@
             const tailLightMat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: lightIntensity * 1.5 });
             const headLightMat = new THREE.MeshStandardMaterial({ color: 0xaaccff, emissive: 0xaaccff, emissiveIntensity: lightIntensity });
 
-            // Main Body (Low and wide)
-            const mainGeo = new THREE.BoxGeometry(2.1, 0.5, 4.6);
-            const main = new THREE.Mesh(mainGeo, bodyMat);
-            main.position.y = 0.5;
-            group.add(main);
+            // Main Body (Split into Rear and Hood)
+            // Rear Body (Chassis under cabin and rear)
+            const mainBodyGeo = new THREE.BoxGeometry(2.1, 0.5, 3.6);
+            const mainBody = new THREE.Mesh(mainBodyGeo, bodyMat);
+            mainBody.position.set(0, 0.5, -0.5);
+            group.add(mainBody);
+
+            // Hood (Front nose)
+            const hoodGeo = new THREE.BoxGeometry(2.1, 0.5, 1.0);
+            const hood = new THREE.Mesh(hoodGeo, hoodMat);
+            hood.position.set(0, 0.5, 1.8);
+            group.add(hood);
 
             // Cabin (Teardrop style)
             const cabinGeo = new THREE.BoxGeometry(1.3, 0.4, 2.2);
