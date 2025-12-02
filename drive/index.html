@@ -308,6 +308,35 @@
             z-index: 50;
         }
 
+        #color-palette {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 102;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 20px;
+            backdrop-filter: blur(4px);
+        }
+
+        .color-swatch {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .color-swatch:hover, .color-swatch.selected {
+            transform: scale(1.2);
+            border-color: white;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
         #vehicle-info {
             position: absolute;
             bottom: 50px;
@@ -481,6 +510,7 @@
     <div id="vehicle-modal">
         <button id="vehicle-modal-close">×</button>
         <canvas id="modal-canvas"></canvas>
+        <div id="color-palette"></div>
     </div>
 
     <div id="game-container"></div>
@@ -508,7 +538,16 @@
         // Modal Car Dragging
         let isDraggingModalCar = false;
         let lastDragX = 0;
-        let initialModalCarRotationY = 0; // To store rotation at drag start
+        // Paint Logic
+        let selectedColor = 0xff0000; // Default red
+        const paintColors = [
+            0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 
+            0x00ffff, 0xff00ff, 0xffffff, 0x111111,
+            0xff8800, 0x88ff00, 0x0088ff, 0xaa44aa
+        ];
+        let paintRaycaster = new THREE.Raycaster();
+        let modalMouse = new THREE.Vector2();
+        let isPaintClick = false;
 
         let player;
         let initialSpawnX = 0;
@@ -732,59 +771,159 @@
             }, { passive: false });
             copyLinkBtn.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); copyShareLink(); }, { passive: false });
 
-            // Vehicle Modal Events
-            vehicleModalClose.addEventListener('click', closeVehicleModal);
-            vehicleModalClose.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); closeVehicleModal(); }, { passive: false });
-            
-            // Event listeners for modal car dragging
-            vehicleModal.addEventListener('mousedown', onModalCarDragStart, false);
-            vehicleModal.addEventListener('mousemove', onModalCarDrag, false);
-            vehicleModal.addEventListener('mouseup', onModalCarDragEnd, false);
-            vehicleModal.addEventListener('mouseleave', onModalCarDragEnd, false); // End drag if mouse leaves modal
+            // Event listeners for modal car dragging and painting
+            const mCanvas = document.getElementById('modal-canvas');
+            mCanvas.addEventListener('mousedown', onModalMouseDown, false);
+            mCanvas.addEventListener('mousemove', onModalMouseMove, false);
+            mCanvas.addEventListener('mouseup', onModalMouseUp, false);
+            mCanvas.addEventListener('mouseleave', onModalMouseUp, false);
 
-            vehicleModal.addEventListener('touchstart', onModalCarDragStart, { passive: false });
-            vehicleModal.addEventListener('touchmove', onModalCarDrag, { passive: false });
-            vehicleModal.addEventListener('touchend', onModalCarDragEnd, { passive: false });
+            mCanvas.addEventListener('touchstart', onModalTouchStart, { passive: false });
+            mCanvas.addEventListener('touchmove', onModalTouchMove, { passive: false });
+            mCanvas.addEventListener('touchend', onModalTouchEnd, { passive: false });
 
             initVehicleModal();
+            initColorPalette();
         }
 
         // --- Vehicle Modal Functions ---
-        function onModalCarDragStart(event) {
-            // Only start drag if it's over the car content, not the close button
-            if (event.target === vehicleModalClose) return;
+        function initColorPalette() {
+            const container = document.getElementById('color-palette');
+            paintColors.forEach((col, index) => {
+                const div = document.createElement('div');
+                div.className = 'color-swatch';
+                div.style.backgroundColor = '#' + new THREE.Color(col).getHexString();
+                div.dataset.color = col;
+                if (index === 0) div.classList.add('selected');
+                
+                div.addEventListener('click', (e) => {
+                    // Prevent modal drag/close
+                    e.stopPropagation(); 
+                    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+                    div.classList.add('selected');
+                    selectedColor = parseInt(div.dataset.color);
+                });
+                // Touch support
+                div.addEventListener('touchstart', (e) => {
+                    e.preventDefault(); // Prevent ghost clicks
+                    e.stopPropagation();
+                    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+                    div.classList.add('selected');
+                    selectedColor = parseInt(div.dataset.color);
+                }, { passive: false });
 
-            isDraggingModalCar = true;
-            if (event.touches) { // Touch event
-                lastDragX = event.touches[0].clientX;
-            } else { // Mouse event
-                lastDragX = event.clientX;
-            }
-            // We don't need initialModalCarRotationY for relative accumulation
-            event.preventDefault(); // Prevent default touch behavior like scrolling
+                container.appendChild(div);
+            });
         }
 
-        function onModalCarDrag(event) {
+        function onModalMouseDown(event) {
+            if (event.target === vehicleModalClose) return;
+            isDraggingModalCar = true;
+            isPaintClick = true; // Assume click until moved
+            lastDragX = event.clientX;
+        }
+
+        function onModalMouseMove(event) {
             if (!isDraggingModalCar) return;
+            isPaintClick = false; // Movement detected, not a static click
+            const deltaX = event.clientX - lastDragX;
+            modalCarGroup.rotation.y += deltaX * 0.015;
+            lastDragX = event.clientX;
+        }
 
-            let currentX;
-            if (event.touches) {
-                currentX = event.touches[0].clientX;
-            } else {
-                currentX = event.clientX;
+        function onModalMouseUp(event) {
+            if (isDraggingModalCar && isPaintClick) {
+                // It was a click!
+                handlePaintClick(event.clientX, event.clientY);
             }
+            isDraggingModalCar = false;
+        }
 
+        function onModalTouchStart(event) {
+            if (event.target === vehicleModalClose) return;
+            isDraggingModalCar = true;
+            isPaintClick = true;
+            lastDragX = event.touches[0].clientX;
+            event.preventDefault();
+        }
+
+        function onModalTouchMove(event) {
+            if (!isDraggingModalCar) return;
+            const currentX = event.touches[0].clientX;
+            // Threshold for "movement" to avoid micro-jitters preventing clicks
+            if (Math.abs(currentX - lastDragX) > 2) {
+                isPaintClick = false;
+            }
             const deltaX = currentX - lastDragX;
-            // Increased sensitivity for easier 360 rotation
-            modalCarGroup.rotation.y += deltaX * 0.015; 
-            
+            modalCarGroup.rotation.y += deltaX * 0.015;
             lastDragX = currentX;
             event.preventDefault();
         }
 
-        function onModalCarDragEnd(event) {
+        function onModalTouchEnd(event) {
+            if (isDraggingModalCar && isPaintClick) {
+                // Use changedTouches for position
+                const t = event.changedTouches[0];
+                handlePaintClick(t.clientX, t.clientY);
+            }
             isDraggingModalCar = false;
+            event.preventDefault(); // Prevent double firing if browser synthesizes mouse events
         }
+
+        function handlePaintClick(clientX, clientY) {
+            // Raycast logic
+            if (!modalRenderer || !modalCamera) return;
+
+            const rect = modalRenderer.domElement.getBoundingClientRect();
+            modalMouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+            modalMouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+
+            paintRaycaster.setFromCamera(modalMouse, modalCamera);
+
+            // Intersect with modal car
+            // Note: modalCarGroup has a child which is the car Group
+            const intersects = paintRaycaster.intersectObjects(modalCarGroup.children, true);
+
+            if (intersects.length > 0) {
+                const hit = intersects[0];
+                const mesh = hit.object;
+                
+                if (mesh.isMesh) {
+                    // Update Color
+                    mesh.material.color.setHex(selectedColor);
+                    // If emissive exists and is not black, update it too? 
+                    // Maybe not, keep lights separate. But let's be safe:
+                    if (mesh.material.emissive && mesh.material.emissive.getHex() > 0) {
+                         // Only if it's not a light component we probably shouldn't touch emissive
+                         // For now just albedo.
+                    }
+
+                    // Sync with Player Car
+                    // Find the index of this mesh in the modal hierarchy
+                    // The structure is modalCarGroup -> carGroup -> [Mesh1, Mesh2, ...]
+                    // We need to find which child index of carGroup matches `mesh`.
+                    
+                    const carGroup = modalCarGroup.children[0];
+                    if (!carGroup) return;
+                    
+                    let foundIndex = -1;
+                    for (let i = 0; i < carGroup.children.length; i++) {
+                        if (carGroup.children[i] === mesh) {
+                            foundIndex = i;
+                            break;
+                        }
+                    }
+
+                    if (foundIndex !== -1 && currentCarMesh) {
+                        const playerMeshPart = currentCarMesh.children[foundIndex];
+                        if (playerMeshPart && playerMeshPart.isMesh) {
+                            playerMeshPart.material.color.setHex(selectedColor);
+                        }
+                    }
+                }
+            }
+        }
+
 
         function initVehicleModal() {
             modalScene = new THREE.Scene();
