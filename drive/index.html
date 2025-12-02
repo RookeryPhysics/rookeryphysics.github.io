@@ -1761,6 +1761,7 @@
             const slat = new THREE.Mesh(slatGeo, secondaryMat);
             slat.position.set(0, 0.76, 1.0); // Behind cabin
             slat.rotation.x = -0.1;
+            slat.userData = { paintable: false }; // Mark as non-paintable
             group.add(slat);
 
             // Fenders (Wide arches)
@@ -1774,12 +1775,13 @@
 
             // Spoiler (Aggressive Wing)
             const wingPillarGeo = new THREE.BoxGeometry(0.1, 0.5, 0.5);
-            const pL = new THREE.Mesh(wingPillarGeo, spoilerMat); pL.position.set(-0.6, 0.9, -2.0); group.add(pL);
-            const pR = new THREE.Mesh(wingPillarGeo, spoilerMat); pR.position.set(0.6, 0.9, -2.0); group.add(pR);
+            const pL = new THREE.Mesh(wingPillarGeo, spoilerMat); pL.position.set(-0.6, 0.9, -2.0); pL.userData = { paintable: false }; group.add(pL);
+            const pR = new THREE.Mesh(wingPillarGeo, spoilerMat); pR.position.set(0.6, 0.9, -2.0); pR.userData = { paintable: false }; group.add(pR);
 
             const wingGeo = new THREE.BoxGeometry(2.8, 0.05, 0.8);
             const wing = new THREE.Mesh(wingGeo, spoilerMat);
             wing.position.set(0, 1.15, -2.1);
+            wing.userData = { paintable: false }; // Mark as non-paintable
             group.add(wing);
 
             // Lights
