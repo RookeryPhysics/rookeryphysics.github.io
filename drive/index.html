@@ -1416,7 +1416,7 @@
                         // Wheels
                         const wheelGeo = new THREE.BoxGeometry(0.6, 0.8, 0.8); // Using box for style consistency with low poly
                         const positions = [
-                            { x: -1.2, z: 1.6 }, { x: 1.2, z: 1.6 }, // Front
+                            { x: -1.15, z: 1.6 }, { x: 1.15, z: 1.6 }, // Front
                             { x: -1.25, z: -1.4 }, { x: 1.25, z: -1.4 } // Rear (Wider)
                         ];
             
@@ -1486,8 +1486,8 @@
             const wheelGeo = new THREE.BoxGeometry(0.9, 0.8, 0.8);
             const wheelMat = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.9 });
 
-            const flWheel = new THREE.Mesh(wheelGeo, wheelMat); flWheel.position.set(-1.3, 0.4, 1.4); group.add(flWheel);
-            const frWheel = new THREE.Mesh(wheelGeo, wheelMat); frWheel.position.set(1.3, 0.4, 1.4); group.add(frWheel);
+            const flWheel = new THREE.Mesh(wheelGeo, wheelMat); flWheel.position.set(-1.25, 0.4, 1.4); group.add(flWheel);
+            const frWheel = new THREE.Mesh(wheelGeo, wheelMat); frWheel.position.set(1.25, 0.4, 1.4); group.add(frWheel);
             const rlWheel = new THREE.Mesh(wheelGeo, wheelMat); rlWheel.position.set(-1.35, 0.45, -1.2); group.add(rlWheel);
             const rrWheel = new THREE.Mesh(wheelGeo, wheelMat); rrWheel.position.set(1.35, 0.45, -1.2); group.add(rrWheel);
 
