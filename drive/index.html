@@ -900,6 +900,7 @@
                 const mesh = hit.object;
                 
                 if (mesh.isMesh) {
+                    if (mesh.userData.paintable === false) return;
                     // Update Color
                     mesh.material.color.setHex(selectedColor);
                     mesh.material.metalness = 0.2;
@@ -1793,11 +1794,13 @@
                         positions.forEach(pos => {
                             const w = new THREE.Mesh(wheelGeo, secondaryMat);
                             w.position.set(pos.x, 0.4, pos.z);
+                            w.userData = { paintable: false };
                             group.add(w);
             
                             // Rim detail
                             const rim = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, 0.5), rimMat);
                             rim.position.set(pos.x + (pos.x > 0 ? 0.26 : -0.26), 0.4, pos.z);
+                            rim.userData = { paintable: false };
                             group.add(rim);
                         });
             
@@ -1856,10 +1859,10 @@
             const wheelGeo = new THREE.BoxGeometry(0.9, 0.8, 0.8);
             const wheelMat = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.9 });
 
-            const flWheel = new THREE.Mesh(wheelGeo, wheelMat); flWheel.position.set(-1.25, 0.4, 1.4); group.add(flWheel);
-            const frWheel = new THREE.Mesh(wheelGeo, wheelMat); frWheel.position.set(1.25, 0.4, 1.4); group.add(frWheel);
-            const rlWheel = new THREE.Mesh(wheelGeo, wheelMat); rlWheel.position.set(-1.35, 0.45, -1.2); group.add(rlWheel);
-            const rrWheel = new THREE.Mesh(wheelGeo, wheelMat); rrWheel.position.set(1.35, 0.45, -1.2); group.add(rrWheel);
+            const flWheel = new THREE.Mesh(wheelGeo, wheelMat); flWheel.position.set(-1.25, 0.4, 1.4); flWheel.userData = { paintable: false }; group.add(flWheel);
+            const frWheel = new THREE.Mesh(wheelGeo, wheelMat); frWheel.position.set(1.25, 0.4, 1.4); frWheel.userData = { paintable: false }; group.add(frWheel);
+            const rlWheel = new THREE.Mesh(wheelGeo, wheelMat); rlWheel.position.set(-1.35, 0.45, -1.2); rlWheel.userData = { paintable: false }; group.add(rlWheel);
+            const rrWheel = new THREE.Mesh(wheelGeo, wheelMat); rrWheel.position.set(1.35, 0.45, -1.2); rrWheel.userData = { paintable: false }; group.add(rrWheel);
 
             if (addLights) {
                 createHeadlights(group, 1.0, 0.5, 2.0, 10.0);
