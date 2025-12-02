@@ -626,6 +626,7 @@
         // Movement
         const velocity = new THREE.Vector3();
         let moveInput = { x: 0, y: 0 };
+        const keysPressed = {};
 
         // Camera
         let cameraAngle = 0;
@@ -752,6 +753,27 @@
 
             // Events
             window.addEventListener('resize', onWindowResize);
+            
+            // Keyboard Controls
+            document.addEventListener('keydown', (e) => {
+                if (moveTouchId !== null) return;
+                const k = e.key;
+                if (['w','a','s','d','ArrowUp','ArrowLeft','ArrowDown','ArrowRight'].includes(k) || 
+                    ['W','A','S','D'].includes(k)) {
+                    keysPressed[k.toLowerCase()] = true;
+                    if (k.startsWith('Arrow')) keysPressed[k] = true; // Handle Arrow keys specifically if needed or just normalize
+                    updateMoveInputFromKeys();
+                }
+            });
+            document.addEventListener('keyup', (e) => {
+                const k = e.key;
+                if (['w','a','s','d','ArrowUp','ArrowLeft','ArrowDown','ArrowRight'].includes(k) || 
+                    ['W','A','S','D'].includes(k)) {
+                    keysPressed[k.toLowerCase()] = false;
+                    if (k.startsWith('Arrow')) keysPressed[k] = false;
+                    if (moveTouchId === null) updateMoveInputFromKeys();
+                }
+            });
             document.addEventListener('touchstart', onTouchStart, { passive: false });
             document.addEventListener('touchmove', onTouchMove, { passive: false });
             document.addEventListener('touchend', onTouchEnd, { passive: false });
@@ -2749,6 +2771,30 @@
                 // Render modal scene on top (using separate renderer)
                 modalRenderer.render(modalScene, modalCamera);
             }
+        }
+
+        function updateMoveInputFromKeys() {
+            let dx = 0;
+            let dy = 0;
+            if (keysPressed['w'] || keysPressed['ArrowUp']) dy -= 1;
+            if (keysPressed['s'] || keysPressed['ArrowDown']) dy += 1;
+            if (keysPressed['a'] || keysPressed['ArrowLeft']) dx -= 1;
+            if (keysPressed['d'] || keysPressed['ArrowRight']) dx += 1;
+
+            if (dx !== 0 || dy !== 0) {
+                // Normalize for consistent speed diagonally
+                const len = Math.sqrt(dx*dx + dy*dy);
+                dx /= len;
+                dy /= len;
+            }
+
+            moveInput.x = dx;
+            moveInput.y = dy;
+
+            // Visual feedback on joystick
+            const joyX = dx * joystickRadius;
+            const joyY = dy * joystickRadius;
+            if (stickKnob) stickKnob.style.transform = `translate(calc(-50% + ${joyX}px), calc(-50% + ${joyY}px))`;
         }
 
         function onWindowResize() {
