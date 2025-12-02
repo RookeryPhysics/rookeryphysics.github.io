@@ -701,7 +701,8 @@
                 sunLight.color.setHex(0xaaccff);
                 sunLight.intensity = 0.6;
 
-                document.querySelector('.instructions').innerHTML = "Night Run<br>Left Stick: Drive";
+                const instr = document.querySelector('.instructions');
+                if (instr) instr.innerHTML = "Night Run<br>Left Stick: Drive";
                 timeBtn.innerText = "☀️";
 
                 roadMaterial.color.setHex(0x222222);
@@ -724,7 +725,8 @@
                 sunLight.color.setHex(0xffffff);
                 sunLight.intensity = 0.8;
 
-                document.querySelector('.instructions').innerHTML = "Day Run<br>Left Stick: Drive";
+                const instr = document.querySelector('.instructions');
+                if (instr) instr.innerHTML = "Day Run<br>Left Stick: Drive";
                 timeBtn.innerText = "🌙";
 
                 roadMaterial.color.setHex(0x333333);
@@ -1866,10 +1868,13 @@
             }
 
             const instr = document.querySelector('.instructions');
-            const oldText = instr.innerHTML;
-            instr.innerHTML = `<span style='color:red; font-size:20px; font-weight:bold;'>CRASHED!</span><br><span style='color:gold; font-size:18px;'>Top Score: ${highScore}</span>`;
-            instr.style.opacity = 1;
-            instr.style.animation = 'none';
+            let oldText = "";
+            if (instr) {
+                oldText = instr.innerHTML;
+                instr.innerHTML = `<span style='color:red; font-size:20px; font-weight:bold;'>CRASHED!</span><br><span style='color:gold; font-size:18px;'>Top Score: ${highScore}</span>`;
+                instr.style.opacity = 1;
+                instr.style.animation = 'none';
+            }
             setTimeout(() => resetGame(oldText), 3000);
         }
 
@@ -1889,11 +1894,13 @@
             trafficVehicles.length = 0;
 
             const instr = document.querySelector('.instructions');
-            instr.innerHTML = oldText || (isNightMode ? "Night Run<br>Left Stick: Drive" : "Day Run<br>Left Stick: Drive");
-            instr.style.animation = 'none';
-            instr.offsetHeight;
-            instr.style.animation = 'fadeOut 5s forwards';
-            instr.style.animationDelay = '2s';
+            if (instr) {
+                instr.innerHTML = oldText || (isNightMode ? "Night Run<br>Left Stick: Drive" : "Day Run<br>Left Stick: Drive");
+                instr.style.animation = 'none';
+                instr.offsetHeight;
+                instr.style.animation = 'fadeOut 5s forwards';
+                instr.style.animationDelay = '2s';
+            }
         }
 
         function updatePedestrians() {
