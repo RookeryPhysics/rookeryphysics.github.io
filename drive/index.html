@@ -66,6 +66,53 @@
             z-index: 15;
         }
 
+        /* --- Game Over Modal --- */
+        #game-over-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.85);
+            padding: 20px 40px;
+            border-radius: 15px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+            color: white;
+            z-index: 200;
+            display: none;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            min-width: 200px;
+            pointer-events: none;
+        }
+        
+        #game-over-modal h2 {
+            margin: 0 0 10px 0;
+            color: #ff3366;
+            font-size: 24px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        #game-over-modal p {
+            margin: 0;
+            font-size: 20px;
+            color: #ffd700;
+            font-weight: bold;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        #game-over-modal.active {
+            display: block;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            from { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+            to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+
         /* --- Controls Layout --- */
 
         #movement-zone {
@@ -515,6 +562,13 @@
         <button id="vehicle-modal-close">×</button>
         <canvas id="modal-canvas"></canvas>
         <div id="color-palette"></div>
+    </div>
+
+    <div id="game-over-modal">
+        <div id="game-over-content">
+            <h2>GAME OVER</h2>
+            <p id="go-top-score">Top Score: 0</p>
+        </div>
     </div>
 
     <div id="game-container"></div>
@@ -2356,18 +2410,22 @@
                 localStorage.setItem('highScore', highScore);
             }
 
-            const instr = document.querySelector('.instructions');
-            let oldText = "";
-            if (instr) {
-                oldText = instr.innerHTML;
-                instr.innerHTML = `<span style='color:red; font-size:20px; font-weight:bold;'>CRASHED!</span><br><span style='color:gold; font-size:18px;'>Top Score: ${highScore}</span>`;
-                instr.style.opacity = 1;
-                instr.style.animation = 'none';
+            // Show Game Over Modal
+            const modal = document.getElementById('game-over-modal');
+            const scoreText = document.getElementById('go-top-score');
+            if (modal && scoreText) {
+                scoreText.innerText = "Top Score: " + highScore;
+                modal.classList.add('active');
             }
-            setTimeout(() => resetGame(oldText), 3000);
+
+            // Hide instructions temporarily if needed
+            const instr = document.querySelector('.instructions');
+            if (instr) instr.style.opacity = 0;
+
+            setTimeout(() => resetGame(), 4000);
         }
 
-        function resetGame(oldText) {
+        function resetGame() {
             isGameOver = false;
             player.visible = true;
             player.position.set(initialSpawnX, PLAYER_BASE_Y, initialSpawnZ);
@@ -2378,15 +2436,21 @@
             scoreElement.innerText = "Score: 0";
             centerCamera();
 
+            // Hide Game Over Modal
+            const modal = document.getElementById('game-over-modal');
+            if (modal) modal.classList.remove('active');
+
             // Clear traffic
             trafficVehicles.forEach(c => scene.remove(c.mesh));
             trafficVehicles.length = 0;
 
             const instr = document.querySelector('.instructions');
             if (instr) {
-                instr.innerHTML = oldText || (isNightMode ? "Night Run<br>Left Stick: Drive" : "Day Run<br>Left Stick: Drive");
+                // Restore instructions
+                instr.innerHTML = isNightMode ? "Night Run<br>Left Stick: Drive" : "Day Run<br>Left Stick: Drive";
+                instr.style.opacity = 1;
                 instr.style.animation = 'none';
-                instr.offsetHeight;
+                instr.offsetHeight; // Trigger reflow
                 instr.style.animation = 'fadeOut 5s forwards';
                 instr.style.animationDelay = '2s';
             }
