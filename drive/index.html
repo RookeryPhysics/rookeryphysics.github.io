@@ -2199,8 +2199,7 @@
             for (let i = 0; i < touches.length; i++) {
                 if (touches[i].identifier === moveTouchId) {
                     moveTouchId = null;
-                    moveInput = { x: 0, y: 0 };
-                    stickKnob.style.transform = `translate(-50%, -50%)`;
+                    updateMoveInputFromKeys();
                 }
                 if (touches[i].identifier === camTouchId) camTouchId = null;
             }
