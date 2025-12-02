@@ -902,6 +902,9 @@
                 if (mesh.isMesh) {
                     // Update Color
                     mesh.material.color.setHex(selectedColor);
+                    mesh.material.metalness = 0.2;
+                    mesh.material.roughness = 0.3;
+                    
                     // If emissive exists and is not black, update it too? 
                     // Maybe not, keep lights separate. But let's be safe:
                     if (mesh.material.emissive && mesh.material.emissive.getHex() > 0) {
@@ -929,6 +932,8 @@
                         const playerMeshPart = currentCarMesh.children[foundIndex];
                         if (playerMeshPart && playerMeshPart.isMesh) {
                             playerMeshPart.material.color.setHex(selectedColor);
+                            playerMeshPart.material.metalness = 0.2;
+                            playerMeshPart.material.roughness = 0.3;
                         }
                     }
                 }
