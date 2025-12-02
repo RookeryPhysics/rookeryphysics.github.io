@@ -327,8 +327,8 @@
         }
 
         .color-swatch {
-            width: 30px;
-            height: 30px;
+            width: 24px;
+            height: 24px;
             border-radius: 50%;
             border: 2px solid rgba(255, 255, 255, 0.5);
             cursor: pointer;
@@ -545,11 +545,10 @@
         // Paint Logic
         let selectedColor = 0xff0000; // Default red
         const paintColors = [
-            0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 
-            0x00ffff, 0xff00ff, 0xffffff, 0x111111,
-            0xff8800, 0x88ff00, 0x0088ff, 0xaa44aa,
-            0x8B4513, 0x2F4F4F, 0x808000, 0x4B0082,
-            0xFF1493, 0x7FFF00
+            0xFF0000, 0xFF7F00, 0xFFFF00, 0x7FFF00, 0x00FF00, 0x00FF7F, 
+            0x00FFFF, 0x007FFF, 0x0000FF, 0x7F00FF, 0xFF00FF, 0xFF007F,
+            0xFFFFFF, 0xCCCCCC, 0x888888, 0x444444, 0x000000, 0xFF1493,
+            0x00FA9A, 0x1E90FF, 0xFFD700, 0xFF4500, 0xADFF2F, 0xDA70D6
         ];
         let paintRaycaster = new THREE.Raycaster();
         let modalMouse = new THREE.Vector2();
@@ -563,6 +562,10 @@
         let ambientLight, sunLight;
 
         let isNightMode = false;
+        
+        // ... (skipping lines to match context if needed, but I can just replace the block down to initVehicleModal if I'm careful, or just separate calls)
+        // Actually, I will do separate replacements to be safe.
+
 
         let score = 0;
         let highScore = localStorage.getItem('highScore') || 0;
@@ -938,7 +941,7 @@
             modalScene = new THREE.Scene();
             modalCamera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
             modalCamera.position.set(0, 1.0, 3.5); // Adjusted Y and Z for smaller car
-            modalCamera.lookAt(0, 0, 0);
+            modalCamera.lookAt(0, -0.8, 0); // Look lower to shift vehicle up
 
             const canvas = document.getElementById('modal-canvas');
             modalRenderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
