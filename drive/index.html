@@ -782,6 +782,9 @@
             mCanvas.addEventListener('touchmove', onModalTouchMove, { passive: false });
             mCanvas.addEventListener('touchend', onModalTouchEnd, { passive: false });
 
+            vehicleModalClose.addEventListener('click', closeVehicleModal);
+            vehicleModalClose.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); closeVehicleModal(); }, { passive: false });
+
             initVehicleModal();
             initColorPalette();
         }
