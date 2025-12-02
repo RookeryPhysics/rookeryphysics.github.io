@@ -1775,11 +1775,11 @@
 
             // Side Skirts
             const skirtGeo = new THREE.BoxGeometry(0.2, 0.2, 3.0); // Depth, Height, Length
-            const skirtL = new THREE.Mesh(skirtGeo, bodyMat);
+            const skirtL = new THREE.Mesh(skirtGeo, spoilerMat);
             skirtL.position.set(-1.15, 0.15, -0.5); // Positioned to the left side
             group.add(skirtL);
 
-            const skirtR = new THREE.Mesh(skirtGeo, bodyMat);
+            const skirtR = new THREE.Mesh(skirtGeo, spoilerMat);
             skirtR.position.set(1.15, 0.15, -0.5); // Positioned to the right side
             group.add(skirtR);
 
