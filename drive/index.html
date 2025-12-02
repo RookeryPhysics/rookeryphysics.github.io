@@ -760,7 +760,7 @@
             } else { // Mouse event
                 lastDragX = event.clientX;
             }
-            initialModalCarRotationY = modalCarGroup.rotation.y;
+            // We don't need initialModalCarRotationY for relative accumulation
             event.preventDefault(); // Prevent default touch behavior like scrolling
         }
 
@@ -775,7 +775,9 @@
             }
 
             const deltaX = currentX - lastDragX;
-            modalCarGroup.rotation.y = initialModalCarRotationY + (deltaX * 0.01); // Adjust sensitivity as needed
+            // Increased sensitivity for easier 360 rotation
+            modalCarGroup.rotation.y += deltaX * 0.015; 
+            
             lastDragX = currentX;
             event.preventDefault();
         }
