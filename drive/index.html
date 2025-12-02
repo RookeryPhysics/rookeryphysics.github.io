@@ -255,6 +255,72 @@
             color: #ff3366;
         }
 
+        /* --- Vehicle Modal --- */
+        #vehicle-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            pointer-events: auto;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #vehicle-modal.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        #vehicle-modal-content {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #vehicle-modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 40px;
+            color: white;
+            cursor: pointer;
+            background: none;
+            border: none;
+            z-index: 101;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        #vehicle-info {
+            position: absolute;
+            bottom: 50px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: white;
+            pointer-events: none;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        }
+
+        #vehicle-name {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        
+        #vehicle-stats {
+            font-size: 16px;
+            opacity: 0.8;
+        }
+
         #score-board {
             position: absolute;
             top: 20px;
@@ -401,6 +467,16 @@
         </div>
     </div>
 
+    <div id="vehicle-modal">
+        <div id="vehicle-modal-content">
+            <button id="vehicle-modal-close">×</button>
+            <div id="vehicle-info">
+                <div id="vehicle-name">Hypercar</div>
+                <div id="vehicle-stats">Top Speed: 200 mph • Handling: 9.5</div>
+            </div>
+        </div>
+    </div>
+
     <div id="game-container"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -412,6 +488,18 @@
         let miniatureGroup;
         let raycaster = new THREE.Raycaster();
         let mouse = new THREE.Vector2();
+
+        // Modal Variables
+        let vehicleModalOpen = false;
+        let modalScene, modalCamera;
+        let modalCarGroup;
+        let holdTimer = null;
+        let isHolding = false;
+        const HOLD_DURATION = 600; // ms
+        const vehicleModal = document.getElementById('vehicle-modal');
+        const vehicleModalClose = document.getElementById('vehicle-modal-close');
+        const vehicleName = document.getElementById('vehicle-name');
+        const vehicleStats = document.getElementById('vehicle-stats');
 
         let player;
         let initialSpawnX = 0;
@@ -634,6 +722,67 @@
                 if (e.target === shareModal) { e.preventDefault(); e.stopPropagation(); closeShareModal(); }
             }, { passive: false });
             copyLinkBtn.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); copyShareLink(); }, { passive: false });
+
+            // Vehicle Modal Events
+            vehicleModalClose.addEventListener('click', closeVehicleModal);
+            vehicleModalClose.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); closeVehicleModal(); }, { passive: false });
+            
+            initVehicleModal();
+        }
+
+        // --- Vehicle Modal Functions ---
+        function initVehicleModal() {
+            modalScene = new THREE.Scene();
+            modalCamera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+            modalCamera.position.set(0, 2, 8);
+            modalCamera.lookAt(0, 0, 0);
+
+            // Lights for modal
+            const amb = new THREE.AmbientLight(0xffffff, 0.6);
+            modalScene.add(amb);
+            const dir = new THREE.DirectionalLight(0xffffff, 1.0);
+            dir.position.set(5, 10, 5);
+            modalScene.add(dir);
+            const spot = new THREE.SpotLight(0xffffff, 0.8);
+            spot.position.set(-5, 5, 5);
+            modalScene.add(spot);
+
+            modalCarGroup = new THREE.Group();
+            modalScene.add(modalCarGroup);
+        }
+
+        function openVehicleModal() {
+            vehicleModal.classList.add('active');
+            vehicleModalOpen = true;
+
+            // Clear previous
+            while (modalCarGroup.children.length > 0) {
+                modalCarGroup.remove(modalCarGroup.children[0]);
+            }
+
+            // Build current car for modal (high detail or just scaled up)
+            let mesh;
+            if (carType === 'supercar') {
+                mesh = buildSupercarMesh(true);
+                vehicleName.innerText = "Night Fury";
+                vehicleStats.innerText = "Class: Supercar • Top Speed: 220 MPH • Handling: 8.5";
+            } else {
+                mesh = buildHypercarMesh(true);
+                vehicleName.innerText = "Solar Flare";
+                vehicleStats.innerText = "Class: Hypercar • Top Speed: 240 MPH • Handling: 9.0";
+            }
+            
+            mesh.scale.set(2.0, 2.0, 2.0);
+            
+            // Rotate continuously in animate loop
+            modalCarGroup.add(mesh);
+            
+            // Pause game? Maybe just set flag to ignore inputs
+        }
+
+        function closeVehicleModal() {
+            vehicleModal.classList.remove('active');
+            vehicleModalOpen = false;
         }
 
         // --- Share Modal Functions ---
@@ -802,7 +951,7 @@
             raycaster.setFromCamera(mouse, uiCamera);
             const intersects = raycaster.intersectObjects(miniatureGroup.children, true);
             if (intersects.length > 0) {
-                toggleCarModel();
+                // toggleCarModel(); // Moved to input handlers
                 return true;
             }
             return false;
@@ -1624,7 +1773,27 @@
         }
 
         function onMouseDown(e) {
-            if (checkMiniatureClick(e.clientX, e.clientY)) return;
+            // Check miniature hold/click
+            if (checkMiniatureClick(e.clientX, e.clientY)) {
+                isHolding = true;
+                holdTimer = setTimeout(() => {
+                    openVehicleModal();
+                    isHolding = false; // Consumed
+                }, HOLD_DURATION);
+                
+                // Add one-time mouseup listener
+                const onMouseUp = () => {
+                    clearTimeout(holdTimer);
+                    if (isHolding) {
+                        toggleCarModel();
+                        isHolding = false;
+                    }
+                    document.removeEventListener('mouseup', onMouseUp);
+                };
+                document.addEventListener('mouseup', onMouseUp);
+                return;
+            }
+
             if (e.target === timeBtn || e.target === shareBtn) return;
             const now = Date.now();
             if (now - lastTapTime < 250) emitWheelSmoke();
@@ -1661,7 +1830,14 @@
             lastTapTime = now;
             for (let i = 0; i < touches.length; i++) {
                 const t = touches[i];
-                if (checkMiniatureClick(t.clientX, t.clientY)) continue;
+                if (checkMiniatureClick(t.clientX, t.clientY)) {
+                    isHolding = true;
+                    holdTimer = setTimeout(() => {
+                        openVehicleModal();
+                        isHolding = false;
+                    }, HOLD_DURATION);
+                    continue;
+                }
                 if (t.target === timeBtn) {
                     toggleDayNight();
                     continue;
@@ -1707,6 +1883,18 @@
 
         function onTouchEnd(e) {
             e.preventDefault();
+            
+            // Check if we are releasing the miniature button
+            if (isHolding || holdTimer) {
+                clearTimeout(holdTimer);
+                if (isHolding) {
+                    toggleCarModel();
+                    isHolding = false;
+                }
+                // If we were holding, we don't want to process other touch ends potentially?
+                // Actually, we should process others just in case.
+            }
+
             const touches = e.changedTouches;
             for (let i = 0; i < touches.length; i++) {
                 if (touches[i].identifier === moveTouchId) {
@@ -2277,6 +2465,13 @@
             if (miniatureGroup) miniatureGroup.rotation.y += 0.02;
             renderer.clearDepth();
             renderer.render(uiScene, uiCamera);
+
+            if (vehicleModalOpen) {
+                if (modalCarGroup) modalCarGroup.rotation.y += 0.01;
+                // Render modal scene on top (no clear, just depth clear)
+                renderer.clearDepth();
+                renderer.render(modalScene, modalCamera);
+            }
         }
 
         function onWindowResize() {
