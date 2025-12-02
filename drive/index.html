@@ -298,6 +298,16 @@
             text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
 
+        #modal-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 50;
+        }
+
         #vehicle-info {
             position: absolute;
             bottom: 50px;
@@ -470,6 +480,7 @@
 
     <div id="vehicle-modal">
         <button id="vehicle-modal-close">×</button>
+        <canvas id="modal-canvas"></canvas>
     </div>
 
     <div id="game-container"></div>
@@ -486,7 +497,7 @@
 
         // Modal Variables
         let vehicleModalOpen = false;
-        let modalScene, modalCamera;
+        let modalScene, modalCamera, modalRenderer;
         let modalCarGroup;
         let holdTimer = null;
         let isHolding = false;
@@ -779,6 +790,11 @@
             modalCamera.position.set(0, 1.0, 3.5); // Adjusted Y and Z for smaller car
             modalCamera.lookAt(0, 0, 0);
 
+            const canvas = document.getElementById('modal-canvas');
+            modalRenderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+            modalRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            modalRenderer.setClearColor(0x000000, 0); // Transparent
+
             // Lights for modal
             const amb = new THREE.AmbientLight(0xffffff, 0.6);
             modalScene.add(amb);
@@ -797,6 +813,12 @@
             vehicleModal.classList.add('active');
             vehicleModalOpen = true;
 
+            const width = vehicleModal.clientWidth;
+            const height = vehicleModal.clientHeight;
+            modalRenderer.setSize(width, height, false);
+            modalCamera.aspect = width / height;
+            modalCamera.updateProjectionMatrix();
+
             // Clear previous
             while (modalCarGroup.children.length > 0) {
                 modalCarGroup.remove(modalCarGroup.children[0]);
@@ -810,7 +832,7 @@
                 mesh = buildHypercarMesh(true);
             }
             
-            mesh.scale.set(0.4, 0.4, 0.4); // Reduced from 0.7 to 0.4
+            mesh.scale.set(0.25, 0.25, 0.25); // Reduced from 0.7 to 0.4 to 0.25
             
             // Rotate continuously in animate loop
             modalCarGroup.add(mesh);
@@ -2506,9 +2528,8 @@
 
             if (vehicleModalOpen) {
                 // if (modalCarGroup) modalCarGroup.rotation.y += 0.01; // Removed automatic rotation
-                // Render modal scene on top (no clear, just depth clear)
-                renderer.clearDepth();
-                renderer.render(modalScene, modalCamera);
+                // Render modal scene on top (using separate renderer)
+                modalRenderer.render(modalScene, modalCamera);
             }
         }
 
@@ -2519,6 +2540,14 @@
             uiCamera.updateProjectionMatrix();
             updateMiniaturePosition();
             renderer.setSize(window.innerWidth, window.innerHeight);
+            
+            if (vehicleModalOpen && modalRenderer) {
+                const width = vehicleModal.clientWidth;
+                const height = vehicleModal.clientHeight;
+                modalRenderer.setSize(width, height, false);
+                modalCamera.aspect = width / height;
+                modalCamera.updateProjectionMatrix();
+            }
         }
     </script>
     <script>
