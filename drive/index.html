@@ -1084,15 +1084,13 @@
                 modalCarGroup.remove(modalCarGroup.children[0]);
             }
 
-            // Build current car for modal (high detail or just scaled up)
-            let mesh;
-            if (carType === 'supercar') {
-                mesh = buildSupercarMesh(true);
-            } else {
-                mesh = buildHypercarMesh(true);
-            }
-            
-            mesh.scale.set(0.25, 0.25, 0.25); // Reduced from 0.7 to 0.4 to 0.25
+            // Build current car for modal
+            const mesh = createVehicle({
+                type: carType,
+                color: selectedColor,
+                addLights: true,
+                scale: 0.25
+            });
             
             // Rotate continuously in animate loop
             modalCarGroup.add(mesh);
@@ -1251,14 +1249,12 @@
                 miniatureGroup.remove(miniatureGroup.children[0]);
             }
             const targetType = (carType === 'supercar') ? 'hypercar' : 'supercar';
-            let mesh;
-            if (targetType === 'supercar') {
-                mesh = buildSupercarMesh(false);
-                mesh.scale.set(0.4, 0.4, 0.4);
-            } else {
-                mesh = buildHypercarMesh(false);
-                mesh.scale.set(0.35, 0.35, 0.35);
-            }
+            const mesh = createVehicle({
+                type: targetType,
+                color: selectedColor,
+                addLights: false,
+                scale: targetType === 'supercar' ? 0.4 : 0.35
+            });
             mesh.position.y = -0.5;
             miniatureGroup.add(mesh);
             miniatureGroup.userData.targetType = targetType;
@@ -1823,6 +1819,29 @@
             group.add(spotR.target);
         }
 
+        // --- Vehicle Abstraction ---
+        function createVehicle(config) {
+            const type = config.type || 'supercar';
+            const color = config.color || null;
+            const addLights = config.addLights !== undefined ? config.addLights : true;
+            const scale = config.scale || 1.0;
+
+            let mesh;
+            if (type === 'supercar') {
+                mesh = buildSupercarMesh(addLights, color);
+            } else if (type === 'hypercar') {
+                mesh = buildHypercarMesh(addLights, color);
+            } else {
+                mesh = buildSupercarMesh(addLights, color);
+            }
+
+            if (scale !== 1.0) {
+                mesh.scale.set(scale, scale, scale);
+            }
+
+            return mesh;
+        }
+
         function buildSupercarMesh(addLights = true, color = null) {
             const group = new THREE.Group();
 
@@ -1941,9 +1960,9 @@
             return group;
         }
 
-        function buildHypercarMesh(addLights = true) {
+        function buildHypercarMesh(addLights = true, color = null) {
             const group = new THREE.Group();
-            const bodyColor = 0xFFD700;
+            const bodyColor = color ? color : 0xFFD700;
             const bodyMat = new THREE.MeshStandardMaterial({ color: bodyColor, roughness: 0.2, metalness: 0.6 });
             const carbonMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.5, metalness: 0.5 });
             const glassMat = new THREE.MeshStandardMaterial({
@@ -2015,8 +2034,12 @@
             const col = colors[Math.floor(Math.random() * colors.length)];
 
             // Reuse supercar mesh but scaled down slightly
-            const mesh = buildSupercarMesh(true, col);
-            mesh.scale.set(1.6, 1.6, 1.6);
+            const mesh = createVehicle({
+                type: 'supercar',
+                color: col,
+                addLights: true,
+                scale: 1.6
+            });
             mesh.position.set(x, y, z);
 
             scene.add(mesh);
@@ -2095,14 +2118,16 @@
                 // but we are rebuilding small groups. 
             }
             carType = type;
+            currentCarMesh = createVehicle({
+                type: type,
+                color: selectedColor,
+                addLights: true,
+                scale: 1.8
+            });
+
             if (type === 'supercar') {
-                currentCarMesh = buildSupercarMesh(true);
-                currentCarMesh.scale.set(1.8, 1.8, 1.8);
-                // Updated physics for the Black Supercar
                 PLAYER_SPEED = 0.18; MAX_SPEED = 3.8;
             } else if (type === 'hypercar') {
-                currentCarMesh = buildHypercarMesh(true);
-                currentCarMesh.scale.set(1.8, 1.8, 1.8);
                 PLAYER_SPEED = 0.16; MAX_SPEED = 3.5;
             }
             currentCarMesh.traverse((child) => {
