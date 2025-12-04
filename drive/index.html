@@ -601,6 +601,10 @@
         let lastDragX = 0;
         // Paint Logic
         let selectedColor = 0xff0000; // Default red
+        const vehicleColors = {
+            supercar: 0xffffff,
+            hypercar: 0xFFD700
+        };
         const paintColors = [
             0xFF0000, 0xFF7F00, 0xFFFF00, 0x7FFF00, 0x00FF00, 0x00FF7F, 
             0x00FFFF, 0x007FFF, 0x0000FF, 0x7F00FF, 0xFF00FF, 0xFF007F,
@@ -994,6 +998,7 @@
                     } else {
                         // For body parts
                         mesh.material.color.setHex(selectedColor);
+                        vehicleColors[carType] = selectedColor; // Save persistent color
                         mesh.material.metalness = 0.2;
                         mesh.material.roughness = 0.3;
                     }
@@ -1087,7 +1092,7 @@
             // Build current car for modal
             const mesh = createVehicle({
                 type: carType,
-                color: selectedColor,
+                color: vehicleColors[carType],
                 addLights: true,
                 scale: 0.25
             });
@@ -1251,7 +1256,7 @@
             const targetType = (carType === 'supercar') ? 'hypercar' : 'supercar';
             const mesh = createVehicle({
                 type: targetType,
-                color: selectedColor,
+                color: vehicleColors[targetType],
                 addLights: false,
                 scale: targetType === 'supercar' ? 0.4 : 0.35
             });
@@ -2120,7 +2125,7 @@
             carType = type;
             currentCarMesh = createVehicle({
                 type: type,
-                color: selectedColor,
+                color: vehicleColors[type],
                 addLights: true,
                 scale: 1.8
             });
