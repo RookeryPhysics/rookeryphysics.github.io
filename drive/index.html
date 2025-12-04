@@ -1849,7 +1849,6 @@
             // Materials
             const bodyColor = color ? color : 0xffffff;
             const bodyMat = new THREE.MeshStandardMaterial({ color: bodyColor, roughness: 0.3, metalness: 0.2 });
-            const hoodMat = new THREE.MeshStandardMaterial({ color: bodyColor, roughness: 0.3, metalness: 0.2 }); // Separate hood material
             const spoilerMat = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.3, metalness: 0.2 }); // New material for spoiler
             const secondaryMat = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.1, metalness: 0.6 }); // Glossy black accents
             const glassMat = new THREE.MeshStandardMaterial({
@@ -1884,7 +1883,7 @@
 
             // Hood (Front nose)
             const hoodGeo = new THREE.BoxGeometry(2.1, 0.5, 1.0);
-            const hood = new THREE.Mesh(hoodGeo, hoodMat);
+            const hood = new THREE.Mesh(hoodGeo, bodyMat);
             hood.position.set(0, 0.5, 1.8);
             group.add(hood);
 
