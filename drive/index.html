@@ -1907,14 +1907,6 @@
             cabin.userData = { partType: 'glass', partGroup: 'glass' }; // Mark as glass part
             group.add(cabin);
 
-            // Rear Engine Cover / Slats
-            const slatGeo = new THREE.BoxGeometry(1.4, 0.05, 1.8);
-            const slat = new THREE.Mesh(slatGeo, secondaryMat);
-            slat.position.set(0, 0.76, 1.0); // Behind cabin
-            slat.rotation.x = -0.1;
-            slat.userData = { paintable: false, partGroup: 'non-paintable' }; // Mark as non-paintable
-            group.add(slat);
-
             // Fenders (Wide arches)
             const fenderGeo = new THREE.BoxGeometry(0.6, 0.65, 1.2);
             const fl = new THREE.Mesh(fenderGeo, bodyMat); fl.position.set(-1.1, 0.525, 1.6); fl.userData.partGroup = 'body'; group.add(fl); // Mark as body part
