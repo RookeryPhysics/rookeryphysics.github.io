@@ -999,8 +999,6 @@
                         // For body parts
                         mesh.material.color.setHex(selectedColor);
                         vehicleColors[carType] = selectedColor; // Save persistent color
-                        mesh.material.metalness = 0.2;
-                        mesh.material.roughness = 0.3;
                     }
                     
                     // If emissive exists and is not black, update it too? 
@@ -1039,8 +1037,6 @@
                                 });
                             } else {
                                 playerMeshPart.material.color.setHex(selectedColor);
-                                playerMeshPart.material.metalness = 0.2;
-                                playerMeshPart.material.roughness = 0.3;
                             }
                         }
                     }
