@@ -731,10 +731,10 @@
 
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 800);
 
-            // Optimization: Limit pixel ratio to 0.4 for retro low-res look and max performance.
+            // Optimization: Limit pixel ratio to 0.21 for extreme retro low-res look.
             renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 0.4));
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 0.21));
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.BasicShadowMap;
             renderer.autoClear = false;
