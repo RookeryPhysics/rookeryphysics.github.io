@@ -732,10 +732,10 @@
 
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 800);
 
-            // Optimization: Limit pixel ratio to 1.0 for better frame rate on mobile.
+            // Optimization: Limit pixel ratio to 0.75 for maximum frame rate on mobile.
             renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.0));
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 0.75));
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.BasicShadowMap;
             renderer.autoClear = false;
@@ -1039,7 +1039,7 @@
 
             const canvas = document.getElementById('modal-canvas');
             modalRenderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
-            modalRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            modalRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.0));
             modalRenderer.setClearColor(0x000000, 0); // Transparent
 
             // Lights for modal
