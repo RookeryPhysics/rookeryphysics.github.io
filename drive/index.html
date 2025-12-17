@@ -614,11 +614,17 @@
         const allPedestrians = [];
         const activeObstacles = [];
         const particles = [];
+        const particlePool = []; // Object Pool
         const trafficVehicles = []; // NPC Cars
+
+        // Reusable Geometries for Particles
+        const debrisGeometry = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+        const smokeBaseGeometry = new THREE.BoxGeometry(1, 1, 1);
+        const debrisMaterialCache = new Map(); // Cache materials for debris
 
         // Snow System
         let snowSystem, snowGeo;
-        const snowCount = 2500;
+        const snowCount = 1000; // Reduced from 2500 for performance
         const snowRange = 320;
 
         // Cache materials to reduce draw calls
@@ -2120,7 +2126,7 @@
             });
         }
 
-        function updateTraffic() {
+        function updateTraffic(time) {
             if (!player) return;
             const pPos = player.position;
 
@@ -2144,7 +2150,9 @@
                 mesh.rotation.y = angle;
 
                 // 3. Keep on ground / simple bounce
-                mesh.position.y = PLAYER_BASE_Y + Math.sin(Date.now() * 0.02 + i) * 0.03;
+                // Use passed time or fallback
+                const t = time || performance.now();
+                mesh.position.y = PLAYER_BASE_Y + Math.sin(t * 0.02 + i) * 0.03;
 
                 // 4. Culling (Remove if too far)
                 const dx = mesh.position.x - pPos.x;
@@ -2729,29 +2737,74 @@
             });
         }
 
+        function getDebrisMaterial(color) {
+            if (!debrisMaterialCache.has(color)) {
+                debrisMaterialCache.set(color, new THREE.MeshBasicMaterial({ color: color }));
+            }
+            return debrisMaterialCache.get(color);
+        }
+
+        function getParticleFromPool() {
+            if (particlePool.length > 0) {
+                return particlePool.pop();
+            }
+            return null; // Pool empty, create new or skip
+        }
+
         function spawnSmokeParticle(pos) {
-            const size = Math.random() * 0.4 + 0.2;
-            const geo = new THREE.BoxGeometry(size, size, size);
-            const mat = new THREE.MeshBasicMaterial({ color: 0xdddddd, transparent: true, opacity: 0.4 });
-            const p = new THREE.Mesh(geo, mat);
+            let p = getParticleFromPool();
+            if (!p) {
+                // Create new if pool empty
+                const mat = new THREE.MeshBasicMaterial({ color: 0xdddddd, transparent: true, opacity: 0.4 });
+                p = new THREE.Mesh(smokeBaseGeometry, mat);
+            } else {
+                // Reset existing
+                p.geometry = smokeBaseGeometry;
+                // For smoke we might want a fresh material or reuse one? 
+                // Smoke fades out, so it modifies opacity. Cloning material is safer or handling it carefully.
+                // For simplicity, let's reuse a standard smoke material but we need to reset opacity.
+                // Actually, if we share materials, fading one fades all.
+                // So each smoke particle needs its own material clone or instance.
+                if (!p.material || !p.material.isMeshBasicMaterial) {
+                    p.material = new THREE.MeshBasicMaterial({ color: 0xdddddd, transparent: true, opacity: 0.4 });
+                } else {
+                    p.material.opacity = 0.4;
+                    p.material.color.setHex(0xdddddd);
+                }
+            }
+            
+            p.scale.setScalar(Math.random() * 0.4 + 0.2);
             p.position.copy(pos);
             p.position.x += (Math.random() - 0.5) * 0.5;
             p.position.z += (Math.random() - 0.5) * 0.5;
+            p.rotation.set(0, 0, 0);
+            
             p.userData = {
                 type: 'smoke', life: 1.0,
                 velocity: new THREE.Vector3((Math.random() - 0.5) * 0.05, 0.05 + Math.random() * 0.05, (Math.random() - 0.5) * 0.05)
             };
+            
             scene.add(p);
             particles.push(p);
         }
 
         function explode(pos, color = 0xFF0000) {
-            const pGeo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
-            const pMat = new THREE.MeshBasicMaterial({ color: color });
-            for (let k = 0; k < 5; k++) { // Reduced particle count
-                const p = new THREE.Mesh(pGeo, pMat);
+            const mat = getDebrisMaterial(color);
+            
+            for (let k = 0; k < 4; k++) { // Reduced count further
+                let p = getParticleFromPool();
+                if (!p) {
+                    p = new THREE.Mesh(debrisGeometry, mat);
+                } else {
+                    p.geometry = debrisGeometry;
+                    p.material = mat;
+                }
+
+                p.scale.set(1, 1, 1);
                 p.position.copy(pos);
                 p.position.y += 1.5;
+                p.rotation.set(0, 0, 0);
+
                 p.userData = {
                     type: 'debris', life: 1.0,
                     velocity: new THREE.Vector3((Math.random() - 0.5) * 1.0, Math.random() * 1.0 + 0.2, (Math.random() - 0.5) * 1.0)
@@ -2868,9 +2921,12 @@
                 }
                 if (p.userData.life <= 0) {
                     scene.remove(p);
-                    if (p.material) p.material.dispose();
-                    if (p.geometry) p.geometry.dispose();
+                    // Do NOT dispose geometry/material here as we recycle or use cached ones
+                    // Reset heavy properties if needed, but mostly just push to pool
                     particles.splice(i, 1);
+                    if (particlePool.length < 100) { // Limit pool size
+                        particlePool.push(p);
+                    }
                 }
             }
         }
@@ -2930,17 +2986,18 @@
             requestAnimationFrame(animate);
             updateFPS();
             globalFrame++;
+            const nowTime = performance.now();
 
             if (player && !vehicleModalOpen) {
                 updatePhysics();
-                updateChunks();
+                if (globalFrame % 15 === 0) updateChunks();
                 updatePedestrians();
                 checkCollisions();
                 updateParticles();
                 updateSnow();
                 updateCamera();
                 updateHeadingIndicator();
-                updateTraffic(); // NPC update
+                updateTraffic(nowTime); // Pass time
                 if (sunLight && player.position.distanceToSquared(lastLightUpdatePos) > 1600) { // 40^2 = 1600
                     lastLightUpdatePos.copy(player.position);
                     sunLight.position.set(player.position.x + 50, 100, player.position.z + 50);
@@ -2952,7 +3009,7 @@
                     if (speed > 0.01) {
                         const bounceFreq = carType === 'hypercar' ? 0.03 : 0.015;
                         const bounceAmp = carType === 'hypercar' ? 0.02 : 0.05;
-                        player.position.y = PLAYER_BASE_Y + Math.sin(Date.now() * bounceFreq) * bounceAmp;
+                        player.position.y = PLAYER_BASE_Y + Math.sin(nowTime * bounceFreq) * bounceAmp;
                     }
                 }
             }
