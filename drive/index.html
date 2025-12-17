@@ -2807,11 +2807,14 @@
                 // For simplicity, let's reuse a standard smoke material but we need to reset opacity.
                 // Actually, if we share materials, fading one fades all.
                 // So each smoke particle needs its own material clone or instance.
-                if (!p.material || !p.material.isMeshBasicMaterial) {
-                    p.material = new THREE.MeshBasicMaterial({ color: 0xdddddd, transparent: true, opacity: 0.4 });
-                } else {
+                // Check if we can reuse the material. 
+                // We can reuse if it is a dedicated smoke material (indicated by previous usage as smoke).
+                // Debris materials are shared and opaque, so we cannot reuse them for smoke.
+                if (p.userData && p.userData.type === 'smoke' && p.material && p.material.isMeshBasicMaterial) {
                     p.material.opacity = 0.4;
                     p.material.color.setHex(0xdddddd);
+                } else {
+                    p.material = new THREE.MeshBasicMaterial({ color: 0xdddddd, transparent: true, opacity: 0.4 });
                 }
             }
             
