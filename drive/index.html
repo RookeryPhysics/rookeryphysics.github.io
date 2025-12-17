@@ -624,6 +624,9 @@
 
         let isNightMode = false;
         
+        let controlMode = 'vehicle'; // 'vehicle' or 'pedestrian'
+        let userPedestrian = null;
+        
         // ... (skipping lines to match context if needed, but I can just replace the block down to initVehicleModal if I'm careful, or just separate calls)
         // Actually, I will do separate replacements to be safe.
 
@@ -1278,6 +1281,65 @@
                 return true;
             }
             return false;
+        }
+
+        function checkVehicleTap(clientX, clientY) {
+            if (!player) return false;
+            mouse.x = (clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(player.children, true);
+            return intersects.length > 0;
+        }
+
+        function handleVehicleTap() {
+            if (controlMode === 'vehicle') {
+                velocity.set(0, 0, 0);
+                spawnPedestrianBesidePlayer();
+            } else if (controlMode === 'pedestrian') {
+                enterVehicle();
+            }
+        }
+
+        function enterVehicle() {
+            if (userPedestrian) {
+                scene.remove(userPedestrian.mesh);
+                userPedestrian = null;
+            }
+            controlMode = 'vehicle';
+            centerCamera();
+        }
+
+        function spawnPedestrianBesidePlayer() {
+            // Remove from allPedestrians if we are recycling createPedestrianData
+            // But createPedestrianData adds to allPedestrians array.
+            // We should create a separate pedestrian for the user.
+            
+            const angle = player.rotation.y + (Math.random() < 0.5 ? Math.PI / 2 : -Math.PI / 2);
+            const dist = 5.0;
+            const pos = new THREE.Vector3(
+                player.position.x + Math.sin(angle) * dist,
+                2.0,
+                player.position.z + Math.cos(angle) * dist
+            );
+
+            // Create user pedestrian data manually to avoid AI loop interference
+            userPedestrian = {
+                position: pos,
+                velocity: new THREE.Vector3(0, 0, 0),
+                rotation: Math.atan2(player.position.x - pos.x, player.position.z - pos.z),
+                animPhase: 0,
+                mesh: null,
+                colors: { shirt: Math.random() * 0xffffff, pants: Math.random() * 0xffffff, skin: 0xffccaa },
+                isUser: true
+            };
+
+            userPedestrian.mesh = buildPedestrianMesh(userPedestrian);
+            userPedestrian.mesh.position.copy(userPedestrian.position);
+            userPedestrian.mesh.rotation.y = userPedestrian.rotation;
+            scene.add(userPedestrian.mesh);
+
+            controlMode = 'pedestrian';
         }
 
         // --- Infinite Map System ---
@@ -2184,6 +2246,11 @@
                 return;
             }
 
+            if (checkVehicleTap(e.clientX, e.clientY)) {
+                handleVehicleTap();
+                return;
+            }
+
             if (e.target === timeBtn || e.target === shareBtn) return;
             const now = Date.now();
             if (now - lastTapTime < 250) emitWheelSmoke();
@@ -2226,6 +2293,10 @@
                         openVehicleModal();
                         isHolding = false;
                     }, HOLD_DURATION);
+                    continue;
+                }
+                if (checkVehicleTap(t.clientX, t.clientY)) {
+                    handleVehicleTap();
                     continue;
                 }
                 if (t.target === timeBtn) {
@@ -2345,6 +2416,71 @@
 
         function updatePhysics() {
             if (isGameOver) return;
+
+            if (controlMode === 'pedestrian' && userPedestrian) {
+                // Pedestrian Control Logic
+                const PED_SPEED = 0.25;
+                const turnSpeed = 0.15;
+
+                // Input vector from joystick/keys
+                const dx = moveInput.x;
+                const dy = moveInput.y; // -1 is up (forward) usually in 2D screen coords, but let's check input logic
+                // In updateMoveInputFromKeys: 'w' (up) -> dy = -1. 's' (down) -> dy = 1.
+                // In joystick: up -> dy negative.
+                
+                // Movement relative to camera
+                // Camera looks at player.
+                // We want "Up" to be "Away from camera".
+                const camDir = new THREE.Vector3();
+                camera.getWorldDirection(camDir);
+                camDir.y = 0;
+                camDir.normalize();
+
+                const camRight = new THREE.Vector3();
+                camRight.crossVectors(camDir, new THREE.Vector3(0, 1, 0));
+                
+                // dy is negative for UP/Forward input.
+                // dx is positive for Right input.
+                
+                const moveDir = new THREE.Vector3();
+                moveDir.addScaledVector(camDir, -dy); // -(-1) = +1 (Forward along camera view)
+                moveDir.addScaledVector(camRight, dx);
+
+                if (moveDir.lengthSq() > 0.01) {
+                    moveDir.normalize();
+                    userPedestrian.position.addScaledVector(moveDir, PED_SPEED);
+                    
+                    // Only rotate to face movement if not moving backwards relative to camera
+                    if (dy <= 0.2) {
+                        const targetRot = Math.atan2(moveDir.x, moveDir.z);
+                        let rotDiff = shortestAngleDist(userPedestrian.rotation, targetRot);
+                        userPedestrian.rotation += rotDiff * turnSpeed;
+                    }
+                    
+                    // Animation: reverse if backing up
+                    const animSpeed = dy > 0.2 ? -0.4 : 0.4;
+                    userPedestrian.animPhase += animSpeed;
+                    const swing = Math.sin(userPedestrian.animPhase) * 0.6;
+                    userPedestrian.mesh.userData.limbs.legL.rotation.x = swing;
+                    userPedestrian.mesh.userData.limbs.legR.rotation.x = -swing;
+                    userPedestrian.mesh.userData.limbs.armL.rotation.x = -swing;
+                    userPedestrian.mesh.userData.limbs.armR.rotation.x = swing;
+                } else {
+                    // Idle pose
+                    userPedestrian.mesh.userData.limbs.legL.rotation.x = 0;
+                    userPedestrian.mesh.userData.limbs.legR.rotation.x = 0;
+                    userPedestrian.mesh.userData.limbs.armL.rotation.x = 0;
+                    userPedestrian.mesh.userData.limbs.armR.rotation.x = 0;
+                }
+                
+                userPedestrian.mesh.position.copy(userPedestrian.position);
+                userPedestrian.mesh.rotation.y = userPedestrian.rotation;
+                
+                // Keep player (car) updating slightly for collisions logic if we wanted, 
+                // but for now just stop it.
+                velocity.set(0, 0, 0); 
+                return;
+            }
 
             let appliedFriction = FRICTION;
 
@@ -2504,7 +2640,9 @@
 
             for (let i = 0; i < allPedestrians.length; i++) {
                 ped = allPedestrians[i];
-                ped.position.add(ped.velocity);
+                if (!ped.isStationary) {
+                    ped.position.add(ped.velocity);
+                }
 
                 // Wrap around logic
                 if (ped.position.x > playerPos.x + SPAWN_RANGE) ped.position.x -= SPAWN_RANGE * 2;
@@ -2526,14 +2664,22 @@
                         ped.isActive = true;
                     }
                     ped.mesh.position.copy(ped.position);
+                    ped.mesh.rotation.y = ped.rotation;
 
                     // Simple animation
-                    phase = time + ped.animPhase;
-                    swing = Math.sin(phase) * 0.6;
-                    ped.mesh.userData.limbs.legL.rotation.x = swing;
-                    ped.mesh.userData.limbs.legR.rotation.x = -swing;
-                    ped.mesh.userData.limbs.armL.rotation.x = -swing;
-                    ped.mesh.userData.limbs.armR.rotation.x = swing;
+                    if (!ped.isStationary) {
+                        phase = time + ped.animPhase;
+                        swing = Math.sin(phase) * 0.6;
+                        ped.mesh.userData.limbs.legL.rotation.x = swing;
+                        ped.mesh.userData.limbs.legR.rotation.x = -swing;
+                        ped.mesh.userData.limbs.armL.rotation.x = -swing;
+                        ped.mesh.userData.limbs.armR.rotation.x = swing;
+                    } else {
+                        ped.mesh.userData.limbs.legL.rotation.x = 0;
+                        ped.mesh.userData.limbs.legR.rotation.x = 0;
+                        ped.mesh.userData.limbs.armL.rotation.x = 0;
+                        ped.mesh.userData.limbs.armR.rotation.x = 0;
+                    }
 
                     activeObstacles.push(ped);
                 } else {
@@ -2726,15 +2872,30 @@
         }
 
         function updateCamera() {
+            let targetObj = player;
+            if (controlMode === 'pedestrian' && userPedestrian) {
+                targetObj = userPedestrian; // Use object with .position and .rotation (if we want camera to rotate with ped)
+                // Pedestrian rotation might jitter, maybe keep camera angle independent or smooth follow?
+            }
+
             if (isManualCamera) {
                 manualCamTimer--;
                 if (manualCamTimer <= 0) isManualCamera = false;
             } else {
-                if (velocity.length() > 0.1) {
+                if (controlMode === 'vehicle' && velocity.length() > 0.1) {
                     const targetAngle = player.rotation.y + Math.PI;
                     const dist = shortestAngleDist(cameraAngle, targetAngle);
                     cameraAngle += dist * 0.05;
                     const targetPitch = 0.5;
+                    cameraVerticalAngle += (targetPitch - cameraVerticalAngle) * 0.02;
+                } else if (controlMode === 'pedestrian' && userPedestrian) {
+                    // Only auto-align if NOT moving backwards
+                    if (moveInput.y <= 0.2) {
+                        const targetAngle = userPedestrian.rotation + Math.PI;
+                        const dist = shortestAngleDist(cameraAngle, targetAngle);
+                        cameraAngle += dist * 0.1; // Slightly faster follow for pedestrian
+                    }
+                    const targetPitch = 0.4; // Lower pitch for pedestrian
                     cameraVerticalAngle += (targetPitch - cameraVerticalAngle) * 0.02;
                 }
             }
@@ -2743,12 +2904,12 @@
             const offsetX = hDist * Math.sin(cameraAngle);
             const offsetZ = hDist * Math.cos(cameraAngle);
             const targetPos = new THREE.Vector3(
-                player.position.x + offsetX,
-                player.position.y + vDist,
-                player.position.z + offsetZ
+                targetObj.position.x + offsetX,
+                targetObj.position.y + vDist,
+                targetObj.position.z + offsetZ
             );
             camera.position.lerp(targetPos, 0.1);
-            camera.lookAt(player.position);
+            camera.lookAt(targetObj.position);
         }
 
         function updateMinimap() {
