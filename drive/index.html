@@ -863,6 +863,17 @@
             resSlider.addEventListener('input', (e) => {
                 const val = parseFloat(e.target.value);
                 renderer.setPixelRatio(val);
+                
+                // Also update shadow resolution
+                if (sunLight && sunLight.shadow) {
+                    const shadowSize = Math.round(512 * val);
+                    sunLight.shadow.mapSize.width = shadowSize;
+                    sunLight.shadow.mapSize.height = shadowSize;
+                    if (sunLight.shadow.map) {
+                        sunLight.shadow.map.dispose();
+                        sunLight.shadow.map = null;
+                    }
+                }
             });
             // Stop propagation to prevent driving while sliding
             resSlider.addEventListener('mousedown', (e) => e.stopPropagation());
