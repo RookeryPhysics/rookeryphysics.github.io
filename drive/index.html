@@ -732,12 +732,12 @@
 
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 800);
 
-            // Optimization: Limit pixel ratio to 1.5. Mobile screens don't need native 4k.
+            // Optimization: Limit pixel ratio to 1.0 for better frame rate on mobile.
             renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.0));
             renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.PCFShadowMap;
+            renderer.shadowMap.type = THREE.BasicShadowMap;
             renderer.autoClear = false;
             container.appendChild(renderer.domElement);
 
