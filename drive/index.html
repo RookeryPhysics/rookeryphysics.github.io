@@ -474,35 +474,13 @@
         body.hud-hidden #score-board,
         body.hud-hidden #time-btn,
         body.hud-hidden #share-btn,
-        body.hud-hidden #minimap-container,
         body.hud-hidden .instructions {
             opacity: 0;
             pointer-events: none;
         }
         
-        #score-board, #time-btn, #share-btn, #minimap-container, .instructions {
+        #score-board, #time-btn, #share-btn, .instructions {
             transition: opacity 0.3s ease;
-        }
-
-        #minimap-container {
-            position: absolute;
-            top: 20px;
-            left: 130px;
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            background: #000;
-            overflow: hidden;
-            z-index: 10;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.8);
-            pointer-events: none;
-        }
-
-        #minimap {
-            width: 100%;
-            height: 100%;
-            display: block;
         }
 
         @keyframes fadeOut {
@@ -534,9 +512,6 @@
         <div id="time-btn">🌙</div>
         <div id="share-btn">
             <img src="snap.png" alt="Snapchat Logo" width="54" height="54">
-        </div>
-        <div id="minimap-container">
-            <canvas id="minimap" width="200" height="200"></canvas>
         </div>
 
         <div id="movement-zone">
@@ -636,9 +611,6 @@
         const scoreElement = document.getElementById('score-board');
         const fpsElement = document.getElementById('fps-counter');
 
-        const minimapCanvas = document.getElementById('minimap');
-        const minimapCtx = minimapCanvas.getContext('2d', { alpha: false }); // Opt for speed
-
         const allPedestrians = [];
         const activeObstacles = [];
         const particles = [];
@@ -648,7 +620,6 @@
         let snowSystem, snowGeo;
         const snowCount = 2500;
         const snowRange = 320;
-        const lastSnowPlayerPos = new THREE.Vector3();
 
         // Cache materials to reduce draw calls
         const materialCache = new Map();
@@ -709,7 +680,7 @@
         // FPS
         let lastTime = performance.now();
         let frameCount = 0;
-        let globalFrame = 0; // For throttling minimap
+        let globalFrame = 0; 
 
         // Elements
         const stickKnob = document.getElementById('stick-knob');
@@ -811,7 +782,7 @@
             createSnow();
 
             // Entities - Reduced count slightly for mobile optimization
-            for (let i = 0; i < 200; i++) {
+            for (let i = 0; i < 100; i++) {
                 createPedestrianData();
             }
 
@@ -1661,7 +1632,7 @@
                         // Only spawn on valid "lanes" (between center and edge)
                         // Lanes are approx 0.05 to 0.20
                         if (val > 0.05 && val < 0.20) {
-                            if (Math.random() < 0.02) { // 2% chance per road tile
+                            if (Math.random() < 0.01) { // 1% chance per road tile
                                 spawnTrafficCar(wx, 0.5, wz, rawVal > 0);
                             }
                         }
@@ -2801,9 +2772,9 @@
                     (Math.random() - 0.5) * snowRange
                 );
                 velocities.push(
-                    (Math.random() - 0.5) * 0.15, // x drift
-                    -Math.random() * 0.3 - 0.1, // y fall speed (slightly faster)
-                    (Math.random() - 0.5) * 0.15  // z drift
+                    (Math.random() - 0.5) * 2.0, // x drift (increased for shader visual)
+                    -Math.random() * 5.0 - 2.0, // y fall speed (needs to be faster in this math model)
+                    (Math.random() - 0.5) * 2.0  // z drift
                 );
             }
 
@@ -2811,68 +2782,75 @@
             snowGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
             snowGeo.setAttribute('velocity', new THREE.Float32BufferAttribute(velocities, 3));
 
-            const snowMat = new THREE.PointsMaterial({
-                color: 0xffffff,
-                size: 0.4, // Slightly larger
+            const snowVertexShader = `
+                uniform float uTime;
+                uniform vec3 uPlayerPos;
+                uniform vec3 uRange;
+                
+                attribute vec3 velocity;
+                
+                void main() {
+                    // 1. Simulate continuous movement based on time
+                    vec3 movedPos = position + velocity * uTime;
+                    
+                    // 2. Relative position to player
+                    vec3 relPos = movedPos - uPlayerPos;
+                    
+                    // 3. Wrap around (Infinite box)
+                    vec3 halfRange = uRange * 0.5;
+                    vec3 wrapped = mod(relPos + halfRange, uRange);
+                    vec3 localPos = wrapped - halfRange;
+                    
+                    // 4. Final world position
+                    vec3 finalPos = uPlayerPos + localPos;
+                    
+                    vec4 mvPosition = modelViewMatrix * vec4(finalPos, 1.0);
+                    
+                    // Size attenuation
+                    gl_PointSize = 120.0 / -mvPosition.z; 
+                    gl_Position = projectionMatrix * mvPosition;
+                }
+            `;
+
+            const snowFragmentShader = `
+                void main() {
+                    // Simple circular particle
+                    vec2 coord = gl_PointCoord - vec2(0.5);
+                    if(length(coord) > 0.5) discard;
+                    gl_FragColor = vec4(1.0, 1.0, 1.0, 0.7);
+                }
+            `;
+
+            const snowMat = new THREE.ShaderMaterial({
+                uniforms: {
+                    uTime: { value: 0 },
+                    uPlayerPos: { value: new THREE.Vector3() },
+                    uRange: { value: new THREE.Vector3(snowRange, 80, snowRange) }
+                },
+                vertexShader: snowVertexShader,
+                fragmentShader: snowFragmentShader,
                 transparent: true,
-                opacity: 0.7,
-                blending: THREE.AdditiveBlending,
-                depthWrite: false
+                depthWrite: false,
+                blending: THREE.AdditiveBlending
             });
 
             snowSystem = new THREE.Points(snowGeo, snowMat);
-            scene.add(snowSystem);
+            // We do NOT set snowSystem.position anymore, the shader handles world placement.
+            // But Three.js frustum culling relies on bounding sphere.
+            // Since particles can be anywhere around player, we must ensure it's not culled.
+            snowSystem.frustumCulled = false; 
             
-            if (player) {
-                snowSystem.position.copy(player.position);
-                lastSnowPlayerPos.copy(player.position);
-            }
+            scene.add(snowSystem);
         }
 
         function updateSnow() {
             if (!player || !snowSystem) return;
-
-            // Calculate player movement delta
-            const deltaX = player.position.x - lastSnowPlayerPos.x;
-            const deltaY = player.position.y - lastSnowPlayerPos.y;
-            const deltaZ = player.position.z - lastSnowPlayerPos.z;
-
-            // Update system position to match player (Keep box centered)
-            snowSystem.position.copy(player.position);
-            lastSnowPlayerPos.copy(player.position);
-
-            const positions = snowGeo.attributes.position.array;
-            const velocities = snowGeo.attributes.velocity.array;
-            const halfRange = snowRange / 2;
-
-            for (let i = 0; i < snowCount; i++) {
-                const ix = i * 3;
-                const iy = i * 3 + 1;
-                const iz = i * 3 + 2;
-
-                // 1. Apply Velocity (Falling)
-                positions[ix] += velocities[ix];
-                positions[iy] += velocities[iy];
-                positions[iz] += velocities[iz];
-
-                // 2. Shift particles opposite to player movement
-                // This keeps them "stationary" in world space as the system moves
-                positions[ix] -= deltaX;
-                positions[iy] -= deltaY;
-                positions[iz] -= deltaZ;
-
-                // 3. Wrap around within the local box
-                if (positions[ix] > halfRange) positions[ix] -= snowRange;
-                if (positions[ix] < -halfRange) positions[ix] += snowRange;
-
-                if (positions[iz] > halfRange) positions[iz] -= snowRange;
-                if (positions[iz] < -halfRange) positions[iz] += snowRange;
-
-                if (positions[iy] < -20) positions[iy] += 80; // Wrap height (local)
-                if (positions[iy] > 60) positions[iy] -= 80;
-            }
             
-            snowGeo.attributes.position.needsUpdate = true;
+            // Update Uniforms
+            snowSystem.material.uniforms.uPlayerPos.value.copy(player.position);
+            // Use globalFrame or a time accumulator. 
+            // frameCount resets every second, so use performance.now
+            snowSystem.material.uniforms.uTime.value = performance.now() * 0.001; 
         }
 
         function updateParticles() {
@@ -2937,74 +2915,6 @@
             camera.lookAt(targetObj.position);
         }
 
-        function updateMinimap() {
-            if (!player) return;
-            // Throttle minimap updates: only update every 10th frame
-            if (globalFrame % 4 !== 0) return;
-
-            const w = minimapCanvas.width;
-            const h = minimapCanvas.height;
-            minimapCtx.clearRect(0, 0, w, h);
-
-            minimapCtx.fillStyle = isNightMode ? 'rgba(10, 20, 30, 0.9)' : 'rgba(68, 119, 68, 0.8)';
-            minimapCtx.fillRect(0, 0, w, h);
-
-            minimapCtx.save();
-            minimapCtx.translate(w / 2, h / 2);
-            minimapCtx.rotate(player.rotation.y + Math.PI);
-            minimapCtx.scale(0.8, 0.8); // Zoom out slightly
-            minimapCtx.translate(-player.position.x, -player.position.z);
-
-            minimapCtx.fillStyle = isNightMode ? '#333' : '#222';
-            for (const chunk of activeChunks.values()) {
-                if (chunk.roads) {
-                    for (const road of chunk.roads) {
-                        minimapCtx.fillRect(road.x - ROAD_TILE_SIZE / 2, road.z - ROAD_TILE_SIZE / 2, ROAD_TILE_SIZE + 1, ROAD_TILE_SIZE + 1);
-                    }
-                }
-            }
-
-            minimapCtx.fillStyle = isNightMode ? '#445566' : '#87CEEB';
-            for (const chunk of activeChunks.values()) {
-                if (chunk.obstacles) {
-                    for (const obs of chunk.obstacles) {
-                        if (obs.isBuilding) {
-                            minimapCtx.fillRect(obs.x - obs.width / 2, obs.z - obs.depth / 2, obs.width, obs.depth);
-                        }
-                    }
-                }
-            }
-
-            // Draw Traffic on minimap
-            minimapCtx.fillStyle = '#ffcc00';
-            trafficVehicles.forEach(c => {
-                const cx = c.mesh.position.x;
-                const cz = c.mesh.position.z;
-                // Only draw if within reasonable minimap range
-                if (Math.abs(cx - player.position.x) < 150 && Math.abs(cz - player.position.z) < 150) {
-                    minimapCtx.fillRect(cx - 2, cz - 2, 4, 4);
-                }
-            });
-
-            minimapCtx.restore();
-
-            // Draw arrow
-            minimapCtx.save();
-            minimapCtx.translate(w / 2, h / 2);
-            minimapCtx.fillStyle = '#ff3366';
-            minimapCtx.strokeStyle = '#ffffff';
-            minimapCtx.lineWidth = 2;
-            minimapCtx.beginPath();
-            minimapCtx.moveTo(0, -10);
-            minimapCtx.lineTo(8, 10);
-            minimapCtx.lineTo(0, 6);
-            minimapCtx.lineTo(-8, 10);
-            minimapCtx.closePath();
-            minimapCtx.fill();
-            minimapCtx.stroke();
-            minimapCtx.restore();
-        }
-
         function updateFPS() {
             frameCount++;
             const now = performance.now();
@@ -3029,7 +2939,6 @@
                 updateSnow();
                 updateCamera();
                 updateHeadingIndicator();
-                updateMinimap();
                 updateTraffic(); // NPC update
                 if (sunLight) {
                     sunLight.position.set(player.position.x + 50, 100, player.position.z + 50);
