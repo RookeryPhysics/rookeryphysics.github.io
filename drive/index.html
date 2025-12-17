@@ -731,7 +731,7 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
             renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.BasicShadowMap;
+            renderer.shadowMap.type = THREE.PCFShadowMap;
             renderer.autoClear = false;
             container.appendChild(renderer.domElement);
 
@@ -743,8 +743,8 @@
             sunLight.position.set(50, 100, 50);
             sunLight.castShadow = true;
             // Optimization: Smaller shadow map texture
-            sunLight.shadow.mapSize.width = 256;
-            sunLight.shadow.mapSize.height = 256;
+            sunLight.shadow.mapSize.width = 512;
+            sunLight.shadow.mapSize.height = 512;
             sunLight.shadow.camera.near = 0.5;
             sunLight.shadow.camera.far = 300;
             const d = 100;
@@ -1720,6 +1720,7 @@
             }
             if (poleMatrices.length > 0) {
                 const poleMesh = new THREE.InstancedMesh(poleGeometry, poleMaterial, poleMatrices.length);
+                poleMesh.castShadow = true;
                 for (let i = 0; i < poleMatrices.length; i++) poleMesh.setMatrixAt(i, poleMatrices[i]);
                 group.add(poleMesh);
             }
@@ -1770,6 +1771,7 @@
                 const rot = (pseudoRandom(seed * 30, i) * Math.PI * 4);
                 mesh.position.set(bx, geo.parameters.height / 2, bz);
                 mesh.rotation.y = rot;
+                mesh.castShadow = true;
                 mesh.receiveShadow = true;
                 mesh.matrixAutoUpdate = false;
                 mesh.updateMatrix();
@@ -1821,26 +1823,29 @@
             const skinMat = getCachedMaterial(data.colors.skin);
             const shirtMat = getCachedMaterial(data.colors.shirt);
             const pantsMat = getCachedMaterial(data.colors.pants);
-            const head = new THREE.Mesh(pedGeometries.head, skinMat); head.position.y = 0.9; group.add(head);
-            const body = new THREE.Mesh(pedGeometries.body, shirtMat); body.position.y = 0; group.add(body);
-            const armL = new THREE.Mesh(pedGeometries.arm, shirtMat); armL.position.set(-0.55, 0.4, 0); group.add(armL);
-            const armR = new THREE.Mesh(pedGeometries.arm, shirtMat); armR.position.set(0.55, 0.4, 0); group.add(armR);
-            const legL = new THREE.Mesh(pedGeometries.leg, pantsMat); legL.position.set(-0.25, -0.6, 0); group.add(legL);
-            const legR = new THREE.Mesh(pedGeometries.leg, pantsMat); legR.position.set(0.25, -0.6, 0); group.add(legR);
+            const head = new THREE.Mesh(pedGeometries.head, skinMat); head.position.y = 0.9; head.castShadow = true; group.add(head);
+            const body = new THREE.Mesh(pedGeometries.body, shirtMat); body.position.y = 0; body.castShadow = true; group.add(body);
+            const armL = new THREE.Mesh(pedGeometries.arm, shirtMat); armL.position.set(-0.55, 0.4, 0); armL.castShadow = true; group.add(armL);
+            const armR = new THREE.Mesh(pedGeometries.arm, shirtMat); armR.position.set(0.55, 0.4, 0); armR.castShadow = true; group.add(armR);
+            const legL = new THREE.Mesh(pedGeometries.leg, pantsMat); legL.position.set(-0.25, -0.6, 0); legL.castShadow = true; group.add(legL);
+            const legR = new THREE.Mesh(pedGeometries.leg, pantsMat); legR.position.set(0.25, -0.6, 0); legR.castShadow = true; group.add(legR);
             
             if (data.isUser) {
                 const blackMat = getCachedMaterial(0x000000);
                 const robe = new THREE.Mesh(pedGeometries.robe, blackMat);
                 robe.position.y = -0.6;
+                robe.castShadow = true;
                 group.add(robe);
 
                 const cape = new THREE.Mesh(pedGeometries.cape, blackMat);
                 cape.position.set(0, -0.25, -0.35); // Lower on back
+                cape.castShadow = true;
                 group.add(cape);
 
                 const greyMat = getCachedMaterial(0x555555);
                 const turban = new THREE.Mesh(pedGeometries.turban, greyMat);
                 turban.position.y = 1.35; // Head is at 0.9, height 0.6 (top 1.2). Turban height 0.35/2 = 0.175. 1.2+0.175 = 1.375 approx.
+                turban.castShadow = true;
                 group.add(turban);
             }
 
