@@ -1330,7 +1330,7 @@
                 rotation: Math.atan2(player.position.x - pos.x, player.position.z - pos.z),
                 animPhase: 0,
                 mesh: null,
-                colors: { shirt: Math.random() * 0xffffff, pants: Math.random() * 0xffffff, skin: 0xffccaa },
+                colors: { shirt: 0x111111, pants: 0x000000, skin: 0xffccaa },
                 isUser: true
             };
 
@@ -1824,6 +1824,9 @@
             pedGeometries.arm.translate(0, -0.4, 0);
             pedGeometries.leg = new THREE.BoxGeometry(0.3, 1.2, 0.3);
             pedGeometries.leg.translate(0, -0.6, 0);
+            pedGeometries.robe = new THREE.BoxGeometry(0.9, 2.4, 0.6);
+            pedGeometries.cape = new THREE.BoxGeometry(1.0, 2.2, 0.1);
+            pedGeometries.turban = new THREE.BoxGeometry(0.68, 0.35, 0.68);
         }
         function createPedestrianData() {
             const angle = Math.random() * Math.PI * 2;
@@ -1854,7 +1857,29 @@
             const armR = new THREE.Mesh(pedGeometries.arm, shirtMat); armR.position.set(0.55, 0.4, 0); armR.castShadow = true; group.add(armR);
             const legL = new THREE.Mesh(pedGeometries.leg, pantsMat); legL.position.set(-0.25, -0.6, 0); legL.castShadow = true; group.add(legL);
             const legR = new THREE.Mesh(pedGeometries.leg, pantsMat); legR.position.set(0.25, -0.6, 0); legR.castShadow = true; group.add(legR);
-            group.userData = { limbs: { armL, armR, legL, legR } };
+            
+            if (data.isUser) {
+                const blackMat = getCachedMaterial(0x000000);
+                const robe = new THREE.Mesh(pedGeometries.robe, blackMat);
+                robe.position.y = -0.6;
+                robe.castShadow = true;
+                group.add(robe);
+
+                const cape = new THREE.Mesh(pedGeometries.cape, blackMat);
+                cape.position.set(0, -0.25, -0.35); // Lower on back
+                cape.castShadow = true;
+                group.add(cape);
+
+                const greyMat = getCachedMaterial(0x555555);
+                const turban = new THREE.Mesh(pedGeometries.turban, greyMat);
+                turban.position.y = 1.35; // Head is at 0.9, height 0.6 (top 1.2). Turban height 0.35/2 = 0.175. 1.2+0.175 = 1.375 approx.
+                turban.castShadow = true;
+                group.add(turban);
+            }
+
+            // Assign limbs to userData, preserving existing properties if any
+            if (!group.userData) group.userData = {};
+            group.userData.limbs = { armL, armR, legL, legR };
             return group;
         }
 
