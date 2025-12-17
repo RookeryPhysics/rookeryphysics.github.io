@@ -474,11 +474,41 @@
         body.hud-hidden #score-board,
         body.hud-hidden #time-btn,
         body.hud-hidden #share-btn,
+        body.hud-hidden #res-control,
         body.hud-hidden .instructions {
             opacity: 0;
             pointer-events: none;
         }
         
+        #res-control {
+            position: absolute;
+            top: 120px;
+            left: 20px;
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 8px;
+            border-radius: 10px;
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(4px);
+            pointer-events: auto;
+            transition: opacity 0.3s ease;
+        }
+        #res-label {
+            color: white;
+            font-size: 10px;
+            margin-bottom: 2px;
+            text-transform: uppercase;
+            font-weight: bold;
+            text-shadow: 0 1px 2px black;
+        }
+        #res-slider {
+            width: 60px;
+            cursor: pointer;
+        }
+
         #score-board, #time-btn, #share-btn, .instructions {
             transition: opacity 0.3s ease;
         }
@@ -510,6 +540,10 @@
         <div id="fps-counter">FPS: 60</div>
         <div id="score-board">Score: 0</div>
         <div id="time-btn">🌙</div>
+        <div id="res-control">
+            <span id="res-label">RES</span>
+            <input type="range" id="res-slider" min="0.1" max="1.5" step="0.05" value="1.0">
+        </div>
         <div id="share-btn">
             <img src="snap.png" alt="Snapchat Logo" width="54" height="54">
         </div>
@@ -731,10 +765,10 @@
 
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 800);
 
-            // Optimization: Limit pixel ratio to 0.21 for extreme retro low-res look.
+            // Optimization: Limit pixel ratio to 1.0 by default, adjustable by user.
             renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 0.21));
+            renderer.setPixelRatio(1.0);
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.BasicShadowMap;
             renderer.autoClear = false;
@@ -824,6 +858,15 @@
 
             timeBtn.addEventListener('mousedown', (e) => { e.stopPropagation(); toggleDayNight(); });
             timeBtn.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); toggleDayNight(); }, { passive: false });
+
+            const resSlider = document.getElementById('res-slider');
+            resSlider.addEventListener('input', (e) => {
+                const val = parseFloat(e.target.value);
+                renderer.setPixelRatio(val);
+            });
+            // Stop propagation to prevent driving while sliding
+            resSlider.addEventListener('mousedown', (e) => e.stopPropagation());
+            resSlider.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: false });
 
             collapseBtn.addEventListener('mousedown', (e) => { e.stopPropagation(); toggleHUD(); });
             collapseBtn.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); toggleHUD(); }, { passive: false });
