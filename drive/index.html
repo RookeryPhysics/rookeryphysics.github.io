@@ -781,9 +781,9 @@
             sunLight = new THREE.DirectionalLight(0xffffff, 0.8);
             sunLight.position.set(50, 100, 50);
             sunLight.castShadow = true;
-            // Optimization: Smaller shadow map texture
-            sunLight.shadow.mapSize.width = 512;
-            sunLight.shadow.mapSize.height = 512;
+            // Optimization: Adjustable shadow map texture
+            sunLight.shadow.mapSize.width = 1024;
+            sunLight.shadow.mapSize.height = 1024;
             sunLight.shadow.camera.near = 0.5;
             sunLight.shadow.camera.far = 300;
             const d = 100;
@@ -866,7 +866,7 @@
                 
                 // Also update shadow resolution
                 if (sunLight && sunLight.shadow) {
-                    const shadowSize = Math.round(512 * val);
+                    const shadowSize = Math.round(1024 * val);
                     sunLight.shadow.mapSize.width = shadowSize;
                     sunLight.shadow.mapSize.height = shadowSize;
                     if (sunLight.shadow.map) {
