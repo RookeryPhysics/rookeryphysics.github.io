@@ -630,6 +630,7 @@
         let lightSpotTexture;
 
         let lastChunkUpdatePos = new THREE.Vector3(99999, 99999, 99999);
+        let lastLightUpdatePos = new THREE.Vector3(99999, 99999, 99999); // Init for light throttling
 
         const pedGeometries = {};
         const buildingGeometries = {};
@@ -2940,7 +2941,8 @@
                 updateCamera();
                 updateHeadingIndicator();
                 updateTraffic(); // NPC update
-                if (sunLight) {
+                if (sunLight && player.position.distanceToSquared(lastLightUpdatePos) > 1600) { // 40^2 = 1600
+                    lastLightUpdatePos.copy(player.position);
                     sunLight.position.set(player.position.x + 50, 100, player.position.z + 50);
                     sunLight.target.position.copy(player.position);
                     sunLight.target.updateMatrixWorld();
