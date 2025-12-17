@@ -863,6 +863,7 @@
             resSlider.addEventListener('input', (e) => {
                 const val = parseFloat(e.target.value);
                 renderer.setPixelRatio(val);
+                if (modalRenderer) modalRenderer.setPixelRatio(val);
                 
                 // Also update shadow resolution
                 if (sunLight && sunLight.shadow) {
@@ -1092,7 +1093,11 @@
 
             const canvas = document.getElementById('modal-canvas');
             modalRenderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
-            modalRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 0.5));
+            
+            const resSlider = document.getElementById('res-slider');
+            const currentRes = resSlider ? parseFloat(resSlider.value) : 1.0;
+            modalRenderer.setPixelRatio(currentRes);
+            
             modalRenderer.setClearColor(0x000000, 0); // Transparent
 
             // Lights for modal
