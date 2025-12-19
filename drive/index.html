@@ -8,7 +8,8 @@
     <meta property="og:title" content="Play Roadst3r" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://rookeryphysics.github.io/drive" />
-    <meta property="og:description" content="Voxel driving game. Drift through a city and try to beat your top score." />
+    <meta property="og:description"
+        content="Voxel driving game. Drift through a city and try to beat your top score." />
     <meta property="og:image" content="https://rookeryphysics.github.io/drive/img.jpg" />
     <meta property="og:image:secure_url" content="https://rookeryphysics.github.io/drive/img.jpg" />
     <!-- Optional width/height; adjust if img.jpg differs -->
@@ -81,26 +82,26 @@
             z-index: 200;
             display: none;
             backdrop-filter: blur(5px);
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
             min-width: 200px;
             pointer-events: none;
         }
-        
+
         #game-over-modal h2 {
             margin: 0 0 10px 0;
             color: #ff3366;
             font-size: 24px;
             text-transform: uppercase;
             letter-spacing: 2px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
         }
-        
+
         #game-over-modal p {
             margin: 0;
             font-size: 20px;
             color: #ffd700;
             font-weight: bold;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
         }
 
         #game-over-modal.active {
@@ -109,8 +110,15 @@
         }
 
         @keyframes popIn {
-            from { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
-            to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            from {
+                transform: translate(-50%, -50%) scale(0.8);
+                opacity: 0;
+            }
+
+            to {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
         }
 
         /* --- Controls Layout --- */
@@ -266,8 +274,10 @@
             backdrop-filter: blur(10px);
             max-width: 400px;
             width: 80%;
-            max-height: 80%; /* Increased height */
-            overflow-y: auto; /* Added scroll for content overflow */
+            max-height: 80%;
+            /* Increased height */
+            overflow-y: auto;
+            /* Added scroll for content overflow */
             position: relative;
         }
 
@@ -310,10 +320,14 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 70vw; /* Reduced from 90vw */
-            max-width: 350px; /* Reduced from 500px */
-            height: 60vh; /* Reduced from 80vh */
-            max-height: 350px; /* Reduced from 500px */
+            width: 70vw;
+            /* Reduced from 90vw */
+            max-width: 350px;
+            /* Reduced from 500px */
+            height: 60vh;
+            /* Reduced from 80vh */
+            max-height: 350px;
+            /* Reduced from 500px */
             background: rgba(20, 20, 30, 0.95);
             padding: 20px;
             border-radius: 15px;
@@ -328,7 +342,7 @@
             transition: opacity 0.3s ease;
             overflow: hidden;
         }
-        
+
         #vehicle-modal.active {
             display: flex;
             opacity: 1;
@@ -344,7 +358,7 @@
             background: none;
             border: none;
             z-index: 101;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
         }
 
         #modal-canvas {
@@ -384,7 +398,8 @@
             transition: transform 0.2s, border-color 0.2s;
         }
 
-        .color-swatch:hover, .color-swatch.selected {
+        .color-swatch:hover,
+        .color-swatch.selected {
             transform: scale(1.2);
             border-color: white;
             box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
@@ -398,7 +413,7 @@
             text-align: center;
             color: white;
             pointer-events: none;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
         }
 
         #vehicle-name {
@@ -408,10 +423,81 @@
             letter-spacing: 2px;
             text-transform: uppercase;
         }
-        
+
         #vehicle-stats {
             font-size: 16px;
             opacity: 0.8;
+        }
+
+        /* --- Pedestrian Modal --- */
+        #pedestrian-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 70vw;
+            max-width: 350px;
+            height: 60vh;
+            max-height: 350px;
+            background: rgba(20, 20, 30, 0.95);
+            padding: 20px;
+            border-radius: 15px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            pointer-events: auto;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            overflow: hidden;
+        }
+
+        #pedestrian-modal.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        #pedestrian-modal-close {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 30px;
+            color: white;
+            cursor: pointer;
+            background: none;
+            border: none;
+            z-index: 101;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        #ped-modal-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 50;
+        }
+
+        #ped-color-palette {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            z-index: 102;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 20px;
+            backdrop-filter: blur(4px);
+            width: 80%;
+            max-width: 250px;
         }
 
         #score-board {
@@ -432,7 +518,8 @@
             left: 60px;
             color: #00ff00;
             font-family: monospace;
-            font-size: 12px; /* Made slightly smaller */
+            font-size: 12px;
+            /* Made slightly smaller */
             background: rgba(0, 0, 0, 0.8);
             padding: 4px 8px;
             border-radius: 4px;
@@ -479,7 +566,7 @@
             opacity: 0;
             pointer-events: none;
         }
-        
+
         #res-control {
             position: absolute;
             top: 120px;
@@ -496,6 +583,7 @@
             pointer-events: auto;
             transition: opacity 0.3s ease;
         }
+
         #res-label {
             color: white;
             font-size: 10px;
@@ -504,12 +592,16 @@
             font-weight: bold;
             text-shadow: 0 1px 2px black;
         }
+
         #res-slider {
             width: 60px;
             cursor: pointer;
         }
 
-        #score-board, #time-btn, #share-btn, .instructions {
+        #score-board,
+        #time-btn,
+        #share-btn,
+        .instructions {
             transition: opacity 0.3s ease;
         }
 
@@ -542,7 +634,7 @@
         <div id="time-btn">🌙</div>
         <div id="res-control">
             <span id="res-label">RES</span>
-            <input type="range" id="res-slider" min="0.1" max="1.5" step="0.05" value="1.0">
+            <input type="range" id="res-slider" min="0.1" max="1.5" step="0.05" value="1.5">
         </div>
         <div id="share-btn">
             <img src="snap.png" alt="Snapchat Logo" width="54" height="54">
@@ -559,14 +651,23 @@
     <div id="share-modal">
         <div id="share-modal-content">
             <button id="share-modal-close">×</button>
-            <h2 id="share-modal-title" style="margin:5px 0 10px; font-size:20px; color:#ffffff; text-align:center; font-weight:600; letter-spacing:0.5px;">Share the game!</h2>
-            <img src="qr.png" alt="QR Code" style="display:block; margin: 15px auto 25px; max-width: 150px; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.4);">
+            <h2 id="share-modal-title"
+                style="margin:5px 0 10px; font-size:20px; color:#ffffff; text-align:center; font-weight:600; letter-spacing:0.5px;">
+                Share the game!</h2>
+            <img src="qr.png" alt="QR Code"
+                style="display:block; margin: 15px auto 25px; max-width: 150px; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.4);">
             <div id="share-controls" style="display:flex; gap:10px; align-items:center; margin-top:25px;">
-                <input id="share-link" type="text" value="https://rookeryphysics.github.io/drive" readonly style="flex:1; padding:10px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.08); color:#ffffff; font-size:14px;">
-                <button id="copy-link-btn" style="padding:10px 14px; border-radius:8px; border:1px solid rgba(255,255,255,0.3); background:rgba(0,0,0,0.4); color:#ffffff; cursor:pointer;">Copy</button>
+                <input id="share-link" type="text" value="https://rookeryphysics.github.io/drive" readonly
+                    style="flex:1; padding:10px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.08); color:#ffffff; font-size:14px;">
+                <button id="copy-link-btn"
+                    style="padding:10px 14px; border-radius:8px; border:1px solid rgba(255,255,255,0.3); background:rgba(0,0,0,0.4); color:#ffffff; cursor:pointer;">Copy</button>
             </div>
-            <div class="share-separator" style="margin-top:24px; text-align:center; font-weight:600; color:#ffffff; font-size:12px; opacity:0.85; letter-spacing:2px;">OR</div>
-            <div class="snapchat-creative-kit-share" data-size="large" data-theme="dark" data-share-url="https://rookeryphysics.github.io/drive" data-share-text="Come drive this voxel racer!" style="display:flex; justify-content:center; align-items:center; margin:24px auto 0;"></div>
+            <div class="share-separator"
+                style="margin-top:24px; text-align:center; font-weight:600; color:#ffffff; font-size:12px; opacity:0.85; letter-spacing:2px;">
+                OR</div>
+            <div class="snapchat-creative-kit-share" data-size="large" data-theme="dark"
+                data-share-url="https://rookeryphysics.github.io/drive" data-share-text="Come drive this voxel racer!"
+                style="display:flex; justify-content:center; align-items:center; margin:24px auto 0;"></div>
         </div>
     </div>
 
@@ -574,6 +675,12 @@
         <button id="vehicle-modal-close">×</button>
         <canvas id="modal-canvas"></canvas>
         <div id="color-palette"></div>
+    </div>
+
+    <div id="pedestrian-modal">
+        <button id="pedestrian-modal-close">×</button>
+        <canvas id="ped-modal-canvas"></canvas>
+        <div id="ped-color-palette"></div>
     </div>
 
     <div id="game-over-modal">
@@ -605,6 +712,13 @@
         const vehicleModal = document.getElementById('vehicle-modal');
         const vehicleModalClose = document.getElementById('vehicle-modal-close');
 
+        let pedestrianModalOpen = false;
+        let pedModalScene, pedModalCamera, pedModalRenderer;
+        let pedModalPedGroup;
+        let tempPedColors = null;
+        const pedestrianModal = document.getElementById('pedestrian-modal');
+        const pedestrianModalClose = document.getElementById('pedestrian-modal-close');
+
         // Modal Car Dragging
         let isDraggingModalCar = false;
         let lastDragX = 0;
@@ -615,7 +729,7 @@
             hypercar: { body: 0xFFD700, spoiler: 0x111111 } // Default body gold, spoiler dark grey
         };
         const paintColors = [
-            0xFF0000, 0xFF7F00, 0xFFFF00, 0x7FFF00, 0x00FF00, 0x00FF7F, 
+            0xFF0000, 0xFF7F00, 0xFFFF00, 0x7FFF00, 0x00FF00, 0x00FF7F,
             0x00FFFF, 0x007FFF, 0x0000FF, 0x7F00FF, 0xFF00FF, 0xFF007F,
             0xFFFFFF, 0xCCCCCC, 0x888888, 0x444444, 0x000000, 0xFF1493,
             0x00008B, 0x5F9EA0, 0x4682B4, 0x20B2AA, 0x008080, 0x008B8B
@@ -632,10 +746,10 @@
         let ambientLight, sunLight;
 
         let isNightMode = false;
-        
+
         let controlMode = 'vehicle'; // 'vehicle' or 'pedestrian'
         let userPedestrian = null;
-        
+
         // ... (skipping lines to match context if needed, but I can just replace the block down to initVehicleModal if I'm careful, or just separate calls)
         // Actually, I will do separate replacements to be safe.
 
@@ -721,7 +835,7 @@
         // FPS
         let lastTime = performance.now();
         let frameCount = 0;
-        let globalFrame = 0; 
+        let globalFrame = 0;
 
         // Elements
         const stickKnob = document.getElementById('stick-knob');
@@ -736,10 +850,10 @@
         const shareLinkInput = document.getElementById('share-link');
         const copyLinkBtn = document.getElementById('copy-link-btn');
         const snapShareDiv = document.querySelector('.snapchat-creative-kit-share');
-                const snapFallbackLink = document.getElementById('snap-fallback-link');
-        
-                init();
-                animate();
+        const snapFallbackLink = document.getElementById('snap-fallback-link');
+
+        init();
+        animate();
         function init() {
             const container = document.getElementById('game-container');
 
@@ -765,10 +879,10 @@
 
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 800);
 
-            // Optimization: Limit pixel ratio to 1.0 by default, adjustable by user.
+            // Optimization: Limit pixel ratio to 1.5 by default (max), adjustable by user.
             renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(1.0);
+            renderer.setPixelRatio(1.5);
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.BasicShadowMap;
             renderer.autoClear = false;
@@ -782,8 +896,8 @@
             sunLight.position.set(50, 100, 50);
             sunLight.castShadow = true;
             // Optimization: Adjustable shadow map texture
-            sunLight.shadow.mapSize.width = 1024;
-            sunLight.shadow.mapSize.height = 1024;
+            sunLight.shadow.mapSize.width = 1536;
+            sunLight.shadow.mapSize.height = 1536;
             sunLight.shadow.camera.near = 0.5;
             sunLight.shadow.camera.far = 300;
             const d = 100;
@@ -828,13 +942,13 @@
 
             // Events
             window.addEventListener('resize', onWindowResize);
-            
+
             // Keyboard Controls
             document.addEventListener('keydown', (e) => {
                 if (moveTouchId !== null) return;
                 const k = e.key;
-                if (['w','a','s','d','ArrowUp','ArrowLeft','ArrowDown','ArrowRight'].includes(k) || 
-                    ['W','A','S','D'].includes(k)) {
+                if (['w', 'a', 's', 'd', 'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight'].includes(k) ||
+                    ['W', 'A', 'S', 'D'].includes(k)) {
                     keysPressed[k.toLowerCase()] = true;
                     if (k.startsWith('Arrow')) keysPressed[k] = true; // Handle Arrow keys specifically if needed or just normalize
                     updateMoveInputFromKeys();
@@ -842,8 +956,8 @@
             });
             document.addEventListener('keyup', (e) => {
                 const k = e.key;
-                if (['w','a','s','d','ArrowUp','ArrowLeft','ArrowDown','ArrowRight'].includes(k) || 
-                    ['W','A','S','D'].includes(k)) {
+                if (['w', 'a', 's', 'd', 'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight'].includes(k) ||
+                    ['W', 'A', 'S', 'D'].includes(k)) {
                     keysPressed[k.toLowerCase()] = false;
                     if (k.startsWith('Arrow')) keysPressed[k] = false;
                     if (moveTouchId === null) updateMoveInputFromKeys();
@@ -864,7 +978,7 @@
                 const val = parseFloat(e.target.value);
                 renderer.setPixelRatio(val);
                 if (modalRenderer) modalRenderer.setPixelRatio(val);
-                
+
                 // Also update shadow resolution
                 if (sunLight && sunLight.shadow) {
                     const shadowSize = Math.round(1024 * val);
@@ -914,6 +1028,9 @@
 
             initVehicleModal();
             initColorPalette();
+
+            initPedestrianModal();
+            initPedestrianColorPalette();
         }
 
         // --- Vehicle Modal Functions ---
@@ -925,10 +1042,10 @@
                 div.style.backgroundColor = '#' + new THREE.Color(col).getHexString();
                 div.dataset.color = col;
                 if (index === 0) div.classList.add('selected');
-                
+
                 div.addEventListener('click', (e) => {
                     // Prevent modal drag/close
-                    e.stopPropagation(); 
+                    e.stopPropagation();
                     document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
                     div.classList.add('selected');
                     selectedColor = parseInt(div.dataset.color);
@@ -1017,7 +1134,7 @@
             if (intersects.length > 0) {
                 const hit = intersects[0];
                 const mesh = hit.object;
-                
+
                 if (mesh.isMesh) {
                     if (mesh.userData.paintable === false || mesh.userData.partGroup === 'light' || mesh.userData.partGroup === 'non-paintable') return; // Non-paintable parts like wheels, lights, etc.
 
@@ -1040,22 +1157,22 @@
                         mesh.material.color.setHex(selectedColor);
                         vehicleColors[carType].spoiler = selectedColor; // Save spoiler color
                     }
-                    
+
                     // If emissive exists and is not black, update it too? 
                     // This part remains unchanged, typically emissive is for lights.
                     if (mesh.material.emissive && mesh.material.emissive.getHex() > 0) {
-                         // Only if it's not a light component we probably shouldn't touch emissive
-                         // For now just albedo.
+                        // Only if it's not a light component we probably shouldn't touch emissive
+                        // For now just albedo.
                     }
 
                     // Sync with Player Car
                     // Find the index of this mesh in the modal hierarchy
                     // The structure is modalCarGroup -> carGroup -> [Mesh1, Mesh2, ...]
                     // We need to find which child index of carGroup matches `mesh`.
-                    
+
                     const carGroup = modalCarGroup.children[0];
                     if (!carGroup) return;
-                    
+
                     let foundIndex = -1;
                     for (let i = 0; i < carGroup.children.length; i++) {
                         if (carGroup.children[i] === mesh) {
@@ -1093,11 +1210,11 @@
 
             const canvas = document.getElementById('modal-canvas');
             modalRenderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
-            
+
             const resSlider = document.getElementById('res-slider');
             const currentRes = resSlider ? parseFloat(resSlider.value) : 1.0;
             modalRenderer.setPixelRatio(currentRes);
-            
+
             modalRenderer.setClearColor(0x000000, 0); // Transparent
 
             // Lights for modal
@@ -1137,16 +1254,219 @@
                 addLights: true,
                 scale: 0.25
             });
-            
+
             // Rotate continuously in animate loop
             modalCarGroup.add(mesh);
-            
+
             // Pause game? Maybe just set flag to ignore inputs
         }
 
         function closeVehicleModal() {
             vehicleModal.classList.remove('active');
             vehicleModalOpen = false;
+        }
+
+        // --- Pedestrian Modal Functions ---
+        function initPedestrianColorPalette() {
+            const container = document.getElementById('ped-color-palette');
+            paintColors.forEach((col, index) => {
+                const div = document.createElement('div');
+                div.className = 'color-swatch';
+                div.style.backgroundColor = '#' + new THREE.Color(col).getHexString();
+                div.dataset.color = col;
+                if (index === 0) div.classList.add('selected');
+
+                div.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    document.querySelectorAll('#ped-color-palette .color-swatch').forEach(s => s.classList.remove('selected'));
+                    div.classList.add('selected');
+                    selectedColor = parseInt(div.dataset.color);
+                });
+                div.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    document.querySelectorAll('#ped-color-palette .color-swatch').forEach(s => s.classList.remove('selected'));
+                    div.classList.add('selected');
+                    selectedColor = parseInt(div.dataset.color);
+                }, { passive: false });
+
+                container.appendChild(div);
+            });
+        }
+
+        function initPedestrianModal() {
+            pedModalScene = new THREE.Scene();
+            pedModalCamera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+            pedModalCamera.position.set(0, 1.0, 5.0);
+            pedModalCamera.lookAt(0, 0, 0);
+
+            const canvas = document.getElementById('ped-modal-canvas');
+            pedModalRenderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+
+            const resSlider = document.getElementById('res-slider');
+            const currentRes = resSlider ? parseFloat(resSlider.value) : 1.0;
+            pedModalRenderer.setPixelRatio(currentRes);
+            pedModalRenderer.setClearColor(0x000000, 0);
+
+            const amb = new THREE.AmbientLight(0xffffff, 0.8);
+            pedModalScene.add(amb);
+            const dir = new THREE.DirectionalLight(0xffffff, 1.0);
+            dir.position.set(5, 10, 5);
+            pedModalScene.add(dir);
+
+            pedModalPedGroup = new THREE.Group();
+            pedModalScene.add(pedModalPedGroup);
+
+            // Canvas events
+            canvas.addEventListener('mousedown', onPedModalMouseDown, false);
+            canvas.addEventListener('mousemove', onPedModalMouseMove, false);
+            canvas.addEventListener('mouseup', onPedModalMouseUp, false);
+            canvas.addEventListener('mouseleave', onPedModalMouseUp, false);
+            canvas.addEventListener('touchstart', onPedModalTouchStart, { passive: false });
+            canvas.addEventListener('touchmove', onPedModalTouchMove, { passive: false });
+            canvas.addEventListener('touchend', onPedModalTouchEnd, { passive: false });
+
+            pedestrianModalClose.addEventListener('click', closePedestrianModal);
+            pedestrianModalClose.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); closePedestrianModal(); }, { passive: false });
+        }
+
+        function openPedestrianModal() {
+            if (!userPedestrian) return;
+            // Initialize temp colors from userPedestrian
+            tempPedColors = { ...userPedestrian.colors };
+
+            pedestrianModal.classList.add('active');
+            pedestrianModalOpen = true;
+
+            const width = pedestrianModal.clientWidth;
+            const height = pedestrianModal.clientHeight;
+            pedModalRenderer.setSize(width, height, false);
+            pedModalCamera.aspect = width / height;
+            pedModalCamera.updateProjectionMatrix();
+
+            while (pedModalPedGroup.children.length > 0) {
+                pedModalPedGroup.remove(pedModalPedGroup.children[0]);
+            }
+
+            // Create a copy of the user pedestrian for the modal using temp colors
+            const dummyData = { ...userPedestrian, colors: tempPedColors };
+            const mesh = buildPedestrianMesh(dummyData);
+            mesh.scale.set(0.6, 0.6, 0.6);
+            mesh.position.y = 0.8;
+            mesh.position.x = -0.6; // Shift left to make room for pants
+            pedModalPedGroup.add(mesh);
+
+            // Add a pants preview group since robe hides them
+            const pantsPreview = new THREE.Group();
+            const pLegL = new THREE.Mesh(pedGeometries.leg, getCachedMaterial(tempPedColors.pants));
+            pLegL.position.set(-0.25, 0, 0);
+            pLegL.userData.partGroup = 'pants';
+            const pLegR = new THREE.Mesh(pedGeometries.leg, getCachedMaterial(tempPedColors.pants));
+            pLegR.position.set(0.25, 0, 0);
+            pLegR.userData.partGroup = 'pants';
+            pantsPreview.add(pLegL, pLegR);
+            pantsPreview.position.set(0.8, 0.5, 0); // Positioned higher to the right
+            pantsPreview.scale.set(0.6, 0.6, 0.6);
+            pedModalPedGroup.add(pantsPreview);
+        }
+
+        function closePedestrianModal() {
+            if (userPedestrian && tempPedColors) {
+                // Apply temp colors to userPedestrian
+                userPedestrian.colors = { ...tempPedColors };
+
+                // Sync the world mesh
+                if (userPedestrian.mesh) {
+                    userPedestrian.mesh.traverse(child => {
+                        if (child.isMesh && child.userData.partGroup) {
+                            const group = child.userData.partGroup;
+                            if (userPedestrian.colors[group] !== undefined) {
+                                child.material = getCachedMaterial(userPedestrian.colors[group]);
+                            }
+                        }
+                    });
+                }
+                // Save to localStorage
+                localStorage.setItem('userPedestrianColors', JSON.stringify(userPedestrian.colors));
+            }
+
+            pedestrianModal.classList.remove('active');
+            pedestrianModalOpen = false;
+        }
+
+        function onPedModalMouseDown(event) {
+            isDraggingModalCar = true; // Reuse vehicle dragging state
+            isPaintClick = true;
+            lastDragX = event.clientX;
+        }
+
+        function onPedModalMouseMove(event) {
+            if (!isDraggingModalCar) return;
+            isPaintClick = false;
+            const deltaX = event.clientX - lastDragX;
+            pedModalPedGroup.rotation.y += deltaX * 0.015;
+            lastDragX = event.clientX;
+        }
+
+        function onPedModalMouseUp(event) {
+            if (isDraggingModalCar && isPaintClick) {
+                handlePedestrianPaintClick(event.clientX, event.clientY);
+            }
+            isDraggingModalCar = false;
+        }
+
+        function onPedModalTouchStart(event) {
+            isDraggingModalCar = true;
+            isPaintClick = true;
+            lastDragX = event.touches[0].clientX;
+            event.preventDefault();
+        }
+
+        function onPedModalTouchMove(event) {
+            if (!isDraggingModalCar) return;
+            const currentX = event.touches[0].clientX;
+            if (Math.abs(currentX - lastDragX) > 2) isPaintClick = false;
+            const deltaX = currentX - lastDragX;
+            pedModalPedGroup.rotation.y += deltaX * 0.015;
+            lastDragX = currentX;
+            event.preventDefault();
+        }
+
+        function onPedModalTouchEnd(event) {
+            if (isDraggingModalCar && isPaintClick) {
+                const t = event.changedTouches[0];
+                handlePedestrianPaintClick(t.clientX, t.clientY);
+            }
+            isDraggingModalCar = false;
+            event.preventDefault();
+        }
+
+        function handlePedestrianPaintClick(clientX, clientY) {
+            if (!pedModalRenderer || !pedModalCamera || !tempPedColors) return;
+            const rect = pedModalRenderer.domElement.getBoundingClientRect();
+            modalMouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+            modalMouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+            paintRaycaster.setFromCamera(modalMouse, pedModalCamera);
+            const intersects = paintRaycaster.intersectObjects(pedModalPedGroup.children, true);
+
+            if (intersects.length > 0) {
+                const mesh = intersects[0].object;
+                if (mesh.isMesh && mesh.userData.partGroup) {
+                    const group = mesh.userData.partGroup;
+
+                    // Update temp data independently
+                    if (tempPedColors[group] !== undefined) {
+                        tempPedColors[group] = selectedColor;
+                    }
+
+                    // Sync only modal mesh
+                    pedModalPedGroup.traverse(child => {
+                        if (child.isMesh && child.userData.partGroup === group) {
+                            child.material = getCachedMaterial(selectedColor);
+                        }
+                    });
+                }
+            }
         }
 
         // --- Share Modal Functions ---
@@ -1328,6 +1648,15 @@
             return intersects.length > 0;
         }
 
+        function checkPedestrianTap(clientX, clientY) {
+            if (controlMode !== 'pedestrian' || !userPedestrian || !userPedestrian.mesh) return false;
+            mouse.x = (clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(userPedestrian.mesh.children, true);
+            return intersects.length > 0;
+        }
+
         function handleVehicleTap() {
             if (controlMode === 'vehicle') {
                 velocity.set(0, 0, 0);
@@ -1335,6 +1664,10 @@
             } else if (controlMode === 'pedestrian') {
                 enterVehicle();
             }
+        }
+
+        function handlePedestrianTap() {
+            openPedestrianModal();
         }
 
         function enterVehicle() {
@@ -1350,7 +1683,7 @@
             // Remove from allPedestrians if we are recycling createPedestrianData
             // But createPedestrianData adds to allPedestrians array.
             // We should create a separate pedestrian for the user.
-            
+
             const angle = player.rotation.y + (Math.random() < 0.5 ? Math.PI / 2 : -Math.PI / 2);
             const dist = 5.0;
             const pos = new THREE.Vector3(
@@ -1360,13 +1693,17 @@
             );
 
             // Create user pedestrian data manually to avoid AI loop interference
+            const savedColors = localStorage.getItem('userPedestrianColors');
+            const defaultColors = { shirt: 0x111111, pants: 0x111111, skin: 0xffccaa, robe: 0x000000, hat: 0x555555 };
+            const colors = savedColors ? JSON.parse(savedColors) : defaultColors;
+
             userPedestrian = {
                 position: pos,
                 velocity: new THREE.Vector3(0, 0, 0),
                 rotation: Math.atan2(player.position.x - pos.x, player.position.z - pos.z),
                 animPhase: 0,
                 mesh: null,
-                colors: { shirt: 0x111111, pants: 0x000000, skin: 0xffccaa },
+                colors: colors,
                 isUser: true
             };
 
@@ -1893,29 +2230,35 @@
             const armR = new THREE.Mesh(pedGeometries.arm, shirtMat); armR.position.set(0.55, 0.4, 0); armR.castShadow = true; group.add(armR);
             const legL = new THREE.Mesh(pedGeometries.leg, pantsMat); legL.position.set(-0.25, -0.6, 0); legL.castShadow = true; group.add(legL);
             const legR = new THREE.Mesh(pedGeometries.leg, pantsMat); legR.position.set(0.25, -0.6, 0); legR.castShadow = true; group.add(legR);
-            
+
             if (data.isUser) {
-                const blackMat = getCachedMaterial(0x000000);
-                const robe = new THREE.Mesh(pedGeometries.robe, blackMat);
+                const robeMat = getCachedMaterial(data.colors.robe || 0x000000);
+                const robe = new THREE.Mesh(pedGeometries.robe, robeMat);
                 robe.position.y = -0.6;
                 robe.castShadow = true;
+                robe.userData.partGroup = "robe";
                 group.add(robe);
 
-                const cape = new THREE.Mesh(pedGeometries.cape, blackMat);
-                cape.position.set(0, -0.25, -0.35); // Lower on back
-                cape.castShadow = true;
-                group.add(cape);
 
-                const greyMat = getCachedMaterial(0x555555);
-                const turban = new THREE.Mesh(pedGeometries.turban, greyMat);
-                turban.position.y = 1.35; // Head is at 0.9, height 0.6 (top 1.2). Turban height 0.35/2 = 0.175. 1.2+0.175 = 1.375 approx.
+                const hatMat = getCachedMaterial(data.colors.hat || 0x555555);
+                const turban = new THREE.Mesh(pedGeometries.turban, hatMat);
+                turban.position.y = 1.35;
                 turban.castShadow = true;
+                turban.userData.partGroup = "hat";
                 group.add(turban);
             }
 
+            // Tag parts for painting
+            head.userData.partGroup = 'skin';
+            body.userData.partGroup = 'shirt';
+            armL.userData.partGroup = 'shirt';
+            armR.userData.partGroup = 'shirt';
+            legL.userData.partGroup = 'pants';
+            legR.userData.partGroup = 'pants';
+
             // Assign limbs to userData, preserving existing properties if any
             if (!group.userData) group.userData = {};
-            group.userData.limbs = { armL, armR, legL, legR };
+            group.userData.limbs = { head, body, armL, armR, legL, legR };
             return group;
         }
 
@@ -2062,27 +2405,27 @@
             const hlGeo = new THREE.BoxGeometry(0.5, 0.05, 0.2);
             const hlL = new THREE.Mesh(hlGeo, headLightMat); hlL.position.set(-0.9, 0.5, 2.3); hlL.rotation.y = 0.2; hlL.userData.partGroup = 'light'; group.add(hlL); // Mark as light
             const hlR = new THREE.Mesh(hlGeo, headLightMat); hlR.position.set(0.9, 0.5, 2.3); hlR.rotation.y = -0.2; hlR.userData.partGroup = 'light'; group.add(hlR); // Mark as light
-                        // Wheels
-                        const wheelGeo = new THREE.BoxGeometry(0.6, 0.8, 0.8); // Using box for style consistency with low poly
-                        const positions = [
-                            { x: -1.15, z: 1.6 }, { x: 1.15, z: 1.6 }, // Front
-                            { x: -1.25, z: -1.4 }, { x: 1.25, z: -1.4 } // Rear (Wider)
-                        ];
-            
-                        positions.forEach(pos => {
-                            const w = new THREE.Mesh(wheelGeo, secondaryMat);
-                            w.position.set(pos.x, 0.4, pos.z);
-                            w.userData = { paintable: false };
-                            group.add(w);
-            
-                            // Rim detail
-                            const rim = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, 0.5), rimMat);
-                            rim.position.set(pos.x + (pos.x > 0 ? 0.26 : -0.26), 0.4, pos.z);
-                            rim.userData = { paintable: false };
-                            group.add(rim);
-                        });
-            
-                        if (addLights) {
+            // Wheels
+            const wheelGeo = new THREE.BoxGeometry(0.6, 0.8, 0.8); // Using box for style consistency with low poly
+            const positions = [
+                { x: -1.15, z: 1.6 }, { x: 1.15, z: 1.6 }, // Front
+                { x: -1.25, z: -1.4 }, { x: 1.25, z: -1.4 } // Rear (Wider)
+            ];
+
+            positions.forEach(pos => {
+                const w = new THREE.Mesh(wheelGeo, secondaryMat);
+                w.position.set(pos.x, 0.4, pos.z);
+                w.userData = { paintable: false };
+                group.add(w);
+
+                // Rim detail
+                const rim = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, 0.5), rimMat);
+                rim.position.set(pos.x + (pos.x > 0 ? 0.26 : -0.26), 0.4, pos.z);
+                rim.userData = { paintable: false };
+                group.add(rim);
+            });
+
+            if (addLights) {
                 // Cooler blue-ish headlights for the black car
                 createHeadlights(group, 0.9, 0.5, 2.4, 12.0);
             }
@@ -2295,7 +2638,7 @@
                     openVehicleModal();
                     isHolding = false; // Consumed
                 }, HOLD_DURATION);
-                
+
                 // Add one-time mouseup listener
                 const onMouseUp = () => {
                     clearTimeout(holdTimer);
@@ -2306,6 +2649,11 @@
                     document.removeEventListener('mouseup', onMouseUp);
                 };
                 document.addEventListener('mouseup', onMouseUp);
+                return;
+            }
+
+            if (checkPedestrianTap(e.clientX, e.clientY)) {
+                handlePedestrianTap();
                 return;
             }
 
@@ -2358,6 +2706,10 @@
                     }, HOLD_DURATION);
                     continue;
                 }
+                if (checkPedestrianTap(t.clientX, t.clientY)) {
+                    handlePedestrianTap();
+                    continue;
+                }
                 if (checkVehicleTap(t.clientX, t.clientY)) {
                     handleVehicleTap();
                     continue;
@@ -2407,7 +2759,7 @@
 
         function onTouchEnd(e) {
             e.preventDefault();
-            
+
             // Check if we are releasing the miniature button
             if (isHolding || holdTimer) {
                 clearTimeout(holdTimer);
@@ -2490,7 +2842,7 @@
                 const dy = moveInput.y; // -1 is up (forward) usually in 2D screen coords, but let's check input logic
                 // In updateMoveInputFromKeys: 'w' (up) -> dy = -1. 's' (down) -> dy = 1.
                 // In joystick: up -> dy negative.
-                
+
                 // Movement relative to camera
                 // Camera looks at player.
                 // We want "Up" to be "Away from camera".
@@ -2501,10 +2853,10 @@
 
                 const camRight = new THREE.Vector3();
                 camRight.crossVectors(camDir, new THREE.Vector3(0, 1, 0));
-                
+
                 // dy is negative for UP/Forward input.
                 // dx is positive for Right input.
-                
+
                 const moveDir = new THREE.Vector3();
                 moveDir.addScaledVector(camDir, -dy); // -(-1) = +1 (Forward along camera view)
                 moveDir.addScaledVector(camRight, dx);
@@ -2512,14 +2864,14 @@
                 if (moveDir.lengthSq() > 0.01) {
                     moveDir.normalize();
                     userPedestrian.position.addScaledVector(moveDir, PED_SPEED);
-                    
+
                     // Only rotate to face movement if not moving backwards relative to camera
                     if (dy <= 0.2) {
                         const targetRot = Math.atan2(moveDir.x, moveDir.z);
                         let rotDiff = shortestAngleDist(userPedestrian.rotation, targetRot);
                         userPedestrian.rotation += rotDiff * turnSpeed;
                     }
-                    
+
                     // Animation: reverse if backing up
                     const animSpeed = dy > 0.2 ? -0.4 : 0.4;
                     userPedestrian.animPhase += animSpeed;
@@ -2535,13 +2887,13 @@
                     userPedestrian.mesh.userData.limbs.armL.rotation.x = 0;
                     userPedestrian.mesh.userData.limbs.armR.rotation.x = 0;
                 }
-                
+
                 userPedestrian.mesh.position.copy(userPedestrian.position);
                 userPedestrian.mesh.rotation.y = userPedestrian.rotation;
-                
+
                 // Keep player (car) updating slightly for collisions logic if we wanted, 
                 // but for now just stop it.
-                velocity.set(0, 0, 0); 
+                velocity.set(0, 0, 0);
                 return;
             }
 
@@ -2833,25 +3185,25 @@
                     p.material = new THREE.MeshBasicMaterial({ color: 0xdddddd, transparent: true, opacity: 0.4 });
                 }
             }
-            
+
             p.scale.setScalar(Math.random() * 0.4 + 0.2);
             p.position.copy(pos);
             p.position.x += (Math.random() - 0.5) * 0.5;
             p.position.z += (Math.random() - 0.5) * 0.5;
             p.rotation.set(0, 0, 0);
-            
+
             p.userData = {
                 type: 'smoke', life: 1.0,
                 velocity: new THREE.Vector3((Math.random() - 0.5) * 0.05, 0.05 + Math.random() * 0.05, (Math.random() - 0.5) * 0.05)
             };
-            
+
             scene.add(p);
             particles.push(p);
         }
 
         function explode(pos, color = 0xFF0000) {
             const mat = getDebrisMaterial(color);
-            
+
             for (let k = 0; k < 4; k++) { // Reduced count further
                 let p = getParticleFromPool();
                 if (!p) {
@@ -2878,7 +3230,7 @@
         function createSnow() {
             const positions = [];
             const velocities = [];
-            
+
             // Spawn locally around (0,0,0)
             for (let i = 0; i < snowCount; i++) {
                 positions.push(
@@ -2953,19 +3305,19 @@
             // We do NOT set snowSystem.position anymore, the shader handles world placement.
             // But Three.js frustum culling relies on bounding sphere.
             // Since particles can be anywhere around player, we must ensure it's not culled.
-            snowSystem.frustumCulled = false; 
-            
+            snowSystem.frustumCulled = false;
+
             scene.add(snowSystem);
         }
 
         function updateSnow() {
             if (!player || !snowSystem) return;
-            
+
             // Update Uniforms
             snowSystem.material.uniforms.uPlayerPos.value.copy(player.position);
             // Use globalFrame or a time accumulator. 
             // frameCount resets every second, so use performance.now
-            snowSystem.material.uniforms.uTime.value = performance.now() * 0.001; 
+            snowSystem.material.uniforms.uTime.value = performance.now() * 0.001;
         }
 
         function updateParticles() {
@@ -3049,7 +3401,7 @@
             globalFrame++;
             const nowTime = performance.now();
 
-            if (player && !vehicleModalOpen) {
+            if (player && !vehicleModalOpen && !pedestrianModalOpen) {
                 updatePhysics();
                 if (globalFrame % 15 === 0) updateChunks();
                 updatePedestrians();
@@ -3085,6 +3437,10 @@
                 // Render modal scene on top (using separate renderer)
                 modalRenderer.render(modalScene, modalCamera);
             }
+
+            if (pedestrianModalOpen) {
+                pedModalRenderer.render(pedModalScene, pedModalCamera);
+            }
         }
 
         function updateMoveInputFromKeys() {
@@ -3097,7 +3453,7 @@
 
             if (dx !== 0 || dy !== 0) {
                 // Normalize for consistent speed diagonally
-                const len = Math.sqrt(dx*dx + dy*dy);
+                const len = Math.sqrt(dx * dx + dy * dy);
                 dx /= len;
                 dy /= len;
             }
@@ -3118,7 +3474,7 @@
             uiCamera.updateProjectionMatrix();
             updateMiniaturePosition();
             renderer.setSize(window.innerWidth, window.innerHeight);
-            
+
             if (vehicleModalOpen && modalRenderer) {
                 const width = vehicleModal.clientWidth;
                 const height = vehicleModal.clientHeight;
@@ -3126,47 +3482,55 @@
                 modalCamera.aspect = width / height;
                 modalCamera.updateProjectionMatrix();
             }
+
+            if (pedestrianModalOpen && pedModalRenderer) {
+                const width = pedestrianModal.clientWidth;
+                const height = pedestrianModal.clientHeight;
+                pedModalRenderer.setSize(width, height, false);
+                pedModalCamera.aspect = width / height;
+                pedModalCamera.updateProjectionMatrix();
+            }
         }
     </script>
     <script>
         // Load the SDK asynchronously
         (function (d, s, id) {
-        var js,
-        sjs = d.getElementsByTagName(s)[0];
-        if (d.getElementById(id)) return;
-        js = d.createElement(s);
-        js.id = id;
-        js.src = 'https://sdk.snapkit.com/js/v1/create.js';
-        sjs.parentNode.insertBefore(js, sjs);
-        
-        // Add touch event handling for mobile after SDK loads
-        js.onload = function() {
-            setTimeout(function() {
-                const snapButton = document.querySelector('.snapchat-creative-kit-share');
-                if (snapButton) {
-                    // Enable touch events for mobile
-                    snapButton.style.touchAction = 'auto';
-                    snapButton.style.webkitTouchCallout = 'default';
-                    
-                    // Add explicit touch handler that delegates to click
-                    snapButton.addEventListener('touchstart', function(e) {
-                        e.stopPropagation();
-                    }, { passive: true });
-                    
-                    snapButton.addEventListener('touchend', function(e) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        // Find and trigger the actual SDK button inside
-                        const sdkButton = snapButton.querySelector('button, a, [role="button"]');
-                        if (sdkButton) {
-                            sdkButton.click();
-                        } else {
-                            snapButton.click();
-                        }
-                    }, { passive: false });
-                }
-            }, 500); // Wait for SDK to inject the button
-        };
+            var js,
+                sjs = d.getElementsByTagName(s)[0];
+            if (d.getElementById(id)) return;
+            js = d.createElement(s);
+            js.id = id;
+            js.src = 'https://sdk.snapkit.com/js/v1/create.js';
+            sjs.parentNode.insertBefore(js, sjs);
+
+            // Add touch event handling for mobile after SDK loads
+            js.onload = function () {
+                setTimeout(function () {
+                    const snapButton = document.querySelector('.snapchat-creative-kit-share');
+                    if (snapButton) {
+                        // Enable touch events for mobile
+                        snapButton.style.touchAction = 'auto';
+                        snapButton.style.webkitTouchCallout = 'default';
+
+                        // Add explicit touch handler that delegates to click
+                        snapButton.addEventListener('touchstart', function (e) {
+                            e.stopPropagation();
+                        }, { passive: true });
+
+                        snapButton.addEventListener('touchend', function (e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            // Find and trigger the actual SDK button inside
+                            const sdkButton = snapButton.querySelector('button, a, [role="button"]');
+                            if (sdkButton) {
+                                sdkButton.click();
+                            } else {
+                                snapButton.click();
+                            }
+                        }, { passive: false });
+                    }
+                }, 500); // Wait for SDK to inject the button
+            };
         })(document, 'script', 'snapkit-creative-kit-sdk');
     </script>
 </body>
