@@ -1467,6 +1467,7 @@
                 const mesh = intersects[0].object;
                 if (mesh.isMesh && mesh.userData.partGroup) {
                     const group = mesh.userData.partGroup;
+                    if (group === 'skin') return; // Cannot edit skin color
 
                     // Update temp data independently
                     if (tempPedColors[group] !== undefined) {
