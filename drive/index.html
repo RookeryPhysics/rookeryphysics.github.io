@@ -776,9 +776,18 @@
         const smokeBaseGeometry = new THREE.BoxGeometry(1, 1, 1);
         const debrisMaterialCache = new Map(); // Cache materials for debris
 
+        // Mobile Detection for Performance Optimization
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+
+        // Frame skip settings for mobile optimization
+        const PEDESTRIAN_UPDATE_INTERVAL = isMobile ? 2 : 1;  // Update every N frames
+        const TRAFFIC_UPDATE_INTERVAL = isMobile ? 2 : 1;
+        const COLLISION_CHECK_INTERVAL = isMobile ? 2 : 1;
+        const PARTICLE_UPDATE_INTERVAL = isMobile ? 2 : 1;
+
         // Snow System
         let snowSystem, snowGeo;
-        const snowCount = 600; // Reduced from 2500 for performance
+        const snowCount = isMobile ? 300 : 600; // Reduced further on mobile
         const snowRange = 320;
 
         // Cache materials to reduce draw calls
@@ -941,8 +950,9 @@
             updateMiniatureModel();
             createSnow();
 
-            // Entities - Reduced count slightly for mobile optimization
-            for (let i = 0; i < 100; i++) {
+            // Entities - Reduced count for mobile optimization
+            const pedestrianCount = isMobile ? 60 : 100;
+            for (let i = 0; i < pedestrianCount; i++) {
                 createPedestrianData();
             }
 
@@ -3205,8 +3215,9 @@
 
         function explode(pos, color = 0xFF0000) {
             const mat = getDebrisMaterial(color);
+            const debrisCount = isMobile ? 2 : 4; // Reduced on mobile
 
-            for (let k = 0; k < 4; k++) { // Reduced count further
+            for (let k = 0; k < debrisCount; k++) {
                 let p = getParticleFromPool();
                 if (!p) {
                     p = new THREE.Mesh(debrisGeometry, mat);
@@ -3406,13 +3417,14 @@
             if (player && !vehicleModalOpen && !pedestrianModalOpen) {
                 updatePhysics();
                 if (globalFrame % 15 === 0) updateChunks();
-                updatePedestrians();
-                checkCollisions();
-                updateParticles();
+                // Mobile optimization: skip frames for heavy operations
+                if (globalFrame % PEDESTRIAN_UPDATE_INTERVAL === 0) updatePedestrians();
+                if (globalFrame % COLLISION_CHECK_INTERVAL === 0) checkCollisions();
+                if (globalFrame % PARTICLE_UPDATE_INTERVAL === 0) updateParticles();
                 updateSnow();
                 updateCamera();
                 updateHeadingIndicator();
-                updateTraffic(nowTime); // Pass time
+                if (globalFrame % TRAFFIC_UPDATE_INTERVAL === 0) updateTraffic(nowTime); // Pass time
                 if (sunLight && player.position.distanceToSquared(lastLightUpdatePos) > 1600) { // 40^2 = 1600
                     lastLightUpdatePos.copy(player.position);
                     sunLight.position.set(player.position.x + 50, 100, player.position.z + 50);
