@@ -724,9 +724,16 @@
         let lastDragX = 0;
         // Paint Logic
         let selectedColor = 0xff0000; // Default red
-        const vehicleColors = {
-            supercar: { body: 0xffffff, spoiler: 0x000000 }, // Default body white, spoiler black
-            hypercar: { body: 0xFFD700, spoiler: 0x111111 } // Default body gold, spoiler dark grey
+        // Persistent Colors Initialization
+        const savedVehicleColors = localStorage.getItem('vehicleColors');
+        const vehicleColors = savedVehicleColors ? JSON.parse(savedVehicleColors) : {
+            supercar: { body: 0xffffff, spoiler: 0x000000 },
+            hypercar: { body: 0xFFD700, spoiler: 0x111111 }
+        };
+
+        const savedPedColors = localStorage.getItem('pedestrianColors');
+        const defaultPedestrianColors = savedPedColors ? JSON.parse(savedPedColors) : {
+            shirt: 0x111111, pants: 0x111111, skin: 0xffccaa, robe: 0x000000, hat: 0x555555
         };
         const paintColors = [
             0xFF0000, 0xFF7F00, 0xFFFF00, 0x7FFF00, 0x00FF00, 0x00FF7F,
@@ -1214,6 +1221,8 @@
                         }
                     }
                 }
+                // Persistent save
+                localStorage.setItem('vehicleColors', JSON.stringify(vehicleColors));
             }
         }
 
@@ -1402,6 +1411,10 @@
                         }
                     });
                 }
+                // Persistent save
+                localStorage.setItem('pedestrianColors', JSON.stringify(userPedestrian.colors));
+                // Update global default for next spawn
+                Object.assign(defaultPedestrianColors, userPedestrian.colors);
             }
 
             pedestrianModal.classList.remove('active');
@@ -1708,7 +1721,7 @@
             );
 
             // Create user pedestrian data manually to avoid AI loop interference
-            const colors = { shirt: 0x111111, pants: 0x111111, skin: 0xffccaa, robe: 0x000000, hat: 0x555555 };
+            const colors = { ...defaultPedestrianColors };
 
             userPedestrian = {
                 position: pos,
