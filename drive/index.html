@@ -598,6 +598,36 @@
             cursor: pointer;
         }
 
+        .modal-reset-btn {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            z-index: 101;
+            backdrop-filter: blur(4px);
+            transition: background 0.2s, transform 0.1s;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-reset-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .modal-reset-btn:active {
+            transform: scale(0.95);
+        }
+
         #score-board,
         #time-btn,
         #share-btn,
@@ -673,12 +703,14 @@
 
     <div id="vehicle-modal">
         <button id="vehicle-modal-close">×</button>
+        <button id="vehicle-reset-btn" class="modal-reset-btn">Reset</button>
         <canvas id="modal-canvas"></canvas>
         <div id="color-palette"></div>
     </div>
 
     <div id="pedestrian-modal">
         <button id="pedestrian-modal-close">×</button>
+        <button id="pedestrian-reset-btn" class="modal-reset-btn">Reset</button>
         <canvas id="ped-modal-canvas"></canvas>
         <div id="ped-color-palette"></div>
     </div>
@@ -1048,6 +1080,15 @@
 
             vehicleModalClose.addEventListener('click', closeVehicleModal);
             vehicleModalClose.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); closeVehicleModal(); }, { passive: false });
+
+            // Reset Buttons
+            const vReset = document.getElementById('vehicle-reset-btn');
+            vReset.addEventListener('mousedown', (e) => { e.stopPropagation(); resetVehicleDefaults(); });
+            vReset.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); resetVehicleDefaults(); }, { passive: false });
+
+            const pReset = document.getElementById('pedestrian-reset-btn');
+            pReset.addEventListener('mousedown', (e) => { e.stopPropagation(); resetPedestrianDefaults(); });
+            pReset.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); resetPedestrianDefaults(); }, { passive: false });
 
             initVehicleModal();
             initColorPalette();
@@ -1494,6 +1535,40 @@
                         }
                     });
                 }
+            }
+        }
+
+        function resetVehicleDefaults() {
+            const defaults = {
+                supercar: { body: 0xffffff, spoiler: 0x000000 },
+                hypercar: { body: 0xFFD700, spoiler: 0x111111 }
+            };
+            Object.assign(vehicleColors, JSON.parse(JSON.stringify(defaults)));
+            localStorage.setItem('vehicleColors', JSON.stringify(vehicleColors));
+
+            // Re-open/refresh the modal content to rebuild from new colors
+            openVehicleModal();
+            // Sync with player car
+            loadCarModel(carType);
+        }
+
+        function resetPedestrianDefaults() {
+            const defaults = {
+                shirt: 0x111111, pants: 0x111111, skin: 0xffccaa, robe: 0x000000, hat: 0x555555
+            };
+
+            if (tempPedColors) {
+                Object.assign(tempPedColors, JSON.parse(JSON.stringify(defaults)));
+
+                // Sync only modal mesh immediately to show visual change
+                pedModalPedGroup.traverse(child => {
+                    if (child.isMesh && child.userData.partGroup) {
+                        const group = child.userData.partGroup;
+                        if (tempPedColors[group] !== undefined) {
+                            child.material = getCachedMaterial(tempPedColors[group]);
+                        }
+                    }
+                });
             }
         }
 
