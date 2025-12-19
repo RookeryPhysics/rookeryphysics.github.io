@@ -1386,8 +1386,6 @@
                         }
                     });
                 }
-                // Save to localStorage
-                localStorage.setItem('userPedestrianColors', JSON.stringify(userPedestrian.colors));
             }
 
             pedestrianModal.classList.remove('active');
@@ -1693,9 +1691,7 @@
             );
 
             // Create user pedestrian data manually to avoid AI loop interference
-            const savedColors = localStorage.getItem('userPedestrianColors');
-            const defaultColors = { shirt: 0x111111, pants: 0x111111, skin: 0xffccaa, robe: 0x000000, hat: 0x555555 };
-            const colors = savedColors ? JSON.parse(savedColors) : defaultColors;
+            const colors = { shirt: 0x111111, pants: 0x111111, skin: 0xffccaa, robe: 0x000000, hat: 0x555555 };
 
             userPedestrian = {
                 position: pos,
