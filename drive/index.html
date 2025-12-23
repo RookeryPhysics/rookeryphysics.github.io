@@ -2020,12 +2020,20 @@
             scene.remove(group);
         }
 
+        function getActivePosition() {
+            if (controlMode === 'pedestrian' && userPedestrian) {
+                return userPedestrian.position;
+            }
+            return player.position;
+        }
+
         function updateChunks() {
             if (!player) return;
-            if (player.position.distanceToSquared(lastChunkUpdatePos) < 2500) return;
-            lastChunkUpdatePos.copy(player.position);
-            const px = player.position.x;
-            const pz = player.position.z;
+            const centerPos = getActivePosition();
+            if (centerPos.distanceToSquared(lastChunkUpdatePos) < 2500) return;
+            lastChunkUpdatePos.copy(centerPos);
+            const px = centerPos.x;
+            const pz = centerPos.z;
             const currentChunkX = Math.floor(px / CHUNK_SIZE + 0.5);
             const currentChunkZ = Math.floor(pz / CHUNK_SIZE + 0.5);
 
@@ -2630,7 +2638,7 @@
 
         function updateTraffic(time) {
             if (!player) return;
-            const pPos = player.position;
+            const pPos = getActivePosition();
 
             for (let i = trafficVehicles.length - 1; i >= 0; i--) {
                 const car = trafficVehicles[i];
@@ -3115,6 +3123,16 @@
 
         function resetGame() {
             isGameOver = false;
+
+            // Ensure we return to vehicle mode
+            if (controlMode === 'pedestrian') {
+                if (userPedestrian && userPedestrian.mesh) {
+                    scene.remove(userPedestrian.mesh);
+                }
+                userPedestrian = null;
+                controlMode = 'vehicle';
+            }
+
             player.visible = true;
             player.position.set(initialSpawnX, PLAYER_BASE_Y, initialSpawnZ);
             player.rotation.set(0, 0, 0);
@@ -3123,6 +3141,9 @@
             score = 0;
             scoreElement.innerText = "Score: 0";
             centerCamera();
+
+            // Force chunk update just in case
+            lastChunkUpdatePos.set(99999, 99999, 99999);
 
             // Hide Game Over Modal
             const modal = document.getElementById('game-over-modal');
@@ -3416,7 +3437,7 @@
             if (!player || !snowSystem) return;
 
             // Update Uniforms
-            snowSystem.material.uniforms.uPlayerPos.value.copy(player.position);
+            snowSystem.material.uniforms.uPlayerPos.value.copy(getActivePosition());
             // Use globalFrame or a time accumulator. 
             // frameCount resets every second, so use performance.now
             snowSystem.material.uniforms.uTime.value = performance.now() * 0.001;
@@ -3514,10 +3535,12 @@
                 updateCamera();
                 updateHeadingIndicator();
                 if (globalFrame % TRAFFIC_UPDATE_INTERVAL === 0) updateTraffic(nowTime); // Pass time
-                if (sunLight && player.position.distanceToSquared(lastLightUpdatePos) > 1600) { // 40^2 = 1600
-                    lastLightUpdatePos.copy(player.position);
-                    sunLight.position.set(player.position.x + 50, 100, player.position.z + 50);
-                    sunLight.target.position.copy(player.position);
+
+                const activePos = getActivePosition();
+                if (sunLight && activePos.distanceToSquared(lastLightUpdatePos) > 1600) { // 40^2 = 1600
+                    lastLightUpdatePos.copy(activePos);
+                    sunLight.position.set(activePos.x + 50, 100, activePos.z + 50);
+                    sunLight.target.position.copy(activePos);
                     sunLight.target.updateMatrixWorld();
                 }
                 if (!isAirborne) {
