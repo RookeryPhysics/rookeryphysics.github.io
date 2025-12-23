@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,16 +9,46 @@
     <style>
         /* Subtle float animation */
         @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
-            100% { transform: translateY(0px); }
+            0% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-20px);
+            }
+
+            100% {
+                transform: translateY(0px);
+            }
         }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         .animate-float {
             animation: float 3s ease-in-out infinite;
         }
+
+        .animate-fade-in-up {
+            animation: fadeInUp 0.8s ease-out forwards;
+            animation-delay: 0.5s;
+            /* Delay to appear after main content */
+            opacity: 0;
+            /* Start hidden */
+        }
     </style>
 </head>
-<body class="bg-slate-900 min-h-screen flex items-center justify-center p-6 overflow-hidden">
+
+<body class="bg-slate-900 min-h-screen flex flex-col items-center justify-center p-6 overflow-y-auto relative">
 
     <!-- Background Glow -->
     <div class="absolute w-64 h-64 bg-purple-600/20 rounded-full blur-3xl -z-10"></div>
@@ -25,31 +56,169 @@
     <!-- The Icon -->
     <div class="animate-float flex flex-col items-center">
         <!-- Text floating above -->
-        <h1 class="text-4xl font-bold text-white mb-6 tracking-widest drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">Roadst3r</h1>
+        <h1 class="text-4xl font-bold text-white mb-6 tracking-widest drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
+            Roadst3r</h1>
 
         <!-- Wrapped in anchor tag for linking -->
         <a href="https://rookeryphysics.github.io/drive" target="_blank" rel="noopener noreferrer" class="block group">
             <!-- Phone Frame -->
-            <div class="relative bg-black border-[12px] border-gray-800 rounded-3xl h-80 w-40 shadow-xl overflow-hidden ring-1 ring-white/10 cursor-pointer transition-all duration-500 ease-out group-hover:scale-105 group-hover:shadow-[0_0_50px_rgba(139,92,246,0.8)] group-hover:border-gray-700 group-hover:ring-2 group-hover:ring-purple-400/60">
-                
+            <div
+                class="relative bg-black border-[12px] border-gray-800 rounded-3xl h-80 w-40 shadow-xl overflow-hidden ring-1 ring-white/10 cursor-pointer transition-all duration-500 ease-out group-hover:scale-105 group-hover:shadow-[0_0_50px_rgba(139,92,246,0.8)] group-hover:border-gray-700 group-hover:ring-2 group-hover:ring-purple-400/60">
+
                 <!-- Image inserted here -->
-                <img 
-                    src="https://rookeryphysics.github.io/icon.jpg" 
-                    alt="Phone Screen Wallpaper" 
-                    class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110 group-hover:rotate-1"
-                >
+                <img src="https://rookeryphysics.github.io/icon.jpg" alt="Phone Screen Wallpaper"
+                    class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110 group-hover:rotate-1">
 
                 <!-- Simple Glass Reflection Overlay -->
-                <div class="absolute inset-0 bg-gradient-to-tr from-white/20 via-transparent to-transparent opacity-50 pointer-events-none"></div>
+                <div
+                    class="absolute inset-0 bg-gradient-to-tr from-white/20 via-transparent to-transparent opacity-50 pointer-events-none">
+                </div>
 
                 <!-- Futuristic Hover Overlay -->
-                <div class="absolute inset-0 bg-gradient-to-b from-purple-500/0 via-purple-500/10 to-purple-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+                <div
+                    class="absolute inset-0 bg-gradient-to-b from-purple-500/0 via-purple-500/10 to-purple-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
+                </div>
             </div>
         </a>
-        
+
         <!-- Small Shadow below -->
         <div class="mt-8 mx-auto w-24 h-4 bg-black/50 blur-md rounded-full"></div>
     </div>
 
+    <!-- Donate Section -->
+    <div class="mt-12 flex flex-col items-center gap-6 z-10 animate-fade-in-up">
+        <div class="flex gap-6 items-center opacity-80 hover:opacity-100 transition-opacity duration-300">
+
+            <!-- Ethereum -->
+            <img src="https://upload.wikimedia.org/wikipedia/commons/6/6f/Ethereum-icon-purple.svg"
+                alt="Ethereum partial" class="h-8 w-8 hover:scale-110 transition-transform cursor-pointer"
+                title="Ethereum">
+            <!-- USDC -->
+            <img src="https://upload.wikimedia.org/wikipedia/commons/4/4a/Circle_USDC_Logo.svg" alt="USDC partial"
+                class="h-8 w-8 hover:scale-110 transition-transform cursor-pointer" title="USDC">
+        </div>
+        <button onclick="document.getElementById('donate-modal').classList.remove('hidden')"
+            class="group relative px-8 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-full font-bold tracking-wide shadow-lg hover:shadow-purple-500/40 transition-all transform hover:-translate-y-1">
+            <span class="relative z-10">Donate Now</span>
+            <div
+                class="absolute inset-0 rounded-full bg-white/20 blur-md opacity-0 group-hover:opacity-100 transition-opacity">
+            </div>
+        </button>
+    </div>
+
+    <!-- Donation Modal -->
+    <div id="donate-modal"
+        class="fixed inset-0 bg-black/80 hidden flex items-center justify-center z-50 backdrop-blur-sm transition-all p-4"
+        onclick="if(event.target === this) this.classList.add('hidden')">
+        <div
+            class="bg-slate-800 p-6 md:p-8 rounded-3xl border border-white/10 shadow-2xl max-w-md w-full relative transform scale-100 transition-transform">
+            <button onclick="document.getElementById('donate-modal').classList.add('hidden')"
+                class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-white mb-2">Support the Devs</h2>
+
+            </div>
+
+            <div class="space-y-4">
+
+
+                <!-- ETH -->
+                <div
+                    class="group bg-slate-900/50 p-4 rounded-xl border border-white/5 hover:border-purple-500/30 transition-colors">
+                    <div class="flex items-center justify-between mb-1">
+                        <div class="flex items-center gap-2">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/6/6f/Ethereum-icon-purple.svg"
+                                class="h-5 w-5" alt="ETH">
+                            <span class="text-purple-400 font-bold">Ethereum</span>
+                        </div>
+                        <div
+                            class="flex items-center gap-1.5 text-[10px] text-blue-300/80 bg-blue-500/10 border border-blue-500/20 px-2 py-1 rounded-full uppercase tracking-wider">
+                            <img src="https://avatars.githubusercontent.com/u/108554348?v=4"
+                                class="h-3 w-3 rounded-full" alt="Base Network">
+                            <span>Base Network</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between gap-2 bg-black/20 p-2 rounded-lg mt-2">
+                        <div
+                            class="font-mono text-xs text-gray-300 break-all select-all hover:text-white cursor-text flex-1 min-w-0">
+                            0x8e1271662ccfB51128A9cb8f025129F90059E317
+                        </div>
+                        <button onclick="copyToClipboard('0x8e1271662ccfB51128A9cb8f025129F90059E317', this)"
+                            class="text-gray-400 hover:text-white p-1.5 rounded-md hover:bg-white/10 transition-all active:scale-95 shrink-0"
+                            title="Copy Address">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 012-2v-8a2 2 0 01-2-2h-8a2 2 0 01-2 2v8a2 2 0 012 2z" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- USDC -->
+                <div
+                    class="group bg-slate-900/50 p-4 rounded-xl border border-white/5 hover:border-blue-500/30 transition-colors">
+                    <div class="flex items-center justify-between mb-1">
+                        <div class="flex items-center gap-2">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/4/4a/Circle_USDC_Logo.svg"
+                                class="h-5 w-5" alt="USDC">
+                            <span class="text-blue-500 font-bold">USDC</span>
+                        </div>
+                        <div
+                            class="flex items-center gap-1.5 text-[10px] text-blue-300/80 bg-blue-500/10 border border-blue-500/20 px-2 py-1 rounded-full uppercase tracking-wider">
+                            <img src="https://avatars.githubusercontent.com/u/108554348?v=4"
+                                class="h-3 w-3 rounded-full" alt="Base Network">
+                            <span>Base Network</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between gap-2 bg-black/20 p-2 rounded-lg mt-2">
+                        <div
+                            class="font-mono text-xs text-gray-300 break-all select-all hover:text-white cursor-text flex-1 min-w-0">
+                            0x7B5aF83eb141aA07C2E4365e70F3bFFb7FF51788
+                        </div>
+                        <button onclick="copyToClipboard('0x7B5aF83eb141aA07C2E4365e70F3bFFb7FF51788', this)"
+                            class="text-gray-400 hover:text-white p-1.5 rounded-md hover:bg-white/10 transition-all active:scale-95 shrink-0"
+                            title="Copy Address">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 012-2v-8a2 2 0 01-2-2h-8a2 2 0 01-2 2v8a2 2 0 012 2z" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 text-center">
+                <p class="text-[10px] text-gray-600 uppercase tracking-wider">Thank you for your generosity</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function copyToClipboard(text, btn) {
+            navigator.clipboard.writeText(text).then(() => {
+                const originalIcon = btn.innerHTML;
+
+                // Change to checkmark
+                btn.innerHTML = `
+                    <svg class="h-4 w-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                `;
+
+                // Revert after 2 seconds
+                setTimeout(() => {
+                    btn.innerHTML = originalIcon;
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+            });
+        }
+    </script>
 </body>
+
 </html>
