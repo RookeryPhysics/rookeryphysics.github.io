@@ -807,6 +807,7 @@
         const allPedestrians = [];
         const activeObstacles = [];
         const particles = [];
+        const floatingTexts = [];
         const particlePool = []; // Object Pool
         const trafficVehicles = []; // NPC Cars
 
@@ -847,7 +848,12 @@
         let lineTileGeometry, lineMaterial;
         let grassGeometry, grassMaterial;
         let poleGeometry, poleMaterial, lightBulbGeometry, lightBulbMaterial;
+
         let lightSpotGeometry, lightSpotMaterial;
+
+        // Voxel Score Resources
+        const voxelScoreGeometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+        const voxelScoreMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
 
         const CULL_DIST = 220;
         const CULL_DIST_SQ = CULL_DIST * CULL_DIST;
@@ -858,7 +864,7 @@
         const ROAD_WIDTH_THRESHOLD = 0.25;
 
         // Physics
-        let PLAYER_SPEED = 0.15;
+        let ACCELERATION = 0.15;
         const FRICTION = 0.97;
         const BRAKING_FRICTION = 0.90;
         let MAX_SPEED = 2.0;
@@ -2711,9 +2717,9 @@
             });
 
             if (type === 'supercar') {
-                PLAYER_SPEED = 0.16; MAX_SPEED = 3.4;
+                ACCELERATION = 0.16; MAX_SPEED = 3.4;
             } else if (type === 'hypercar') {
-                PLAYER_SPEED = 0.14; MAX_SPEED = 3.1;
+                ACCELERATION = 0.14; MAX_SPEED = 3.1;
             }
             currentCarMesh.traverse((child) => {
                 if (child.isMesh) {
@@ -3033,8 +3039,8 @@
                     // Add red brake light effect? (Optional visual polish)
                 }
 
-                const accelX = Math.sin(rotation) * throttle * PLAYER_SPEED;
-                const accelZ = Math.cos(rotation) * throttle * PLAYER_SPEED;
+                const accelX = Math.sin(rotation) * throttle * ACCELERATION;
+                const accelZ = Math.cos(rotation) * throttle * ACCELERATION;
                 velocity.x += accelX;
                 velocity.z += accelZ;
             }
@@ -3238,6 +3244,7 @@
                 const distSq = dx * dx + dz * dz;
                 if (distSq < collisionThresholdSq) {
                     explode(pedData.position);
+                    spawnVoxelScore(pedData.position);
                     pedData.position.x = player.position.x + (Math.random() - 0.5) * 300;
                     pedData.position.z = player.position.z + (Math.random() - 0.5) * 300;
                     if (pedData.isActive) {
@@ -3467,6 +3474,75 @@
             }
         }
 
+        function spawnVoxelScore(pos) {
+            const group = new THREE.Group();
+
+            // Construct "+1" out of voxels
+            // Offsets for "+"
+            const plusOffsets = [
+                { x: 0, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }, { x: 1, y: 0 }, { x: -1, y: 0 }
+            ];
+            // Offsets for "1" (shifted right by ~3 units)
+            const oneOffsets = [
+                { x: 3, y: 1 }, { x: 3, y: 0 }, { x: 3, y: -1 }, { x: 2.2, y: 0.8 }
+            ];
+
+            const allOffsets = [...plusOffsets, ...oneOffsets];
+
+            allOffsets.forEach(off => {
+                const mesh = new THREE.Mesh(voxelScoreGeometry, voxelScoreMaterial);
+                mesh.position.set(off.x * 0.5, off.y * 0.5, 0); // Scale spacing by voxel size
+                group.add(mesh);
+            });
+
+            group.position.copy(pos);
+            group.position.y += 3.0;
+            // Face camera roughly or just face same as car?
+            // Let's face the camera initially
+            group.lookAt(camera.position);
+            // But we want it upright, lookAt might tilt x/z. 
+            // Simple billboarding Y rotation:
+            const camPos = new THREE.Vector3();
+            camera.getWorldPosition(camPos);
+            const angle = Math.atan2(camPos.x - pos.x, camPos.z - pos.z);
+            group.rotation.set(0, angle, 0);
+
+            scene.add(group);
+
+            const dx = pos.x - player.position.x;
+            const dz = pos.z - player.position.z;
+            const length = Math.sqrt(dx * dx + dz * dz) || 1;
+
+            const velocity = new THREE.Vector3(dx / length * 0.3, 0.4, dz / length * 0.3);
+
+            floatingTexts.push({
+                type: 'voxel',
+                mesh: group,
+                velocity: velocity,
+                life: 1.0
+            });
+        }
+
+        function updateFloatingTexts() {
+            for (let i = floatingTexts.length - 1; i >= 0; i--) {
+                const ft = floatingTexts[i];
+                ft.mesh.position.add(ft.velocity);
+                ft.velocity.y -= 0.015; // Gravity
+
+                ft.life -= 0.015;
+
+                // Scale out animation
+                const scale = Math.max(0, ft.life);
+                ft.mesh.scale.setScalar(scale);
+
+                if (ft.life <= 0) {
+                    scene.remove(ft.mesh);
+                    // Geometries are shared, do not dispose
+                    floatingTexts.splice(i, 1);
+                }
+            }
+        }
+
         function updateCamera() {
             let targetObj = player;
             if (controlMode === 'pedestrian' && userPedestrian) {
@@ -3531,6 +3607,7 @@
                 if (globalFrame % PEDESTRIAN_UPDATE_INTERVAL === 0) updatePedestrians();
                 if (globalFrame % COLLISION_CHECK_INTERVAL === 0) checkCollisions();
                 if (globalFrame % PARTICLE_UPDATE_INTERVAL === 0) updateParticles();
+                updateFloatingTexts();
                 updateSnow();
                 updateCamera();
                 updateHeadingIndicator();
