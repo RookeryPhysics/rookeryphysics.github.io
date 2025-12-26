@@ -1906,7 +1906,7 @@
             const dummyData = { isUser: true, ...(userPedestrian || {}), colors: tempPedColors };
             const mesh = buildPedestrianMesh(dummyData);
             mesh.scale.set(0.45, 0.45, 0.45);
-            mesh.position.y = 0.2;
+            mesh.position.y = 0.4;
             mesh.position.x = -0.6; // Shift left to make room for pants
             pedModalPedGroup.add(mesh);
 
@@ -1919,7 +1919,7 @@
             pLegR.position.set(0.25, 0, 0);
             pLegR.userData.partGroup = 'pants';
             pantsPreview.add(pLegL, pLegR);
-            pantsPreview.position.set(0.8, 0.5, 0); // Positioned higher to the right
+            pantsPreview.position.set(0.8, 0.2, 0); // Positioned higher to the right
             pantsPreview.scale.set(0.45, 0.45, 0.45);
             pedModalPedGroup.add(pantsPreview);
         }
