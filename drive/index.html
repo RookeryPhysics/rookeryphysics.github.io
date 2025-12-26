@@ -808,8 +808,10 @@
         const activeObstacles = [];
         const particles = [];
         const floatingTexts = [];
-        const particlePool = []; // Object Pool
-        const trafficVehicles = []; // NPC Cars
+        const particlePool = []; // Object Pool for particles
+        const pedestrianPool = []; // Object Pool for pedestrians
+        const trafficPool = []; // Object Pool for traffic cars
+        const trafficVehicles = []; // Active Traffic NPCs
 
         // Reusable Geometries for Particles
         const debrisGeometry = new THREE.BoxGeometry(0.8, 0.8, 0.8);
@@ -945,7 +947,7 @@
             // Optimization: Limit pixel ratio to 1.5 by default (max), adjustable by user.
             renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(1.5);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.BasicShadowMap;
             renderer.autoClear = false;
@@ -959,8 +961,8 @@
             sunLight.position.set(50, 100, 50);
             sunLight.castShadow = true;
             // Optimization: Adjustable shadow map texture
-            sunLight.shadow.mapSize.width = 1536;
-            sunLight.shadow.mapSize.height = 1536;
+            sunLight.shadow.mapSize.width = 1024;
+            sunLight.shadow.mapSize.height = 1024;
             sunLight.shadow.camera.near = 0.5;
             sunLight.shadow.camera.far = 300;
             const d = 100;
@@ -2599,6 +2601,26 @@
             return group;
         }
 
+        /**
+         * Update the material colors of an existing pedestrian mesh from the pool.
+         * @param {THREE.Group} mesh 
+         * @param {Object} colors 
+         */
+        function applyPedestrianColors(mesh, colors) {
+            const skinMat = getCachedMaterial(colors.skin);
+            const shirtMat = getCachedMaterial(colors.shirt);
+            const pantsMat = getCachedMaterial(colors.pants);
+
+            if (mesh.userData.limbs) {
+                mesh.userData.limbs.head.material = skinMat;
+                mesh.userData.limbs.body.material = shirtMat;
+                mesh.userData.limbs.armL.material = shirtMat;
+                mesh.userData.limbs.armR.material = shirtMat;
+                mesh.userData.limbs.legL.material = pantsMat;
+                mesh.userData.limbs.legR.material = pantsMat;
+            }
+        }
+
         // --- CAR MODELS & HEADLIGHTS ---
 
         /**
@@ -2878,15 +2900,29 @@
             const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffaa00, 0xaa00aa, 0xffffff, 0x222222];
             const col = colors[Math.floor(Math.random() * colors.length)];
 
-            // Reuse supercar mesh but scaled down slightly
-            const mesh = createVehicle({
-                type: 'supercar',
-                color: col,
-                addLights: true,
-                scale: 1.6
-            });
+            let mesh;
+            if (trafficPool.length > 0) {
+                mesh = trafficPool.pop();
+                mesh.visible = true;
+                // Update color of existing mesh
+                mesh.traverse(child => {
+                    if (child.isMesh && (child.userData.partGroup === 'body' || child.userData.partGroup === 'spoiler')) {
+                        child.material.color.setHex(col);
+                    }
+                    // Spoiler usually matches body or default black for traffic? 
+                    // createVehicle uses defaults. Let's assume traffic cars have body=spoiler or defaults.
+                    // For logic simplicity, just update body.
+                });
+            } else {
+                // Reuse supercar mesh but scaled down slightly
+                mesh = createVehicle({
+                    type: 'supercar',
+                    color: col,
+                    addLights: true,
+                    scale: 1.6
+                });
+            }
             mesh.position.set(x, y, z);
-
             scene.add(mesh);
 
             trafficVehicles.push({
@@ -2935,6 +2971,7 @@
                 const dz = mesh.position.z - pPos.z;
                 if (dx * dx + dz * dz > CULL_DIST_SQ * 1.5) { // Slightly larger cull dist to prevent pop-in on edges
                     scene.remove(mesh);
+                    trafficPool.push(mesh);
                     trafficVehicles.splice(i, 1);
                 }
             }
@@ -3478,7 +3515,10 @@
             if (modal) modal.classList.remove('active');
 
             // Clear traffic
-            trafficVehicles.forEach(c => scene.remove(c.mesh));
+            trafficVehicles.forEach(c => {
+                scene.remove(c.mesh);
+                trafficPool.push(c.mesh);
+            });
             trafficVehicles.length = 0;
 
             const instr = document.querySelector('.instructions');
@@ -3524,8 +3564,15 @@
 
                 if (distSq < CULL_DIST_SQ) {
                     if (!ped.mesh) {
-                        ped.mesh = buildPedestrianMesh(ped);
-                        ped.mesh.rotation.y = ped.rotation;
+                        // Get from pool or create new
+                        if (pedestrianPool.length > 0) {
+                            ped.mesh = pedestrianPool.pop();
+                            ped.mesh.visible = true;
+                            // Apply colors to reused mesh
+                            applyPedestrianColors(ped.mesh, ped.colors);
+                        } else {
+                            ped.mesh = buildPedestrianMesh(ped);
+                        }
                     }
                     if (!ped.isActive) {
                         scene.add(ped.mesh);
@@ -3554,6 +3601,11 @@
                     if (ped.isActive) {
                         scene.remove(ped.mesh);
                         ped.isActive = false;
+                        // Return to pool
+                        if (ped.mesh) {
+                            pedestrianPool.push(ped.mesh);
+                            ped.mesh = null;
+                        }
                     }
                 }
             }
