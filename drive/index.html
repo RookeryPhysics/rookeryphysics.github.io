@@ -548,6 +548,18 @@
             opacity: 1;
         }
 
+        /* Allow normal interactions inside modal on mobile */
+        #pedestrian-modal,
+        #pedestrian-modal * {
+            touch-action: auto;
+        }
+
+        /* Re-enable text selection for the username input */
+        #player-username {
+            user-select: text;
+            -webkit-user-select: text;
+        }
+
         #pedestrian-modal-close {
             position: absolute;
             top: 10px;
