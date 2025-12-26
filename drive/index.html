@@ -805,8 +805,33 @@
             <button id="settings-modal-close">×</button>
             <h2>Settings</h2>
             <div id="time-btn">🌙</div>
+            <div id="miniature-row" style="display:flex; justify-content:center; gap:20px; margin: 10px auto;">
+                <div id="miniature-container-supercar"
+                    style="width: 120px; height: 120px; position: relative; cursor: pointer; border: 2px solid rgba(255,255,255,0.2); border-radius: 50%; background: rgba(255,255,255,0.05);">
+                    <canvas id="settings-miniature-canvas-supercar"
+                        style="width: 100%; height: 100%; display: block; border-radius: 50%;"></canvas>
+                </div>
+                <div id="miniature-container-hypercar"
+                    style="width: 120px; height: 120px; position: relative; cursor: pointer; border: 2px solid rgba(255,255,255,0.2); border-radius: 50%; background: rgba(255,255,255,0.05);">
+                    <canvas id="settings-miniature-canvas-hypercar"
+                        style="width: 100%; height: 100%; display: block; border-radius: 50%;"></canvas>
+                </div>
+            </div>
+            <button id="settings-pimp-btn" style="
+                margin-top: 15px;
+                margin-bottom: 15px;
+                padding: 10px 20px;
+                font-size: 16px;
+                color: #fff;
+                background: #444;
+                border: 2px solid #666;
+                border-radius: 8px;
+                cursor: pointer;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+            ">Modify Vehicle</button>
             <div id="res-control">
-                <span id="res-label">RESOLUTION SCALING</span>
+                <span id="res-label">RESOLUTION</span>
                 <input type="range" id="res-slider" min="0.1" max="1.5" step="0.05" value="1.5">
             </div>
         </div>
@@ -826,8 +851,9 @@
     <script>
         // --- Variables ---
         let scene, camera, renderer;
-        let uiScene, uiCamera;
-        let miniatureGroup;
+        let settingsMiniatureSceneSuper, settingsMiniatureCameraSuper, settingsMiniatureRendererSuper;
+        let settingsMiniatureSceneHyper, settingsMiniatureCameraHyper, settingsMiniatureRendererHyper;
+        let miniatureGroupSuper, miniatureGroupHyper;
         let raycaster = new THREE.Raycaster();
         let mouse = new THREE.Vector2();
 
@@ -1072,20 +1098,59 @@
             sunLight.shadow.camera.bottom = -d;
             scene.add(sunLight);
 
-            // UI Scene
-            uiScene = new THREE.Scene();
-            uiCamera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
-            uiCamera.position.z = 10;
+            // Settings Miniature Scene - Supercar
+            settingsMiniatureSceneSuper = new THREE.Scene();
+            settingsMiniatureCameraSuper = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
+            settingsMiniatureCameraSuper.position.set(0, 0, 3.5);
 
-            const uiAmb = new THREE.AmbientLight(0xffffff, 0.8);
-            uiScene.add(uiAmb);
-            const uiDir = new THREE.DirectionalLight(0xffffff, 1.0);
-            uiDir.position.set(2, 5, 5);
-            uiScene.add(uiDir);
+            const canvasSuper = document.getElementById('settings-miniature-canvas-supercar');
+            settingsMiniatureRendererSuper = new THREE.WebGLRenderer({ canvas: canvasSuper, alpha: true, antialias: true });
+            settingsMiniatureRendererSuper.setSize(120, 120);
+            settingsMiniatureRendererSuper.setPixelRatio(window.devicePixelRatio);
+            settingsMiniatureRendererSuper.setClearColor(0x000000, 0);
 
-            miniatureGroup = new THREE.Group();
-            updateMiniaturePosition();
-            uiScene.add(miniatureGroup);
+            const ambSuper = new THREE.AmbientLight(0xffffff, 0.8);
+            settingsMiniatureSceneSuper.add(ambSuper);
+            const dirSuper = new THREE.DirectionalLight(0xffffff, 1.0);
+            dirSuper.position.set(2, 5, 5);
+            settingsMiniatureSceneSuper.add(dirSuper);
+
+            miniatureGroupSuper = new THREE.Group();
+            settingsMiniatureSceneSuper.add(miniatureGroupSuper);
+
+            // Settings Miniature Scene - Hypercar
+            settingsMiniatureSceneHyper = new THREE.Scene();
+            settingsMiniatureCameraHyper = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
+            settingsMiniatureCameraHyper.position.set(0, 0, 3.5);
+
+            const canvasHyper = document.getElementById('settings-miniature-canvas-hypercar');
+            settingsMiniatureRendererHyper = new THREE.WebGLRenderer({ canvas: canvasHyper, alpha: true, antialias: true });
+            settingsMiniatureRendererHyper.setSize(120, 120);
+            settingsMiniatureRendererHyper.setPixelRatio(window.devicePixelRatio);
+            settingsMiniatureRendererHyper.setClearColor(0x000000, 0);
+
+            const ambHyper = new THREE.AmbientLight(0xffffff, 0.8);
+            settingsMiniatureSceneHyper.add(ambHyper);
+            const dirHyper = new THREE.DirectionalLight(0xffffff, 1.0);
+            dirHyper.position.set(2, 5, 5);
+            settingsMiniatureSceneHyper.add(dirHyper);
+
+            miniatureGroupHyper = new THREE.Group();
+            settingsMiniatureSceneHyper.add(miniatureGroupHyper);
+
+            // Miniature click handling
+            const btnSuper = document.getElementById('miniature-container-supercar');
+            if (btnSuper) {
+                btnSuper.addEventListener('click', (e) => { e.stopPropagation(); selectCarType('supercar'); });
+                btnSuper.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); selectCarType('supercar'); }, { passive: false });
+            }
+            const btnHyper = document.getElementById('miniature-container-hypercar');
+            if (btnHyper) {
+                btnHyper.addEventListener('click', (e) => { e.stopPropagation(); selectCarType('hypercar'); });
+                btnHyper.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); selectCarType('hypercar'); }, { passive: false });
+            }
+
+
 
             // PRE-GENERATE TEXTURES (Speed Boost)
             dayGroundTexture = createGroundTexture(false);
@@ -1097,7 +1162,7 @@
 
             // Player Init
             createPlayer();
-            updateMiniatureModel();
+            updateMiniatureModels();
             createSnow();
 
             // Entities - Reduced count for mobile optimization
@@ -1136,13 +1201,30 @@
 
 
 
-            timeBtn.addEventListener('mousedown', (e) => { e.stopPropagation(); toggleDayNight(); });
-            timeBtn.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); toggleDayNight(); }, { passive: false });
+            timeBtn.addEventListener('mousedown', (e) => { e.stopPropagation(); toggleDayNight(); updateMiniatureModels(); });
+            timeBtn.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); toggleDayNight(); updateMiniatureModels(); }, { passive: false });
+
+            // Pimp My Ride Button
+            const pimpBtn = document.getElementById('settings-pimp-btn');
+            if (pimpBtn) {
+                pimpBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    closeSettingsModal();
+                    openVehicleModal();
+                });
+                pimpBtn.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeSettingsModal();
+                    openVehicleModal();
+                }, { passive: false });
+            }
 
             const resSlider = document.getElementById('res-slider');
             resSlider.addEventListener('input', (e) => {
                 const val = parseFloat(e.target.value);
-                renderer.setPixelRatio(val);
+                document.getElementById('res-label').innerText = "RESOLUTION: " + val.toFixed(2);
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, val));
                 if (modalRenderer) modalRenderer.setPixelRatio(val);
 
                 // Also update shadow resolution
@@ -1156,6 +1238,8 @@
                     }
                 }
             });
+
+
             // Stop propagation to prevent driving while sliding
             resSlider.addEventListener('mousedown', (e) => e.stopPropagation());
             resSlider.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: false });
@@ -1844,9 +1928,6 @@
             document.body.classList.toggle('hud-hidden');
             const isHidden = document.body.classList.contains('hud-hidden');
             collapseBtn.innerText = isHidden ? '▶' : '◀';
-            if (miniatureGroup) {
-                miniatureGroup.visible = !isHidden;
-            }
         }
 
         /**
@@ -1934,35 +2015,62 @@
         /**
          * Update the position of the 2D miniature UI element based on camera projection.
          */
-        function updateMiniaturePosition() {
-            const aspect = window.innerWidth / window.innerHeight;
-            const visibleHeight = 2 * Math.tan((uiCamera.fov * Math.PI / 180) / 2) * uiCamera.position.z;
-            const visibleWidth = visibleHeight * aspect;
-            const unitsPerPixel = visibleHeight / window.innerHeight;
-            const yOffsetPixels = 140;
-            const xOffsetPixels = 70;
-            const x = visibleWidth / 2 - (xOffsetPixels * unitsPerPixel);
-            const y = -visibleHeight / 2 + (yOffsetPixels * unitsPerPixel);
-            miniatureGroup.position.set(x, y, 0);
-        }
+
 
         /**
          * Update the 3D model shown in the miniature UI.
          */
-        function updateMiniatureModel() {
-            while (miniatureGroup.children.length > 0) {
-                miniatureGroup.remove(miniatureGroup.children[0]);
+        function updateMiniatureModels() {
+            // Update Supercar Miniature
+            while (miniatureGroupSuper.children.length > 0) {
+                miniatureGroupSuper.remove(miniatureGroupSuper.children[0]);
             }
-            const targetType = (carType === 'supercar') ? 'hypercar' : 'supercar';
-            const mesh = createVehicle({
-                type: targetType,
-                color: vehicleColors[targetType],
+            const meshSuper = createVehicle({
+                type: 'supercar',
+                color: vehicleColors['supercar'],
                 addLights: false,
-                scale: targetType === 'supercar' ? 0.4 : 0.35
+                scale: 0.4
             });
-            mesh.position.y = -0.5;
-            miniatureGroup.add(mesh);
-            miniatureGroup.userData.targetType = targetType;
+            meshSuper.position.y = -0.5;
+            miniatureGroupSuper.add(meshSuper);
+
+            // Update Hypercar Miniature
+            while (miniatureGroupHyper.children.length > 0) {
+                miniatureGroupHyper.remove(miniatureGroupHyper.children[0]);
+            }
+            const meshHyper = createVehicle({
+                type: 'hypercar',
+                color: vehicleColors['hypercar'],
+                addLights: false,
+                scale: 0.35
+            });
+            meshHyper.position.y = -0.5;
+            miniatureGroupHyper.add(meshHyper);
+
+            // Highlight selected
+            const btnSuper = document.getElementById('miniature-container-supercar');
+            const btnHyper = document.getElementById('miniature-container-hypercar');
+            if (btnSuper && btnHyper) {
+                if (carType === 'supercar') {
+                    btnSuper.style.borderColor = 'rgba(255, 255, 255, 1.0)';
+                    btnSuper.style.boxShadow = '0 0 15px rgba(255, 255, 255, 0.5)';
+                    btnHyper.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                    btnHyper.style.boxShadow = 'none';
+                } else {
+                    btnHyper.style.borderColor = 'rgba(255, 255, 255, 1.0)';
+                    btnHyper.style.boxShadow = '0 0 15px rgba(255, 255, 255, 0.5)';
+                    btnSuper.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                    btnSuper.style.boxShadow = 'none';
+                }
+            }
+        }
+
+        function selectCarType(type) {
+            if (carType === type) return;
+            loadCarModel(type);
+            velocity.y = 0.5;
+            isAirborne = true;
+            updateMiniatureModels();
         }
 
         /**
@@ -1971,18 +2079,7 @@
          * @param {number} clientY 
          * @returns {boolean}
          */
-        function checkMiniatureClick(clientX, clientY) {
-            if (!miniatureGroup.visible) return false;
-            mouse.x = (clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(clientY / window.innerHeight) * 2 + 1;
-            raycaster.setFromCamera(mouse, uiCamera);
-            const intersects = raycaster.intersectObjects(miniatureGroup.children, true);
-            if (intersects.length > 0) {
-                // toggleCarModel(); // Moved to input handlers
-                return true;
-            }
-            return false;
-        }
+
 
         /**
          * Check if a click intersects with the player vehicle.
@@ -3165,10 +3262,7 @@
          */
         function toggleCarModel() {
             const newType = (carType === 'supercar') ? 'hypercar' : 'supercar';
-            loadCarModel(newType);
-            velocity.y = 0.5;
-            isAirborne = true;
-            updateMiniatureModel();
+            selectCarType(newType);
         }
 
         /**
@@ -3187,26 +3281,18 @@
          * @param {MouseEvent} e 
          */
         function onMouseDown(e) {
-            // Check miniature hold/click
-            if (checkMiniatureClick(e.clientX, e.clientY)) {
-                isHolding = true;
-                holdTimer = setTimeout(() => {
-                    openVehicleModal();
-                    isHolding = false; // Consumed
-                }, HOLD_DURATION);
-
-                // Add one-time mouseup listener
-                const onMouseUp = () => {
-                    clearTimeout(holdTimer);
-                    if (isHolding) {
-                        toggleCarModel();
-                        isHolding = false;
-                    }
-                    document.removeEventListener('mouseup', onMouseUp);
-                };
-                document.addEventListener('mouseup', onMouseUp);
-                return;
+            // Check if clicking inside settings modal or any active modal
+            if (settingsModal.classList.contains('active')) {
+                const rect = settingsModal.querySelector('.modal-content').getBoundingClientRect();
+                if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
+                    return; // Ignore clicks inside modal
+                }
+            } else if (vehicleModalOpen || pedestrianModalOpen) {
+                return; // Usually these have their own overlay handling, but safety first
             }
+
+            // Check miniature hold/click
+
 
             if (checkPedestrianTap(e.clientX, e.clientY)) {
                 handlePedestrianTap();
@@ -3258,14 +3344,7 @@
             lastTapTime = now;
             for (let i = 0; i < touches.length; i++) {
                 const t = touches[i];
-                if (checkMiniatureClick(t.clientX, t.clientY)) {
-                    isHolding = true;
-                    holdTimer = setTimeout(() => {
-                        openVehicleModal();
-                        isHolding = false;
-                    }, HOLD_DURATION);
-                    continue;
-                }
+
                 if (checkPedestrianTap(t.clientX, t.clientY)) {
                     handlePedestrianTap();
                     continue;
@@ -3282,6 +3361,12 @@
                     openShareModal();
                     continue;
                 }
+
+                // Check for modal interactions to prevent pass-through
+                if (settingsModal.classList.contains('active') || vehicleModalOpen || pedestrianModalOpen || shareModal.classList.contains('active')) {
+                    continue; // Skip game logic touches if modals are open
+                }
+
                 const dx = t.clientX - zoneCenter.x;
                 const dy = t.clientY - zoneCenter.y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
@@ -4183,9 +4268,13 @@
             }
             renderer.clear();
             renderer.render(scene, camera);
-            if (miniatureGroup) miniatureGroup.rotation.y += 0.02;
-            renderer.clearDepth();
-            renderer.render(uiScene, uiCamera);
+            if (miniatureGroupSuper) miniatureGroupSuper.rotation.y += 0.02;
+            if (miniatureGroupHyper) miniatureGroupHyper.rotation.y += 0.02;
+
+            if (settingsModal.classList.contains('active')) {
+                if (settingsMiniatureRendererSuper) settingsMiniatureRendererSuper.render(settingsMiniatureSceneSuper, settingsMiniatureCameraSuper);
+                if (settingsMiniatureRendererHyper) settingsMiniatureRendererHyper.render(settingsMiniatureSceneHyper, settingsMiniatureCameraHyper);
+            }
 
             if (vehicleModalOpen) {
                 // if (modalCarGroup) modalCarGroup.rotation.y += 0.01; // Removed automatic rotation
@@ -4231,9 +4320,7 @@
         function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
-            uiCamera.aspect = window.innerWidth / window.innerHeight;
-            uiCamera.updateProjectionMatrix();
-            updateMiniaturePosition();
+            // uiCamera removed
             renderer.setSize(window.innerWidth, window.innerHeight);
 
             if (vehicleModalOpen && modalRenderer) {
