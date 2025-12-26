@@ -914,6 +914,9 @@
 
         init();
         animate();
+        /**
+         * Initialize the game scene, renderer, listeners, and entities.
+         */
         function init() {
             const container = document.getElementById('game-container');
 
@@ -1104,6 +1107,9 @@
         }
 
         // --- Vehicle Modal Functions ---
+        /**
+         * Initialize the vehicle color palette UI.
+         */
         function initColorPalette() {
             const container = document.getElementById('color-palette');
             paintColors.forEach((col, index) => {
@@ -1133,6 +1139,10 @@
             });
         }
 
+        /**
+         * Handle mouse down on the vehicle modal canvas.
+         * @param {MouseEvent} event 
+         */
         function onModalMouseDown(event) {
             if (event.target === vehicleModalClose) return;
             isDraggingModalCar = true;
@@ -1140,6 +1150,10 @@
             lastDragX = event.clientX;
         }
 
+        /**
+         * Handle mouse move on the vehicle modal canvas for rotation.
+         * @param {MouseEvent} event 
+         */
         function onModalMouseMove(event) {
             if (!isDraggingModalCar) return;
             isPaintClick = false; // Movement detected, not a static click
@@ -1148,6 +1162,10 @@
             lastDragX = event.clientX;
         }
 
+        /**
+         * Handle mouse up on the vehicle modal canvas to finish drag or click.
+         * @param {MouseEvent} event 
+         */
         function onModalMouseUp(event) {
             if (isDraggingModalCar && isPaintClick) {
                 // It was a click!
@@ -1156,6 +1174,10 @@
             isDraggingModalCar = false;
         }
 
+        /**
+         * Handle touch start on the vehicle modal canvas.
+         * @param {TouchEvent} event 
+         */
         function onModalTouchStart(event) {
             if (event.target === vehicleModalClose) return;
             isDraggingModalCar = true;
@@ -1164,6 +1186,10 @@
             event.preventDefault();
         }
 
+        /**
+         * Handle touch move on the vehicle modal canvas.
+         * @param {TouchEvent} event 
+         */
         function onModalTouchMove(event) {
             if (!isDraggingModalCar) return;
             const currentX = event.touches[0].clientX;
@@ -1177,6 +1203,10 @@
             event.preventDefault();
         }
 
+        /**
+         * Handle touch end on the vehicle modal canvas.
+         * @param {TouchEvent} event 
+         */
         function onModalTouchEnd(event) {
             if (isDraggingModalCar && isPaintClick) {
                 // Use changedTouches for position
@@ -1187,6 +1217,11 @@
             event.preventDefault(); // Prevent double firing if browser synthesizes mouse events
         }
 
+        /**
+         * Process a painting click on the 3D model in the vehicle modal.
+         * @param {number} clientX - X coordinate of the click
+         * @param {number} clientY - Y coordinate of the click
+         */
         function handlePaintClick(clientX, clientY) {
             // Raycast logic
             if (!modalRenderer || !modalCamera) return;
@@ -1274,6 +1309,9 @@
         }
 
 
+        /**
+         * Initialize the vehicle customization modal (scene, camera, renderer).
+         */
         function initVehicleModal() {
             modalScene = new THREE.Scene();
             modalCamera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
@@ -1303,6 +1341,9 @@
             modalScene.add(modalCarGroup);
         }
 
+        /**
+         * Open the vehicle customization modal and display the car.
+         */
         function openVehicleModal() {
             vehicleModal.classList.add('active');
             vehicleModalOpen = true;
@@ -1333,12 +1374,18 @@
             // Pause game? Maybe just set flag to ignore inputs
         }
 
+        /**
+         * Close the vehicle customization modal.
+         */
         function closeVehicleModal() {
             vehicleModal.classList.remove('active');
             vehicleModalOpen = false;
         }
 
         // --- Pedestrian Modal Functions ---
+        /**
+         * Initialize the pedestrian color palette UI.
+         */
         function initPedestrianColorPalette() {
             const container = document.getElementById('ped-color-palette');
             clothingColors.forEach((col, index) => {
@@ -1366,6 +1413,9 @@
             });
         }
 
+        /**
+         * Initialize the pedestrian customization modal.
+         */
         function initPedestrianModal() {
             pedModalScene = new THREE.Scene();
             pedModalCamera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
@@ -1402,6 +1452,9 @@
             pedestrianModalClose.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); closePedestrianModal(); }, { passive: false });
         }
 
+        /**
+         * Open the pedestrian customization modal with current player settings.
+         */
         function openPedestrianModal() {
             if (!userPedestrian) return;
             // Initialize temp colors from userPedestrian
@@ -1442,6 +1495,9 @@
             pedModalPedGroup.add(pantsPreview);
         }
 
+        /**
+         * Close the pedestrian customization modal and save changes.
+         */
         function closePedestrianModal() {
             if (userPedestrian && tempPedColors) {
                 // Apply temp colors to userPedestrian
@@ -1468,12 +1524,20 @@
             pedestrianModalOpen = false;
         }
 
+        /**
+         * Handle mouse down on the pedestrian modal canvas.
+         * @param {MouseEvent} event 
+         */
         function onPedModalMouseDown(event) {
             isDraggingModalCar = true; // Reuse vehicle dragging state
             isPaintClick = true;
             lastDragX = event.clientX;
         }
 
+        /**
+         * Handle mouse move on the pedestrian modal canvas.
+         * @param {MouseEvent} event 
+         */
         function onPedModalMouseMove(event) {
             if (!isDraggingModalCar) return;
             isPaintClick = false;
@@ -1482,6 +1546,10 @@
             lastDragX = event.clientX;
         }
 
+        /**
+         * Handle mouse up on the pedestrian modal canvas.
+         * @param {MouseEvent} event 
+         */
         function onPedModalMouseUp(event) {
             if (isDraggingModalCar && isPaintClick) {
                 handlePedestrianPaintClick(event.clientX, event.clientY);
@@ -1489,6 +1557,10 @@
             isDraggingModalCar = false;
         }
 
+        /**
+         * Handle touch start on the pedestrian modal canvas.
+         * @param {TouchEvent} event 
+         */
         function onPedModalTouchStart(event) {
             isDraggingModalCar = true;
             isPaintClick = true;
@@ -1496,6 +1568,10 @@
             event.preventDefault();
         }
 
+        /**
+         * Handle touch move on the pedestrian modal canvas.
+         * @param {TouchEvent} event 
+         */
         function onPedModalTouchMove(event) {
             if (!isDraggingModalCar) return;
             const currentX = event.touches[0].clientX;
@@ -1506,6 +1582,10 @@
             event.preventDefault();
         }
 
+        /**
+         * Handle touch end on the pedestrian modal canvas.
+         * @param {TouchEvent} event 
+         */
         function onPedModalTouchEnd(event) {
             if (isDraggingModalCar && isPaintClick) {
                 const t = event.changedTouches[0];
@@ -1515,6 +1595,11 @@
             event.preventDefault();
         }
 
+        /**
+         * Process a paint click for the pedestrian model.
+         * @param {number} clientX 
+         * @param {number} clientY 
+         */
         function handlePedestrianPaintClick(clientX, clientY) {
             if (!pedModalRenderer || !pedModalCamera || !tempPedColors) return;
             const rect = pedModalRenderer.domElement.getBoundingClientRect();
@@ -1544,6 +1629,9 @@
             }
         }
 
+        /**
+         * Reset vehicle colors to factory defaults.
+         */
         function resetVehicleDefaults() {
             const defaults = {
                 supercar: { body: 0xffffff, spoiler: 0x000000 },
@@ -1558,6 +1646,9 @@
             loadCarModel(carType);
         }
 
+        /**
+         * Reset pedestrian clothing colors to defaults.
+         */
         function resetPedestrianDefaults() {
             const defaults = {
                 shirt: 0x111111, pants: 0x111111, skin: 0xffccaa, robe: 0x000000, hat: 0x555555
@@ -1579,14 +1670,23 @@
         }
 
         // --- Share Modal Functions ---
+        /**
+         * Open the share modal.
+         */
         function openShareModal() {
             shareModal.classList.add('active');
         }
 
+        /**
+         * Close the share modal.
+         */
         function closeShareModal() {
             shareModal.classList.remove('active');
         }
 
+        /**
+         * Copy the share link to clipboard.
+         */
         function copyShareLink() {
             const text = shareLinkInput.value;
             const showCopied = () => {
@@ -1619,6 +1719,9 @@
 
         // --- Day/Night Toggle System (Updated for Brightness) ---
 
+        /**
+         * Toggle the visibility of the Heads-Up Display (HUD).
+         */
         function toggleHUD() {
             document.body.classList.toggle('hud-hidden');
             const isHidden = document.body.classList.contains('hud-hidden');
@@ -1628,6 +1731,9 @@
             }
         }
 
+        /**
+         * Toggle between Day and Night modes, updating lighting and materials.
+         */
         function toggleDayNight() {
             isNightMode = !isNightMode;
 
@@ -1707,6 +1813,9 @@
 
         // --- Miniature UI ---
 
+        /**
+         * Update the position of the 2D miniature UI element based on camera projection.
+         */
         function updateMiniaturePosition() {
             const aspect = window.innerWidth / window.innerHeight;
             const visibleHeight = 2 * Math.tan((uiCamera.fov * Math.PI / 180) / 2) * uiCamera.position.z;
@@ -1719,6 +1828,9 @@
             miniatureGroup.position.set(x, y, 0);
         }
 
+        /**
+         * Update the 3D model shown in the miniature UI.
+         */
         function updateMiniatureModel() {
             while (miniatureGroup.children.length > 0) {
                 miniatureGroup.remove(miniatureGroup.children[0]);
@@ -1735,6 +1847,12 @@
             miniatureGroup.userData.targetType = targetType;
         }
 
+        /**
+         * Check if a click coordinates intersect with the miniature UI.
+         * @param {number} clientX 
+         * @param {number} clientY 
+         * @returns {boolean}
+         */
         function checkMiniatureClick(clientX, clientY) {
             if (!miniatureGroup.visible) return false;
             mouse.x = (clientX / window.innerWidth) * 2 - 1;
@@ -1748,6 +1866,12 @@
             return false;
         }
 
+        /**
+         * Check if a click intersects with the player vehicle.
+         * @param {number} clientX 
+         * @param {number} clientY 
+         * @returns {boolean}
+         */
         function checkVehicleTap(clientX, clientY) {
             if (!player) return false;
             mouse.x = (clientX / window.innerWidth) * 2 - 1;
@@ -1757,6 +1881,12 @@
             return intersects.length > 0;
         }
 
+        /**
+         * Check if a click intersects with the user's pedestrian.
+         * @param {number} clientX 
+         * @param {number} clientY 
+         * @returns {boolean}
+         */
         function checkPedestrianTap(clientX, clientY) {
             if (controlMode !== 'pedestrian' || !userPedestrian || !userPedestrian.mesh) return false;
             mouse.x = (clientX / window.innerWidth) * 2 - 1;
@@ -1766,6 +1896,9 @@
             return intersects.length > 0;
         }
 
+        /**
+         * Handle a tap on the vehicle (e.g., getting out).
+         */
         function handleVehicleTap() {
             if (controlMode === 'vehicle') {
                 velocity.set(0, 0, 0);
@@ -1775,10 +1908,16 @@
             }
         }
 
+        /**
+         * Handle a tap on the user pedestrian (e.g., open customization).
+         */
         function handlePedestrianTap() {
             openPedestrianModal();
         }
 
+        /**
+         * Transition from pedestrian mode back to vehicle mode.
+         */
         function enterVehicle() {
             if (userPedestrian) {
                 scene.remove(userPedestrian.mesh);
@@ -1788,6 +1927,9 @@
             centerCamera();
         }
 
+        /**
+         * Spawn a pedestrian character beside the player vehicle.
+         */
         function spawnPedestrianBesidePlayer() {
             // Remove from allPedestrians if we are recycling createPedestrianData
             // But createPedestrianData adds to allPedestrians array.
@@ -1824,6 +1966,10 @@
 
         // --- Infinite Map System ---
 
+        /**
+         * Create a texture for the fake light spot on the ground.
+         * @returns {THREE.CanvasTexture}
+         */
         function createLightSpotTexture() {
             const canvas = document.createElement('canvas');
             canvas.width = 64; canvas.height = 64;
@@ -1838,6 +1984,9 @@
             return tex;
         }
 
+        /**
+         * Initialize geometries and materials for world objects (road, grass, poles).
+         */
         function initWorldGeometries() {
             groundGeometry = new THREE.PlaneGeometry(CHUNK_SIZE, CHUNK_SIZE);
             groundMaterial = new THREE.MeshStandardMaterial({
@@ -1894,6 +2043,11 @@
             });
         }
 
+        /**
+         * Generate a procedural ground texture.
+         * @param {boolean} isNight - Whether to generate night version
+         * @returns {THREE.CanvasTexture}
+         */
         function createGroundTexture(isNight) {
             const canvas = document.createElement('canvas');
             canvas.width = 256;
@@ -1933,6 +2087,12 @@
         }
 
         // Generate a building texture with windows
+        /**
+         * Generate a procedural building texture with windows.
+         * @param {number} seed - Random seed for building style
+         * @param {boolean} isNight - Whether to generate night version
+         * @returns {THREE.CanvasTexture}
+         */
         function createBuildingTexture(seed, isNight) {
             const canvas = document.createElement('canvas');
             canvas.width = 128;
@@ -1980,12 +2140,24 @@
             return tex;
         }
 
+        /**
+         * Generate a pseudo-random number based on x, z coordinates.
+         * @param {number} x 
+         * @param {number} z 
+         * @returns {number} Value between 0 and 1
+         */
         function pseudoRandom(x, z) {
             const val = Math.sin(x * 12.9898 + z * 78.233) * 43758.5453;
             return val - Math.floor(val);
         }
 
         // Raw Road Function for flow calculations
+        /**
+         * Calculate raw noise value for road generation.
+         * @param {number} x
+         * @param {number} z
+         * @returns {number} Raw noise value (can be negative)
+         */
         function getRawRoadValue(x, z) {
             const scale = 0.005;
             const v1 = Math.sin(x * scale) + Math.cos(z * scale);
@@ -1994,11 +2166,23 @@
         }
 
         // Visual Road Value (Absolute)
+        /**
+         * Calculate absolute road value (0 is center of road).
+         * @param {number} x
+         * @param {number} z
+         * @returns {number}
+         */
         function getRoadValue(x, z) {
             return Math.abs(getRawRoadValue(x, z));
         }
 
         // Calculate tangent of the road isoline for smooth traffic flow
+        /**
+         * Calculate the direction (tangent) of the road at a point.
+         * @param {number} x
+         * @param {number} z
+         * @returns {THREE.Vector3} Normalized tangent vector
+         */
         function getRoadTangent(x, z) {
             const scale = 0.005;
             // Function f = sin(xs) + cos(zs) + 0.5*sin(xs0.5 + zs0.2)
@@ -2014,6 +2198,10 @@
             return t;
         }
 
+        /**
+         * Clean up resources for a map chunk.
+         * @param {Object} chunkData
+         */
         function disposeChunk(chunkData) {
             if (!chunkData) return;
             const group = chunkData.mesh;
@@ -2026,6 +2214,10 @@
             scene.remove(group);
         }
 
+        /**
+         * Get the current active position (player or pedestrian).
+         * @returns {THREE.Vector3}
+         */
         function getActivePosition() {
             if (controlMode === 'pedestrian' && userPedestrian) {
                 return userPedestrian.position;
@@ -2033,6 +2225,9 @@
             return player.position;
         }
 
+        /**
+         * Update loop to create new map chunks and remove old ones.
+         */
         function updateChunks() {
             if (!player) return;
             const centerPos = getActivePosition();
@@ -2065,6 +2260,12 @@
             }
         }
 
+        /**
+         * Get or create a cached material for a building.
+         * @param {number} seed 
+         * @param {boolean} isNight 
+         * @returns {THREE.Material}
+         */
         function getBuildingMaterial(seed, isNight) {
             // Bucket seed into 3 types to reduce material count
             let type = 0;
@@ -2091,6 +2292,11 @@
             return buildingMaterialCache.get(key);
         }
 
+        /**
+         * Create a new map chunk at grid coordinates (cx, cz).
+         * @param {number} cx 
+         * @param {number} cz 
+         */
         function createChunk(cx, cz) {
             const group = new THREE.Group();
             const chunkX = cx * CHUNK_SIZE;
@@ -2305,6 +2511,9 @@
         }
 
         // --- Entities ---
+        /**
+         * Initialize geometries for pedestrian parts.
+         */
         function initPedestrianGeometries() {
             pedGeometries.head = new THREE.BoxGeometry(0.6, 0.6, 0.6);
             pedGeometries.body = new THREE.BoxGeometry(0.8, 1.2, 0.5);
@@ -2316,6 +2525,9 @@
             pedGeometries.cape = new THREE.BoxGeometry(1.0, 2.2, 0.1);
             pedGeometries.turban = new THREE.BoxGeometry(0.68, 0.35, 0.68);
         }
+        /**
+         * Generate a random pedestrian data object and add to pool.
+         */
         function createPedestrianData() {
             const angle = Math.random() * Math.PI * 2;
             const dist = Math.random() * 200 + 50;
@@ -2329,11 +2541,21 @@
             };
             allPedestrians.push(pedData);
         }
+        /**
+         * Get or create a material for a specific color hex.
+         * @param {number} colorHex 
+         * @returns {THREE.Material}
+         */
         function getCachedMaterial(colorHex) {
             const hex = Math.floor(colorHex);
             if (!materialCache.has(hex)) materialCache.set(hex, new THREE.MeshStandardMaterial({ color: hex }));
             return materialCache.get(hex);
         }
+        /**
+         * Build a 3D mesh group for a pedestrian based on its data.
+         * @param {Object} data 
+         * @returns {THREE.Group}
+         */
         function buildPedestrianMesh(data) {
             const group = new THREE.Group();
             const skinMat = getCachedMaterial(data.colors.skin);
@@ -2379,6 +2601,14 @@
 
         // --- CAR MODELS & HEADLIGHTS ---
 
+        /**
+         * Create headlight spotlights and add them to a vehicle group.
+         * @param {THREE.Group} group
+         * @param {number} xOffset
+         * @param {number} y
+         * @param {number} z
+         * @param {number} [intensity=2]
+         */
         function createHeadlights(group, xOffset, y, z, intensity = 2) {
             // NPC lights only visible at night, controlled by toggle
             const spotL = new THREE.SpotLight(0xffffdd, intensity);
@@ -2408,6 +2638,11 @@
         }
 
         // --- Vehicle Abstraction ---
+        /**
+         * Factory function to create a vehicle mesh.
+         * @param {Object} config - Configuration object (type, color, lights, scale)
+         * @returns {THREE.Group}
+         */
         function createVehicle(config) {
             const type = config.type || 'supercar';
             const bodyColor = config.bodyColor || null; // Use bodyColor
@@ -2431,6 +2666,13 @@
             return mesh;
         }
 
+        /**
+         * Build a "Supercar" style vehicle mesh.
+         * @param {boolean} [addLights=true]
+         * @param {number|null} [bodyColor]
+         * @param {number|null} [spoilerColor]
+         * @returns {THREE.Group}
+         */
         function buildSupercarMesh(addLights = true, bodyColor = null, spoilerColor = null) {
             const group = new THREE.Group();
 
@@ -2548,6 +2790,13 @@
             return group;
         }
 
+        /**
+         * Build a "Hypercar" style vehicle mesh.
+         * @param {boolean} [addLights=true] 
+         * @param {number|null} [bodyColor] 
+         * @param {number|null} [spoilerColor] 
+         * @returns {THREE.Group}
+         */
         function buildHypercarMesh(addLights = true, bodyColor = null, spoilerColor = null) {
             const group = new THREE.Group();
             const currentBodyColor = bodyColor ? bodyColor : vehicleColors.hypercar.body;
@@ -2617,6 +2866,13 @@
 
         // --- NPC TRAFFIC SYSTEM ---
 
+        /**
+         * Spawn an NPC traffic car at a specific position.
+         * @param {number} x 
+         * @param {number} y 
+         * @param {number} z 
+         * @param {boolean} isPositiveLane - Direction of travel (based on road raw map)
+         */
         function spawnTrafficCar(x, y, z, isPositiveLane) {
             // Random color
             const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffaa00, 0xaa00aa, 0xffffff, 0x222222];
@@ -2642,6 +2898,10 @@
             });
         }
 
+        /**
+         * Update loop for all traffic vehicles (movement, rotation, cleanup).
+         * @param {number} time 
+         */
         function updateTraffic(time) {
             if (!player) return;
             const pPos = getActivePosition();
@@ -2680,6 +2940,9 @@
             }
         }
 
+        /**
+         * Create the main player object (container for vehicle).
+         */
         function createPlayer() {
             player = new THREE.Group();
 
@@ -2702,6 +2965,10 @@
             centerCamera(); // Center camera after spawning
         }
 
+        /**
+         * Load the 3D model for the player's car into the player group.
+         * @param {string} type - 'supercar' or 'hypercar'
+         */
         function loadCarModel(type) {
             if (currentCarMesh) {
                 player.remove(currentCarMesh);
@@ -2730,6 +2997,9 @@
             player.add(currentCarMesh);
         }
 
+        /**
+         * Switch between vehicle models (Supercar/Hypercar) and trigger jump animation.
+         */
         function toggleCarModel() {
             const newType = (carType === 'supercar') ? 'hypercar' : 'supercar';
             loadCarModel(newType);
@@ -2738,6 +3008,10 @@
             updateMiniatureModel();
         }
 
+        /**
+         * Handle manual camera movement via mouse.
+         * @param {MouseEvent} e 
+         */
         function onMouseMoveCam(e) {
             const dx = e.clientX - camLastPos.x;
             const dy = e.clientY - camLastPos.y;
@@ -2745,6 +3019,10 @@
             camLastPos = { x: e.clientX, y: e.clientY };
         }
 
+        /**
+         * Handle global mouse down events (game interactions).
+         * @param {MouseEvent} e 
+         */
         function onMouseDown(e) {
             // Check miniature hold/click
             if (checkMiniatureClick(e.clientX, e.clientY)) {
@@ -2791,6 +3069,10 @@
             }
         }
 
+        /**
+         * Handle global touch start events (joystick, interactions).
+         * @param {TouchEvent} e 
+         */
         function onTouchStart(e) {
             // If share modal is open and the touch is inside the modal content,
             // allow default behavior so clicks/taps work as expected.
@@ -2852,6 +3134,10 @@
             }
         }
 
+        /**
+         * Handle global touch move events (joystick drag).
+         * @param {TouchEvent} e 
+         */
         function onTouchMove(e) {
             e.preventDefault();
             const touches = e.changedTouches;
@@ -2872,6 +3158,10 @@
             }
         }
 
+        /**
+         * Handle global touch end events.
+         * @param {TouchEvent} e 
+         */
         function onTouchEnd(e) {
             e.preventDefault();
 
@@ -2896,6 +3186,12 @@
             }
         }
 
+        /**
+         * Update the virtual joystick UI and input values.
+         * @param {number} clientX 
+         * @param {number} clientY 
+         * @param {{x:number, y:number}} center - Joystick center coordinates
+         */
         function updateJoystick(clientX, clientY, center) {
             let dx = clientX - center.x;
             let dy = clientY - center.y;
@@ -2910,6 +3206,11 @@
             moveInput.y = dy / joystickRadius;
         }
 
+        /**
+         * Update camera angles based on input delta.
+         * @param {number} dx 
+         * @param {number} dy 
+         */
         function updateCameraAngle(dx, dy) {
             const sensitivity = 0.005;
             cameraAngle -= dx * sensitivity;
@@ -2917,6 +3218,9 @@
             cameraVerticalAngle = Math.max(0.1, Math.min(Math.PI / 2 - 0.1, cameraVerticalAngle));
         }
 
+        /**
+         * Reset camera to follow behind the player.
+         */
         function centerCamera() {
             if (!player) return;
             cameraAngle = player.rotation.y + Math.PI;
@@ -2925,6 +3229,9 @@
             manualCamTimer = 0;
         }
 
+        /**
+         * Update the on-screen arrow pointing to the car's heading relative to camera.
+         */
         function updateHeadingIndicator() {
             if (!player) return;
             const carRot = player.rotation.y;
@@ -2937,6 +3244,12 @@
             headingArrow.style.transform = `rotate(${angleDeg}deg)`;
         }
 
+        /**
+         * Calculate the shortest distance between two angles (in radians).
+         * @param {number} a 
+         * @param {number} b 
+         * @returns {number} Angle difference
+         */
         function shortestAngleDist(a, b) {
             let diff = b - a;
             while (diff > Math.PI) diff -= Math.PI * 2;
@@ -2944,6 +3257,9 @@
             return diff;
         }
 
+        /**
+         * Main physics update loop for player and collisions.
+         */
         function updatePhysics() {
             if (isGameOver) return;
 
@@ -3102,6 +3418,9 @@
             }
         }
 
+        /**
+         * Trigger the Game Over state and UI.
+         */
         function triggerGameOver() {
             isGameOver = true;
             player.visible = false;
@@ -3127,6 +3446,9 @@
             setTimeout(() => resetGame(), 2000);
         }
 
+        /**
+         * Reset the game state to start a new run.
+         */
         function resetGame() {
             isGameOver = false;
 
@@ -3171,6 +3493,9 @@
             }
         }
 
+        /**
+         * Update pedestrian positions and animation state.
+         */
         function updatePedestrians() {
             if (isGameOver) return;
             const time = Date.now() * 0.005;
@@ -3234,6 +3559,9 @@
             }
         }
 
+        /**
+         * Check and handle collisions between player and active pedestrians.
+         */
         function checkCollisions() {
             if (isGameOver) return;
             const collisionThresholdSq = 16.0;
@@ -3257,6 +3585,9 @@
             }
         }
 
+        /**
+         * Spawn smoke particles for drifting wheels.
+         */
         function emitWheelSmoke() {
             if (!player) return;
             let wheelOffsets = [];
@@ -3276,6 +3607,11 @@
             });
         }
 
+        /**
+         * Get or create a cached material for debris particles.
+         * @param {number} color 
+         * @returns {THREE.MeshBasicMaterial}
+         */
         function getDebrisMaterial(color) {
             if (!debrisMaterialCache.has(color)) {
                 debrisMaterialCache.set(color, new THREE.MeshBasicMaterial({ color: color }));
@@ -3283,6 +3619,10 @@
             return debrisMaterialCache.get(color);
         }
 
+        /**
+         * Retrieve a particle mesh from the object pool if available.
+         * @returns {THREE.Mesh|null}
+         */
         function getParticleFromPool() {
             if (particlePool.length > 0) {
                 return particlePool.pop();
@@ -3290,6 +3630,10 @@
             return null; // Pool empty, create new or skip
         }
 
+        /**
+         * Spawn a smoke particle at the given position.
+         * @param {THREE.Vector3} pos 
+         */
         function spawnSmokeParticle(pos) {
             let p = getParticleFromPool();
             if (!p) {
@@ -3330,6 +3674,11 @@
             particles.push(p);
         }
 
+        /**
+         * Trigger an explosion effect with debris.
+         * @param {THREE.Vector3} pos 
+         * @param {number} [color=0xFF0000] 
+         */
         function explode(pos, color = 0xFF0000) {
             const mat = getDebrisMaterial(color);
             const debrisCount = 3; // Unified for mobile and desktop
@@ -3357,6 +3706,9 @@
             }
         }
 
+        /**
+         * Initialize the snow particle system using a custom shader.
+         */
         function createSnow() {
             const positions = [];
             const velocities = [];
@@ -3440,6 +3792,9 @@
             scene.add(snowSystem);
         }
 
+        /**
+         * Update the snow system uniforms (time, player position).
+         */
         function updateSnow() {
             if (!player || !snowSystem) return;
 
@@ -3450,6 +3805,9 @@
             snowSystem.material.uniforms.uTime.value = performance.now() * 0.001;
         }
 
+        /**
+         * Update physics and lifecycle of all active particles (smoke, debris).
+         */
         function updateParticles() {
             for (let i = particles.length - 1; i >= 0; i--) {
                 const p = particles[i];
@@ -3474,6 +3832,10 @@
             }
         }
 
+        /**
+         * Spawn floating +1 voxel text for score.
+         * @param {THREE.Vector3} pos 
+         */
         function spawnVoxelScore(pos) {
             const group = new THREE.Group();
 
@@ -3523,6 +3885,9 @@
             });
         }
 
+        /**
+         * Update physics/animation of floating text elements.
+         */
         function updateFloatingTexts() {
             for (let i = floatingTexts.length - 1; i >= 0; i--) {
                 const ft = floatingTexts[i];
@@ -3543,6 +3908,9 @@
             }
         }
 
+        /**
+         * Update the main camera position to follow the target (player or pedestrian).
+         */
         function updateCamera() {
             let targetObj = player;
             if (controlMode === 'pedestrian' && userPedestrian) {
@@ -3584,6 +3952,9 @@
             camera.lookAt(targetObj.position);
         }
 
+        /**
+         * Calculate and display Frames Per Second.
+         */
         function updateFPS() {
             frameCount++;
             const now = performance.now();
@@ -3594,6 +3965,9 @@
             }
         }
 
+        /**
+         * Main animation loop.
+         */
         function animate() {
             requestAnimationFrame(animate);
             updateFPS();
@@ -3646,6 +4020,9 @@
             }
         }
 
+        /**
+         * Update movement vector based on currently pressed keys.
+         */
         function updateMoveInputFromKeys() {
             let dx = 0;
             let dy = 0;
@@ -3670,6 +4047,9 @@
             if (stickKnob) stickKnob.style.transform = `translate(calc(-50% + ${joyX}px), calc(-50% + ${joyY}px))`;
         }
 
+        /**
+         * Handle window resize events to update camera aspect ratios and renderer size.
+         */
         function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
