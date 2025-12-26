@@ -756,7 +756,15 @@
                 <line x1="1" y1="1" x2="23" y2="23"></line>
             </svg>
         </div>
-        <div id="settings-btn">⚙</div>
+        <div id="settings-btn">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path
+                    d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.47a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z">
+                </path>
+                <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+        </div>
         <div id="fps-counter">FPS: 60</div>
         <div id="score-board">Score: 0</div>
 
@@ -805,6 +813,22 @@
 
     <div id="pedestrian-modal">
         <button id="pedestrian-modal-close">×</button>
+        <input type="text" id="player-username" placeholder="Username" maxlength="12" style="
+            position: absolute; 
+            top: 20px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            z-index: 105; 
+            background: rgba(0,0,0,0.5); 
+            color: white; 
+            border: 1px solid rgba(255,255,255,0.5); 
+            border-radius: 5px; 
+            padding: 8px; 
+            text-align: center; 
+            font-family: inherit;
+            font-size: 16px;
+            width: 150px;
+        ">
         <button id="pedestrian-reset-btn" class="modal-reset-btn">Reset</button>
         <canvas id="ped-modal-canvas"></canvas>
         <div id="ped-color-palette"></div>
@@ -828,8 +852,11 @@
                 </div>
             </div>
             <button id="settings-pimp-btn" style="
+                display: block;
+                width: 100%;
+                box-sizing: border-box;
                 margin-top: 15px;
-                margin-bottom: 5px;
+                margin-bottom: 10px;
                 padding: 10px 20px;
                 font-size: 16px;
                 color: #fff;
@@ -841,6 +868,9 @@
                 letter-spacing: 1px;
             ">Modify Vehicle</button>
             <button id="settings-pimp-ped-btn" style="
+                display: block;
+                width: 100%;
+                box-sizing: border-box;
                 margin-top: 5px;
                 margin-bottom: 15px;
                 padding: 10px 20px;
@@ -1375,6 +1405,20 @@
             pReset.addEventListener('mousedown', (e) => { e.stopPropagation(); resetPedestrianDefaults(); });
             pReset.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); resetPedestrianDefaults(); }, { passive: false });
 
+            // Username Input Logic
+            const usernameInput = document.getElementById('player-username');
+            if (usernameInput) {
+                const savedName = localStorage.getItem('playerUsername');
+                if (savedName) usernameInput.value = savedName;
+
+                usernameInput.addEventListener('input', (e) => {
+                    localStorage.setItem('playerUsername', e.target.value);
+                });
+                usernameInput.addEventListener('mousedown', (e) => e.stopPropagation());
+                usernameInput.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: false });
+                usernameInput.addEventListener('keydown', (e) => e.stopPropagation());
+            }
+
             initVehicleModal();
             initColorPalette();
 
@@ -1664,6 +1708,99 @@
 
         function closeSettingsModal() {
             settingsModal.classList.remove('active');
+            updatePlayerLabel();
+        }
+
+        /**
+         * Create a username label sprite.
+         * @param {string} name 
+         * @returns {THREE.Sprite}
+         */
+        function createUsernameLabel(name) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const fontSize = 48;
+            ctx.font = `bold ${fontSize}px sans-serif`;
+            const textWidth = ctx.measureText(name).width;
+
+            // Pad the canvas
+            const width = textWidth + 40;
+            const height = fontSize + 40;
+
+            canvas.width = width;
+            canvas.height = height;
+
+            ctx.font = `bold ${fontSize}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // Text Stroke (Outline)
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 6;
+            ctx.lineJoin = 'round';
+            ctx.strokeText(name, width / 2, height / 2);
+
+            // Text Fill
+            ctx.fillStyle = 'white';
+            ctx.fillText(name, width / 2, height / 2);
+
+            const tex = new THREE.CanvasTexture(canvas);
+            const mat = new THREE.SpriteMaterial({ map: tex, sizeAttenuation: true, depthTest: false, depthWrite: false, transparent: true, opacity: 0.7 });
+
+            const sprite = new THREE.Sprite(mat);
+            // Adjust scale. Pixels to World Units ratio.
+            const scaleFactor = 0.02;
+            sprite.scale.set(canvas.width * scaleFactor, canvas.height * scaleFactor, 1);
+            sprite.renderOrder = 999;
+
+            return sprite;
+        }
+
+        /**
+         * Update the username label on player/vehicle.
+         */
+        function updatePlayerLabel() {
+            const name = localStorage.getItem('playerUsername');
+
+
+
+            // Refactored logic below:
+
+            // 1. Vehicle Logic
+            if (currentCarMesh) {
+                // Remove any existing label first
+                for (let i = currentCarMesh.children.length - 1; i >= 0; i--) {
+                    if (currentCarMesh.children[i].userData.isNameLabel) {
+                        currentCarMesh.remove(currentCarMesh.children[i]);
+                    }
+                }
+
+                // If in vehicle mode AND name exists, add it
+                if (controlMode === 'vehicle' && name && name.trim() !== '') {
+                    const label = createUsernameLabel(name);
+                    label.position.set(0, 3.5, 0); // Car height offset
+                    label.userData.isNameLabel = true;
+                    currentCarMesh.add(label);
+                }
+            }
+
+            // 2. Pedestrian Logic
+            if (userPedestrian && userPedestrian.mesh) {
+                // Remove existing
+                for (let i = userPedestrian.mesh.children.length - 1; i >= 0; i--) {
+                    if (userPedestrian.mesh.children[i].userData.isNameLabel) {
+                        userPedestrian.mesh.remove(userPedestrian.mesh.children[i]);
+                    }
+                }
+
+                // Pedestrian always implies pedestrian mode, so add if name exists
+                if (name && name.trim() !== '') {
+                    const label = createUsernameLabel(name);
+                    label.position.set(0, 2.5, 0); // Ped height offset
+                    label.userData.isNameLabel = true;
+                    userPedestrian.mesh.add(label);
+                }
+            }
         }
 
         // --- Pedestrian Modal Functions ---
@@ -1808,6 +1945,7 @@
 
             pedestrianModal.classList.remove('active');
             pedestrianModalOpen = false;
+            updatePlayerLabel();
         }
 
         /**
@@ -1952,6 +2090,13 @@
                         }
                     }
                 });
+            }
+
+            // Reset Username
+            const usernameInput = document.getElementById('player-username');
+            if (usernameInput) {
+                usernameInput.value = '';
+                localStorage.removeItem('playerUsername');
             }
         }
 
@@ -2231,7 +2376,9 @@
                 userPedestrian = null;
             }
             controlMode = 'vehicle';
+            controlMode = 'vehicle';
             centerCamera();
+            updatePlayerLabel();
         }
 
         /**
@@ -2266,9 +2413,11 @@
             userPedestrian.mesh = buildPedestrianMesh(userPedestrian);
             userPedestrian.mesh.position.copy(userPedestrian.position);
             userPedestrian.mesh.rotation.y = userPedestrian.rotation;
-            scene.add(userPedestrian.mesh);
 
             controlMode = 'pedestrian';
+            updatePlayerLabel();
+
+            scene.add(userPedestrian.mesh);
         }
 
         // --- Infinite Map System ---
@@ -3347,6 +3496,7 @@
                 }
             });
             player.add(currentCarMesh);
+            updatePlayerLabel();
         }
 
         /**
