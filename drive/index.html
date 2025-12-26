@@ -821,7 +821,7 @@
             </div>
             <button id="settings-pimp-btn" style="
                 margin-top: 15px;
-                margin-bottom: 15px;
+                margin-bottom: 5px;
                 padding: 10px 20px;
                 font-size: 16px;
                 color: #fff;
@@ -832,6 +832,19 @@
                 text-transform: uppercase;
                 letter-spacing: 1px;
             ">Modify Vehicle</button>
+            <button id="settings-pimp-ped-btn" style="
+                margin-top: 5px;
+                margin-bottom: 15px;
+                padding: 10px 20px;
+                font-size: 16px;
+                color: #fff;
+                background: #444;
+                border: 2px solid #666;
+                border-radius: 8px;
+                cursor: pointer;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+            ">Modify Player</button>
             <div id="res-control">
                 <span id="res-label">RESOLUTION</span>
                 <input type="range" id="res-slider" min="0.1" max="1.5" step="0.05" value="1.5">
@@ -1233,6 +1246,22 @@
                     e.stopPropagation();
                     closeSettingsModal();
                     openVehicleModal();
+                }, { passive: false });
+            }
+
+            // Modify Player Button
+            const pimpPedBtn = document.getElementById('settings-pimp-ped-btn');
+            if (pimpPedBtn) {
+                pimpPedBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    closeSettingsModal();
+                    openPedestrianModal();
+                });
+                pimpPedBtn.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeSettingsModal();
+                    openPedestrianModal();
                 }, { passive: false });
             }
 
@@ -1703,9 +1732,9 @@
          * Open the pedestrian customization modal with current player settings.
          */
         function openPedestrianModal() {
-            if (!userPedestrian) return;
-            // Initialize temp colors from userPedestrian
-            tempPedColors = { ...userPedestrian.colors };
+            // Using existing userPedestrian colors or defaults if not spawned
+            const sourceColors = userPedestrian ? userPedestrian.colors : defaultPedestrianColors;
+            tempPedColors = { ...sourceColors };
 
             pedestrianModal.classList.add('active');
             pedestrianModalOpen = true;
@@ -1721,7 +1750,7 @@
             }
 
             // Create a copy of the user pedestrian for the modal using temp colors
-            const dummyData = { ...userPedestrian, colors: tempPedColors };
+            const dummyData = { isUser: true, ...(userPedestrian || {}), colors: tempPedColors };
             const mesh = buildPedestrianMesh(dummyData);
             mesh.scale.set(0.6, 0.6, 0.6);
             mesh.position.y = 0.8;
@@ -1746,25 +1775,27 @@
          * Close the pedestrian customization modal and save changes.
          */
         function closePedestrianModal() {
-            if (userPedestrian && tempPedColors) {
-                // Apply temp colors to userPedestrian
-                userPedestrian.colors = { ...tempPedColors };
+            if (tempPedColors) {
+                // Apply temp colors to userPedestrian if active
+                if (userPedestrian) {
+                    userPedestrian.colors = { ...tempPedColors };
 
-                // Sync the world mesh
-                if (userPedestrian.mesh) {
-                    userPedestrian.mesh.traverse(child => {
-                        if (child.isMesh && child.userData.partGroup) {
-                            const group = child.userData.partGroup;
-                            if (userPedestrian.colors[group] !== undefined) {
-                                child.material = getCachedMaterial(userPedestrian.colors[group]);
+                    // Sync the world mesh
+                    if (userPedestrian.mesh) {
+                        userPedestrian.mesh.traverse(child => {
+                            if (child.isMesh && child.userData.partGroup) {
+                                const group = child.userData.partGroup;
+                                if (userPedestrian.colors[group] !== undefined) {
+                                    child.material = getCachedMaterial(userPedestrian.colors[group]);
+                                }
                             }
-                        }
-                    });
+                        });
+                    }
                 }
                 // Persistent save
-                localStorage.setItem('pedestrianColors', JSON.stringify(userPedestrian.colors));
+                localStorage.setItem('pedestrianColors', JSON.stringify(tempPedColors));
                 // Update global default for next spawn
-                Object.assign(defaultPedestrianColors, userPedestrian.colors);
+                Object.assign(defaultPedestrianColors, tempPedColors);
             }
 
             pedestrianModal.classList.remove('active');
@@ -3339,10 +3370,7 @@
             // Check miniature hold/click
 
 
-            if (checkPedestrianTap(e.clientX, e.clientY)) {
-                handlePedestrianTap();
-                return;
-            }
+
 
             if (checkVehicleTap(e.clientX, e.clientY)) {
                 handleVehicleTap();
@@ -3390,10 +3418,7 @@
             for (let i = 0; i < touches.length; i++) {
                 const t = touches[i];
 
-                if (checkPedestrianTap(t.clientX, t.clientY)) {
-                    handlePedestrianTap();
-                    continue;
-                }
+
                 if (checkVehicleTap(t.clientX, t.clientY)) {
                     handleVehicleTap();
                     continue;
