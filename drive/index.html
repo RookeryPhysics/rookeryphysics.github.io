@@ -524,10 +524,10 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 70vw;
-            max-width: 350px;
-            height: 60vh;
-            max-height: 350px;
+            width: 80vw;
+            max-width: 400px;
+            height: 70vh;
+            max-height: 500px;
             background: rgba(20, 20, 30, 0.95);
             padding: 20px;
             border-radius: 15px;
@@ -822,7 +822,7 @@
         <button id="pedestrian-modal-close">×</button>
         <input type="text" id="player-username" placeholder="Username" maxlength="12" style="
             position: absolute; 
-            top: 20px; 
+            top: 10px; 
             left: 50%; 
             transform: translateX(-50%); 
             z-index: 105; 
@@ -836,7 +836,7 @@
             font-size: 16px;
             width: 150px;
         ">
-        <button id="pedestrian-reset-btn" class="modal-reset-btn">Reset</button>
+        <button id="pedestrian-reset-btn" class="modal-reset-btn" style="top: 60px;">Reset</button>
         <canvas id="ped-modal-canvas"></canvas>
         <div id="ped-color-palette"></div>
     </div>
@@ -1905,8 +1905,8 @@
             // Create a copy of the user pedestrian for the modal using temp colors
             const dummyData = { isUser: true, ...(userPedestrian || {}), colors: tempPedColors };
             const mesh = buildPedestrianMesh(dummyData);
-            mesh.scale.set(0.6, 0.6, 0.6);
-            mesh.position.y = 0.8;
+            mesh.scale.set(0.45, 0.45, 0.45);
+            mesh.position.y = 0.2;
             mesh.position.x = -0.6; // Shift left to make room for pants
             pedModalPedGroup.add(mesh);
 
@@ -1920,7 +1920,7 @@
             pLegR.userData.partGroup = 'pants';
             pantsPreview.add(pLegL, pLegR);
             pantsPreview.position.set(0.8, 0.5, 0); // Positioned higher to the right
-            pantsPreview.scale.set(0.6, 0.6, 0.6);
+            pantsPreview.scale.set(0.45, 0.45, 0.45);
             pedModalPedGroup.add(pantsPreview);
         }
 
