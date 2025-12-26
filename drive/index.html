@@ -849,7 +849,7 @@
         let roadTileGeometry, roadMaterial;
         let lineTileGeometry, lineMaterial;
         let grassGeometry, grassMaterial;
-        let poleGeometry, poleMaterial, lightBulbGeometry, lightBulbMaterial;
+        let poleGeometry, poleMaterial, lightBulbGeometry, lightBulbMaterial, poleBaseGeometry;
 
         let lightSpotGeometry, lightSpotMaterial;
 
@@ -2013,20 +2013,30 @@
                 side: THREE.DoubleSide
             });
 
-            // Streetlight Geometries
-            const poleH = 14;
-            const pGeo = new THREE.CylinderGeometry(0.4, 0.4, poleH);
-            pGeo.translate(0, poleH / 2, 0);
+            // Streetlight Geometries - San Francisco Style
+            const poleShaftH = 10;
+            const poleBaseH = 2.5;
+
+            // 1. Decorative Base
+            const bGeo = new THREE.CylinderGeometry(0.6, 0.7, poleBaseH, 8);
+            bGeo.translate(0, poleBaseH / 2, 0); // Sits on ground
+            poleBaseGeometry = bGeo;
+
+            // 2. Tapered Shaft
+            const pGeo = new THREE.CylinderGeometry(0.2, 0.35, poleShaftH, 8);
+            pGeo.translate(0, poleBaseH + poleShaftH / 2, 0); // Sits on top of base
             poleGeometry = pGeo;
 
-            poleMaterial = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.5 });
+            // Dark Green Iron look
+            poleMaterial = new THREE.MeshStandardMaterial({ color: 0x1a2b1a, roughness: 0.4, metalness: 0.3 });
 
-            // Light Bulb (Emissive) - A bit larger
-            lightBulbGeometry = new THREE.BoxGeometry(1.5, 0.3, 0.8);
+            // 3. Light Bulb (Spherical/Oval)
+            lightBulbGeometry = new THREE.SphereGeometry(0.65, 16, 16);
             lightBulbMaterial = new THREE.MeshStandardMaterial({
-                color: 0xffffaa,
-                emissive: 0xffaa00,
-                emissiveIntensity: 0.2
+                color: 0xfffee0, // Off white yellow
+                emissive: 0xffccaa,
+                emissiveIntensity: 0.8,
+                roughness: 0.1
             });
 
             // Light Spot on Road (Fake volumetric lighting)
@@ -2393,39 +2403,36 @@
                             const pX = lx + ROAD_TILE_SIZE / 2;
                             const pZ = lz + ROAD_TILE_SIZE / 2;
 
-                            // 1. Pole Vertical
+                            // 1. Pole Shaft
                             dummy.position.set(pX, 0, pZ);
                             dummy.rotation.set(0, rotY, 0);
                             dummy.scale.set(1, 1, 1);
                             dummy.updateMatrix();
                             poleMatrices.push(dummy.matrix.clone());
 
-                            // 2. Bulb
-                            const armLen = 1.1;
-                            const bX = pX + Math.sin(rotY) * armLen;
-                            const bZ = pZ + Math.cos(rotY) * armLen;
+                            // 2. Base (using armMatrices container)
+                            dummy.position.set(pX, 0, pZ);
+                            dummy.rotation.set(0, rotY, 0); // Rotation doesn't matter much for cylinder
+                            dummy.scale.set(1, 1, 1);
+                            dummy.updateMatrix();
+                            armMatrices.push(dummy.matrix.clone());
 
-                            dummy.position.set(bX, 13.5, bZ);
-                            dummy.rotation.set(0, rotY, 0);
+                            // 3. Bulb (Top of pole)
+                            // Height = base 2.5 + shaft 10 = 12.5
+                            dummy.position.set(pX, 12.5, pZ);
+                            dummy.rotation.set(0, 0, 0);
                             dummy.scale.set(1, 1, 1);
                             dummy.updateMatrix();
                             bulbMatrices.push(dummy.matrix.clone());
 
-                            // 3. Arm 
-                            dummy.position.set(pX, 14.1, pZ); // Lifted slightly
-                            dummy.rotation.set(Math.PI / 2, rotY, 0); // Flat, no Z rot
-                            dummy.scale.set(1, 0.2, 1); // Length 2.8
-                            dummy.updateMatrix();
-                            armMatrices.push(dummy.matrix.clone());
-
-                            // 4. Light Spot (Ground Glare)
-                            dummy.position.set(bX, 0.16, bZ);
+                            // 4. Light Spot (Ground Glare) - Centered
+                            dummy.position.set(pX, 0.16, pZ);
                             dummy.rotation.set(-Math.PI / 2, 0, 0); // Flat on ground
                             dummy.scale.set(1, 1, 1);
                             dummy.updateMatrix();
                             spotMatrices.push(dummy.matrix.clone());
 
-                            obstacles.push({ x: chunkX + pX, z: chunkZ + pZ, radiusSq: 1.0, isLightpost: true, height: 14 });
+                            obstacles.push({ x: chunkX + pX, z: chunkZ + pZ, radiusSq: 1.0, isLightpost: true, height: 13 });
                         }
                     }
                 }
@@ -2454,7 +2461,10 @@
                 group.add(bulbMesh);
             }
             if (armMatrices.length > 0) {
-                const armMesh = new THREE.InstancedMesh(poleGeometry, poleMaterial, armMatrices.length);
+                // RENDER AS POLE BASE
+                const armMesh = new THREE.InstancedMesh(poleBaseGeometry, poleMaterial, armMatrices.length);
+                armMesh.receiveShadow = true;
+                armMesh.castShadow = true;
                 for (let i = 0; i < armMatrices.length; i++) armMesh.setMatrixAt(i, armMatrices[i]);
                 group.add(armMesh);
             }
