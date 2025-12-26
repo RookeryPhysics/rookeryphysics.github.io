@@ -615,6 +615,7 @@
             pointer-events: none;
             z-index: 10;
             transition: opacity 0.3s ease;
+            display: none;
         }
 
         #collapse-btn {
@@ -834,6 +835,20 @@
             <div id="res-control">
                 <span id="res-label">RESOLUTION</span>
                 <input type="range" id="res-slider" min="0.1" max="1.5" step="0.05" value="1.5">
+                <button id="toggle-fps-btn" style="
+                    margin-top: 15px;
+                    padding: 8px 12px;
+                    font-size: 11px;
+                    font-weight: bold;
+                    color: #fff;
+                    background: rgba(255,255,255,0.1);
+                    border: 1px solid rgba(255,255,255,0.3);
+                    border-radius: 6px;
+                    cursor: pointer;
+                    text-transform: uppercase;
+                    width: 100%;
+                    transition: background 0.2s;
+                ">Show FPS</button>
             </div>
         </div>
     </div>
@@ -1244,6 +1259,35 @@
             // Stop propagation to prevent driving while sliding
             resSlider.addEventListener('mousedown', (e) => e.stopPropagation());
             resSlider.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: false });
+
+            // FPS Toggle Logic
+            const toggleFpsBtn = document.getElementById('toggle-fps-btn');
+            if (toggleFpsBtn) {
+                const updateFpsBtnState = () => {
+                    const fpsCounter = document.getElementById('fps-counter');
+                    // Check computed style to act correctly on first click
+                    const isHidden = window.getComputedStyle(fpsCounter).display === 'none';
+                    if (isHidden) {
+                        fpsCounter.style.display = 'block';
+                        toggleFpsBtn.innerText = "Hide FPS";
+                        toggleFpsBtn.style.background = "rgba(255,255,255,0.3)";
+                    } else {
+                        fpsCounter.style.display = 'none';
+                        toggleFpsBtn.innerText = "Show FPS";
+                        toggleFpsBtn.style.background = "rgba(255,255,255,0.1)";
+                    }
+                };
+
+                toggleFpsBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    updateFpsBtnState();
+                });
+                toggleFpsBtn.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    updateFpsBtnState();
+                }, { passive: false });
+            }
 
             collapseBtn.addEventListener('mousedown', (e) => { e.stopPropagation(); toggleHUD(); });
             collapseBtn.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); toggleHUD(); }, { passive: false });
