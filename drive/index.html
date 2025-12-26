@@ -276,16 +276,15 @@
 
         /* --- Day/Night Toggle Button --- */
         #time-btn {
-            position: absolute;
-            top: 60px;
-            left: 20px;
-            width: 50px;
-            height: 50px;
-            background: rgba(0, 0, 0, 0.5);
+            position: relative;
+            margin: 20px auto;
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.1);
             border: 2px solid rgba(255, 255, 255, 0.4);
             border-radius: 50%;
             color: white;
-            font-size: 24px;
+            font-size: 30px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -295,6 +294,12 @@
             z-index: 20;
             -webkit-tap-highlight-color: transparent;
             user-select: none;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        #time-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
         }
 
         #time-btn:active {
@@ -642,7 +647,7 @@
         /* HUD Hidden State */
         body.hud-hidden #fps-counter,
         body.hud-hidden #score-board,
-        body.hud-hidden #time-btn,
+
         body.hud-hidden #settings-btn,
         body.hud-hidden #share-btn,
         body.hud-hidden #res-control,
@@ -713,7 +718,7 @@
         }
 
         #score-board,
-        #time-btn,
+
         #share-btn,
         .instructions {
             transition: opacity 0.3s ease;
@@ -746,7 +751,7 @@
         <div id="settings-btn">⚙</div>
         <div id="fps-counter">FPS: 60</div>
         <div id="score-board">Score: 0</div>
-        <div id="time-btn">🌙</div>
+
         <div id="res-control">
             <span id="res-label">RES</span>
             <input type="range" id="res-slider" min="0.1" max="1.5" step="0.05" value="1.5">
@@ -804,7 +809,7 @@
         <div id="settings-modal-content">
             <button id="settings-modal-close">×</button>
             <h2>Settings</h2>
-            <p>Settings menu content goes here.</p>
+            <div id="time-btn">🌙</div>
         </div>
     </div>
 
