@@ -2406,14 +2406,14 @@
                             const bZ = pZ + Math.cos(rotY) * armLen;
 
                             dummy.position.set(bX, 13.5, bZ);
-                            dummy.rotation.set(0, rotY, 0);
+                            dummy.rotation.set(0, rotY + Math.PI / 2, 0); // Rotated Bulb 90 degrees
                             dummy.scale.set(1, 1, 1);
                             dummy.updateMatrix();
                             bulbMatrices.push(dummy.matrix.clone());
 
                             // 3. Arm 
-                            dummy.position.set(pX, 14.3, pZ);
-                            dummy.rotation.set(Math.PI / 2, rotY, Math.PI / 2); // Lifted & Rotated
+                            dummy.position.set(pX, 14.1, pZ); // Lifted slightly
+                            dummy.rotation.set(Math.PI / 2, rotY, 0); // Flat, no Z rot
                             dummy.scale.set(1, 0.3, 1); // Length 4.2
                             dummy.updateMatrix();
                             armMatrices.push(dummy.matrix.clone());
