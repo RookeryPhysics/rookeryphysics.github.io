@@ -2412,8 +2412,8 @@
                             bulbMatrices.push(dummy.matrix.clone());
 
                             // 3. Arm 
-                            dummy.position.set(pX, 13.8, pZ);
-                            dummy.rotation.set(Math.PI / 2, rotY, 0); // Lay flat
+                            dummy.position.set(pX, 14.3, pZ);
+                            dummy.rotation.set(Math.PI / 2, rotY, Math.PI / 2); // Lifted & Rotated
                             dummy.scale.set(1, 0.3, 1); // Length 4.2
                             dummy.updateMatrix();
                             armMatrices.push(dummy.matrix.clone());
