@@ -548,16 +548,11 @@
             opacity: 1;
         }
 
-        /* Allow normal interactions inside modal on mobile */
-        #pedestrian-modal,
-        #pedestrian-modal * {
-            touch-action: auto;
-        }
-
-        /* Re-enable text selection for the username input */
+        /* Re-enable text selection and touch interactions for the username input */
         #player-username {
             user-select: text;
             -webkit-user-select: text;
+            touch-action: auto;
         }
 
         #pedestrian-modal-close {
@@ -1428,6 +1423,7 @@
                 });
                 usernameInput.addEventListener('mousedown', (e) => e.stopPropagation());
                 usernameInput.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: false });
+                usernameInput.addEventListener('touchend', (e) => e.stopPropagation(), { passive: false });
                 usernameInput.addEventListener('keydown', (e) => e.stopPropagation());
             }
 
