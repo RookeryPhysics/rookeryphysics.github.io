@@ -2401,7 +2401,7 @@
                             poleMatrices.push(dummy.matrix.clone());
 
                             // 2. Bulb
-                            const armLen = 3.5;
+                            const armLen = 1.1;
                             const bX = pX + Math.sin(rotY) * armLen;
                             const bZ = pZ + Math.cos(rotY) * armLen;
 
@@ -2414,7 +2414,7 @@
                             // 3. Arm 
                             dummy.position.set(pX, 14.1, pZ); // Lifted slightly
                             dummy.rotation.set(Math.PI / 2, rotY, 0); // Flat, no Z rot
-                            dummy.scale.set(1, 0.3, 1); // Length 4.2
+                            dummy.scale.set(1, 0.2, 1); // Length 2.8
                             dummy.updateMatrix();
                             armMatrices.push(dummy.matrix.clone());
 
