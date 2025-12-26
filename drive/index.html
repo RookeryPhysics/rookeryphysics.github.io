@@ -191,6 +191,89 @@
 
 
 
+
+        /* --- Settings Button --- */
+        #settings-btn {
+            position: absolute;
+            top: 20px;
+            left: 60px;
+            width: 30px;
+            height: 30px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            color: white;
+            font-size: 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            pointer-events: auto;
+            backdrop-filter: blur(4px);
+            z-index: 30;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            transition: transform 0.3s ease;
+        }
+
+        #settings-btn:active {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(0.95);
+        }
+
+        /* --- Settings Modal --- */
+        #settings-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            pointer-events: auto;
+        }
+
+        #settings-modal.active {
+            display: flex;
+        }
+
+        #settings-modal-content {
+            background: rgba(20, 20, 30, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            max-width: 400px;
+            width: 80%;
+            position: relative;
+            color: white;
+            text-align: center;
+        }
+
+        #settings-modal-close {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 30px;
+            color: white;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #settings-modal-close:hover {
+            color: #ff3366;
+        }
+
         /* --- Day/Night Toggle Button --- */
         #time-btn {
             position: absolute;
@@ -515,7 +598,7 @@
         #fps-counter {
             position: absolute;
             top: 20px;
-            left: 60px;
+            left: 100px;
             color: #00ff00;
             font-family: monospace;
             font-size: 12px;
@@ -560,6 +643,7 @@
         body.hud-hidden #fps-counter,
         body.hud-hidden #score-board,
         body.hud-hidden #time-btn,
+        body.hud-hidden #settings-btn,
         body.hud-hidden #share-btn,
         body.hud-hidden #res-control,
         body.hud-hidden .instructions {
@@ -659,6 +743,7 @@
 
     <div id="ui-layer">
         <div id="collapse-btn">◀</div>
+        <div id="settings-btn">⚙</div>
         <div id="fps-counter">FPS: 60</div>
         <div id="score-board">Score: 0</div>
         <div id="time-btn">🌙</div>
@@ -713,6 +798,14 @@
         <button id="pedestrian-reset-btn" class="modal-reset-btn">Reset</button>
         <canvas id="ped-modal-canvas"></canvas>
         <div id="ped-color-palette"></div>
+    </div>
+
+    <div id="settings-modal">
+        <div id="settings-modal-content">
+            <button id="settings-modal-close">×</button>
+            <h2>Settings</h2>
+            <p>Settings menu content goes here.</p>
+        </div>
     </div>
 
     <div id="game-over-modal">
@@ -906,6 +999,9 @@
 
         const timeBtn = document.getElementById('time-btn');
         const collapseBtn = document.getElementById('collapse-btn');
+        const settingsBtn = document.getElementById('settings-btn');
+        const settingsModal = document.getElementById('settings-modal');
+        const settingsModalClose = document.getElementById('settings-modal-close');
         const shareBtn = document.getElementById('share-btn');
         const shareModal = document.getElementById('share-modal');
         const shareModalClose = document.getElementById('share-modal-close');
@@ -1062,6 +1158,14 @@
 
             collapseBtn.addEventListener('mousedown', (e) => { e.stopPropagation(); toggleHUD(); });
             collapseBtn.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); toggleHUD(); }, { passive: false });
+
+            settingsBtn.addEventListener('mousedown', (e) => { e.stopPropagation(); openSettingsModal(); });
+            settingsBtn.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); openSettingsModal(); }, { passive: false });
+
+            settingsModalClose.addEventListener('click', closeSettingsModal);
+            settingsModal.addEventListener('click', (e) => { if (e.target === settingsModal) closeSettingsModal(); });
+            settingsModalClose.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); closeSettingsModal(); }, { passive: false });
+            settingsModal.addEventListener('touchstart', (e) => { if (e.target === settingsModal) { e.preventDefault(); e.stopPropagation(); closeSettingsModal(); } }, { passive: false });
 
             shareBtn.addEventListener('mousedown', (e) => { e.stopPropagation(); openShareModal(); });
             shareBtn.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); openShareModal(); }, { passive: false });
@@ -1382,6 +1486,14 @@
         function closeVehicleModal() {
             vehicleModal.classList.remove('active');
             vehicleModalOpen = false;
+        }
+
+        function openSettingsModal() {
+            settingsModal.classList.add('active');
+        }
+
+        function closeSettingsModal() {
+            settingsModal.classList.remove('active');
         }
 
         // --- Pedestrian Modal Functions ---
