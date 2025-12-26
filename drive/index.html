@@ -2401,7 +2401,7 @@
                             poleMatrices.push(dummy.matrix.clone());
 
                             // 2. Bulb
-                            const armLen = 5;
+                            const armLen = 3.5;
                             const bX = pX + Math.sin(rotY) * armLen;
                             const bZ = pZ + Math.cos(rotY) * armLen;
 
@@ -2412,9 +2412,9 @@
                             bulbMatrices.push(dummy.matrix.clone());
 
                             // 3. Arm 
-                            dummy.position.set(pX + Math.sin(rotY) * (armLen / 2), 13.8, pZ + Math.cos(rotY) * (armLen / 2));
+                            dummy.position.set(pX, 13.8, pZ);
                             dummy.rotation.set(Math.PI / 2, rotY, 0); // Lay flat
-                            dummy.scale.set(1, 0.5, 1); // Length 7
+                            dummy.scale.set(1, 0.3, 1); // Length 4.2
                             dummy.updateMatrix();
                             armMatrices.push(dummy.matrix.clone());
 
@@ -4005,7 +4005,7 @@
         }
 
         /**
-         * Calculate and display Frames Per Second.
+         * Calculate and display FPS.
          */
         function updateFPS() {
             frameCount++;
