@@ -2406,7 +2406,7 @@
                             const bZ = pZ + Math.cos(rotY) * armLen;
 
                             dummy.position.set(bX, 13.5, bZ);
-                            dummy.rotation.set(0, rotY + Math.PI / 2, 0); // Rotated Bulb 90 degrees
+                            dummy.rotation.set(0, rotY, 0);
                             dummy.scale.set(1, 1, 1);
                             dummy.updateMatrix();
                             bulbMatrices.push(dummy.matrix.clone());
