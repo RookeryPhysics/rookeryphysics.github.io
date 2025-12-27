@@ -28,7 +28,9 @@ io.on('connection', (socket) => {
         rotation: 0,
         vehicleType: 'hypercar', // Default
         vehicleColors: null, // Will be populated by client
-        username: ""
+        username: "",
+        isPedestrian: false,
+        pedestrianColors: null
     };
 
     // Send existing players to the new player
@@ -42,12 +44,14 @@ io.on('connection', (socket) => {
         if (players[socket.id]) {
             if (data.vehicleColors) players[socket.id].vehicleColors = data.vehicleColors;
             if (data.username !== undefined) players[socket.id].username = data.username;
+            if (data.pedestrianColors) players[socket.id].pedestrianColors = data.pedestrianColors;
 
             // Broadcast update to others
             socket.broadcast.emit('playerDetailsUpdated', {
                 id: socket.id,
                 vehicleColors: players[socket.id].vehicleColors,
-                username: players[socket.id].username
+                username: players[socket.id].username,
+                pedestrianColors: players[socket.id].pedestrianColors
             });
         }
     });
@@ -60,6 +64,7 @@ io.on('connection', (socket) => {
             players[socket.id].z = movementData.z;
             players[socket.id].rotation = movementData.rotation;
             if (movementData.vehicleType) players[socket.id].vehicleType = movementData.vehicleType;
+            if (movementData.isPedestrian !== undefined) players[socket.id].isPedestrian = movementData.isPedestrian;
 
             // Broadcast movement to other players
             socket.broadcast.emit('playerMoved', players[socket.id]);

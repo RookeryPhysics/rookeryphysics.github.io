@@ -1966,7 +1966,7 @@
 
             if (socket) {
                 const username = document.getElementById('player-username').value;
-                socket.emit('updatePlayerDetails', { vehicleColors: vehicleColors, username: username });
+                socket.emit('updatePlayerDetails', { vehicleColors: vehicleColors, username: username, pedestrianColors: tempPedColors });
             }
         }
 
@@ -4519,7 +4519,8 @@
                             y: player.position.y,
                             z: player.position.z,
                             rotation: player.rotation.y,
-                            vehicleType: carType
+                            vehicleType: carType,
+                            isPedestrian: controlMode === 'pedestrian'
                         });
                     }
                 }
@@ -4624,7 +4625,11 @@
                 console.log('Connected to server');
                 // Send current vehicle colors and username
                 const username = localStorage.getItem('playerUsername') || "";
-                socket.emit('updatePlayerDetails', { vehicleColors: vehicleColors, username: username });
+                socket.emit('updatePlayerDetails', {
+                    vehicleColors: vehicleColors,
+                    username: username,
+                    pedestrianColors: defaultPedestrianColors // Send current pedestrian colors
+                });
             });
 
             socket.on('currentPlayers', (players) => {
@@ -4651,8 +4656,19 @@
                         z: playerInfo.z,
                         rotation: playerInfo.rotation
                     };
-                    // Handle Vehicle Type Change
-                    if (playerInfo.vehicleType && otherPlayers[playerInfo.id].vehicleType !== playerInfo.vehicleType) {
+
+                    // Handle Mode Change (Vehicle <-> Pedestrian)
+                    const wasPed = otherPlayers[playerInfo.id].isPedestrian;
+                    const isPed = playerInfo.isPedestrian;
+
+                    if (wasPed !== isPed) {
+                        removeOtherPlayer(playerInfo.id);
+                        addOtherPlayer(playerInfo);
+                        return; // addOtherPlayer handles the rest
+                    }
+
+                    // Handle Vehicle Type Change (only if still vehicle)
+                    if (!isPed && playerInfo.vehicleType && otherPlayers[playerInfo.id].vehicleType !== playerInfo.vehicleType) {
                         // Re-create vehicle
                         removeOtherPlayer(playerInfo.id);
                         addOtherPlayer(playerInfo);
@@ -4666,7 +4682,25 @@
                 if (otherPlayers[data.id]) {
                     if (data.vehicleColors) {
                         otherPlayers[data.id].vehicleColors = data.vehicleColors;
-                        updateRemotePlayerVisuals(data.id);
+                        // Only update visual if currently a vehicle
+                        if (!otherPlayers[data.id].isPedestrian) {
+                            updateRemotePlayerVisuals(data.id);
+                        }
+                    }
+                    if (data.pedestrianColors) {
+                        otherPlayers[data.id].pedestrianColors = data.pedestrianColors;
+                        // Only update visual if currently a pedestrian
+                        if (otherPlayers[data.id].isPedestrian) {
+                            // Re-apply colors to pedestrian mesh
+                            if (otherPlayers[data.id].mesh) {
+                                // Since pedestrian mesh structure is a group with userData.limbs,
+                                // we can use applyPedestrianColors but we need to pass the group.
+                                // addOtherPlayer stores the group in .mesh.
+                                // However, applyPedestrianColors expects a mesh with userData.limbs.
+                                // buildPedestrianMesh returns the group which has userData.limbs.
+                                applyPedestrianColors(otherPlayers[data.id].mesh, data.pedestrianColors);
+                            }
+                        }
                     }
                     if (data.username !== undefined) {
                         otherPlayers[data.id].username = data.username;
@@ -4679,51 +4713,73 @@
         function addOtherPlayer(playerInfo) {
             if (otherPlayers[playerInfo.id]) return;
 
-            // Create vehicle mesh
-            const type = playerInfo.vehicleType || 'hypercar';
-            let bodyColor = 0xff0000;
-            let spoilerColor = 0x000000;
+            let meshGroup;
 
-            if (playerInfo.vehicleColors && playerInfo.vehicleColors[type]) {
-                bodyColor = playerInfo.vehicleColors[type].body;
-                spoilerColor = playerInfo.vehicleColors[type].spoiler;
+            if (playerInfo.isPedestrian) {
+                // PEDESTRIAN SPAWN
+                const colors = playerInfo.pedestrianColors || { shirt: 0x111111, pants: 0x111111, skin: 0xffccaa, robe: 0x000000, hat: 0x555555 };
+
+                // Construct data object expected by buildPedestrianMesh
+                const pedData = {
+                    isUser: true, // Use user style (with robe/hat if applicable)
+                    colors: colors
+                };
+
+                meshGroup = buildPedestrianMesh(pedData);
+                // Adjust position y if needed, buildPedestrianMesh aligns to foot at approx 0 local y? 
+                // buildPedestrianMesh parts are moved relative to group. 
+                // In spawnPedestrianBesidePlayer: mesh.position.copy(pos). Pos.y is 2.0.
+                // So we set group position directly.
+
+            } else {
+                // VEHICLE SPAWN
+                const type = playerInfo.vehicleType || 'hypercar';
+                let bodyColor = 0xff0000;
+                let spoilerColor = 0x000000;
+
+                if (playerInfo.vehicleColors && playerInfo.vehicleColors[type]) {
+                    bodyColor = playerInfo.vehicleColors[type].body;
+                    spoilerColor = playerInfo.vehicleColors[type].spoiler;
+                }
+
+                const otherCar = createVehicle({
+                    type: type,
+                    bodyColor: bodyColor,
+                    spoilerColor: spoilerColor,
+                    addLights: false,
+                    scale: 1.8
+                });
+
+                // Enable shadows
+                otherCar.traverse((child) => {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                    }
+                });
+
+                meshGroup = new THREE.Group();
+                meshGroup.add(otherCar);
             }
 
-            const otherCar = createVehicle({
-                type: type,
-                bodyColor: bodyColor,
-                spoilerColor: spoilerColor,
-                addLights: false,
-                scale: 1.8
-            });
-
-            // Enable shadows
-            otherCar.traverse((child) => {
-                if (child.isMesh) {
-                    child.castShadow = true;
-                    child.receiveShadow = true;
-                }
-            });
-
-            const playerGroup = new THREE.Group();
-            playerGroup.add(otherCar);
-
-            playerGroup.position.set(playerInfo.x, playerInfo.y, playerInfo.z);
-            playerGroup.rotation.y = playerInfo.rotation;
+            meshGroup.position.set(playerInfo.x, playerInfo.y, playerInfo.z);
+            meshGroup.rotation.y = playerInfo.rotation;
 
             otherPlayers[playerInfo.id] = {
-                mesh: playerGroup,
+                mesh: meshGroup,
                 targetPos: { x: playerInfo.x, y: playerInfo.y, z: playerInfo.z, rotation: playerInfo.rotation },
-                vehicleType: type,
+                vehicleType: playerInfo.vehicleType,
                 vehicleColors: playerInfo.vehicleColors,
-                username: playerInfo.username
+                username: playerInfo.username,
+                isPedestrian: playerInfo.isPedestrian,
+                pedestrianColors: playerInfo.pedestrianColors
             };
 
             if (playerInfo.username) {
                 updateRemoteUsername(playerInfo.id, playerInfo.username);
             }
 
-            scene.add(playerGroup);
+            scene.add(meshGroup);
         }
 
         function removeOtherPlayer(id) {
