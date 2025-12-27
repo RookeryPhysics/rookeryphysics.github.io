@@ -84,7 +84,23 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
+const os = require('os');
+
+function getLocalIpAddress() {
+    const interfaces = os.networkInterfaces();
+    for (const name of Object.keys(interfaces)) {
+        for (const iface of interfaces[name]) {
+            if (iface.family === 'IPv4' && !iface.internal) {
+                return iface.address;
+            }
+        }
+    }
+    return 'localhost';
+}
+
 server.listen(PORT, '0.0.0.0', () => {
+    const localIp = getLocalIpAddress();
     console.log(`Server running on port ${PORT}`);
-    console.log(`LAN Access: http://172.16.1.218:${PORT}`);
+    console.log(`- Local/LAN Access: http://${localIp}:${PORT}`);
+    console.log(`- Internet Access:  http://YOUR_PUBLIC_IP:${PORT} (Requires Port Forwarding)`);
 });
