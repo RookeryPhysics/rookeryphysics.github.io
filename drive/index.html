@@ -921,6 +921,7 @@
     <div id="game-container"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 
     <script>
         // --- Variables ---
@@ -930,6 +931,10 @@
         let miniatureGroupSuper, miniatureGroupHyper;
         let raycaster = new THREE.Raycaster();
         let mouse = new THREE.Vector2();
+
+        // Multiplayer
+        let socket;
+        let otherPlayers = {};
 
         // Modal Variables
         let vehicleModalOpen = false;
@@ -1432,6 +1437,7 @@
 
             initPedestrianModal();
             initPedestrianColorPalette();
+            initSocket();
         }
 
         // --- Vehicle Modal Functions ---
@@ -4494,6 +4500,20 @@
                 updateHeadingIndicator();
                 if (globalFrame % TRAFFIC_UPDATE_INTERVAL === 0) updateTraffic(nowTime); // Pass time
 
+                // Multiplayer Updates
+                if (socket && player) {
+                    if (globalFrame % 3 === 0) {
+                        socket.emit('playerMovement', {
+                            x: player.position.x,
+                            y: player.position.y,
+                            z: player.position.z,
+                            rotation: player.rotation.y,
+                            vehicleType: carType
+                        });
+                    }
+                }
+                updateRemotePlayers();
+
                 const activePos = getActivePosition();
                 if (sunLight && activePos.distanceToSquared(lastLightUpdatePos) > 1600) { // 40^2 = 1600
                     lastLightUpdatePos.copy(activePos);
@@ -4582,6 +4602,99 @@
                 pedModalCamera.aspect = width / height;
                 pedModalCamera.updateProjectionMatrix();
             }
+        }
+
+        // --- Multiplayer Functions ---
+        function initSocket() {
+            socket = io('http://localhost:3000'); // Connect to server
+
+            socket.on('connect', () => {
+                console.log('Connected to server');
+            });
+
+            socket.on('currentPlayers', (players) => {
+                Object.keys(players).forEach((id) => {
+                    if (id !== socket.id) {
+                        addOtherPlayer(players[id]);
+                    }
+                });
+            });
+
+            socket.on('newPlayer', (playerInfo) => {
+                addOtherPlayer(playerInfo);
+            });
+
+            socket.on('playerDisconnected', (id) => {
+                removeOtherPlayer(id);
+            });
+
+            socket.on('playerMoved', (playerInfo) => {
+                if (otherPlayers[playerInfo.id]) {
+                    otherPlayers[playerInfo.id].targetPos = {
+                        x: playerInfo.x,
+                        y: playerInfo.y,
+                        z: playerInfo.z,
+                        rotation: playerInfo.rotation
+                    };
+                } else {
+                    addOtherPlayer(playerInfo);
+                }
+            });
+        }
+
+        function addOtherPlayer(playerInfo) {
+            if (otherPlayers[playerInfo.id]) return;
+
+            // Create vehicle mesh
+            const type = playerInfo.vehicleType || 'hypercar';
+            // Use default colors for remote players
+            const otherCar = createVehicle({
+                type: type,
+                bodyColor: 0xff0000,
+                spoilerColor: 0x000000,
+                addLights: false,
+                scale: 1.8
+            });
+
+            // Enable shadows
+            otherCar.traverse((child) => {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                }
+            });
+
+            const playerGroup = new THREE.Group();
+            playerGroup.add(otherCar);
+
+            playerGroup.position.set(playerInfo.x, playerInfo.y, playerInfo.z);
+            playerGroup.rotation.y = playerInfo.rotation;
+
+            otherPlayers[playerInfo.id] = {
+                mesh: playerGroup,
+                targetPos: { x: playerInfo.x, y: playerInfo.y, z: playerInfo.z, rotation: playerInfo.rotation }
+            };
+
+            scene.add(playerGroup);
+        }
+
+        function removeOtherPlayer(id) {
+            if (otherPlayers[id]) {
+                scene.remove(otherPlayers[id].mesh);
+                delete otherPlayers[id];
+            }
+        }
+
+        function updateRemotePlayers() {
+            Object.keys(otherPlayers).forEach((id) => {
+                const p = otherPlayers[id];
+                if (p.targetPos) {
+                    p.mesh.position.lerp(new THREE.Vector3(p.targetPos.x, p.targetPos.y, p.targetPos.z), 0.2);
+
+                    // Simple rotation interpolation
+                    p.mesh.rotation.y += (p.targetPos.rotation - p.mesh.rotation.y) * 0.2;
+                }
+            });
         }
     </script>
     <script>
