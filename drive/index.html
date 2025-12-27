@@ -1963,6 +1963,11 @@
             pedestrianModal.classList.remove('active');
             pedestrianModalOpen = false;
             updatePlayerLabel();
+
+            if (socket) {
+                const username = document.getElementById('player-username').value;
+                socket.emit('updatePlayerDetails', { vehicleColors: vehicleColors, username: username });
+            }
         }
 
         /**
@@ -4617,8 +4622,9 @@
 
             socket.on('connect', () => {
                 console.log('Connected to server');
-                // Send current vehicle colors
-                socket.emit('updatePlayerDetails', { vehicleColors: vehicleColors });
+                // Send current vehicle colors and username
+                const username = localStorage.getItem('playerUsername') || "";
+                socket.emit('updatePlayerDetails', { vehicleColors: vehicleColors, username: username });
             });
 
             socket.on('currentPlayers', (players) => {
@@ -4658,8 +4664,14 @@
 
             socket.on('playerDetailsUpdated', (data) => {
                 if (otherPlayers[data.id]) {
-                    otherPlayers[data.id].vehicleColors = data.vehicleColors;
-                    updateRemotePlayerVisuals(data.id);
+                    if (data.vehicleColors) {
+                        otherPlayers[data.id].vehicleColors = data.vehicleColors;
+                        updateRemotePlayerVisuals(data.id);
+                    }
+                    if (data.username !== undefined) {
+                        otherPlayers[data.id].username = data.username;
+                        updateRemoteUsername(data.id, data.username);
+                    }
                 }
             });
         }
@@ -4703,8 +4715,13 @@
                 mesh: playerGroup,
                 targetPos: { x: playerInfo.x, y: playerInfo.y, z: playerInfo.z, rotation: playerInfo.rotation },
                 vehicleType: type,
-                vehicleColors: playerInfo.vehicleColors
+                vehicleColors: playerInfo.vehicleColors,
+                username: playerInfo.username
             };
+
+            if (playerInfo.username) {
+                updateRemoteUsername(playerInfo.id, playerInfo.username);
+            }
 
             scene.add(playerGroup);
         }
@@ -4750,6 +4767,26 @@
                 }
             });
         }
+
+        function updateRemoteUsername(id, name) {
+            const p = otherPlayers[id];
+            if (!p || !p.mesh) return;
+
+            // Remove existing label if any
+            const existingLabel = p.mesh.getObjectByName('usernameLabel');
+            if (existingLabel) {
+                p.mesh.remove(existingLabel);
+            }
+
+            if (name && name.trim() !== "") {
+                const sprite = createUsernameLabel(name);
+                sprite.name = 'usernameLabel';
+                sprite.position.set(0, 3.5, 0); // Position above the vehicle
+                p.mesh.add(sprite);
+            }
+        }
+
+
     </script>
     <script>
         // Load the SDK asynchronously
