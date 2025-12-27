@@ -62,6 +62,19 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Handle chat messages
+    socket.on('sendChat', (message) => {
+        const player = players[socket.id];
+        if (player) {
+            // Broadcast to everyone (including sender)
+            io.emit('receiveChat', {
+                id: socket.id,
+                username: player.username || "Player",
+                message: message
+            });
+        }
+    });
+
     // Handle player movement
     socket.on('playerMovement', (movementData) => {
         if (players[socket.id]) {

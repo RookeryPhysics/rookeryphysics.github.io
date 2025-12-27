@@ -608,6 +608,100 @@
             z-index: 10;
         }
 
+        /* --- Chat UI --- */
+        #chat-container {
+            position: absolute;
+            top: 140px;
+            left: 20px;
+            width: 300px;
+            height: auto;
+            max-height: 250px;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            z-index: 40;
+        }
+
+        #chat-messages {
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            margin-bottom: 8px;
+            /* Allow messages to stack upwards */
+            justify-content: flex-end;
+        }
+
+        .chat-message {
+            background: rgba(0, 0, 0, 0.6);
+            color: rgba(255, 255, 255, 0.9);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            line-height: 1.4;
+            align-self: flex-start;
+            backdrop-filter: blur(2px);
+            text-shadow: 0 1px 2px black;
+            border-left: 3px solid rgba(255, 255, 255, 0.5);
+            max-width: 100%;
+            word-wrap: break-word;
+            animation: fadeIn 0.3s ease-out;
+            transition: opacity 1s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        #chat-input-container {
+            pointer-events: auto;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+            display: flex;
+        }
+
+        #chat-input-container:hover,
+        #chat-input-container:focus-within {
+            opacity: 1;
+        }
+
+        #chat-input {
+            width: 100%;
+            background: rgba(20, 20, 30, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 14px;
+            outline: none;
+            backdrop-filter: blur(4px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            transition: border-color 0.2s, box-shadow 0.2s;
+            user-select: text;
+            -webkit-user-select: text;
+            touch-action: auto;
+        }
+
+        #chat-input:focus {
+            border-color: #ff3366;
+            box-shadow: 0 0 8px rgba(255, 51, 102, 0.4);
+        }
+
+        #chat-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+
         #fps-counter {
             position: absolute;
             top: 20px;
@@ -783,6 +877,13 @@
         <div id="movement-zone">
             <div id="stick-knob">
                 <div id="heading-arrow"></div>
+            </div>
+        </div>
+
+        <div id="chat-container">
+            <div id="chat-messages"></div>
+            <div id="chat-input-container">
+                <input id="chat-input" type="text" placeholder="Press Enter to chat..." maxlength="100">
             </div>
         </div>
 
@@ -985,6 +1086,7 @@
         let paintRaycaster = new THREE.Raycaster();
         let modalMouse = new THREE.Vector2();
         let isPaintClick = false;
+        let isChatting = false;
 
         let player;
         let initialSpawnX = 0;
@@ -3602,6 +3704,12 @@
                     return;
                 }
             }
+
+            // Allow native touch/focus for inputs (chat, username fields)
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.closest('#chat-input-container')) {
+                return;
+            }
+
             e.preventDefault();
             const touches = e.changedTouches;
             const zoneRect = movementZone.getBoundingClientRect();
@@ -4585,6 +4693,7 @@
          * Update movement vector based on currently pressed keys.
          */
         function updateMoveInputFromKeys() {
+            if (vehicleModalOpen || pedestrianModalOpen || settingsModal.classList.contains('active') || shareModal.classList.contains('active') || isChatting) return;
             let dx = 0;
             let dy = 0;
             if (keysPressed['w'] || keysPressed['ArrowUp']) dy -= 1;
@@ -4782,6 +4891,10 @@
                     }
                 }
             });
+
+            socket.on('receiveChat', (data) => {
+                addChatMessage(data.username, data.message);
+            });
         }
 
         function addOtherPlayer(playerInfo) {
@@ -4948,6 +5061,79 @@
                 p.mesh.add(sprite);
             }
         }
+
+        // --- Chat System ---
+        function initChat() {
+            const chatInput = document.getElementById('chat-input');
+            const chatContainer = document.getElementById('chat-input-container');
+
+            if (!chatInput) return;
+
+            // Global Key listener to focus chat
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    if (document.activeElement === chatInput) {
+                        sendChat();
+                    } else {
+                        // Focus chat
+                        chatInput.focus();
+                        isChatting = true;
+                        if (chatContainer) chatContainer.style.opacity = '1';
+                    }
+                }
+            });
+
+            // Input listeners
+            chatInput.addEventListener('focus', () => {
+                isChatting = true;
+                if (chatContainer) chatContainer.style.opacity = '1';
+            });
+
+            chatInput.addEventListener('blur', () => {
+                isChatting = false;
+                if (chatContainer) chatContainer.style.opacity = '0.5';
+            });
+        }
+
+        function sendChat() {
+            const chatInput = document.getElementById('chat-input');
+            const message = chatInput.value.trim();
+            if (message && socket) {
+                socket.emit('sendChat', message);
+                chatInput.value = '';
+            }
+            chatInput.blur();
+            isChatting = false;
+        }
+
+        function addChatMessage(username, message) {
+            const chatMessages = document.getElementById('chat-messages');
+            if (!chatMessages) return;
+
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'chat-message';
+            // Simple XSS protection
+            const safeName = username.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            const safeMsg = message.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+            msgDiv.innerHTML = `<strong>${safeName}:</strong> ${safeMsg}`;
+
+            chatMessages.appendChild(msgDiv);
+
+            // Auto scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            // Remove after 8 seconds
+            setTimeout(() => {
+                msgDiv.style.opacity = '0';
+                setTimeout(() => {
+                    if (msgDiv.parentNode) msgDiv.parentNode.removeChild(msgDiv);
+                }, 1000); // Wait for fade out
+            }, 8000);
+        }
+
+        // Initialize Chat
+        initChat();
 
 
     </script>
