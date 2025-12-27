@@ -4678,19 +4678,40 @@
             }
 
             let connectionUrl = serverIP;
-            // If it doesn't start with http, add it.
+            // If it doesn't start with http/https, add http by default.
             if (!connectionUrl.startsWith('http')) {
                 connectionUrl = 'http://' + connectionUrl;
             }
-            // If no port is specified (no colon followed by digits at end), add default :3000
-            if (!/:\d+$/.test(connectionUrl)) {
+            // If no port is specified (no colon followed by digits at end), add default :3000 for http
+            if (!/:\d+$/.test(connectionUrl) && !connectionUrl.startsWith('https')) {
                 connectionUrl += ':3000';
             }
 
-            socket = io(connectionUrl); // Connect to server
+            // Mixed Content Warning
+            if (location.protocol === 'https:' && connectionUrl.startsWith('http:')) {
+                console.warn("Mixed Content Warning: Connecting to HTTP server from HTTPS page.");
+                // We won't alert immediately to avoid annoying the user if they have a workaround,
+                // but we will show it if connection fails.
+            }
+
+            console.log("Attempting to connect to:", connectionUrl);
+            socket = io(connectionUrl);
+
+            const joinBtn = document.getElementById('settings-join-server-btn');
+            const originalBtnText = joinBtn ? joinBtn.innerText : 'Join Server';
+
+            if (joinBtn) {
+                joinBtn.innerText = `Connecting to...`;
+            }
 
             socket.on('connect', () => {
                 console.log('Connected to server');
+                if (joinBtn) {
+                    joinBtn.innerText = `Connected: ${serverIP}`;
+                    joinBtn.style.background = '#228822'; // Green
+                    joinBtn.style.borderColor = '#44aa44';
+                }
+
                 // Send current vehicle colors and username
                 const username = localStorage.getItem('playerUsername') || "";
                 socket.emit('updatePlayerDetails', {
@@ -4698,6 +4719,37 @@
                     username: username,
                     pedestrianColors: defaultPedestrianColors // Send current pedestrian colors
                 });
+            });
+
+            socket.on('connect_error', (err) => {
+                console.error('Connection failed', err);
+                if (joinBtn) {
+                    joinBtn.innerText = `Connection Failed`;
+                    joinBtn.style.background = '#882222'; // Red
+                    joinBtn.style.borderColor = '#aa4444';
+                }
+
+                // Detailed error for user
+                let msg = `Could not connect to ${connectionUrl}.\n`;
+                if (location.protocol === 'https:' && connectionUrl.startsWith('http:')) {
+                    msg += `\nPOSSIBLE CAUSE: You are playing on HTTPS but the server is HTTP. Browsers block this ("Mixed Content").\nTry using ngrok to get an HTTPS url for your server, or play the game via HTTP (if possible).`;
+                } else {
+                    msg += `\nCheck:\n1. Server is running (port 3000)\n2. Correct IP address (Public IP if over internet)\n3. Port Forwarding is set up correctly in your router.\n4. Windows Firewall is allowing Node.js connections.`;
+                }
+
+                // Only alert once to prevent loop
+                if (!window.hasAlertedError) {
+                    alert(msg);
+                    window.hasAlertedError = true;
+                }
+            });
+
+            socket.on('disconnect', () => {
+                if (joinBtn) {
+                    joinBtn.innerText = 'Disconnected - Click to Rejoin';
+                    joinBtn.style.background = '#444';
+                    joinBtn.style.borderColor = '#666';
+                }
             });
 
             socket.on('currentPlayers', (players) => {
