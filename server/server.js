@@ -6,6 +6,12 @@ const cors = require('cors');
 const app = express();
 app.use(cors());
 
+// Serve static files from the 'drive' directory (game client)
+// This allows players to access the game via http://YOUR_IP:3000/
+// avoiding the HTTPS vs HTTP Mixed Content issue.
+const path = require('path');
+app.use(express.static(path.join(__dirname, '../drive')));
+
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {

@@ -890,22 +890,7 @@
                 text-transform: uppercase;
                 letter-spacing: 1px;
             ">Modify Player</button>
-            <button id="settings-join-server-btn" style="
-                display: block;
-                width: 100%;
-                box-sizing: border-box;
-                margin-top: 5px;
-                margin-bottom: 15px;
-                padding: 10px 20px;
-                font-size: 16px;
-                color: #fff;
-                background: #444;
-                border: 2px solid #666;
-                border-radius: 8px;
-                cursor: pointer;
-                text-transform: uppercase;
-                letter-spacing: 1px;
-            ">Join Server</button>
+
             <div id="res-control">
                 <span id="res-label">RESOLUTION</span>
                 <input type="range" id="res-slider" min="0.1" max="1.5" step="0.05" value="1.5">
@@ -1331,27 +1316,7 @@
                 }, { passive: false });
             }
 
-            // Join Server Button
-            const joinServerBtn = document.getElementById('settings-join-server-btn');
-            if (joinServerBtn) {
-                const handleJoin = () => {
-                    const currentIP = localStorage.getItem('serverIP') || '172.16.1.218';
-                    const ip = prompt("Enter Server IP Address:", currentIP);
-                    if (ip && ip.trim() !== "") {
-                        localStorage.setItem('serverIP', ip.trim());
-                        location.reload();
-                    }
-                };
-                joinServerBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    handleJoin();
-                });
-                joinServerBtn.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleJoin();
-                }, { passive: false });
-            }
+
 
             const resSlider = document.getElementById('res-slider');
             resSlider.addEventListener('input', (e) => {
@@ -4673,44 +4638,42 @@
         function initSocket() {
             // Updated to use local LAN IP or custom user IP
             let serverIP = localStorage.getItem('serverIP');
-            if (!serverIP) {
-                serverIP = '172.16.1.218'; // Default
+
+            // If no IP is set and we are running on port 3000 (likely served by the node server itself),
+            // automatically connect to the same origin.
+            if (!serverIP && window.location.port === '3000') {
+                console.log("Running on game server port, connecting to self.");
+                socket = io();
+
+                // For display purposes only
+                serverIP = window.location.hostname;
+            } else {
+                if (!serverIP) {
+                    serverIP = '172.16.1.218'; // Default fallback
+                }
+
+                let connectionUrl = serverIP;
+                // If it doesn't start with http/https, add http by default.
+                if (!connectionUrl.startsWith('http')) {
+                    connectionUrl = 'http://' + connectionUrl;
+                }
+                // If no port is specified (no colon followed by digits at end), add default :3000 for http
+                if (!/:\d+$/.test(connectionUrl) && !connectionUrl.startsWith('https')) {
+                    connectionUrl += ':3000';
+                }
+
+                // Mixed Content Warning
+                if (location.protocol === 'https:' && connectionUrl.startsWith('http:')) {
+                    console.warn("Mixed Content Warning: Connecting to HTTP server from HTTPS page.");
+                }
+
+                console.log("Attempting to connect to:", connectionUrl);
+                socket = io(connectionUrl);
             }
 
-            let connectionUrl = serverIP;
-            // If it doesn't start with http/https, add http by default.
-            if (!connectionUrl.startsWith('http')) {
-                connectionUrl = 'http://' + connectionUrl;
-            }
-            // If no port is specified (no colon followed by digits at end), add default :3000 for http
-            if (!/:\d+$/.test(connectionUrl) && !connectionUrl.startsWith('https')) {
-                connectionUrl += ':3000';
-            }
-
-            // Mixed Content Warning
-            if (location.protocol === 'https:' && connectionUrl.startsWith('http:')) {
-                console.warn("Mixed Content Warning: Connecting to HTTP server from HTTPS page.");
-                // We won't alert immediately to avoid annoying the user if they have a workaround,
-                // but we will show it if connection fails.
-            }
-
-            console.log("Attempting to connect to:", connectionUrl);
-            socket = io(connectionUrl);
-
-            const joinBtn = document.getElementById('settings-join-server-btn');
-            const originalBtnText = joinBtn ? joinBtn.innerText : 'Join Server';
-
-            if (joinBtn) {
-                joinBtn.innerText = `Connecting to...`;
-            }
 
             socket.on('connect', () => {
                 console.log('Connected to server');
-                if (joinBtn) {
-                    joinBtn.innerText = `Connected: ${serverIP}`;
-                    joinBtn.style.background = '#228822'; // Green
-                    joinBtn.style.borderColor = '#44aa44';
-                }
 
                 // Send current vehicle colors and username
                 const username = localStorage.getItem('playerUsername') || "";
@@ -4723,11 +4686,6 @@
 
             socket.on('connect_error', (err) => {
                 console.error('Connection failed', err);
-                if (joinBtn) {
-                    joinBtn.innerText = `Connection Failed`;
-                    joinBtn.style.background = '#882222'; // Red
-                    joinBtn.style.borderColor = '#aa4444';
-                }
 
                 // Detailed error for user
                 let msg = `Could not connect to ${connectionUrl}.\n`;
@@ -4745,11 +4703,7 @@
             });
 
             socket.on('disconnect', () => {
-                if (joinBtn) {
-                    joinBtn.innerText = 'Disconnected - Click to Rejoin';
-                    joinBtn.style.background = '#444';
-                    joinBtn.style.borderColor = '#666';
-                }
+                // Handle disconnect if needed
             });
 
             socket.on('currentPlayers', (players) => {
