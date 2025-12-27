@@ -1518,8 +1518,19 @@
             vReset.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); resetVehicleDefaults(); }, { passive: false });
 
             const pReset = document.getElementById('pedestrian-reset-btn');
-            pReset.addEventListener('mousedown', (e) => { e.stopPropagation(); resetPedestrianDefaults(); });
-            pReset.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); resetPedestrianDefaults(); }, { passive: false });
+            pReset.addEventListener('mousedown', (e) => {
+                e.stopPropagation();
+                const usernameInput = document.getElementById('player-username');
+                if (usernameInput) usernameInput.blur();
+                resetPedestrianDefaults();
+            });
+            pReset.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const usernameInput = document.getElementById('player-username');
+                if (usernameInput) usernameInput.blur();
+                resetPedestrianDefaults();
+            }, { passive: false });
 
             // Username Input Logic
             const usernameInput = document.getElementById('player-username');
@@ -1939,6 +1950,8 @@
 
                 div.addEventListener('click', (e) => {
                     e.stopPropagation();
+                    const usernameInput = document.getElementById('player-username');
+                    if (usernameInput) usernameInput.blur();
                     document.querySelectorAll('#ped-color-palette .color-swatch').forEach(s => s.classList.remove('selected'));
                     div.classList.add('selected');
                     selectedColor = parseInt(div.dataset.color);
@@ -1946,6 +1959,8 @@
                 div.addEventListener('touchstart', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
+                    const usernameInput = document.getElementById('player-username');
+                    if (usernameInput) usernameInput.blur();
                     document.querySelectorAll('#ped-color-palette .color-swatch').forEach(s => s.classList.remove('selected'));
                     div.classList.add('selected');
                     selectedColor = parseInt(div.dataset.color);
@@ -2041,6 +2056,8 @@
          * Close the pedestrian customization modal and save changes.
          */
         function closePedestrianModal() {
+            const usernameInput = document.getElementById('player-username');
+            if (usernameInput) usernameInput.blur();
             if (tempPedColors) {
                 // Apply temp colors to userPedestrian if active
                 if (userPedestrian) {
@@ -2079,6 +2096,10 @@
          * @param {MouseEvent} event 
          */
         function onPedModalMouseDown(event) {
+            const usernameInput = document.getElementById('player-username');
+            if (usernameInput && document.activeElement === usernameInput) {
+                usernameInput.blur();
+            }
             isDraggingModalCar = true; // Reuse vehicle dragging state
             isPaintClick = true;
             lastDragX = event.clientX;
@@ -2112,6 +2133,10 @@
          * @param {TouchEvent} event 
          */
         function onPedModalTouchStart(event) {
+            const usernameInput = document.getElementById('player-username');
+            if (usernameInput && document.activeElement === usernameInput) {
+                usernameInput.blur();
+            }
             isDraggingModalCar = true;
             isPaintClick = true;
             lastDragX = event.touches[0].clientX;
