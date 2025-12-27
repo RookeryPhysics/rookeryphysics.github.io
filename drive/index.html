@@ -4514,13 +4514,28 @@
                 // Multiplayer Updates
                 if (socket && player) {
                     if (globalFrame % 3 === 0) {
+                        const activePos = getActivePosition();
+                        const activeRot = controlMode === 'pedestrian' && userPedestrian ? userPedestrian.rotation : player.rotation.y;
+
+                        let vehicleData = null;
+                        if (controlMode === 'pedestrian') {
+                            vehicleData = {
+                                x: player.position.x,
+                                y: player.position.y,
+                                z: player.position.z,
+                                rotation: player.rotation.y,
+                                type: carType
+                            };
+                        }
+
                         socket.emit('playerMovement', {
-                            x: player.position.x,
-                            y: player.position.y,
-                            z: player.position.z,
-                            rotation: player.rotation.y,
+                            x: activePos.x,
+                            y: activePos.y,
+                            z: activePos.z,
+                            rotation: activeRot,
                             vehicleType: carType,
-                            isPedestrian: controlMode === 'pedestrian'
+                            isPedestrian: controlMode === 'pedestrian',
+                            vehicleData: vehicleData
                         });
                     }
                 }
@@ -4714,6 +4729,7 @@
             if (otherPlayers[playerInfo.id]) return;
 
             let meshGroup;
+            let parkedCarMesh = null;
 
             if (playerInfo.isPedestrian) {
                 // PEDESTRIAN SPAWN
@@ -4726,10 +4742,38 @@
                 };
 
                 meshGroup = buildPedestrianMesh(pedData);
-                // Adjust position y if needed, buildPedestrianMesh aligns to foot at approx 0 local y? 
-                // buildPedestrianMesh parts are moved relative to group. 
-                // In spawnPedestrianBesidePlayer: mesh.position.copy(pos). Pos.y is 2.0.
-                // So we set group position directly.
+
+                // SPAWN PARKED VEHICLE IF DATA EXISTS
+                if (playerInfo.vehicleData) {
+                    const vData = playerInfo.vehicleData;
+                    const vType = vData.type || 'hypercar';
+                    let vBody = 0xff0000;
+                    let vSpoiler = 0x000000;
+
+                    if (playerInfo.vehicleColors && playerInfo.vehicleColors[vType]) {
+                        vBody = playerInfo.vehicleColors[vType].body;
+                        vSpoiler = playerInfo.vehicleColors[vType].spoiler;
+                    }
+
+                    parkedCarMesh = createVehicle({
+                        type: vType,
+                        bodyColor: vBody,
+                        spoilerColor: vSpoiler,
+                        addLights: false,
+                        scale: 1.8
+                    });
+
+                    parkedCarMesh.traverse((child) => {
+                        if (child.isMesh) {
+                            child.castShadow = true;
+                            child.receiveShadow = true;
+                        }
+                    });
+
+                    parkedCarMesh.position.set(vData.x, vData.y, vData.z);
+                    parkedCarMesh.rotation.y = vData.rotation;
+                    scene.add(parkedCarMesh);
+                }
 
             } else {
                 // VEHICLE SPAWN
@@ -4767,6 +4811,7 @@
 
             otherPlayers[playerInfo.id] = {
                 mesh: meshGroup,
+                parkedCar: parkedCarMesh,
                 targetPos: { x: playerInfo.x, y: playerInfo.y, z: playerInfo.z, rotation: playerInfo.rotation },
                 vehicleType: playerInfo.vehicleType,
                 vehicleColors: playerInfo.vehicleColors,
@@ -4785,6 +4830,9 @@
         function removeOtherPlayer(id) {
             if (otherPlayers[id]) {
                 scene.remove(otherPlayers[id].mesh);
+                if (otherPlayers[id].parkedCar) {
+                    scene.remove(otherPlayers[id].parkedCar);
+                }
                 delete otherPlayers[id];
             }
         }

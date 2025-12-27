@@ -65,6 +65,11 @@ io.on('connection', (socket) => {
             players[socket.id].rotation = movementData.rotation;
             if (movementData.vehicleType) players[socket.id].vehicleType = movementData.vehicleType;
             if (movementData.isPedestrian !== undefined) players[socket.id].isPedestrian = movementData.isPedestrian;
+            if (movementData.vehicleData) {
+                players[socket.id].vehicleData = movementData.vehicleData;
+            } else {
+                players[socket.id].vehicleData = null;
+            }
 
             // Broadcast movement to other players
             socket.broadcast.emit('playerMoved', players[socket.id]);
