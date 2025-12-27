@@ -36,9 +36,14 @@ You should see: `Server running on port 3000`.
 
 ## Connecting the Game
 
-The game is pre-configured to connect to `http://localhost:3000`.
-Simply open `drive/index.html` in your browser (or refresh if open) while the server is running.
-You should see "Connected to server" in the browser console (F12).
+The game is pre-configured to connect to your LAN IP: `http://172.16.1.218:3000`.
+
+To play with others on your Wi-Fi:
+1.  **Run the server** on this computer (`node server.js`).
+2.  **Open the game** on any device connected to the same Wi-Fi.
+    -   If opening as a file, ensure the code in `index.html` points to `http://172.16.1.218:3000`.
+    -   If hosting the game files on a web server, ensure the devices can access that web server.
+
 
 ## Troubleshooting
 

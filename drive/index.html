@@ -4606,7 +4606,8 @@
 
         // --- Multiplayer Functions ---
         function initSocket() {
-            socket = io('http://localhost:3000'); // Connect to server
+            // Updated to use local LAN IP
+            socket = io('http://172.16.1.218:3000'); // Connect to server
 
             socket.on('connect', () => {
                 console.log('Connected to server');
