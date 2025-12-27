@@ -1639,6 +1639,9 @@
                 }
                 // Persistent save
                 localStorage.setItem('vehicleColors', JSON.stringify(vehicleColors));
+                if (socket) {
+                    socket.emit('updatePlayerDetails', { vehicleColors: vehicleColors });
+                }
             }
         }
 
@@ -2077,6 +2080,9 @@
             };
             Object.assign(vehicleColors, JSON.parse(JSON.stringify(defaults)));
             localStorage.setItem('vehicleColors', JSON.stringify(vehicleColors));
+            if (socket) {
+                socket.emit('updatePlayerDetails', { vehicleColors: vehicleColors });
+            }
 
             // Re-open/refresh the modal content to rebuild from new colors
             openVehicleModal();
@@ -4611,6 +4617,8 @@
 
             socket.on('connect', () => {
                 console.log('Connected to server');
+                // Send current vehicle colors
+                socket.emit('updatePlayerDetails', { vehicleColors: vehicleColors });
             });
 
             socket.on('currentPlayers', (players) => {
@@ -4637,8 +4645,21 @@
                         z: playerInfo.z,
                         rotation: playerInfo.rotation
                     };
+                    // Handle Vehicle Type Change
+                    if (playerInfo.vehicleType && otherPlayers[playerInfo.id].vehicleType !== playerInfo.vehicleType) {
+                        // Re-create vehicle
+                        removeOtherPlayer(playerInfo.id);
+                        addOtherPlayer(playerInfo);
+                    }
                 } else {
                     addOtherPlayer(playerInfo);
+                }
+            });
+
+            socket.on('playerDetailsUpdated', (data) => {
+                if (otherPlayers[data.id]) {
+                    otherPlayers[data.id].vehicleColors = data.vehicleColors;
+                    updateRemotePlayerVisuals(data.id);
                 }
             });
         }
@@ -4648,11 +4669,18 @@
 
             // Create vehicle mesh
             const type = playerInfo.vehicleType || 'hypercar';
-            // Use default colors for remote players
+            let bodyColor = 0xff0000;
+            let spoilerColor = 0x000000;
+
+            if (playerInfo.vehicleColors && playerInfo.vehicleColors[type]) {
+                bodyColor = playerInfo.vehicleColors[type].body;
+                spoilerColor = playerInfo.vehicleColors[type].spoiler;
+            }
+
             const otherCar = createVehicle({
                 type: type,
-                bodyColor: 0xff0000,
-                spoilerColor: 0x000000,
+                bodyColor: bodyColor,
+                spoilerColor: spoilerColor,
                 addLights: false,
                 scale: 1.8
             });
@@ -4673,7 +4701,9 @@
 
             otherPlayers[playerInfo.id] = {
                 mesh: playerGroup,
-                targetPos: { x: playerInfo.x, y: playerInfo.y, z: playerInfo.z, rotation: playerInfo.rotation }
+                targetPos: { x: playerInfo.x, y: playerInfo.y, z: playerInfo.z, rotation: playerInfo.rotation },
+                vehicleType: type,
+                vehicleColors: playerInfo.vehicleColors
             };
 
             scene.add(playerGroup);
@@ -4684,6 +4714,29 @@
                 scene.remove(otherPlayers[id].mesh);
                 delete otherPlayers[id];
             }
+        }
+
+        function updateRemotePlayerVisuals(id) {
+            const p = otherPlayers[id];
+            if (!p || !p.mesh || !p.vehicleColors || !p.vehicleType) return;
+
+            const colors = p.vehicleColors[p.vehicleType];
+            if (!colors) return;
+
+            // p.mesh is the playerGroup wrapper
+            // p.mesh.children[0] is the vehicle model (otherCar)
+            const carMesh = p.mesh.children[0];
+            if (!carMesh) return;
+
+            carMesh.traverse(child => {
+                if (child.isMesh && child.userData.partGroup) {
+                    if (child.userData.partGroup === 'body') {
+                        child.material.color.setHex(colors.body);
+                    } else if (child.userData.partGroup === 'spoiler') {
+                        child.material.color.setHex(colors.spoiler);
+                    }
+                }
+            });
         }
 
         function updateRemotePlayers() {

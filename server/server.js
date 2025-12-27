@@ -26,7 +26,8 @@ io.on('connection', (socket) => {
         y: 0,
         z: 0,
         rotation: 0,
-        vehicleType: 'hypercar' // Default
+        vehicleType: 'hypercar', // Default
+        vehicleColors: null // Will be populated by client
     };
 
     // Send existing players to the new player
@@ -34,6 +35,18 @@ io.on('connection', (socket) => {
 
     // Broadcast new player to others
     socket.broadcast.emit('newPlayer', players[socket.id]);
+
+    // Handle player details update (colors, etc)
+    socket.on('updatePlayerDetails', (data) => {
+        if (players[socket.id]) {
+            if (data.vehicleColors) players[socket.id].vehicleColors = data.vehicleColors;
+            // Broadcast update to others
+            socket.broadcast.emit('playerDetailsUpdated', {
+                id: socket.id,
+                vehicleColors: players[socket.id].vehicleColors
+            });
+        }
+    });
 
     // Handle player movement
     socket.on('playerMovement', (movementData) => {
