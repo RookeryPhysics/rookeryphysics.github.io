@@ -618,7 +618,7 @@
             height: auto;
             max-height: 400px;
             pointer-events: none;
-            display: flex;
+            display: none;
             flex-direction: column-reverse;
             justify-content: flex-end;
             z-index: 40;
@@ -4790,6 +4790,9 @@
 
             socket.on('connect', () => {
                 console.log('Connected to server');
+                // Show Chat
+                const chatContainer = document.getElementById('chat-container');
+                if (chatContainer) chatContainer.style.display = 'flex';
 
                 // Send current vehicle colors and username
                 const username = localStorage.getItem('playerUsername') || "";
@@ -4802,6 +4805,10 @@
 
             socket.on('connect_error', (err) => {
                 console.error('Connection failed', err);
+
+                // Hide Chat
+                const chatContainer = document.getElementById('chat-container');
+                if (chatContainer) chatContainer.style.display = 'none';
 
                 // Detailed error for user
                 let msg = `Could not connect to ${connectionUrl}.\n`;
@@ -4820,6 +4827,8 @@
 
             socket.on('disconnect', () => {
                 // Handle disconnect if needed
+                const chatContainer = document.getElementById('chat-container');
+                if (chatContainer) chatContainer.style.display = 'none';
             });
 
             socket.on('currentPlayers', (players) => {
@@ -5079,6 +5088,9 @@
             // Global Key listener to focus chat
             window.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
+                    const chatContainerDiv = document.getElementById('chat-container');
+                    if (!chatContainerDiv || getComputedStyle(chatContainerDiv).display === 'none') return;
+
                     if (document.activeElement === chatInput) {
                         sendChat();
                     } else {
