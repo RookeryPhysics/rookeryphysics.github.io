@@ -611,16 +611,18 @@
         /* --- Chat UI --- */
         #chat-container {
             position: absolute;
-            top: 140px;
-            left: 20px;
-            width: 300px;
+            top: 65px;
+            left: 90px;
+            right: 90px;
+            width: auto;
             height: auto;
-            max-height: 250px;
+            max-height: 400px;
             pointer-events: none;
             display: flex;
-            flex-direction: column;
+            flex-direction: column-reverse;
             justify-content: flex-end;
             z-index: 40;
+            gap: 10px;
         }
 
         #chat-messages {
@@ -628,9 +630,7 @@
             display: flex;
             flex-direction: column;
             gap: 5px;
-            margin-bottom: 8px;
-            /* Allow messages to stack upwards */
-            justify-content: flex-end;
+            justify-content: flex-start;
         }
 
         .chat-message {
@@ -750,10 +750,9 @@
         /* HUD Hidden State */
         body.hud-hidden #fps-counter,
         body.hud-hidden #score-board,
-
         body.hud-hidden #settings-btn,
         body.hud-hidden #share-btn,
-
+        body.hud-hidden #chat-container,
         body.hud-hidden .instructions {
             opacity: 0;
             pointer-events: none;
