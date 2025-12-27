@@ -883,7 +883,7 @@
         <div id="chat-container">
             <div id="chat-messages"></div>
             <div id="chat-input-container">
-                <input id="chat-input" type="text" placeholder="Press Enter to chat..." maxlength="100">
+                <input id="chat-input" type="text" placeholder=">Chat" maxlength="100">
             </div>
         </div>
 
@@ -3759,6 +3759,10 @@
          * @param {TouchEvent} e 
          */
         function onTouchMove(e) {
+            // Allow native input interaction
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.closest('#chat-input-container')) {
+                return;
+            }
             e.preventDefault();
             const touches = e.changedTouches;
             const zoneRect = movementZone.getBoundingClientRect();
@@ -3783,6 +3787,10 @@
          * @param {TouchEvent} e 
          */
         function onTouchEnd(e) {
+            // Allow native input interaction
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.closest('#chat-input-container')) {
+                return;
+            }
             e.preventDefault();
 
             // Check if we are releasing the miniature button
