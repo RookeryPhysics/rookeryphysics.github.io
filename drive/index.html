@@ -4099,8 +4099,8 @@
 
             // Calculate drift intensity based on input and speed
             // Threshold: input > 0.6 starts the slide ramp. 
-            // We also allow entry if applying throttle (burnout) even if slow.
-            if (Math.abs(smoothedInputX) > 0.6 && (speed > 0.5 || Math.abs(moveInput.y) > 0.1)) {
+            // We also allow entry if applying throttle (burnout) OR just spinning hard in place.
+            if (Math.abs(smoothedInputX) > 0.6 && (speed > 0.5 || Math.abs(moveInput.y) > 0.1 || Math.abs(smoothedInputX) > 0.7)) {
                 // Ramp from 0.3 up to 0.96 based on how hard we turn
                 const slideFactor = Math.min(1.0, (Math.abs(smoothedInputX) - 0.6) / 0.4);
                 lateralFriction = 0.3 + (0.66 * slideFactor);
