@@ -2640,22 +2640,28 @@
             ctx.strokeRect(30, 30, 452, 196);
 
             // Text
-            const textGrad = ctx.createLinearGradient(0, 100, 0, 156);
+            const textGrad = ctx.createLinearGradient(0, 80, 0, 180);
             textGrad.addColorStop(0, '#ffffff');
             textGrad.addColorStop(1, '#00d2ff');
             ctx.fillStyle = textGrad;
-            ctx.font = 'bold 54px "Segoe UI", Tahoma, sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
 
-            // Add a stronger glow
+            // Title: YOUR AD HERE
+            ctx.font = 'bold 54px "Segoe UI", Tahoma, sans-serif';
             ctx.shadowBlur = 25;
             ctx.shadowColor = '#00d2ff';
-            ctx.fillText('YOUR AD HERE', 256, 128);
-
-            // Second pass for sharpness
+            ctx.fillText('YOUR AD HERE', 256, 105);
             ctx.shadowBlur = 0;
-            ctx.fillText('YOUR AD HERE', 256, 128);
+            ctx.fillText('YOUR AD HERE', 256, 105);
+
+            // Subtitle: Phone Number
+            ctx.font = 'bold 36px "Segoe UI", Tahoma, sans-serif';
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#00d2ff';
+            ctx.fillText('+1 306 250 4250', 256, 165);
+            ctx.shadowBlur = 0;
+            ctx.fillText('+1 306 250 4250', 256, 165);
 
             const texture = new THREE.CanvasTexture(canvas);
             texture.anisotropy = 4; // Better quality at angles
