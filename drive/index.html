@@ -3571,12 +3571,8 @@
                     if (child.isMesh && (child.userData.partGroup === 'body' || child.userData.partGroup === 'spoiler')) {
                         child.material.color.setHex(col);
                     }
-                    // Spoiler usually matches body or default black for traffic? 
-                    // createVehicle uses defaults. Let's assume traffic cars have body=spoiler or defaults.
-                    // For logic simplicity, just update body.
                 });
             } else {
-                // Reuse supercar mesh but scaled down slightly
                 mesh = createVehicle({
                     type: 'supercar',
                     color: col,
@@ -3589,10 +3585,12 @@
 
             trafficVehicles.push({
                 mesh: mesh,
-                speed: 0.4 + Math.random() * 0.2, // Random speed
-                laneDir: isPositiveLane ? 1 : -1, // +1 for positive raw road value, -1 for negative
+                speed: 0.4 + Math.random() * 0.2,
+                laneDir: isPositiveLane ? 1 : -1,
                 velocity: new THREE.Vector3(),
-                color: col // Store color for explosion
+                pushedVelocity: new THREE.Vector3(),
+                targetRawValue: getRawRoadValue(x, z),
+                color: col
             });
         }
 
@@ -3608,30 +3606,45 @@
                 const car = trafficVehicles[i];
                 const mesh = car.mesh;
 
-                // 1. Move
+                // 1. Path following movement
                 const tangent = getRoadTangent(mesh.position.x, mesh.position.z);
+                if (car.laneDir < 0) tangent.negate();
+                car.velocity.copy(tangent).multiplyScalar(car.speed);
 
-                // If laneDir is -1 (negative raw value side), we inverse the tangent flow
-                if (car.laneDir < 0) {
-                    tangent.negate();
+                // 2. Return-to-path logic (soft correction towards original lane)
+                const scale = 0.005;
+                const currentRaw = getRawRoadValue(mesh.position.x, mesh.position.z);
+                const diff = car.targetRawValue - currentRaw;
+                // Gradient of getRawRoadValue (same math as getRoadTangent)
+                const gradX = scale * Math.cos(mesh.position.x * scale) + 0.25 * scale * Math.cos(mesh.position.x * scale * 0.5 + mesh.position.z * scale * 0.2);
+                const gradZ = -scale * Math.sin(mesh.position.z * scale) + 0.1 * scale * Math.cos(mesh.position.x * scale * 0.5 + mesh.position.z * scale * 0.2);
+
+                // Gently nudge towards the target lane raw value
+                car.velocity.x += gradX * diff * 80.0;
+                car.velocity.z += gradZ * diff * 80.0;
+
+                // 3. Apply physics
+                mesh.position.add(car.velocity);
+                if (car.pushedVelocity) {
+                    mesh.position.add(car.pushedVelocity);
+                    car.pushedVelocity.multiplyScalar(0.92); // Friction for push
                 }
 
-                car.velocity.copy(tangent).multiplyScalar(car.speed);
-                mesh.position.add(car.velocity);
+                // 4. Rotate to face total movement
+                const totalMove = new THREE.Vector3().copy(car.velocity).add(car.pushedVelocity || new THREE.Vector3());
+                if (totalMove.lengthSq() > 0.001) {
+                    const angle = Math.atan2(totalMove.x, totalMove.z);
+                    mesh.rotation.y = angle;
+                }
 
-                // 2. Rotate to face velocity
-                const angle = Math.atan2(car.velocity.x, car.velocity.z);
-                mesh.rotation.y = angle;
-
-                // 3. Keep on ground / simple bounce
-                // Use passed time or fallback
+                // 5. Keep on ground / simple bounce
                 const t = time || performance.now();
                 mesh.position.y = PLAYER_BASE_Y + Math.sin(t * 0.02 + i) * 0.03;
 
-                // 4. Culling (Remove if too far)
+                // 6. Culling
                 const dx = mesh.position.x - pPos.x;
                 const dz = mesh.position.z - pPos.z;
-                if (dx * dx + dz * dz > CULL_DIST_SQ * 1.5) { // Slightly larger cull dist to prevent pop-in on edges
+                if (dx * dx + dz * dz > CULL_DIST_SQ * 1.5) {
                     scene.remove(mesh);
                     trafficPool.push(mesh);
                     trafficVehicles.splice(i, 1);
@@ -4122,13 +4135,14 @@
                 }
             }
 
-            // --- Traffic Collisions (Rectangular Hitbox) ---
+            // --- Traffic Collisions (Physics-based Pushing) ---
             for (let i = 0; i < trafficVehicles.length; i++) {
                 const npc = trafficVehicles[i];
                 if (!npc.mesh.visible) continue;
 
-                const npcRot = npc.isPositiveLane ? Math.PI : 0;
-                const npcHW = 1.45; // Traffic cars are supercars
+                // NPC rotation logic: usually matches its movement dir, but OBB needs its current mesh rotation
+                const npcRot = npc.mesh.rotation.y;
+                const npcHW = 1.45;
                 const npcHL = 2.3;
 
                 const hit = intersectOBB(
@@ -4137,11 +4151,28 @@
                 );
 
                 if (hit) {
-                    explode(player.position, 0xff4400);
-                    explode(npc.mesh.position, npc.color); // Use NPC color
-                    npc.mesh.visible = false;
-                    triggerGameOver();
-                    return;
+                    const playerSpeed = velocity.length();
+                    const pushDir = new THREE.Vector3().subVectors(npc.mesh.position, player.position);
+                    pushDir.y = 0;
+                    pushDir.normalize();
+
+                    // If player is moving, push the NPC
+                    if (playerSpeed > 0.1) {
+                        npc.pushedVelocity.addScaledVector(pushDir, playerSpeed * 0.8);
+                        // Slight slowdown for player on impact
+                        velocity.multiplyScalar(0.95);
+                        if (playerSpeed > 1.0) explode(npc.mesh.position, npc.color); // Sparks on hard hit
+                    } else {
+                        // If player is stationary or slow, NPC can push the player
+                        // Calculate NPC impact speed relative to player
+                        const npcSpeed = npc.velocity.length() + (npc.pushedVelocity ? npc.pushedVelocity.length() : 0);
+                        velocity.addScaledVector(pushDir, -npcSpeed * 0.5);
+                    }
+
+                    // Separation to prevent sticking
+                    const sep = 0.2;
+                    npc.mesh.position.addScaledVector(pushDir, sep);
+                    player.position.addScaledVector(pushDir, -sep);
                 }
             }
         }
