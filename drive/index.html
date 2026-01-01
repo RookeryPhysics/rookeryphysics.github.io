@@ -1143,7 +1143,7 @@
 
         // Pre-computed Textures
         let dayGroundTexture, nightGroundTexture;
-        let lightSpotTexture;
+        let lightSpotTexture, billboardTexture;
 
         let lastChunkUpdatePos = new THREE.Vector3(99999, 99999, 99999);
         let lastLightUpdatePos = new THREE.Vector3(99999, 99999, 99999); // Init for light throttling
@@ -2355,6 +2355,7 @@
                 grassMaterial.color.setHex(0x335533);
                 lightBulbMaterial.emissiveIntensity = 3.0; // Very bright
                 lightSpotMaterial.opacity = 0.8; // Turn on ground spots
+                billboardMaterial.emissiveIntensity = 0.8; // Bright ads at night
 
                 // Swap texture instantly
                 groundMaterial.map = nightGroundTexture;
@@ -2379,6 +2380,7 @@
                 grassMaterial.color.setHex(0x44aa44);
                 lightBulbMaterial.emissiveIntensity = 0.2; // Dim
                 lightSpotMaterial.opacity = 0.0; // Hide ground spots
+                billboardMaterial.emissiveIntensity = 0.1; // Dimm ads in day
 
                 // Swap texture instantly
                 groundMaterial.map = dayGroundTexture;
@@ -2602,6 +2604,65 @@
         }
 
         /**
+         * Create a texture for billboards with the text "YOUR AD HERE".
+         * @returns {THREE.CanvasTexture}
+         */
+        function createBillboardTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+
+            // Background gradient
+            const grad = ctx.createLinearGradient(0, 0, 0, 256);
+            grad.addColorStop(0, '#1a1a2e');
+            grad.addColorStop(1, '#16213e');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 512, 256);
+
+            // Scanning lines
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < 256; i += 4) {
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(512, i);
+                ctx.stroke();
+            }
+
+            // Glow effect
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#00d2ff';
+
+            // Text border
+            ctx.strokeStyle = '#00d2ff';
+            ctx.lineWidth = 12;
+            ctx.strokeRect(30, 30, 452, 196);
+
+            // Text
+            const textGrad = ctx.createLinearGradient(0, 100, 0, 156);
+            textGrad.addColorStop(0, '#ffffff');
+            textGrad.addColorStop(1, '#00d2ff');
+            ctx.fillStyle = textGrad;
+            ctx.font = 'bold 54px "Segoe UI", Tahoma, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // Add a stronger glow
+            ctx.shadowBlur = 25;
+            ctx.shadowColor = '#00d2ff';
+            ctx.fillText('YOUR AD HERE', 256, 128);
+
+            // Second pass for sharpness
+            ctx.shadowBlur = 0;
+            ctx.fillText('YOUR AD HERE', 256, 128);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.anisotropy = 4; // Better quality at angles
+            return texture;
+        }
+
+        /**
          * Initialize geometries and materials for world objects (road, grass, poles).
          */
         function initWorldGeometries() {
@@ -2678,7 +2739,16 @@
             billboardPostGeometry = new THREE.BoxGeometry(0.3, 6, 0.3);
             billboardPostGeometry.translate(0, 3, 0);
 
-            billboardMaterial = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.5, metalness: 0.1 });
+            billboardTexture = createBillboardTexture();
+            billboardMaterial = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                map: billboardTexture,
+                emissive: 0xffffff,
+                emissiveMap: billboardTexture,
+                emissiveIntensity: 0.1, // Subtle glow
+                roughness: 0.5,
+                metalness: 0.1
+            });
             billboardPostMaterial = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.8, metalness: 0.2 });
         }
 
