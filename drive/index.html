@@ -4063,7 +4063,7 @@
                 player.rotation.y -= modifiedX * turnFactor * speedTurnMult;
 
                 // Drift smoke effects
-                if (Math.abs(smoothedInputX) > 0.7 && speed > 1.0 && Math.random() < 0.2) emitWheelSmoke();
+                if (Math.abs(smoothedInputX) > 0.5 && speed > 1.0 && Math.random() < 0.2) emitWheelSmoke();
             }
 
             // 2. Forces & Grip (Forward vs Lateral)
@@ -4084,7 +4084,7 @@
                 // Detect Braking: Moving forward but input is backward (or vice versa)
                 if ((forwardVel > 0.3 && throttle < -0.05) || (forwardVel < -0.3 && throttle > 0.05)) {
                     appliedFriction = BRAKING_FRICTION;
-                    if (Math.random() < 0.1) emitWheelSmoke(); // Tire smoke on hard braking
+                    if (Math.random() < 0.15) emitWheelSmoke(); // Tire smoke on hard braking
                 }
 
                 forwardVel += throttle * ACCELERATION;
@@ -4095,13 +4095,13 @@
 
             // 4. Lateral Grip & Drifting
             // High lateral friction makes the car turn; low makes it slide (drift)
-            let lateralFriction = 0.15; // Basically "on rails" at 0.15 (85% reduction per frame)
+            let lateralFriction = 0.3; // Default grip (70% reduction per frame)
 
-            // Drift trigger: hard turn at speed OR braking while turning
-            if (Math.abs(smoothedInputX) > 0.8 && speed > 1.5) {
-                lateralFriction = 0.95; // 5% reduction - slide!
-            } else if (appliedFriction === BRAKING_FRICTION && Math.abs(smoothedInputX) > 0.3) {
-                lateralFriction = 0.7; // Moderate slide during braking turn
+            // Drift trigger: sharp turn at speed OR braking while turning
+            if (Math.abs(smoothedInputX) > 0.6 && speed > 1.0) {
+                lateralFriction = 0.96; // Significant slide!
+            } else if (appliedFriction === BRAKING_FRICTION && Math.abs(smoothedInputX) > 0.2) {
+                lateralFriction = 0.85; // Moderate slide during braking turn
             }
 
             lateralVel *= lateralFriction;
@@ -4125,7 +4125,7 @@
                 // Pitch: based on change in forward velocity (acceleration/braking)
                 const targetPitch = (forwardVel - lastForwardVel) * -0.4;
                 // Roll: based on lateral forces/turning
-                const targetRoll = (lateralVel + (smoothedInputX * speed * 0.1)) * 0.15;
+                const targetRoll = (lateralVel + (smoothedInputX * speed * 0.1)) * 0.11;
 
                 carPitch += (targetPitch - carPitch) * 0.1;
                 carRoll += (targetRoll - carRoll) * 0.1;
