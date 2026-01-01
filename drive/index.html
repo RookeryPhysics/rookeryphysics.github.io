@@ -4094,12 +4094,21 @@
             forwardVel *= appliedFriction;
 
             // 4. Lateral Grip & Drifting
-            // High lateral friction makes the car turn; low makes it slide (drift)
-            let lateralFriction = 0.3; // Default grip (70% reduction per frame)
+            // We use a continuous function for lateral friction to prevent jerky transitions.
+            let lateralFriction = 0.3; // Default grip
 
-            // Drift trigger: sharp turn at speed OR braking while turning
-            if (Math.abs(smoothedInputX) > 0.6 && speed > 1.0) {
-                lateralFriction = 0.96; // Significant slide!
+            // Calculate drift intensity based on input and speed
+            // Threshold: input > 0.6 starts the slide ramp. 
+            // We also allow entry if applying throttle (burnout) even if slow.
+            if (Math.abs(smoothedInputX) > 0.6 && (speed > 0.5 || Math.abs(moveInput.y) > 0.1)) {
+                // Ramp from 0.3 up to 0.96 based on how hard we turn
+                const slideFactor = Math.min(1.0, (Math.abs(smoothedInputX) - 0.6) / 0.4);
+                lateralFriction = 0.3 + (0.66 * slideFactor);
+
+                // Active smoke in the specific "9-10" or "2-3" o'clock range (high steering input)
+                // Expanded range and lower speed threshold to ensure it works at 3 o'clock
+                if (Math.abs(smoothedInputX) > 0.75 && Math.random() < 0.4) emitWheelSmoke();
+
             } else if (appliedFriction === BRAKING_FRICTION && Math.abs(smoothedInputX) > 0.2) {
                 lateralFriction = 0.85; // Moderate slide during braking turn
             }
