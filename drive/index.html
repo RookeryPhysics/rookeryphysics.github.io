@@ -4039,11 +4039,15 @@
 
             let appliedFriction = FRICTION;
 
-            if (Math.abs(moveInput.x) > 0.1) {
-                // Scaling turn speed with speed for realism (slower turn at high speeds? or low speeds?)
-                // Arcade style: constant turn usually feels better, but let's keep it simple.
+            if (Math.abs(moveInput.x) > 0.01) {
+                // Slower turning at top (11-1 o'clock), faster towards sides (3/9 o'clock)
+                // We use a power curve for non-linear sensitivity per user request.
                 const turnFactor = carType === 'hypercar' ? 0.05 : 0.04;
-                player.rotation.y -= moveInput.x * turnFactor;
+                const sensitivityExp = 2.0;
+                const speedBoost = 1.1;
+                const modifiedX = Math.pow(Math.abs(moveInput.x), sensitivityExp) * Math.sign(moveInput.x) * speedBoost;
+
+                player.rotation.y -= modifiedX * turnFactor;
                 if (Math.abs(moveInput.x) > 0.85 && Math.random() < 0.25) emitWheelSmoke();
             }
             if (Math.abs(moveInput.y) > 0.1) {
