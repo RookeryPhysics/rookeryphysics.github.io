@@ -1116,6 +1116,7 @@
         const pedestrianPool = []; // Object Pool for pedestrians
         const trafficPool = []; // Object Pool for traffic cars
         const trafficVehicles = []; // Active Traffic NPCs
+        const fallingObjects = []; // Active falling items (light posts)
 
         // Reusable Geometries for Particles
         const debrisGeometry = new THREE.BoxGeometry(0.8, 0.8, 0.8);
@@ -2812,10 +2813,36 @@
             const dz = -scale * Math.sin(z * scale) + 0.5 * scale * 0.2 * Math.cos(x * scale * 0.5 + z * scale * 0.2);
 
             // Tangent is perpendicular to gradient (dx, dz).
-            // T = (-dz, dx) or (dz, -dx).
             const t = new THREE.Vector3(-dz, 0, dx);
             t.normalize();
             return t;
+        }
+
+        /**
+         * Separating Axis Theorem (SAT) for 2D Oriented Bounding Boxes (OBB).
+         * Boxes are defined by center (x, z), half-extents (hw, hl), and rotation.
+         */
+        function intersectOBB(x1, z1, hw1, hl1, rot1, x2, z2, hw2, hl2, rot2) {
+            const dx = x2 - x1;
+            const dz = z2 - z1;
+
+            const cos1 = Math.cos(rot1), sin1 = Math.sin(rot1);
+            const cos2 = Math.cos(rot2), sin2 = Math.sin(rot2);
+
+            const axes = [
+                { x: cos1, z: -sin1 }, { x: sin1, z: cos1 },
+                { x: cos2, z: -sin2 }, { x: sin2, z: cos2 }
+            ];
+
+            for (let axis of axes) {
+                const r1 = Math.abs(hw1 * (cos1 * axis.x - sin1 * axis.z)) +
+                    Math.abs(hl1 * (sin1 * axis.x + cos1 * axis.z));
+                const r2 = Math.abs(hw2 * (cos2 * axis.x - sin2 * axis.z)) +
+                    Math.abs(hl2 * (sin2 * axis.x + cos2 * axis.z));
+                const dist = Math.abs(dx * axis.x + dz * axis.z);
+                if (dist > r1 + r2) return false;
+            }
+            return true;
         }
 
         /**
@@ -3040,7 +3067,15 @@
                             dummy.updateMatrix();
                             spotMatrices.push(dummy.matrix.clone());
 
-                            obstacles.push({ x: chunkX + pX, z: chunkZ + pZ, radiusSq: 1.0, isLightpost: true, height: 13 });
+                            obstacles.push({
+                                x: chunkX + pX,
+                                z: chunkZ + pZ,
+                                radiusSq: 1.0,
+                                isLightpost: true,
+                                height: 13,
+                                instanceIndex: poleMatrices.length - 1,
+                                rotY: rotY
+                            });
                         }
                     }
                 }
@@ -3057,27 +3092,28 @@
                 for (let i = 0; i < lineMatrices.length; i++) lineMesh.setMatrixAt(i, lineMatrices[i]);
                 group.add(lineMesh);
             }
+            let poleMesh, bulbMesh, armMesh, spotMesh;
             if (poleMatrices.length > 0) {
-                const poleMesh = new THREE.InstancedMesh(poleGeometry, poleMaterial, poleMatrices.length);
+                poleMesh = new THREE.InstancedMesh(poleGeometry, poleMaterial, poleMatrices.length);
                 poleMesh.castShadow = true;
                 for (let i = 0; i < poleMatrices.length; i++) poleMesh.setMatrixAt(i, poleMatrices[i]);
                 group.add(poleMesh);
             }
             if (bulbMatrices.length > 0) {
-                const bulbMesh = new THREE.InstancedMesh(lightBulbGeometry, lightBulbMaterial, bulbMatrices.length);
+                bulbMesh = new THREE.InstancedMesh(lightBulbGeometry, lightBulbMaterial, bulbMatrices.length);
                 for (let i = 0; i < bulbMatrices.length; i++) bulbMesh.setMatrixAt(i, bulbMatrices[i]);
                 group.add(bulbMesh);
             }
             if (armMatrices.length > 0) {
                 // RENDER AS POLE BASE
-                const armMesh = new THREE.InstancedMesh(poleBaseGeometry, poleMaterial, armMatrices.length);
+                armMesh = new THREE.InstancedMesh(poleBaseGeometry, poleMaterial, armMatrices.length);
                 armMesh.receiveShadow = true;
                 armMesh.castShadow = true;
                 for (let i = 0; i < armMatrices.length; i++) armMesh.setMatrixAt(i, armMatrices[i]);
                 group.add(armMesh);
             }
             if (spotMatrices.length > 0) {
-                const spotMesh = new THREE.InstancedMesh(lightSpotGeometry, lightSpotMaterial, spotMatrices.length);
+                spotMesh = new THREE.InstancedMesh(lightSpotGeometry, lightSpotMaterial, spotMatrices.length);
                 for (let i = 0; i < spotMatrices.length; i++) spotMesh.setMatrixAt(i, spotMatrices[i]);
                 group.add(spotMesh);
             }
@@ -3127,7 +3163,15 @@
 
 
             scene.add(group);
-            activeChunks.set(`${cx},${cz}`, { mesh: group, obstacles: obstacles, roads: roadMapPositions });
+            activeChunks.set(`${cx},${cz}`, {
+                mesh: group,
+                obstacles: obstacles,
+                roads: roadMapPositions,
+                poleMesh: poleMesh,
+                bulbMesh: bulbMesh,
+                armMesh: armMesh,
+                spotMesh: spotMesh
+            });
         }
 
         // --- Entities ---
@@ -4033,17 +4077,43 @@
                 isAirborne = true;
             }
 
-            const pRadiusSq = 4.0;
+            // --- Building/Obstacle Collisions (Rectangular Hitbox) ---
+            const pDims = carType === 'supercar' ? { hw: 1.45, hl: 2.3 } : { hw: 1.8, hl: 2.2 };
+            const pRot = player.rotation.y;
+            const cosP = Math.cos(pRot);
+            const sinP = Math.sin(pRot);
 
-            // --- Building Collisions ---
             for (const chunk of activeChunks.values()) {
                 if (!chunk.obstacles) continue;
                 for (let i = 0; i < chunk.obstacles.length; i++) {
                     const obs = chunk.obstacles[i];
-                    const dx = player.position.x - obs.x;
-                    const dz = player.position.z - obs.z;
-                    const distSq = dx * dx + dz * dz;
-                    if (distSq < obs.radiusSq + pRadiusSq && player.position.y < obs.height) {
+                    if (obs.isFallen) continue;
+
+                    let hit = false;
+                    const dx = obs.x - player.position.x;
+                    const dz = obs.z - player.position.z;
+
+                    if (obs.isLightpost) {
+                        // Lightpost is circular, check against Player OBB
+                        const lx = dx * cosP - dz * sinP;
+                        const lz = dx * sinP + dz * cosP;
+                        const r = 1.0;
+                        const closestX = Math.max(-pDims.hw, Math.min(lx, pDims.hw));
+                        const closestZ = Math.max(-pDims.hl, Math.min(lz, pDims.hl));
+                        hit = ((lx - closestX) ** 2 + (lz - closestZ) ** 2) < (r * r);
+                    } else if (obs.isBuilding) {
+                        // Building is OBB, check against Player OBB
+                        hit = intersectOBB(
+                            player.position.x, player.position.z, pDims.hw, pDims.hl, pRot,
+                            obs.x, obs.z, obs.width / 2, obs.depth / 2, obs.rotation
+                        );
+                    }
+
+                    if (hit && player.position.y < obs.height) {
+                        if (obs.isLightpost) {
+                            toppleLightPost(obs, chunk);
+                            continue;
+                        }
                         explode(player.position, 0xff4400);
                         explode(player.position, 0xffee00);
                         triggerGameOver();
@@ -4052,15 +4122,21 @@
                 }
             }
 
-            // --- Traffic Collisions ---
-            const trafficCollisionDistSq = 12.0; // Approx 3.5^2
+            // --- Traffic Collisions (Rectangular Hitbox) ---
             for (let i = 0; i < trafficVehicles.length; i++) {
                 const npc = trafficVehicles[i];
-                const dx = player.position.x - npc.mesh.position.x;
-                const dz = player.position.z - npc.mesh.position.z;
-                const distSq = dx * dx + dz * dz;
+                if (!npc.mesh.visible) continue;
 
-                if (distSq < trafficCollisionDistSq) {
+                const npcRot = npc.isPositiveLane ? Math.PI : 0;
+                const npcHW = 1.45; // Traffic cars are supercars
+                const npcHL = 2.3;
+
+                const hit = intersectOBB(
+                    player.position.x, player.position.z, pDims.hw, pDims.hl, pRot,
+                    npc.mesh.position.x, npc.mesh.position.z, npcHW, npcHL, npcRot
+                );
+
+                if (hit) {
                     explode(player.position, 0xff4400);
                     explode(npc.mesh.position, npc.color); // Use NPC color
                     npc.mesh.visible = false;
@@ -4149,6 +4225,93 @@
         }
 
         /**
+         * Make a light post topple over when hit.
+         */
+        function toppleLightPost(obs, chunkData) {
+            if (obs.isFallen) return;
+            obs.isFallen = true;
+
+            // Hide instances in the InstancedMeshes
+            const hideMatrix = new THREE.Matrix4().makeScale(0, 0, 0);
+            if (chunkData.poleMesh) {
+                chunkData.poleMesh.setMatrixAt(obs.instanceIndex, hideMatrix);
+                chunkData.poleMesh.instanceMatrix.needsUpdate = true;
+            }
+            if (chunkData.bulbMesh) {
+                chunkData.bulbMesh.setMatrixAt(obs.instanceIndex, hideMatrix);
+                chunkData.bulbMesh.instanceMatrix.needsUpdate = true;
+            }
+            if (chunkData.armMesh) {
+                chunkData.armMesh.setMatrixAt(obs.instanceIndex, hideMatrix);
+                chunkData.armMesh.instanceMatrix.needsUpdate = true;
+            }
+            if (chunkData.spotMesh) {
+                chunkData.spotMesh.setMatrixAt(obs.instanceIndex, hideMatrix);
+                chunkData.spotMesh.instanceMatrix.needsUpdate = true;
+            }
+
+            // Create a temporary group for the falling pole
+            const group = new THREE.Group();
+            group.position.set(obs.x, 0, obs.z);
+            group.rotation.y = obs.rotY || 0;
+            scene.add(group);
+
+            const shaft = new THREE.Mesh(poleGeometry, poleMaterial);
+            shaft.castShadow = true;
+            group.add(shaft);
+
+            const base = new THREE.Mesh(poleBaseGeometry, poleMaterial);
+            base.castShadow = true;
+            group.add(base);
+
+            const bulb = new THREE.Mesh(lightBulbGeometry, lightBulbMaterial);
+            bulb.position.set(0, 12.5, 0);
+            group.add(bulb);
+
+            // Determine fall direction (perpendicular to car approach)
+            const fallAxis = new THREE.Vector3(
+                velocity.z,
+                0,
+                -velocity.x
+            ).normalize();
+
+            fallingObjects.push({
+                mesh: group,
+                axis: fallAxis,
+                angle: 0,
+                speed: velocity.length() * 0.2 + 0.05,
+                life: 300 // frames
+            });
+
+            // Impact effect
+            velocity.x *= 0.6;
+            velocity.z *= 0.6;
+            explode(new THREE.Vector3(obs.x, 2, obs.z), 0x888888);
+            score += 5; // Bonus points for hitting stuff!
+            scoreElement.innerText = "Score: " + score;
+        }
+
+        /**
+         * Update the animation of falling light posts.
+         */
+        function updateFallingObjects() {
+            for (let i = fallingObjects.length - 1; i >= 0; i--) {
+                const obj = fallingObjects[i];
+                if (obj.angle < Math.PI / 2 - 0.1) {
+                    obj.angle += obj.speed;
+                    obj.speed *= 0.98; // slowing down the rotation
+                    obj.mesh.rotateOnWorldAxis(obj.axis, obj.speed);
+                } else {
+                    obj.life--;
+                    if (obj.life <= 0) {
+                        scene.remove(obj.mesh);
+                        fallingObjects.splice(i, 1);
+                    }
+                }
+            }
+        }
+
+        /**
          * Update pedestrian positions and animation state.
          */
         function updatePedestrians() {
@@ -4231,13 +4394,27 @@
          */
         function checkCollisions() {
             if (isGameOver) return;
-            const collisionThresholdSq = 16.0;
+            const pDims = carType === 'supercar' ? { hw: 1.45, hl: 2.3 } : { hw: 1.8, hl: 2.2 };
+            const pRot = player.rotation.y;
+            const cosP = Math.cos(pRot);
+            const sinP = Math.sin(pRot);
+
             for (let i = activeObstacles.length - 1; i >= 0; i--) {
                 const pedData = activeObstacles[i];
-                const dx = player.position.x - pedData.position.x;
-                const dz = player.position.z - pedData.position.z;
-                const distSq = dx * dx + dz * dz;
-                if (distSq < collisionThresholdSq) {
+                const pedRadius = 0.5; // Humans are small
+
+                // Relative to player
+                const dx = pedData.position.x - player.position.x;
+                const dz = pedData.position.z - player.position.z;
+                const lx = dx * cosP - dz * sinP;
+                const lz = dx * sinP + dz * cosP;
+
+                // Rect-Circle check
+                const closestX = Math.max(-pDims.hw, Math.min(lx, pDims.hw));
+                const closestZ = Math.max(-pDims.hl, Math.min(lz, pDims.hl));
+                const hit = ((lx - closestX) ** 2 + (lz - closestZ) ** 2) < (pedRadius * pedRadius);
+
+                if (hit) {
                     explode(pedData.position);
                     spawnVoxelScore(pedData.position);
                     pedData.position.x = player.position.x + (Math.random() - 0.5) * 300;
@@ -4648,6 +4825,7 @@
                 if (globalFrame % PEDESTRIAN_UPDATE_INTERVAL === 0) updatePedestrians();
                 if (globalFrame % COLLISION_CHECK_INTERVAL === 0) checkCollisions();
                 if (globalFrame % PARTICLE_UPDATE_INTERVAL === 0) updateParticles();
+                updateFallingObjects();
                 updateFloatingTexts();
                 updateSnow();
                 updateCamera();
