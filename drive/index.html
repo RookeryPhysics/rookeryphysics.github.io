@@ -1183,7 +1183,12 @@
         // Movement
         const velocity = new THREE.Vector3();
         let moveInput = { x: 0, y: 0 };
+        let smoothedInputX = 0;
+        let smoothedInputY = 0;
         const keysPressed = {};
+        let carPitch = 0;
+        let carRoll = 0;
+        let lastForwardVel = 0;
 
         // Camera
         let cameraAngle = 0;
@@ -3696,9 +3701,9 @@
             });
 
             if (type === 'supercar') {
-                ACCELERATION = 0.1; MAX_SPEED = 3.4;
+                ACCELERATION = 0.1; MAX_SPEED = 3.2;
             } else if (type === 'hypercar') {
-                ACCELERATION = 0.1; MAX_SPEED = 3.4;
+                ACCELERATION = 0.14; MAX_SPEED = 4.2;
             }
             currentCarMesh.traverse((child) => {
                 if (child.isMesh) {
@@ -4037,53 +4042,99 @@
                 return;
             }
 
+            // --- Vehicle Control Logic ---
+            // Input smoothing (interpolation) for a more 'weighty' and realistic feel
+            // Digital keyboard inputs become smooth curves, and joystick jitters are filtered.
+            smoothedInputX += (moveInput.x - smoothedInputX) * 0.2;
+            smoothedInputY += (moveInput.y - smoothedInputY) * 0.2;
+
+            const speed = Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
             let appliedFriction = FRICTION;
 
-            if (Math.abs(moveInput.x) > 0.01) {
-                // Slower turning at top (11-1 o'clock), faster towards sides (3/9 o'clock)
-                // We use a power curve for non-linear sensitivity per user request.
-                const turnFactor = carType === 'hypercar' ? 0.05 : 0.04;
-                const sensitivityExp = 2.0;
-                const speedBoost = 1.1;
-                const modifiedX = Math.pow(Math.abs(moveInput.x), sensitivityExp) * Math.sign(moveInput.x) * speedBoost;
+            // 1. Steering (Speed-Sensitive)
+            if (Math.abs(smoothedInputX) > 0.001) {
+                const turnFactor = carType === 'hypercar' ? 0.045 : 0.035;
+                // Reduce steering at high speeds for stability, increase at low speeds for agility
+                const speedTurnMult = Math.max(0.25, 1.0 - (speed / MAX_SPEED) * 0.5);
 
-                player.rotation.y -= modifiedX * turnFactor;
-                if (Math.abs(moveInput.x) > 0.85 && Math.random() < 0.25) emitWheelSmoke();
+                const sensitivityExp = 2.0;
+                const modifiedX = Math.pow(Math.abs(smoothedInputX), sensitivityExp) * Math.sign(smoothedInputX) * 1.1;
+
+                player.rotation.y -= modifiedX * turnFactor * speedTurnMult;
+
+                // Drift smoke effects
+                if (Math.abs(smoothedInputX) > 0.7 && speed > 1.0 && Math.random() < 0.2) emitWheelSmoke();
             }
-            if (Math.abs(moveInput.y) > 0.1) {
-                const throttle = -moveInput.y;
-                const rotation = player.rotation.y;
+
+            // 2. Forces & Grip (Forward vs Lateral)
+            const rotation = player.rotation.y;
+            const forwardX = Math.sin(rotation);
+            const forwardZ = Math.cos(rotation);
+            const rightX = Math.cos(rotation);
+            const rightZ = -Math.sin(rotation);
+
+            // Project current velocity into local car space
+            let forwardVel = velocity.x * forwardX + velocity.z * forwardZ;
+            let lateralVel = velocity.x * rightX + velocity.z * rightZ;
+
+            // 3. Acceleration & Braking
+            if (Math.abs(smoothedInputY) > 0.01) {
+                const throttle = -smoothedInputY;
 
                 // Detect Braking: Moving forward but input is backward (or vice versa)
-                // We project velocity onto the car's forward vector
-                const vx = velocity.x;
-                const vz = velocity.z;
-                const forwardX = Math.sin(rotation);
-                const forwardZ = Math.cos(rotation);
-                const dot = vx * forwardX + vz * forwardZ;
-
-                // If moving reasonably fast and input opposes movement
-                if ((dot > 0.5 && throttle < -0.1) || (dot < -0.5 && throttle > 0.1)) {
+                if ((forwardVel > 0.3 && throttle < -0.05) || (forwardVel < -0.3 && throttle > 0.05)) {
                     appliedFriction = BRAKING_FRICTION;
-                    // Add red brake light effect? (Optional visual polish)
+                    if (Math.random() < 0.1) emitWheelSmoke(); // Tire smoke on hard braking
                 }
 
-                const accelX = Math.sin(rotation) * throttle * ACCELERATION;
-                const accelZ = Math.cos(rotation) * throttle * ACCELERATION;
-                velocity.x += accelX;
-                velocity.z += accelZ;
+                forwardVel += throttle * ACCELERATION;
             }
 
-            velocity.x *= appliedFriction;
-            velocity.z *= appliedFriction;
+            // Apply forward friction
+            forwardVel *= appliedFriction;
+
+            // 4. Lateral Grip & Drifting
+            // High lateral friction makes the car turn; low makes it slide (drift)
+            let lateralFriction = 0.15; // Basically "on rails" at 0.15 (85% reduction per frame)
+
+            // Drift trigger: hard turn at speed OR braking while turning
+            if (Math.abs(smoothedInputX) > 0.8 && speed > 1.5) {
+                lateralFriction = 0.95; // 5% reduction - slide!
+            } else if (appliedFriction === BRAKING_FRICTION && Math.abs(smoothedInputX) > 0.3) {
+                lateralFriction = 0.7; // Moderate slide during braking turn
+            }
+
+            lateralVel *= lateralFriction;
+
+            // 5. Reconstruct World Velocity
+            velocity.x = forwardX * forwardVel + rightX * lateralVel;
+            velocity.z = forwardZ * forwardVel + rightZ * lateralVel;
             velocity.y -= GRAVITY;
 
+            // Cap Speed
             const hSpeed = Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
             if (hSpeed > MAX_SPEED) {
                 const ratio = MAX_SPEED / hSpeed;
                 velocity.x *= ratio;
                 velocity.z *= ratio;
+                forwardVel *= ratio; // Keep local vel in sync for tilt
             }
+
+            // 6. Visual Tilt (Pitch and Roll)
+            if (currentCarMesh) {
+                // Pitch: based on change in forward velocity (acceleration/braking)
+                const targetPitch = (forwardVel - lastForwardVel) * -0.4;
+                // Roll: based on lateral forces/turning
+                const targetRoll = (lateralVel + (smoothedInputX * speed * 0.1)) * 0.15;
+
+                carPitch += (targetPitch - carPitch) * 0.1;
+                carRoll += (targetRoll - carRoll) * 0.1;
+
+                currentCarMesh.rotation.x = carPitch;
+                currentCarMesh.rotation.z = carRoll;
+            }
+            lastForwardVel = forwardVel;
+
             player.position.add(velocity);
 
             if (player.position.y < PLAYER_BASE_Y) {
