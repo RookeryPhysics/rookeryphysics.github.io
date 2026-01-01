@@ -1155,6 +1155,7 @@
         let lineTileGeometry, lineMaterial;
         let grassGeometry, grassMaterial;
         let poleGeometry, poleMaterial, lightBulbGeometry, lightBulbMaterial, poleBaseGeometry;
+        let billboardGeometry, billboardMaterial, billboardPostGeometry, billboardPostMaterial;
 
         let lightSpotGeometry, lightSpotMaterial;
 
@@ -2667,6 +2668,18 @@
                 blending: THREE.AdditiveBlending,
                 side: THREE.DoubleSide
             });
+
+            // Billboard Geometries
+            // Main board: smaller thin rectangular prism
+            billboardGeometry = new THREE.BoxGeometry(10, 5, 0.4);
+            billboardGeometry.translate(0, 8.5, 0); // Bottom is at 6 units
+
+            // Posts: Standard posts
+            billboardPostGeometry = new THREE.BoxGeometry(0.3, 6, 0.3);
+            billboardPostGeometry.translate(0, 3, 0);
+
+            billboardMaterial = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.5, metalness: 0.1 });
+            billboardPostMaterial = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.8, metalness: 0.2 });
         }
 
         /**
@@ -2967,6 +2980,8 @@
             const armMatrices = [];
             const bulbMatrices = [];
             const spotMatrices = [];
+            const billboardMatrices = [];
+            const billboardPostMatrices = [];
 
             const obstacles = [];
             const roadMapPositions = [];
@@ -3165,6 +3180,78 @@
                 obstacles.push({ x: chunkX + bx, z: chunkZ + bz, radiusSq: radius * radius, isBuilding: true, rotation: rot, height: height, width: width, depth: depth });
             }
 
+            // --- BILLBOARD PLACEMENT ---
+            let bSeed = pseudoRandom(cx + 10.5, cz + 20.7);
+            const numBillboards = bSeed > 0.6 ? 3 : 1;
+
+            for (let i = 0; i < numBillboards; i++) {
+                bSeed = pseudoRandom(bSeed, i + 50);
+                const bx = (pseudoRandom(bSeed * 1.5, i) - 0.5) * (CHUNK_SIZE - 60);
+                const bz = (pseudoRandom(bSeed * 2.5, i) - 0.5) * (CHUNK_SIZE - 60);
+                const worldX = chunkX + bx;
+                const worldZ = chunkZ + bz;
+
+                const distToRoad = getRoadValue(worldX, worldZ);
+                // Place billboards near the road edge
+                if (distToRoad > ROAD_WIDTH_THRESHOLD + 0.02 && distToRoad < ROAD_WIDTH_THRESHOLD + 0.15) {
+                    // Orientation: Face the road using the gradient
+                    // Road center is roughly where f=0. Gradient (dx, dz) points away from center.
+                    // We want to face TOWARD the road, so we use negative gradient.
+                    const scale = 0.005;
+                    const gradX = scale * Math.cos(worldX * scale) + 0.25 * scale * Math.cos(worldX * scale * 0.5 + worldZ * scale * 0.2);
+                    const gradZ = -scale * Math.sin(worldZ * scale) + 0.1 * scale * Math.cos(worldX * scale * 0.5 + worldZ * scale * 0.2);
+                    const angle = Math.atan2(-gradX, -gradZ) + Math.PI / 2; // Rotated 90 degrees
+
+                    dummy.position.set(bx, 0, bz);
+                    dummy.rotation.set(0, angle, 0);
+                    dummy.scale.set(1, 1, 1);
+                    dummy.updateMatrix();
+                    billboardMatrices.push(dummy.matrix.clone());
+
+                    const bInstIdx = billboardMatrices.length - 1;
+
+                    // Post 1
+                    const pOffset1 = new THREE.Vector3(-3.5, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), angle);
+                    dummy.position.set(bx + pOffset1.x, 0, bz + pOffset1.z);
+                    dummy.rotation.set(0, angle, 0);
+                    dummy.updateMatrix();
+                    billboardPostMatrices.push(dummy.matrix.clone());
+
+                    // Post 2
+                    const pOffset2 = new THREE.Vector3(3.5, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), angle);
+                    dummy.position.set(bx + pOffset2.x, 0, bz + pOffset2.z);
+                    dummy.rotation.set(0, angle, 0);
+                    dummy.updateMatrix();
+                    billboardPostMatrices.push(dummy.matrix.clone());
+
+                    const bpInstIdxStart = billboardPostMatrices.length - 2;
+
+                    obstacles.push({
+                        x: worldX, z: worldZ,
+                        isBillboard: true,
+                        rotation: angle,
+                        height: 11, width: 10, depth: 1,
+                        instanceIndex: bInstIdx,
+                        postInstanceIndex: bpInstIdxStart
+                    });
+                }
+            }
+
+            let bMesh, bpMesh;
+            if (billboardMatrices.length > 0) {
+                bMesh = new THREE.InstancedMesh(billboardGeometry, billboardMaterial, billboardMatrices.length);
+                bMesh.castShadow = true;
+                bMesh.receiveShadow = true;
+                for (let i = 0; i < billboardMatrices.length; i++) bMesh.setMatrixAt(i, billboardMatrices[i]);
+                group.add(bMesh);
+
+                bpMesh = new THREE.InstancedMesh(billboardPostGeometry, billboardPostMaterial, billboardPostMatrices.length);
+                bpMesh.castShadow = true;
+                bpMesh.receiveShadow = true;
+                for (let i = 0; i < billboardPostMatrices.length; i++) bpMesh.setMatrixAt(i, billboardPostMatrices[i]);
+                group.add(bpMesh);
+            }
+
 
 
             scene.add(group);
@@ -3175,7 +3262,9 @@
                 poleMesh: poleMesh,
                 bulbMesh: bulbMesh,
                 armMesh: armMesh,
-                spotMesh: spotMesh
+                spotMesh: spotMesh,
+                billboardMesh: bMesh,
+                billboardPostMesh: bpMesh
             });
         }
 
@@ -4178,16 +4267,37 @@
                         const closestX = Math.max(-pDims.hw, Math.min(lx, pDims.hw));
                         const closestZ = Math.max(-pDims.hl, Math.min(lz, pDims.hl));
                         hit = ((lx - closestX) ** 2 + (lz - closestZ) ** 2) < (r * r);
-                    } else if (obs.isBuilding) {
-                        // Building is OBB, check against Player OBB
+                    } else if (obs.isBuilding || obs.isBillboard) {
+                        // OBB check for buildings and billboard boards
                         hit = intersectOBB(
                             player.position.x, player.position.z, pDims.hw, pDims.hl, pRot,
                             obs.x, obs.z, obs.width / 2, obs.depth / 2, obs.rotation
                         );
+
+                        // Extra precision for billboard posts
+                        if (!hit && obs.isBillboard) {
+                            const cosB = Math.cos(obs.rotation);
+                            const sinB = Math.sin(obs.rotation);
+                            const offsets = [3.5, -3.5];
+                            for (let offset of offsets) {
+                                const px = obs.x + cosB * offset;
+                                const pz = obs.z - sinB * offset;
+                                const pdx = px - player.position.x;
+                                const pdz = pz - player.position.z;
+                                const plx = pdx * cosP - pdz * sinP;
+                                const plz = pdx * sinP + pdz * cosP;
+                                const pr = 0.6;
+                                const pcX = Math.max(-pDims.hw, Math.min(plx, pDims.hw));
+                                const pcZ = Math.max(-pDims.hl, Math.min(plz, pDims.hl));
+                                if (((plx - pcX) ** 2 + (plz - pcZ) ** 2) < (pr * pr)) {
+                                    hit = true; break;
+                                }
+                            }
+                        }
                     }
 
                     if (hit && player.position.y < obs.height) {
-                        if (obs.isLightpost) {
+                        if (obs.isLightpost || obs.isBillboard) {
                             toppleLightPost(obs, chunk);
                             continue;
                         }
@@ -4326,44 +4436,74 @@
             if (obs.isFallen) return;
             obs.isFallen = true;
 
-            // Hide instances in the InstancedMeshes
             const hideMatrix = new THREE.Matrix4().makeScale(0, 0, 0);
-            if (chunkData.poleMesh) {
-                chunkData.poleMesh.setMatrixAt(obs.instanceIndex, hideMatrix);
-                chunkData.poleMesh.instanceMatrix.needsUpdate = true;
+
+            if (obs.isLightpost) {
+                // Hide instances in the InstancedMeshes
+                if (chunkData.poleMesh) {
+                    chunkData.poleMesh.setMatrixAt(obs.instanceIndex, hideMatrix);
+                    chunkData.poleMesh.instanceMatrix.needsUpdate = true;
+                }
+                if (chunkData.bulbMesh) {
+                    chunkData.bulbMesh.setMatrixAt(obs.instanceIndex, hideMatrix);
+                    chunkData.bulbMesh.instanceMatrix.needsUpdate = true;
+                }
+                if (chunkData.armMesh) {
+                    chunkData.armMesh.setMatrixAt(obs.instanceIndex, hideMatrix);
+                    chunkData.armMesh.instanceMatrix.needsUpdate = true;
+                }
+                if (chunkData.spotMesh) {
+                    chunkData.spotMesh.setMatrixAt(obs.instanceIndex, hideMatrix);
+                    chunkData.spotMesh.instanceMatrix.needsUpdate = true;
+                }
+
+                // Create a temporary group for the falling pole
+                const group = new THREE.Group();
+                group.position.set(obs.x, 0, obs.z);
+                group.rotation.y = obs.rotY || 0;
+                scene.add(group);
+
+                group.add(new THREE.Mesh(poleGeometry, poleMaterial));
+                group.add(new THREE.Mesh(poleBaseGeometry, poleMaterial));
+                const bulb = new THREE.Mesh(lightBulbGeometry, lightBulbMaterial);
+                bulb.position.set(0, 12.5, 0);
+                group.add(bulb);
+
+                addFallingObject(group, 13);
+            } else if (obs.isBillboard) {
+                if (chunkData.billboardMesh) {
+                    chunkData.billboardMesh.setMatrixAt(obs.instanceIndex, hideMatrix);
+                    chunkData.billboardMesh.instanceMatrix.needsUpdate = true;
+                }
+                if (chunkData.billboardPostMesh) {
+                    chunkData.billboardPostMesh.setMatrixAt(obs.postInstanceIndex, hideMatrix);
+                    chunkData.billboardPostMesh.setMatrixAt(obs.postInstanceIndex + 1, hideMatrix);
+                    chunkData.billboardPostMesh.instanceMatrix.needsUpdate = true;
+                }
+
+                const group = new THREE.Group();
+                group.position.set(obs.x, 0, obs.z);
+                group.rotation.y = obs.rotation || 0;
+                scene.add(group);
+
+                group.add(new THREE.Mesh(billboardGeometry, billboardMaterial));
+
+                const p1 = new THREE.Mesh(billboardPostGeometry, billboardPostMaterial);
+                p1.position.set(-3.5, 0, 0);
+                p1.castShadow = true;
+                group.add(p1);
+
+                const p2 = new THREE.Mesh(billboardPostGeometry, billboardPostMaterial);
+                p2.position.set(3.5, 0, 0);
+                p2.castShadow = true;
+                group.add(p2);
+
+                addFallingObject(group, 11);
             }
-            if (chunkData.bulbMesh) {
-                chunkData.bulbMesh.setMatrixAt(obs.instanceIndex, hideMatrix);
-                chunkData.bulbMesh.instanceMatrix.needsUpdate = true;
-            }
-            if (chunkData.armMesh) {
-                chunkData.armMesh.setMatrixAt(obs.instanceIndex, hideMatrix);
-                chunkData.armMesh.instanceMatrix.needsUpdate = true;
-            }
-            if (chunkData.spotMesh) {
-                chunkData.spotMesh.setMatrixAt(obs.instanceIndex, hideMatrix);
-                chunkData.spotMesh.instanceMatrix.needsUpdate = true;
-            }
+        }
 
-            // Create a temporary group for the falling pole
-            const group = new THREE.Group();
-            group.position.set(obs.x, 0, obs.z);
-            group.rotation.y = obs.rotY || 0;
-            scene.add(group);
-
-            const shaft = new THREE.Mesh(poleGeometry, poleMaterial);
-            shaft.castShadow = true;
-            group.add(shaft);
-
-            const base = new THREE.Mesh(poleBaseGeometry, poleMaterial);
-            base.castShadow = true;
-            group.add(base);
-
-            const bulb = new THREE.Mesh(lightBulbGeometry, lightBulbMaterial);
-            bulb.position.set(0, 12.5, 0);
-            group.add(bulb);
-
-            // Determine fall direction (perpendicular to car approach)
+        function addFallingObject(group, height) {
+            // Determine fall direction (pushed by velocity)
             const fallAxis = new THREE.Vector3(
                 velocity.z,
                 0,
@@ -4374,15 +4514,14 @@
                 mesh: group,
                 axis: fallAxis,
                 angle: 0,
-                speed: velocity.length() * 0.2 + 0.05,
+                speed: Math.max(0.02, velocity.length() * 0.15),
                 life: 300 // frames
             });
 
             // Impact effect
-            velocity.x *= 0.6;
-            velocity.z *= 0.6;
-            explode(new THREE.Vector3(obs.x, 2, obs.z), 0x888888);
-            score += 5; // Bonus points for hitting stuff!
+            velocity.multiplyScalar(0.7);
+            explode(new THREE.Vector3(group.position.x, 2, group.position.z), 0x888888);
+            score += 10;
             scoreElement.innerText = "Score: " + score;
         }
 
