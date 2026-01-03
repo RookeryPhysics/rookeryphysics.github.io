@@ -1156,6 +1156,7 @@
         let groundGeometry, groundMaterial;
         let roadTileGeometry, roadMaterial;
         let lineTileGeometry, lineMaterial;
+        let lakeTileGeometry, lakeMaterial;
         let grassGeometry, grassMaterial;
         let poleGeometry, poleMaterial, lightBulbGeometry, lightBulbMaterial, poleBaseGeometry;
         let billboardGeometry, billboardMaterial, billboardPostGeometry, billboardPostMaterial;
@@ -2800,6 +2801,16 @@
             lineTileGeometry = new THREE.PlaneGeometry(2, 6);
             lineMaterial = new THREE.MeshBasicMaterial({ color: 0xffcc00 });
 
+            // Lake Geometry and Material
+            lakeTileGeometry = new THREE.PlaneGeometry(ROAD_TILE_SIZE, ROAD_TILE_SIZE);
+            lakeMaterial = new THREE.MeshStandardMaterial({
+                color: 0x88ccff,
+                roughness: 0.0,
+                metalness: 0.1,
+                opacity: 0.85,
+                transparent: true
+            });
+
             buildingGeometries.small = new THREE.BoxGeometry(10, 30, 10);
             buildingGeometries.tall = new THREE.BoxGeometry(15, 80, 15);
             buildingGeometries.wide = new THREE.BoxGeometry(30, 25, 20);
@@ -3040,6 +3051,22 @@
         }
 
         /**
+         * Check if a position is on a frozen lake.
+         * @param {number} x
+         * @param {number} z
+         * @returns {boolean}
+         */
+        function isLake(x, z) {
+            // Ensure no overlap with road (add buffer)
+            if (getRoadValue(x, z) < ROAD_WIDTH_THRESHOLD + 0.15) return false;
+
+            const scale = 0.008;
+            // Noise function for lakes
+            const val = Math.sin(x * scale) + Math.cos(z * scale * 1.3) + Math.sin(x * scale * 0.5 + z * scale * 0.5);
+            return val > 1.8;
+        }
+
+        /**
          * Separating Axis Theorem (SAT) for 2D Oriented Bounding Boxes (OBB).
          * Boxes are defined by center (x, z), half-extents (hw, hl), and rotation.
          */
@@ -3179,6 +3206,7 @@
 
             const roadMatrices = [];
             const lineMatrices = [];
+            const lakeMatrices = [];
             const poleMatrices = [];
             const armMatrices = [];
             const bulbMatrices = [];
@@ -3229,6 +3257,16 @@
                                 spawnTrafficCar(wx, 0.5, wz, rawVal > 0);
                             }
                         }
+
+                    } else if (isLake(wx, wz)) {
+                        // IT IS A LAKE
+                        dummy.position.set(lx + ROAD_TILE_SIZE / 2, 0.02, lz + ROAD_TILE_SIZE / 2);
+                        dummy.rotation.x = -Math.PI / 2;
+                        dummy.rotation.y = 0;
+                        dummy.rotation.z = 0;
+                        dummy.scale.set(1, 1, 1);
+                        dummy.updateMatrix();
+                        lakeMatrices.push(dummy.matrix.clone());
 
                     } else {
                         // IT IS GRASS/GROUND
@@ -3314,6 +3352,12 @@
                 const lineMesh = new THREE.InstancedMesh(lineTileGeometry, lineMaterial, lineMatrices.length);
                 for (let i = 0; i < lineMatrices.length; i++) lineMesh.setMatrixAt(i, lineMatrices[i]);
                 group.add(lineMesh);
+            }
+            if (lakeMatrices.length > 0) {
+                const lakeMesh = new THREE.InstancedMesh(lakeTileGeometry, lakeMaterial, lakeMatrices.length);
+                lakeMesh.receiveShadow = true;
+                for (let i = 0; i < lakeMatrices.length; i++) lakeMesh.setMatrixAt(i, lakeMatrices[i]);
+                group.add(lakeMesh);
             }
             let poleMesh, bulbMesh, armMesh, spotMesh;
             if (poleMatrices.length > 0) {
@@ -4425,6 +4469,12 @@
             const speed = Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
             let appliedFriction = FRICTION;
 
+            // Lake Physics
+            const onLake = isLake(player.position.x, player.position.z);
+            if (onLake) {
+                appliedFriction = 0.999; // Very low friction
+            }
+
             // 1. Steering (Speed-Sensitive)
             if (Math.abs(smoothedInputX) > 0.001) {
                 const turnFactor = carType === 'hypercar' ? 0.045 : 0.035;
@@ -4471,10 +4521,9 @@
             // We use a continuous function for lateral friction to prevent jerky transitions.
             let lateralFriction = 0.3; // Default grip
 
-            // Calculate drift intensity based on input and speed
-            // Threshold: input > 0.6 starts the slide ramp. 
-            // We also allow entry if applying throttle (burnout) OR just spinning hard in place.
-            if (Math.abs(smoothedInputX) > 0.6 && (speed > 0.5 || Math.abs(moveInput.y) > 0.1 || Math.abs(smoothedInputX) > 0.7)) {
+            if (onLake) {
+                lateralFriction = 0.995; // Extremely slippery (high retention of lateral velocity)
+            } else if (Math.abs(smoothedInputX) > 0.6 && (speed > 0.5 || Math.abs(moveInput.y) > 0.1 || Math.abs(smoothedInputX) > 0.7)) {
                 // Ramp from 0.3 up to 0.96 based on how hard we turn
                 const slideFactor = Math.min(1.0, (Math.abs(smoothedInputX) - 0.6) / 0.4);
                 lateralFriction = 0.3 + (0.66 * slideFactor);
