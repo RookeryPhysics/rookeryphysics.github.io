@@ -1162,6 +1162,10 @@
 
         let lightSpotGeometry, lightSpotMaterial;
 
+        // Tree Resources
+        const treeGeometries = {};
+        let treeTrunkMaterial, treeLeavesMaterial;
+
         // Voxel Score Resources
         const voxelScoreGeometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
         const voxelScoreMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
@@ -1233,6 +1237,115 @@
 
         init();
         animate();
+
+        /**
+         * Helper to merge multiple geometries into one BufferGeometry.
+         */
+        function mergeGeometries(geos) {
+            let totalPos = 0, totalNorm = 0, totalUV = 0;
+            for (let g of geos) {
+                totalPos += g.attributes.position.array.length;
+                totalNorm += g.attributes.normal.array.length;
+                totalUV += g.attributes.uv.array.length;
+            }
+            const posArr = new Float32Array(totalPos);
+            const normArr = new Float32Array(totalNorm);
+            const uvArr = new Float32Array(totalUV);
+            let offsetPos = 0, offsetNorm = 0, offsetUV = 0;
+            for (let g of geos) {
+                posArr.set(g.attributes.position.array, offsetPos);
+                normArr.set(g.attributes.normal.array, offsetNorm);
+                uvArr.set(g.attributes.uv.array, offsetUV);
+                offsetPos += g.attributes.position.array.length;
+                offsetNorm += g.attributes.normal.array.length;
+                offsetUV += g.attributes.uv.array.length;
+                g.dispose(); // Cleanup
+            }
+            const merged = new THREE.BufferGeometry();
+            merged.setAttribute('position', new THREE.BufferAttribute(posArr, 3));
+            merged.setAttribute('normal', new THREE.BufferAttribute(normArr, 3));
+            merged.setAttribute('uv', new THREE.BufferAttribute(uvArr, 2));
+            return merged;
+        }
+
+        /**
+         * Generate a detailed voxel-style pine tree geometry.
+         */
+        function createVoxelTreeDatas() {
+            const trunkGeos = [];
+            const leavesGeos = [];
+            const voxelSize = 1.0;
+
+            // --- Trunk ---
+            // Core trunk
+            for (let y = 0; y < 6; y++) {
+                // 2x2 base
+                [-0.5 * voxelSize, 0.5 * voxelSize].forEach(x => {
+                    [-0.5 * voxelSize, 0.5 * voxelSize].forEach(z => {
+                        const g = new THREE.BoxGeometry(voxelSize, voxelSize, voxelSize);
+                        g.translate(x, y * voxelSize + voxelSize / 2, z);
+                        trunkGeos.push(g);
+                    });
+                });
+            }
+            // Upper trunk (hidden mostly)
+            for (let y = 6; y < 14; y++) {
+                const g = new THREE.BoxGeometry(voxelSize, voxelSize, voxelSize);
+                g.translate(0, y * voxelSize + voxelSize / 2, 0);
+                trunkGeos.push(g);
+            }
+
+            // --- Leaves ---
+            // Create a conical distribution of voxels
+            const layers = 18;
+            const startY = 3.5;
+            const heightStep = 1.2;
+
+            for (let l = 0; l < layers; l++) {
+                const y = startY + l * heightStep;
+                const progress = l / (layers - 1); // 0 (bottom) to 1 (top)
+
+                // Radius curve: wide at bottom, tapers to point
+                // Adds some noise to radius for irregularity
+                const baseRad = 7.5 * (1.0 - Math.pow(progress, 0.9));
+
+                // Density: how many blocks in this ring
+                const circumference = 2 * Math.PI * baseRad;
+                const count = Math.ceil(circumference / (voxelSize * 0.9));
+
+                if (baseRad < 0.6) {
+                    // Top tip
+                    const g = new THREE.BoxGeometry(voxelSize, voxelSize, voxelSize);
+                    g.translate(0, y, 0);
+                    leavesGeos.push(g);
+                    continue;
+                }
+
+                for (let i = 0; i < count; i++) {
+                    const angle = (i / count) * Math.PI * 2 + (Math.random() * 0.5);
+                    // Vary radius slightly for "messy" look
+                    const r = baseRad + (Math.random() - 0.5) * 1.5;
+
+                    if (r < 0.8) continue; // Don't clip trunk too much
+
+                    const vx = Math.cos(angle) * r;
+                    const vz = Math.sin(angle) * r;
+
+                    // Random chance to drop a voxel (sparseness)
+                    if (Math.random() > 0.85) continue;
+
+                    const g = new THREE.BoxGeometry(voxelSize, voxelSize, voxelSize);
+                    g.translate(vx, y + (Math.random() - 0.5) * 0.5, vz);
+                    leavesGeos.push(g);
+                }
+            }
+
+            return {
+                trunk: mergeGeometries(trunkGeos),
+                leaves: mergeGeometries(leavesGeos)
+            };
+        }
+
         /**
          * Initialize the game scene, renderer, listeners, and entities.
          */
@@ -2760,6 +2873,16 @@
                 metalness: 0.1
             });
             billboardPostMaterial = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.8, metalness: 0.2 });
+
+            // --- Coniferous Tree Geometries (Snowy Pine Style) ---
+            const treeData = createVoxelTreeDatas();
+            treeGeometries.trunk = treeData.trunk;
+            // Tree leaves are now a single merged mesh
+            treeGeometries.leaves = treeData.leaves;
+
+            // Materials
+            treeTrunkMaterial = new THREE.MeshStandardMaterial({ color: 0x4a3c31, roughness: 0.9 });
+            treeLeavesMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9 });
         }
 
         /**
@@ -3315,6 +3438,73 @@
                         postInstanceIndex: bpInstIdxStart
                     });
                 }
+            }
+
+            // --- CONIFEROUS TREES ---
+            let tSeed = pseudoRandom(cx + 42.1, cz + 13.7);
+            const numTrees = 7 + Math.floor(tSeed * 12); // Reduced density
+
+            for (let i = 0; i < numTrees; i++) {
+                tSeed = pseudoRandom(tSeed, i + 200);
+                const tx = (pseudoRandom(tSeed * 1.7, i) - 0.5) * (CHUNK_SIZE - 10);
+                const tz = (pseudoRandom(tSeed * 1.9, i) - 0.5) * (CHUNK_SIZE - 10);
+
+                const worldX = chunkX + tx;
+                const worldZ = chunkZ + tz;
+
+                // 1. Check Road Distance (Avoid road and shoulder)
+                const rVal = getRoadValue(worldX, worldZ);
+                if (rVal < 0.35) continue;
+
+                // 2. Check Overlap with existing obstacles
+                let overlap = false;
+                for (let j = 0; j < obstacles.length; j++) {
+                    const ob = obstacles[j];
+                    const dx = worldX - ob.x;
+                    const dz = worldZ - ob.z;
+                    const dSq = dx * dx + dz * dz;
+                    // Tree radius approx 5 (was 3), plus obstacle radius
+                    const rSum = 6 + Math.sqrt(ob.radiusSq || 1);
+                    if (dSq < rSum * rSum) {
+                        overlap = true;
+                        break;
+                    }
+                }
+                if (overlap) continue;
+
+                // Spawn Tree Mesh Group
+                const treeGroup = new THREE.Group();
+                treeGroup.position.set(tx, 0, tz);
+
+                // Trunk
+                const trunk = new THREE.Mesh(treeGeometries.trunk, treeTrunkMaterial);
+                trunk.castShadow = true;
+                trunk.receiveShadow = true;
+                treeGroup.add(trunk);
+
+                // Leaves
+                const leaves = new THREE.Mesh(treeGeometries.leaves, treeLeavesMaterial);
+                leaves.castShadow = true;
+                leaves.receiveShadow = true;
+                treeGroup.add(leaves);
+
+                // Randomize
+                const scale = 0.8 + pseudoRandom(tSeed * 5, i) * 0.5; // 0.8 to 1.3
+                treeGroup.scale.set(scale, scale, scale);
+                treeGroup.rotation.y = pseudoRandom(tSeed * 7, i) * Math.PI * 2;
+
+                treeGroup.matrixAutoUpdate = false;
+                treeGroup.updateMatrix();
+
+                group.add(treeGroup);
+
+                obstacles.push({
+                    x: worldX, z: worldZ,
+                    radiusSq: 5 * 5,
+                    isTree: true,
+                    height: 25,
+                    mesh: treeGroup // Store reference for toppling
+                });
             }
 
             let bMesh, bpMesh;
@@ -4354,11 +4544,11 @@
                     const dx = obs.x - player.position.x;
                     const dz = obs.z - player.position.z;
 
-                    if (obs.isLightpost) {
-                        // Lightpost is circular, check against Player OBB
+                    if (obs.isLightpost || obs.isTree) {
+                        // Lightpost and Tree are circular, check against Player OBB
                         const lx = dx * cosP - dz * sinP;
                         const lz = dx * sinP + dz * cosP;
-                        const r = 1.0;
+                        const r = obs.isTree ? 1.0 : 1.0;
                         const closestX = Math.max(-pDims.hw, Math.min(lx, pDims.hw));
                         const closestZ = Math.max(-pDims.hl, Math.min(lz, pDims.hl));
                         hit = ((lx - closestX) ** 2 + (lz - closestZ) ** 2) < (r * r);
@@ -4394,6 +4584,10 @@
                     if (hit && player.position.y < obs.height) {
                         if (obs.isLightpost || obs.isBillboard) {
                             toppleLightPost(obs, chunk);
+                            continue;
+                        }
+                        if (obs.isTree) {
+                            toppleTree(obs, chunk);
                             continue;
                         }
                         explode(player.position, 0xff4400);
@@ -4597,6 +4791,36 @@
             }
         }
 
+        /**
+         * Make a tree topple over when hit.
+         */
+        function toppleTree(obs, chunkData) {
+            if (obs.isFallen) return;
+            obs.isFallen = true;
+
+            if (obs.mesh && chunkData.mesh) {
+                // Detach from chunk
+                chunkData.mesh.remove(obs.mesh);
+
+                // Add to scene at world position
+                scene.add(obs.mesh);
+
+                // Chunk group is at (chunkX, 0, chunkZ)
+                // Tree was at local (tx, 0, tz)
+                // World pos is obs.x, obs.z
+                // We need to preserve the rotation which was set relative to chunk
+                // Chunk rotation is (0,0,0) so local rotation is world rotation.
+                obs.mesh.position.set(obs.x, 0, obs.z);
+
+                // Enable updates for animation
+                obs.mesh.matrixAutoUpdate = true;
+                obs.mesh.updateMatrix();
+
+                // Start falling physics
+                addFallingObject(obs.mesh, obs.height);
+            }
+        }
+
         function addFallingObject(group, height) {
             // Determine fall direction (pushed by velocity)
             const fallAxis = new THREE.Vector3(
@@ -4616,8 +4840,9 @@
             // Impact effect
             velocity.multiplyScalar(0.7);
             explode(new THREE.Vector3(group.position.x, 2, group.position.z), 0x888888);
-            score += 10;
+            score += 1;
             scoreElement.innerText = "Score: " + score;
+            spawnVoxelScore(group.position);
         }
 
         /**
