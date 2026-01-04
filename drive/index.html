@@ -957,6 +957,11 @@
                     <canvas id="settings-miniature-canvas-hypercar"
                         style="width: 100%; height: 100%; display: block; border-radius: 50%;"></canvas>
                 </div>
+                <div id="miniature-container-hypercar2"
+                    style="width: 120px; height: 120px; position: relative; cursor: pointer; border: 2px solid rgba(255,255,255,0.2); border-radius: 50%; background: rgba(255,255,255,0.05);">
+                    <canvas id="settings-miniature-canvas-hypercar2"
+                        style="width: 100%; height: 100%; display: block; border-radius: 50%;"></canvas>
+                </div>
             </div>
             <button id="settings-pimp-btn" style="
                 display: block;
@@ -1029,7 +1034,8 @@
         let scene, camera, renderer;
         let settingsMiniatureSceneSuper, settingsMiniatureCameraSuper, settingsMiniatureRendererSuper;
         let settingsMiniatureSceneHyper, settingsMiniatureCameraHyper, settingsMiniatureRendererHyper;
-        let miniatureGroupSuper, miniatureGroupHyper;
+        let settingsMiniatureSceneHyper2, settingsMiniatureCameraHyper2, settingsMiniatureRendererHyper2;
+        let miniatureGroupSuper, miniatureGroupHyper, miniatureGroupHyper2;
         let raycaster = new THREE.Raycaster();
         let mouse = new THREE.Vector2();
 
@@ -1063,11 +1069,17 @@
         const savedVehicleColors = localStorage.getItem('vehicleColors');
         const vehicleColors = savedVehicleColors ? JSON.parse(savedVehicleColors) : {
             supercar: { body: 0xffffff, spoiler: 0x000000, windshield: 0x223344 },
-            hypercar: { body: 0xFFD700, spoiler: 0x111111, windshield: 0x223344 }
+            hypercar: { body: 0xFFD700, spoiler: 0x111111, windshield: 0x223344 },
+            hypercar2: { body: 0x00ffff, spoiler: 0x222222, windshield: 0x112233 }
         };
-        // Ensure windshield color exists if loaded from old storage
-        if (vehicleColors.supercar && !vehicleColors.supercar.windshield) vehicleColors.supercar.windshield = 0x223344;
-        if (vehicleColors.hypercar && !vehicleColors.hypercar.windshield) vehicleColors.hypercar.windshield = 0x223344;
+        // Ensure all types exist if loaded from old storage
+        if (!vehicleColors.supercar) vehicleColors.supercar = { body: 0xffffff, spoiler: 0x000000, windshield: 0x223344 };
+        if (!vehicleColors.hypercar) vehicleColors.hypercar = { body: 0xFFD700, spoiler: 0x111111, windshield: 0x223344 };
+        if (!vehicleColors.hypercar2) vehicleColors.hypercar2 = { body: 0x00ffff, spoiler: 0x222222, windshield: 0x112233 };
+
+        if (!vehicleColors.supercar.windshield) vehicleColors.supercar.windshield = 0x223344;
+        if (!vehicleColors.hypercar.windshield) vehicleColors.hypercar.windshield = 0x223344;
+        if (!vehicleColors.hypercar2.windshield) vehicleColors.hypercar2.windshield = 0x112233;
 
         const savedPedColors = localStorage.getItem('pedestrianColors');
         const defaultPedestrianColors = savedPedColors ? JSON.parse(savedPedColors) : {
@@ -1453,6 +1465,32 @@
             if (btnHyper) {
                 btnHyper.addEventListener('click', (e) => { e.stopPropagation(); selectCarType('hypercar'); });
                 btnHyper.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); selectCarType('hypercar'); }, { passive: false });
+            }
+
+            // Settings Miniature Scene - Hypercar 2.0
+            settingsMiniatureSceneHyper2 = new THREE.Scene();
+            settingsMiniatureCameraHyper2 = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
+            settingsMiniatureCameraHyper2.position.set(0, 0, 3.5);
+
+            const canvasHyper2 = document.getElementById('settings-miniature-canvas-hypercar2');
+            settingsMiniatureRendererHyper2 = new THREE.WebGLRenderer({ canvas: canvasHyper2, alpha: true, antialias: true });
+            settingsMiniatureRendererHyper2.setSize(120, 120);
+            settingsMiniatureRendererHyper2.setPixelRatio(window.devicePixelRatio);
+            settingsMiniatureRendererHyper2.setClearColor(0x000000, 0);
+
+            const ambHyper2 = new THREE.AmbientLight(0xffffff, 0.8);
+            settingsMiniatureSceneHyper2.add(ambHyper2);
+            const dirHyper2 = new THREE.DirectionalLight(0xffffff, 1.0);
+            dirHyper2.position.set(2, 5, 5);
+            settingsMiniatureSceneHyper2.add(dirHyper2);
+
+            miniatureGroupHyper2 = new THREE.Group();
+            settingsMiniatureSceneHyper2.add(miniatureGroupHyper2);
+
+            const btnHyper2 = document.getElementById('miniature-container-hypercar2');
+            if (btnHyper2) {
+                btnHyper2.addEventListener('click', (e) => { e.stopPropagation(); selectCarType('hypercar2'); });
+                btnHyper2.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); selectCarType('hypercar2'); }, { passive: false });
             }
 
 
@@ -2335,7 +2373,8 @@
         function resetVehicleDefaults() {
             const defaults = {
                 supercar: { body: 0xffffff, spoiler: 0x000000, windshield: 0x223344 },
-                hypercar: { body: 0xFFD700, spoiler: 0x111111, windshield: 0x223344 }
+                hypercar: { body: 0xFFD700, spoiler: 0x111111, windshield: 0x223344 },
+                hypercar2: { body: 0x00ffff, spoiler: 0x222222, windshield: 0x112233 }
             };
             Object.assign(vehicleColors, JSON.parse(JSON.stringify(defaults)));
             localStorage.setItem('vehicleColors', JSON.stringify(vehicleColors));
@@ -2565,20 +2604,37 @@
             meshHyper.position.y = -0.5;
             miniatureGroupHyper.add(meshHyper);
 
+            // Update Hypercar 2.0 Miniature
+            while (miniatureGroupHyper2.children.length > 0) {
+                miniatureGroupHyper2.remove(miniatureGroupHyper2.children[0]);
+            }
+            const meshHyper2 = createVehicle({
+                type: 'hypercar2',
+                color: vehicleColors['hypercar2'],
+                addLights: false,
+                scale: 0.35
+            });
+            meshHyper2.position.y = -0.5;
+            miniatureGroupHyper2.add(meshHyper2);
+
             // Highlight selected
             const btnSuper = document.getElementById('miniature-container-supercar');
             const btnHyper = document.getElementById('miniature-container-hypercar');
-            if (btnSuper && btnHyper) {
-                if (carType === 'supercar') {
-                    btnSuper.style.borderColor = 'rgba(255, 255, 255, 1.0)';
-                    btnSuper.style.boxShadow = '0 0 15px rgba(255, 255, 255, 0.5)';
-                    btnHyper.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-                    btnHyper.style.boxShadow = 'none';
-                } else {
-                    btnHyper.style.borderColor = 'rgba(255, 255, 255, 1.0)';
-                    btnHyper.style.boxShadow = '0 0 15px rgba(255, 255, 255, 0.5)';
-                    btnSuper.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-                    btnSuper.style.boxShadow = 'none';
+            const btnHyper2 = document.getElementById('miniature-container-hypercar2');
+            if (btnSuper && btnHyper && btnHyper2) {
+                [btnSuper, btnHyper, btnHyper2].forEach(b => {
+                    b.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                    b.style.boxShadow = 'none';
+                });
+
+                let selectedBtn;
+                if (carType === 'supercar') selectedBtn = btnSuper;
+                else if (carType === 'hypercar') selectedBtn = btnHyper;
+                else if (carType === 'hypercar2') selectedBtn = btnHyper2;
+
+                if (selectedBtn) {
+                    selectedBtn.style.borderColor = 'rgba(255, 255, 255, 1.0)';
+                    selectedBtn.style.boxShadow = '0 0 15px rgba(255, 255, 255, 0.5)';
                 }
             }
         }
@@ -3783,6 +3839,8 @@
                 mesh = buildSupercarMesh(addLights, bodyColor, spoilerColor, windshieldColor); // Pass body, spoiler, and windshield colors
             } else if (type === 'hypercar') {
                 mesh = buildHypercarMesh(addLights, bodyColor, spoilerColor, windshieldColor); // Pass body, spoiler, and windshield colors
+            } else if (type === 'hypercar2') {
+                mesh = buildHypercar2Mesh(addLights, bodyColor, spoilerColor, windshieldColor);
             } else {
                 mesh = buildSupercarMesh(addLights, bodyColor, spoilerColor, windshieldColor); // Default to supercar
             }
@@ -3994,6 +4052,133 @@
             return group;
         }
 
+        /**
+         * Build a "Hypercar 2.0" style vehicle mesh.
+         * @param {boolean} [addLights=true] 
+         * @param {number|null} [bodyColor] 
+         * @param {number|null} [spoilerColor] 
+         * @returns {THREE.Group}
+         */
+        function buildHypercar2Mesh(addLights = true, bodyColor = null, spoilerColor = null, windshieldColor = null) {
+            const group = new THREE.Group();
+            const currentBodyColor = bodyColor ? bodyColor : vehicleColors.hypercar2.body;
+            const currentSpoilerColor = spoilerColor ? spoilerColor : vehicleColors.hypercar2.spoiler;
+            const currentWindshieldColor = windshieldColor ? windshieldColor : vehicleColors.hypercar2.windshield;
+
+            const bodyMat = new THREE.MeshStandardMaterial({ color: currentBodyColor, roughness: 0.1, metalness: 0.8 });
+            const techMat = new THREE.MeshStandardMaterial({ color: currentSpoilerColor, roughness: 0.3, metalness: 0.7 });
+            const glassMat = new THREE.MeshStandardMaterial({
+                color: currentWindshieldColor,
+                roughness: 0.05,
+                metalness: 0.9,
+                transparent: true,
+                opacity: 0.6
+            });
+
+            const lightIntensity = isNightMode ? 6.0 : 0.8;
+            const glowMat = new THREE.MeshStandardMaterial({
+                color: 0x00ffff,
+                emissive: 0x00ffff,
+                emissiveIntensity: lightIntensity
+            });
+            const headLightMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: lightIntensity });
+            const engineMat = new THREE.MeshStandardMaterial({ color: 0x444444, metalness: 1.0, roughness: 0.2 });
+
+            // Main Chassis - Sleeker, lower
+            const chassisGeo = new THREE.BoxGeometry(2.2, 0.4, 4.8);
+            const chassis = new THREE.Mesh(chassisGeo, bodyMat);
+            chassis.position.y = 0.4;
+            chassis.userData.partGroup = 'body';
+            group.add(chassis);
+
+            // Center spine / Shark fin
+            const spineGeo = new THREE.BoxGeometry(0.1, 0.6, 2.5);
+            const spine = new THREE.Mesh(spineGeo, techMat);
+            spine.position.set(0, 1.0, -0.5);
+            spine.userData.partGroup = 'spoiler';
+            group.add(spine);
+
+            // Modern wrap-around cabin
+            const cabinGeo = new THREE.BoxGeometry(1.6, 0.45, 2.2);
+            const cabin = new THREE.Mesh(cabinGeo, glassMat);
+            cabin.position.set(0, 0.85, 0.3);
+            cabin.userData = { partType: 'glass', partGroup: 'glass' };
+            group.add(cabin);
+
+            // Aggressive wide fenders
+            const fenderGeoFront = new THREE.BoxGeometry(0.9, 0.6, 1.4);
+            const fl = new THREE.Mesh(fenderGeoFront, bodyMat); fl.position.set(-1.25, 0.5, 1.6); fl.userData.partGroup = 'body'; group.add(fl);
+            const fr = new THREE.Mesh(fenderGeoFront, bodyMat); fr.position.set(1.25, 0.5, 1.6); fr.userData.partGroup = 'body'; group.add(fr);
+
+            const fenderGeoRear = new THREE.BoxGeometry(1.0, 0.75, 1.8);
+            const rl = new THREE.Mesh(fenderGeoRear, bodyMat); rl.position.set(-1.3, 0.55, -1.2); rl.userData.partGroup = 'body'; group.add(rl);
+            const rr = new THREE.Mesh(fenderGeoRear, bodyMat); rr.position.set(1.3, 0.55, -1.2); rr.userData.partGroup = 'body'; group.add(rr);
+
+            // Aerodynamic side pods
+            const podGeo = new THREE.BoxGeometry(0.3, 0.3, 2.4);
+            const podL = new THREE.Mesh(podGeo, techMat); podL.position.set(-1.1, 0.3, 0.2); podL.userData.partGroup = 'spoiler'; group.add(podL);
+            const podR = new THREE.Mesh(podGeo, techMat); podR.position.set(1.1, 0.3, 0.2); podR.userData.partGroup = 'spoiler'; group.add(podR);
+
+            // Futuristic Rear Wing (Integrated)
+            const wingGeo = new THREE.BoxGeometry(2.8, 0.08, 0.8);
+            const wing = new THREE.Mesh(wingGeo, techMat);
+            wing.position.set(0, 1.1, -2.1);
+            wing.userData.partGroup = 'spoiler';
+            group.add(wing);
+
+            // Light strip details
+            const stripGeo = new THREE.BoxGeometry(0.05, 0.05, 4.0);
+            const stripL = new THREE.Mesh(stripGeo, glowMat); stripL.position.set(-0.6, 0.6, 0.4); group.add(stripL);
+            const stripR = new THREE.Mesh(stripGeo, glowMat); stripR.position.set(0.6, 0.6, 0.4); group.add(stripR);
+
+            // Rear light bar
+            const barGeo = new THREE.BoxGeometry(2.0, 0.05, 0.1);
+            const bar = new THREE.Mesh(barGeo, new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: lightIntensity * 2 }));
+            bar.position.set(0, 0.6, -2.41);
+            group.add(bar);
+
+            // Headlights (Vertical futuristic strips)
+            const hlGeo = new THREE.BoxGeometry(0.1, 0.4, 0.1);
+            const hlL = new THREE.Mesh(hlGeo, headLightMat); hlL.position.set(-1.0, 0.6, 2.4); group.add(hlL);
+            const hlR = new THREE.Mesh(hlGeo, headLightMat); hlR.position.set(1.0, 0.6, 2.4); group.add(hlR);
+
+            // Engine detail (V12 block look)
+            const engGeo = new THREE.BoxGeometry(0.8, 0.4, 1.2);
+            const engine = new THREE.Mesh(engGeo, engineMat);
+            engine.position.set(0, 0.7, -0.8);
+            group.add(engine);
+
+            // Wheels
+            const wheelGeo = new THREE.BoxGeometry(1.0, 0.9, 0.9);
+            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.9 });
+            const rimMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2, metalness: 0.8 });
+
+            const wheels = [
+                { x: -1.3, y: 0.45, z: 1.6 },
+                { x: 1.3, y: 0.45, z: 1.6 },
+                { x: -1.4, y: 0.5, z: -1.2 },
+                { x: 1.4, y: 0.5, z: -1.2 }
+            ];
+
+            wheels.forEach(wPos => {
+                const w = new THREE.Mesh(wheelGeo, wheelMat);
+                w.position.set(wPos.x, wPos.y, wPos.z);
+                w.userData = { paintable: false };
+                group.add(w);
+
+                // Rim accent (Changed from glowMat to black rimMat)
+                const rimGeo = new THREE.BoxGeometry(0.05, 0.6, 0.6);
+                const rim = new THREE.Mesh(rimGeo, rimMat);
+                rim.position.set(wPos.x + (wPos.x > 0 ? 0.48 : -0.48), wPos.y, wPos.z);
+                group.add(rim);
+            });
+
+            if (addLights) {
+                createHeadlights(group, 1.0, 0.6, 2.4, 15.0);
+            }
+            return group;
+        }
+
         // --- NPC TRAFFIC SYSTEM ---
 
         /**
@@ -4160,7 +4345,10 @@
          * Switch between vehicle models (Supercar/Hypercar) and trigger jump animation.
          */
         function toggleCarModel() {
-            const newType = (carType === 'supercar') ? 'hypercar' : 'supercar';
+            let newType;
+            if (carType === 'supercar') newType = 'hypercar';
+            else if (carType === 'hypercar') newType = 'hypercar2';
+            else newType = 'supercar';
             selectCarType(newType);
         }
 
@@ -4500,7 +4688,7 @@
 
             // 1. Steering (Speed-Sensitive)
             if (Math.abs(smoothedInputX) > 0.001) {
-                const turnFactor = carType === 'hypercar' ? 0.045 : 0.035;
+                const turnFactor = (carType === 'hypercar' || carType === 'hypercar2') ? 0.045 : 0.035;
                 // Reduce steering at high speeds for stability, increase at low speeds for agility
                 const speedTurnMult = Math.max(0.25, 1.0 - (speed / MAX_SPEED) * 0.5);
 
@@ -4601,7 +4789,10 @@
             }
 
             // --- Building/Obstacle Collisions (Rectangular Hitbox) ---
-            const pDims = carType === 'supercar' ? { hw: 1.45, hl: 2.3 } : { hw: 1.8, hl: 2.2 };
+            const pDims = (carType === 'supercar') ? { hw: 1.45, hl: 2.3 } :
+                (carType === 'hypercar') ? { hw: 1.8, hl: 2.2 } :
+                    { hw: 1.9, hl: 2.4 };
+
             const pRot = player.rotation.y;
             const cosP = Math.cos(pRot);
             const sinP = Math.sin(pRot);
@@ -5020,7 +5211,10 @@
          */
         function checkCollisions() {
             if (isGameOver) return;
-            const pDims = carType === 'supercar' ? { hw: 1.45, hl: 2.3 } : { hw: 1.8, hl: 2.2 };
+            const pDims = (carType === 'supercar') ? { hw: 1.45, hl: 2.3 } :
+                (carType === 'hypercar') ? { hw: 1.8, hl: 2.2 } :
+                    { hw: 1.9, hl: 2.4 };
+
             const pRot = player.rotation.y;
             const cosP = Math.cos(pRot);
             const sinP = Math.sin(pRot);
@@ -5063,8 +5257,11 @@
             let wheelOffsets = [];
             if (carType === 'supercar') {
                 wheelOffsets = [{ x: -1.2, z: 1.6 }, { x: 1.2, z: 1.6 }, { x: -1.25, z: -1.4 }, { x: 1.25, z: -1.4 }];
-            } else {
+            } else if (carType === 'hypercar') {
                 wheelOffsets = [{ x: -1.32, z: 1.4 }, { x: 1.32, z: 1.4 }, { x: -1.38, z: -1.2 }, { x: 1.38, z: -1.2 }];
+            } else {
+                // Hypercar 2.0 offsets
+                wheelOffsets = [{ x: -1.35, z: 1.6 }, { x: 1.35, z: 1.6 }, { x: -1.45, z: -1.2 }, { x: 1.45, z: -1.2 }];
             }
             const carRot = player.rotation.y;
             const cos = Math.cos(carRot);
@@ -5498,8 +5695,8 @@
                 if (!isAirborne) {
                     const speed = Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
                     if (speed > 0.01) {
-                        const bounceFreq = carType === 'hypercar' ? 0.03 : 0.015;
-                        const bounceAmp = carType === 'hypercar' ? 0.02 : 0.05;
+                        const bounceFreq = (carType === 'hypercar' || carType === 'hypercar2') ? 0.03 : 0.015;
+                        const bounceAmp = (carType === 'hypercar' || carType === 'hypercar2') ? 0.02 : 0.05;
                         player.position.y = PLAYER_BASE_Y + Math.sin(nowTime * bounceFreq) * bounceAmp;
                     }
                 }
@@ -5512,7 +5709,10 @@
             if (settingsModal.classList.contains('active')) {
                 if (settingsMiniatureRendererSuper) settingsMiniatureRendererSuper.render(settingsMiniatureSceneSuper, settingsMiniatureCameraSuper);
                 if (settingsMiniatureRendererHyper) settingsMiniatureRendererHyper.render(settingsMiniatureSceneHyper, settingsMiniatureCameraHyper);
+                if (settingsMiniatureRendererHyper2) settingsMiniatureRendererHyper2.render(settingsMiniatureSceneHyper2, settingsMiniatureCameraHyper2);
             }
+
+            if (miniatureGroupHyper2) miniatureGroupHyper2.rotation.y += 0.02;
 
             if (vehicleModalOpen) {
                 // if (modalCarGroup) modalCarGroup.rotation.y += 0.01; // Removed automatic rotation
