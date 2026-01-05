@@ -319,7 +319,7 @@
         </div>
         <div class="stats-badge">
             <span class="live-dot"></span>
-            Live Data Feed
+            <span id="last-updated" style="color: var(--text-muted); font-size: 0.75rem;">Updating...</span>
         </div>
     </header>
 
@@ -379,21 +379,33 @@
 
         async function fetchMarkets() {
             try {
-                // Using a more robust proxy if possible, but AllOrigins is okay for small samples. 
-                // Note: Direct fetch might work if Polymarket allows it now or if in a dev env.
                 const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(API_URL)}`;
                 const response = await fetch(proxyUrl);
+
+                if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+
                 const proxyData = await response.json();
 
-                if (!proxyData.contents) throw new Error("No contents found");
+                if (!proxyData || !proxyData.contents) {
+                    throw new Error("Proxy returned empty or invalid data.");
+                }
 
                 const data = JSON.parse(proxyData.contents);
                 renderMarkets(data);
+
+                const now = new Date();
+                document.getElementById('last-updated').textContent = `Last update: ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
             } catch (error) {
                 console.error('Error fetching markets:', error);
-                grid.innerHTML = `<div style="color: var(--danger); text-align: center; grid-column: 1/-1; padding: 2rem; background: var(--glass); border-radius: 20px;">
-                    <p>Unable to load markets. ${error.message}</p>
-                    <p style="font-size: 0.8rem; margin-top: 1rem; color: var(--text-muted);">This may be due to CORS restrictions or API rate limits.</p>
+                grid.innerHTML = `<div style="color: var(--danger); text-align: center; grid-column: 1/-1; padding: 3rem; background: var(--glass); border: 1px dashed var(--danger); border-radius: 20px;">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom: 1rem; opacity: 0.5;">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    <p style="font-size: 1.1rem; font-weight: 600;">Data Sync Failed</p>
+                    <p style="font-size: 0.85rem; margin-top: 0.5rem; color: var(--text-muted);">${error.message}</p>
+                    <button onclick="fetchMarkets()" style="margin-top: 1.5rem; padding: 0.5rem 1.5rem; background: var(--accent-primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Try Again</button>
                 </div>`;
             }
         }
@@ -416,8 +428,19 @@
             grid.innerHTML = '';
 
             markets.forEach(market => {
-                const outcomes = JSON.parse(market.outcomes);
-                const prices = JSON.parse(market.outcomePrices);
+                let outcomes = [];
+                let prices = [];
+
+                try {
+                    // Polymarket API sometimes returns these as strings, sometimes as arrays
+                    outcomes = typeof market.outcomes === 'string' ? JSON.parse(market.outcomes) : (market.outcomes || []);
+                    prices = typeof market.outcomePrices === 'string' ? JSON.parse(market.outcomePrices) : (market.outcomePrices || []);
+                } catch (e) {
+                    console.warn('Failed to parse outcomes for market:', market.id, e);
+                    return; // Skip malformed markets
+                }
+
+                if (!outcomes.length || !prices.length) return;
 
                 const card = document.createElement('div');
                 card.className = 'card';
@@ -431,7 +454,7 @@
 
                 let outcomesHtml = '';
                 outcomes.forEach((outcome, index) => {
-                    const price = parseFloat(prices[index]);
+                    const price = parseFloat(prices[index]) || 0;
                     const percentage = Math.round(price * 100);
                     const color = outcome.toLowerCase() === 'up' ? 'var(--success)' : (outcome.toLowerCase() === 'down' ? 'var(--danger)' : 'var(--accent-primary)');
 
@@ -446,10 +469,16 @@
                     `;
                 });
 
+                const imageFallback = 'https://polymarket.com/apple-touch-icon.png';
+                const marketImage = market.image || market.icon || imageFallback;
+
                 card.innerHTML = `
                     <div class="card-header" style="justify-content: space-between;">
                         <div style="display: flex; gap: 1rem; align-items: center;">
-                            <img src="${market.image || 'https://polymarket.com/favicon.ico'}" alt="" class="card-image" onerror="this.src='https://polymarket.com/favicon.ico'">
+                            <div style="position: relative;">
+                                <img src="${marketImage}" alt="" class="card-image" onerror="this.onerror=null; this.src='${imageFallback}';">
+                                <div style="position: absolute; bottom: -2px; right: -2px; width: 12px; height: 12px; background: var(--success); border-radius: 50%; border: 2px solid var(--bg-color);"></div>
+                            </div>
                             <div class="card-title" style="font-size: 1rem;">${questionText.split('-')[0].trim()}</div>
                         </div>
                         ${timeBadge}
@@ -468,7 +497,7 @@
                         </div>
                     </div>
                     <div style="font-size: 0.7rem; color: var(--text-muted); text-align: center; margin-top: -0.5rem;">
-                        Resolves: ${new Date(market.endDate).toLocaleString([], { hour: '2-digit', minute: '2-digit' })} ET
+                        Resolves: ${new Date(market.endDate || 0).toLocaleString([], { hour: '2-digit', minute: '2-digit' })} ET
                     </div>
                 `;
 
