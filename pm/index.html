@@ -4,31 +4,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PolyPulse | Real-time Prediction Markets</title>
+    <title>N-THREAT | Global Nuclear Detection Dashboard</title>
     <meta name="description"
-        content="Track the latest trending prediction markets from Polymarket with real-time probability updates.">
+        content="Advanced real-time monitoring of global nuclear threat probabilities using decentralized prediction markets.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=JetBrains+Mono:wght@300;400;700&display=swap"
+        rel="stylesheet">
     <style>
         :root {
-            --bg-color: #0a0a0c;
-            --card-bg: rgba(255, 255, 255, 0.03);
-            --card-border: rgba(255, 255, 255, 0.1);
-            --accent-primary: #3b82f6;
-            --accent-secondary: #8b5cf6;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --success: #10b981;
-            --danger: #ef4444;
+            --bg-color: #030303;
+            --alert-red: #ff3e3e;
+            --alert-orange: #ff9f1c;
+            --alert-yellow: #f9d423;
+            --alert-green: #00ff88;
+            --text-main: #ffffff;
+            --text-muted: #888888;
             --glass: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
+            --accent-glow: rgba(255, 62, 62, 0.3);
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Outfit', sans-serif;
+            font-family: 'JetBrains Mono', monospace;
         }
 
         body {
@@ -36,270 +38,420 @@
             color: var(--text-main);
             min-height: 100vh;
             overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
             background-image:
-                radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.05) 0%, transparent 40%),
-                radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 40%);
+                linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)),
+                url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+
+        /* Scanline Overlay */
+        body::before {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 1000;
+            background-size: 100% 4px, 3px 100%;
+            pointer-events: none;
         }
 
         header {
-            padding: 2rem 5%;
+            padding: 1.5rem 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            backdrop-filter: blur(10px);
-            position: sticky;
-            top: 0;
+            border-bottom: 2px solid var(--border);
+            backdrop-filter: blur(20px);
             z-index: 100;
-            border-bottom: 1px solid var(--card-border);
-            background: rgba(10, 10, 12, 0.8);
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .system-status {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
         }
 
         .logo {
-            font-size: 1.5rem;
-            font-weight: 700;
-            background: linear-gradient(to right, var(--accent-primary), var(--accent-secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 1.8rem;
+            letter-spacing: 4px;
+            color: var(--alert-red);
+            text-shadow: 0 0 15px var(--accent-glow);
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .logo svg {
+            filter: drop-shadow(0 0 5px var(--alert-red));
+        }
+
+        .live-indicator {
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            font-size: 0.8rem;
+            background: rgba(255, 62, 62, 0.1);
+            padding: 0.4rem 1rem;
+            border: 1px solid var(--alert-red);
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
 
-        .stats-badge {
-            background: var(--glass);
-            padding: 0.5rem 1rem;
-            border-radius: 99px;
-            font-size: 0.85rem;
-            border: 1px solid var(--card-border);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .live-dot {
+        .pulse-dot {
             width: 8px;
             height: 8px;
-            background-color: var(--success);
+            background: var(--alert-red);
             border-radius: 50%;
-            display: inline-block;
-            box-shadow: 0 0 10px var(--success);
-            animation: pulse 2s infinite;
+            animation: pulse 1s infinite;
         }
 
         @keyframes pulse {
             0% {
-                transform: scale(0.95);
-                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+                transform: scale(1);
+                opacity: 1;
             }
 
-            70% {
-                transform: scale(1);
-                box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+            50% {
+                transform: scale(1.5);
+                opacity: 0.5;
             }
 
             100% {
-                transform: scale(0.95);
-                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+                transform: scale(1);
+                opacity: 1;
             }
         }
 
         main {
-            padding: 3rem 5%;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .hero {
-            text-align: center;
-            margin-bottom: 4rem;
-        }
-
-        .hero h1 {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            letter-spacing: -1px;
-        }
-
-        .hero p {
-            color: var(--text-muted);
-            max-width: 600px;
-            margin: 0 auto;
-            font-size: 1.1rem;
-        }
-
-        .grid {
+            flex: 1;
+            padding: 2rem;
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            grid-template-columns: 350px 1fr 350px;
+            gap: 2rem;
+            max-width: 1800px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Left Panel: DEFCON */
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .defcon-container {
+            background: var(--glass);
+            border: 1px solid var(--border);
+            padding: 1.5rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .defcon-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+            letter-spacing: 2px;
+        }
+
+        .defcon-levels {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .defcon-level {
+            padding: 1rem;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 1.2rem;
+            opacity: 0.3;
+            transition: all 0.5s ease;
+        }
+
+        .defcon-level.active {
+            opacity: 1;
+            transform: scale(1.05);
+            box-shadow: 0 0 20px var(--accent-glow);
+            border-color: currentColor;
+        }
+
+        .level-1 {
+            color: #ffffff;
+            background: #000000;
+            border-color: #ff0000;
+        }
+
+        .level-2 {
+            color: #ff3e3e;
+        }
+
+        .level-3 {
+            color: #ff9f1c;
+        }
+
+        .level-4 {
+            color: #f9d423;
+        }
+
+        .level-5 {
+            color: #00ff88;
+        }
+
+        /* Center Panel: Map & Big Chart */
+        .center-panel {
+            display: flex;
+            flex-direction: column;
             gap: 2rem;
         }
 
-        .card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            border-radius: 20px;
-            padding: 1.5rem;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            cursor: pointer;
-        }
-
-        .card:hover {
-            transform: translateY(-5px);
-            background: rgba(255, 255, 255, 0.05);
-            border-color: rgba(255, 255, 255, 0.2);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-        }
-
-        .card-header {
-            display: flex;
-            gap: 1rem;
-            align-items: flex-start;
-        }
-
-        .card-image {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            object-fit: cover;
+        .threat-display {
             background: var(--glass);
-        }
-
-        .card-title {
-            font-weight: 600;
-            font-size: 1.1rem;
-            line-height: 1.4;
-            color: var(--text-main);
-            flex: 1;
-        }
-
-        .outcomes {
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-            margin-top: 0.5rem;
-        }
-
-        .outcome-bar {
-            background: rgba(255, 255, 255, 0.05);
-            height: 40px;
-            border-radius: 10px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
             position: relative;
             overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 400px;
         }
 
-        .outcome-progress {
+        .threat-display::before {
+            content: "";
             position: absolute;
-            left: 0;
             top: 0;
-            height: 100%;
-            background: var(--accent-primary);
-            opacity: 0.2;
-            transition: width 1s ease-out;
-        }
-
-        .outcome-content {
-            position: absolute;
             left: 0;
-            top: 0;
             width: 100%;
             height: 100%;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 1rem;
-            font-size: 0.9rem;
-            z-index: 1;
+            background: radial-gradient(circle at center, rgba(255, 62, 62, 0.1) 0%, transparent 70%);
+            pointer-events: none;
         }
 
-        .outcome-price {
-            font-weight: 700;
-            color: var(--text-main);
+        .probability-hero {
+            text-align: center;
+            z-index: 10;
         }
 
-        .card-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-top: 1rem;
-            border-top: 1px solid var(--card-border);
-            margin-top: auto;
+        .prob-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 8rem;
+            font-weight: 900;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to bottom, #fff, #ff3e3e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 20px rgba(255, 62, 62, 0.5));
         }
 
-        .volume-info {
-            font-size: 0.8rem;
+        .prob-label {
+            font-size: 1.2rem;
             color: var(--text-muted);
-            display: flex;
-            flex-direction: column;
+            letter-spacing: 5px;
+            text-transform: uppercase;
         }
 
-        .volume-value {
-            color: var(--text-main);
-            font-weight: 500;
+        /* Bottom Grid: Timeline Markets */
+        .timeline-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
         }
 
-        .date-badge {
-            font-size: 0.8rem;
-            padding: 0.25rem 0.75rem;
+        .market-card {
             background: var(--glass);
-            border-radius: 6px;
-            color: var(--text-muted);
-        }
-
-        /* Skeleton Loading */
-        .skeleton {
-            background: linear-gradient(90deg, var(--card-bg) 25%, rgba(255, 255, 255, 0.05) 50%, var(--card-bg) 75%);
-            background-size: 200% 100%;
-            animation: shimmer 1.5s infinite;
-        }
-
-        @keyframes shimmer {
-            0% {
-                background-position: 200% 0;
-            }
-
-            100% {
-                background-position: -200% 0;
-            }
-        }
-
-        .skeleton-card {
-            height: 300px;
-            border-radius: 20px;
+            border: 1px solid var(--border);
             padding: 1.5rem;
-            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .market-card:hover {
+            border-color: var(--alert-red);
+            background: rgba(255, 62, 62, 0.05);
+        }
+
+        .market-date {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .market-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+        }
+
+        .market-stats {
             display: flex;
-            flex-direction: column;
-            gap: 1rem;
+            justify-content: space-between;
+            align-items: flex-end;
         }
 
-        .skeleton-circle {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
+        .price-big {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--alert-red);
         }
 
-        .skeleton-line {
-            height: 20px;
+        .change-tag {
+            font-size: 0.8rem;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
             border-radius: 4px;
         }
 
-        .skeleton-bar {
-            height: 40px;
-            border-radius: 10px;
+        /* Right Panel: Logs */
+        .logs-panel {
+            background: var(--glass);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            max-height: 600px;
         }
 
-        @media (max-width: 768px) {
-            .hero h1 {
-                font-size: 2.2rem;
+        .logs-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+        }
+
+        .logs-content {
+            flex: 1;
+            padding: 1rem;
+            font-size: 0.7rem;
+            overflow-y: auto;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        .log-entry {
+            margin-bottom: 0.5rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .log-time {
+            color: var(--alert-red);
+        }
+
+        .log-msg {
+            color: #eee;
+        }
+
+        /* Ticker */
+        .ticker-wrap {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background: rgba(255, 62, 62, 0.1);
+            border-top: 1px solid var(--alert-red);
+            padding: 0.5rem 0;
+            backdrop-filter: blur(10px);
+            z-index: 200;
+        }
+
+        .ticker {
+            display: flex;
+            white-space: nowrap;
+            animation: ticker 30s linear infinite;
+        }
+
+        .ticker-item {
+            padding: 0 2rem;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        @keyframes ticker {
+            0% {
+                transform: translateX(100%);
             }
 
-            .grid {
+            100% {
+                transform: translateX(-100%);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            main {
                 grid-template-columns: 1fr;
+            }
+
+            .side-panel,
+            .logs-panel {
+                display: none;
+            }
+        }
+
+        /* Glitch Effect */
+        .glitch {
+            position: relative;
+        }
+
+        .glitch::after {
+            content: attr(data-text);
+            position: absolute;
+            left: 2px;
+            text-shadow: -1px 0 red;
+            top: 0;
+            color: white;
+            background: black;
+            overflow: hidden;
+            clip: rect(0, 900px, 0, 0);
+            animation: glitch-anim 2s infinite linear alternate-reverse;
+        }
+
+        @keyframes glitch-anim {
+            0% {
+                clip: rect(44px, 9999px, 56px, 0);
+            }
+
+            20% {
+                clip: rect(12px, 9999px, 88px, 0);
+            }
+
+            40% {
+                clip: rect(67px, 9999px, 2px, 0);
+            }
+
+            60% {
+                clip: rect(34px, 9999px, 91px, 0);
+            }
+
+            80% {
+                clip: rect(98px, 9999px, 14px, 0);
+            }
+
+            100% {
+                clip: rect(5px, 9999px, 45px, 0);
             }
         }
     </style>
@@ -307,209 +459,207 @@
 
 <body>
     <header>
-        <div class="logo">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor" />
-                <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round" />
-                <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                    stroke-linejoin="round" />
-            </svg>
-            PolyPulse
+        <div class="system-status">
+            <div class="logo">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
+                    <path d="M12 2V12" stroke="currentColor" stroke-width="2" />
+                    <path d="M12 12L19 19" stroke="currentColor" stroke-width="2" />
+                    <path d="M12 12L5 19" stroke="currentColor" stroke-width="2" />
+                </svg>
+                N-THREAT
+            </div>
+            <div class="live-indicator">
+                <span class="pulse-dot"></span>
+                System Live: Signal Clear
+            </div>
         </div>
-        <div class="stats-badge">
-            <span class="live-dot"></span>
-            <span id="last-updated" style="color: var(--text-muted); font-size: 0.75rem;">Updating...</span>
-        </div>
+        <div id="system-time" style="font-size: 0.9rem; color: var(--text-muted);">00:00:00 UTC</div>
     </header>
 
     <main>
-        <section class="hero">
-            <h1>Crypto Speedrun</h1>
-            <p>Real-time 15-minute price predictions for BTC, ETH, SOL, and more. High-frequency insights from the
-                global crowd.</p>
-        </section>
+        <div class="side-panel">
+            <div class="defcon-container">
+                <div class="defcon-title">DEFENSE READINESS CONDITION</div>
+                <div class="defcon-levels">
+                    <div id="defcon-1" class="defcon-level level-1">DEFCON 1</div>
+                    <div id="defcon-2" class="defcon-level level-2">DEFCON 2</div>
+                    <div id="defcon-3" class="defcon-level level-3">DEFCON 3</div>
+                    <div id="defcon-4" class="defcon-level level-4">DEFCON 4</div>
+                    <div id="defcon-5" class="defcon-level level-5 active">DEFCON 5</div>
+                </div>
+            </div>
 
-        <div id="market-grid" class="grid">
-            <!-- Skeletons -->
-            <div class="skeleton-card">
-                <div style="display: flex; gap: 1rem;">
-                    <div class="skeleton-circle skeleton"></div>
-                    <div style="flex: 1; display: flex; flex-direction: column; gap: 0.5rem;">
-                        <div class="skeleton-line skeleton" style="width: 80%;"></div>
-                        <div class="skeleton-line skeleton" style="width: 40%;"></div>
-                    </div>
+            <div class="defcon-container" style="margin-top: auto;">
+                <div class="defcon-title">SYSTEM METRICS</div>
+                <div style="font-size: 0.7rem; text-align: left; color: #aaa;">
+                    Network Sync: 100%<br>
+                    Quantum Drift: 0.003ns<br>
+                    Predictive Load: 12.4 TFLOPS<br>
+                    Data Source: Gamma Decentralized
                 </div>
-                <div class="skeleton-bar skeleton" style="margin-top: 1rem;"></div>
-                <div class="skeleton-bar skeleton"></div>
-                <div class="skeleton-line skeleton" style="margin-top: auto; width: 60%;"></div>
             </div>
-            <!-- Repeated skeletons for filler -->
-            <div class="skeleton-card">
-                <div style="display: flex; gap: 1rem;">
-                    <div class="skeleton-circle skeleton"></div>
-                    <div style="flex: 1; display: flex; flex-direction: column; gap: 0.5rem;">
-                        <div class="skeleton-line skeleton" style="width: 85%;"></div>
-                        <div class="skeleton-line skeleton" style="width: 50%;"></div>
-                    </div>
+        </div>
+
+        <div class="center-panel">
+            <div class="threat-display">
+                <div class="probability-hero">
+                    <div id="global-prob" class="prob-value">0%</div>
+                    <div class="prob-label">Global Detonation Hazard</div>
                 </div>
-                <div class="skeleton-bar skeleton" style="margin-top: 1rem;"></div>
-                <div class="skeleton-bar skeleton"></div>
-                <div class="skeleton-line skeleton" style="margin-top: auto; width: 40%;"></div>
             </div>
-            <div class="skeleton-card">
-                <div style="display: flex; gap: 1rem;">
-                    <div class="skeleton-circle skeleton"></div>
-                    <div style="flex: 1; display: flex; flex-direction: column; gap: 0.5rem;">
-                        <div class="skeleton-line skeleton" style="width: 70%;"></div>
-                        <div class="skeleton-line skeleton" style="width: 60%;"></div>
+
+            <div class="timeline-grid">
+                <div class="market-card" id="market-mar" onclick="openMarket('nuclear-weapon-detonation-by-march-31')">
+                    <div class="market-date">Q1 TIMELINE</div>
+                    <div class="market-name">BY MARCH 31</div>
+                    <div class="market-stats">
+                        <div class="price-big" id="price-mar">--%</div>
+                        <div class="change-tag">PROB</div>
                     </div>
                 </div>
-                <div class="skeleton-bar skeleton" style="margin-top: 1rem;"></div>
-                <div class="skeleton-bar skeleton"></div>
-                <div class="skeleton-line skeleton" style="margin-top: auto; width: 55%;"></div>
+                <div class="market-card" id="market-jun"
+                    onclick="openMarket('nuclear-weapon-detonation-by-june-30-299')">
+                    <div class="market-date">Q2 TIMELINE</div>
+                    <div class="market-name">BY JUNE 30</div>
+                    <div class="market-stats">
+                        <div class="price-big" id="price-jun">--%</div>
+                        <div class="change-tag">PROB</div>
+                    </div>
+                </div>
+                <div class="market-card" id="market-dec"
+                    onclick="openMarket('nuclear-weapon-detonation-by-december-31')">
+                    <div class="market-date">YEAR END</div>
+                    <div class="market-name">BY DEC 31</div>
+                    <div class="market-stats">
+                        <div class="price-big" id="price-dec">--%</div>
+                        <div class="change-tag">PROB</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="side-panel">
+            <div class="logs-panel">
+                <div class="logs-header">TERMINAL FEED</div>
+                <div id="logs" class="logs-content">
+                    <div class="log-entry"><span class="log-time">[00:00]</span> <span class="log-msg">Initializing
+                            N-THREAT kernel...</span></div>
+                    <div class="log-entry"><span class="log-time">[00:00]</span> <span class="log-msg">Connecting to
+                            Gamma API...</span></div>
+                    <div class="log-entry"><span class="log-time">[00:00]</span> <span class="log-msg">Establishing
+                            secure handshake...</span></div>
+                </div>
             </div>
         </div>
     </main>
 
+    <div class="ticker-wrap">
+        <div class="ticker">
+            <div class="ticker-item">WARNING: Real-time probabilities are derived from decentralized consensus. Accuracy
+                may vary.</div>
+            <div class="ticker-item">SITUATIONAL AWARENESS: HIGH</div>
+            <div class="ticker-item">PROTOCOL 74-ALPHA ACTIVE</div>
+            <div class="ticker-item">MARKET IDS: 0x4afb... , 0x0edd... , 0x42b4...</div>
+            <div class="ticker-item">RESOLUTION SOURCE: ATOMIC ENERGY AGENCY / GLOBAL PRESS RELEASES</div>
+        </div>
+    </div>
+
     <script>
-        // Tag ID 102467 is for "15 Min" crypto markets
-        const API_URL = 'https://gamma-api.polymarket.com/markets?active=true&closed=false&tag_id=102467&limit=50&order=volume&ascending=false';
-        const grid = document.getElementById('market-grid');
+        const MARKETS = {
+            mar: '0x4afb076c5d9dfe1c33bf300cfd9fb93a5a8d9bfce8fe2beaeccbde5f8c269fc1',
+            jun: '0x0edd688013e4d08dd5367b9171bf85c6df73f2a4f561ed3c8ce004271c8278b7',
+            dec: '0x42b4e02c1e95ca7b5e8610c3c1fad1dff6c0a46d01de6ae12565df026e3fc5a6'
+        };
 
-        async function fetchMarkets() {
+        const logs = document.getElementById('logs');
+        function addLog(msg) {
+            const time = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `<span class="log-time">[${time}]</span> <span class="log-msg">${msg}</span>`;
+            logs.prepend(entry);
+            if (logs.children.length > 50) logs.removeChild(logs.lastChild);
+        }
+
+        async function updateData() {
+            addLog('Polling market data from Gamma...');
             try {
-                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(API_URL)}`;
+                // Fetch all markets in one go if possible, or individual ones
+                // We'll use individual fetches to ensure robustness
+                const ids = Object.values(MARKETS);
+                const query = ids.map(id => `condition_id=${id}`).join('&');
+                const url = `https://gamma-api.polymarket.com/markets?${query}`;
+                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+
                 const response = await fetch(proxyUrl);
-
-                if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-
                 const proxyData = await response.json();
-
-                if (!proxyData || !proxyData.contents) {
-                    throw new Error("Proxy returned empty or invalid data.");
-                }
-
                 const data = JSON.parse(proxyData.contents);
-                renderMarkets(data);
 
-                const now = new Date();
-                document.getElementById('last-updated').textContent = `Last update: ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
-            } catch (error) {
-                console.error('Error fetching markets:', error);
-                grid.innerHTML = `<div style="color: var(--danger); text-align: center; grid-column: 1/-1; padding: 3rem; background: var(--glass); border: 1px dashed var(--danger); border-radius: 20px;">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom: 1rem; opacity: 0.5;">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="12" y1="8" x2="12" y2="12"></line>
-                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                    </svg>
-                    <p style="font-size: 1.1rem; font-weight: 600;">Data Sync Failed</p>
-                    <p style="font-size: 0.85rem; margin-top: 0.5rem; color: var(--text-muted);">${error.message}</p>
-                    <button onclick="fetchMarkets()" style="margin-top: 1.5rem; padding: 0.5rem 1.5rem; background: var(--accent-primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Try Again</button>
-                </div>`;
-            }
-        }
+                if (!Array.isArray(data)) throw new Error('Invalid API response');
 
-        function formatCurrency(value) {
-            return new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: 'USD',
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0,
-            }).format(value);
-        }
-
-        function renderMarkets(markets) {
-            if (!markets || markets.length === 0) {
-                grid.innerHTML = '<div style="text-align: center; grid-column: 1/-1; padding: 3rem;">No active 15-minute markets found.</div>';
-                return;
-            }
-
-            grid.innerHTML = '';
-
-            markets.forEach(market => {
-                let outcomes = [];
-                let prices = [];
-
-                try {
-                    // Polymarket API sometimes returns these as strings, sometimes as arrays
-                    outcomes = typeof market.outcomes === 'string' ? JSON.parse(market.outcomes) : (market.outcomes || []);
-                    prices = typeof market.outcomePrices === 'string' ? JSON.parse(market.outcomePrices) : (market.outcomePrices || []);
-                } catch (e) {
-                    console.warn('Failed to parse outcomes for market:', market.id, e);
-                    return; // Skip malformed markets
-                }
-
-                if (!outcomes.length || !prices.length) return;
-
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.onclick = () => window.open(`https://polymarket.com/event/${market.slug}`, '_blank');
-
-                const questionText = market.question.replace(/<[^>]*>/g, '');
-
-                // Extract time range from title if possible
-                const timeStr = questionText.match(/\d+:\d+[AP]M-\d+:\d+[AP]M/);
-                const timeBadge = timeStr ? `<div class="date-badge" style="background: var(--accent-primary); color: white; opacity: 1;">${timeStr[0]}</div>` : '';
-
-                let outcomesHtml = '';
-                outcomes.forEach((outcome, index) => {
-                    const price = parseFloat(prices[index]) || 0;
-                    const percentage = Math.round(price * 100);
-                    const color = outcome.toLowerCase() === 'up' ? 'var(--success)' : (outcome.toLowerCase() === 'down' ? 'var(--danger)' : 'var(--accent-primary)');
-
-                    outcomesHtml += `
-                        <div class="outcome-bar">
-                            <div class="outcome-progress" style="width: ${percentage}%; background-color: ${color}; opacity: 0.3;"></div>
-                            <div class="outcome-content">
-                                <span style="font-weight: 600;">${outcome}</span>
-                                <span class="outcome-price" style="color: ${color}">${percentage}%</span>
-                            </div>
-                        </div>
-                    `;
+                const results = {};
+                data.forEach(m => {
+                    // Prices are usually strings like ["0.04", "0.96"]
+                    const prices = typeof m.outcomePrices === 'string' ? JSON.parse(m.outcomePrices) : m.outcomePrices;
+                    const prob = (parseFloat(prices[0]) * 100).toFixed(1);
+                    results[m.conditionId] = prob;
                 });
 
-                const imageFallback = 'https://polymarket.com/apple-touch-icon.png';
-                const marketImage = market.image || market.icon || imageFallback;
+                // Update UI
+                const pMar = results[MARKETS.mar] || 0;
+                const pJun = results[MARKETS.jun] || 0;
+                const pDec = results[MARKETS.dec] || 0;
 
-                card.innerHTML = `
-                    <div class="card-header" style="justify-content: space-between;">
-                        <div style="display: flex; gap: 1rem; align-items: center;">
-                            <div style="position: relative;">
-                                <img src="${marketImage}" alt="" class="card-image" onerror="this.onerror=null; this.src='${imageFallback}';">
-                                <div style="position: absolute; bottom: -2px; right: -2px; width: 12px; height: 12px; background: var(--success); border-radius: 50%; border: 2px solid var(--bg-color);"></div>
-                            </div>
-                            <div class="card-title" style="font-size: 1rem;">${questionText.split('-')[0].trim()}</div>
-                        </div>
-                        ${timeBadge}
-                    </div>
-                    <div class="outcomes">
-                        ${outcomesHtml}
-                    </div>
-                    <div class="card-footer" style="padding-top: 0.75rem;">
-                        <div class="volume-info">
-                            <span style="font-size: 0.6rem; text-transform: uppercase;">Total Volume</span>
-                            <span class="volume-value" style="font-size: 0.9rem;">${formatCurrency(market.volumeNum || market.volume)}</span>
-                        </div>
-                        <div class="volume-info" style="align-items: flex-end;">
-                            <span style="font-size: 0.6rem; text-transform: uppercase;">Liquidity</span>
-                            <span class="volume-value" style="font-size: 0.9rem;">${formatCurrency(market.liquidityNum || market.liquidity)}</span>
-                        </div>
-                    </div>
-                    <div style="font-size: 0.7rem; color: var(--text-muted); text-align: center; margin-top: -0.5rem;">
-                        Resolves: ${new Date(market.endDate || 0).toLocaleString([], { hour: '2-digit', minute: '2-digit' })} ET
-                    </div>
-                `;
+                document.getElementById('price-mar').textContent = `${pMar}%`;
+                document.getElementById('price-jun').textContent = `${pJun}%`;
+                document.getElementById('price-dec').textContent = `${pDec}%`;
 
-                grid.appendChild(card);
-            });
+                // Maximum probability across timelines is our "Current Hazard" level
+                const maxProb = Math.max(pMar, pJun, pDec);
+                document.getElementById('global-prob').textContent = `${maxProb}%`;
+
+                updateDefcon(maxProb);
+                addLog(`Sync complete. Hazard: ${maxProb}%.`);
+
+            } catch (err) {
+                console.error(err);
+                addLog(`Error: ${err.message}`);
+            }
         }
 
-        // Initial fetch
-        fetchMarkets();
+        function updateDefcon(prob) {
+            const levels = [5, 4, 3, 2, 1];
+            let activeLevel = 5;
 
-        // Refresh every 30 seconds for speedrun markets
-        setInterval(fetchMarkets, 30000);
+            if (prob > 50) activeLevel = 1;
+            else if (prob > 20) activeLevel = 2;
+            else if (prob > 10) activeLevel = 3;
+            else if (prob > 5) activeLevel = 4;
+            else activeLevel = 5;
+
+            levels.forEach(l => {
+                const el = document.getElementById(`defcon-${l}`);
+                if (l === activeLevel) el.classList.add('active');
+                else el.classList.remove('active');
+            });
+
+            // Background glow matching level
+            const colors = { 1: '#ff0000', 2: '#ff3e3e', 3: '#ff9f1c', 4: '#f9d423', 5: '#00ff88' };
+            document.documentElement.style.setProperty('--accent-glow', `rgba(${activeLevel === 1 ? '255,0,0' : (activeLevel === 5 ? '0,255,136' : '255,62,62')}, 0.3)`);
+        }
+
+        function openMarket(slug) {
+            window.open(`https://polymarket.com/event/${slug}`, '_blank');
+        }
+
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('system-time').textContent = now.toISOString().replace('T', ' ').split('.')[0] + ' UTC';
+        }, 1000);
+
+        updateData();
+        setInterval(updateData, 60000); // Update every minute
     </script>
 </body>
 
