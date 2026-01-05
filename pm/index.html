@@ -325,8 +325,9 @@
 
     <main>
         <section class="hero">
-            <h1>The Wisdom of Crowds</h1>
-            <p>Real-time insights from global prediction markets. See what the world thinks will happen next.</p>
+            <h1>Crypto Speedrun</h1>
+            <p>Real-time 15-minute price predictions for BTC, ETH, SOL, and more. High-frequency insights from the
+                global crowd.</p>
         </section>
 
         <div id="market-grid" class="grid">
@@ -372,21 +373,28 @@
     </main>
 
     <script>
-        const API_URL = 'https://gamma-api.polymarket.com/markets?active=true&closed=false&limit=18&order=volume24hr&ascending=false&precision=2';
+        // Tag ID 102467 is for "15 Min" crypto markets
+        const API_URL = 'https://gamma-api.polymarket.com/markets?active=true&closed=false&tag_id=102467&limit=50&order=volume&ascending=false';
         const grid = document.getElementById('market-grid');
 
         async function fetchMarkets() {
             try {
+                // Using a more robust proxy if possible, but AllOrigins is okay for small samples. 
+                // Note: Direct fetch might work if Polymarket allows it now or if in a dev env.
                 const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(API_URL)}`;
                 const response = await fetch(proxyUrl);
                 const proxyData = await response.json();
 
-                // AllOrigins returns the content as a string in the 'contents' property
+                if (!proxyData.contents) throw new Error("No contents found");
+
                 const data = JSON.parse(proxyData.contents);
                 renderMarkets(data);
             } catch (error) {
                 console.error('Error fetching markets:', error);
-                grid.innerHTML = '<div style="color: var(--danger); text-align: center; grid-column: 1/-1; padding: 2rem; background: var(--glass); border-radius: 20px;">Unable to bypass CORS restrictions. The Polymarket API prevents direct browser access from this domain.</div>';
+                grid.innerHTML = `<div style="color: var(--danger); text-align: center; grid-column: 1/-1; padding: 2rem; background: var(--glass); border-radius: 20px;">
+                    <p>Unable to load markets. ${error.message}</p>
+                    <p style="font-size: 0.8rem; margin-top: 1rem; color: var(--text-muted);">This may be due to CORS restrictions or API rate limits.</p>
+                </div>`;
             }
         }
 
@@ -400,6 +408,11 @@
         }
 
         function renderMarkets(markets) {
+            if (!markets || markets.length === 0) {
+                grid.innerHTML = '<div style="text-align: center; grid-column: 1/-1; padding: 3rem;">No active 15-minute markets found.</div>';
+                return;
+            }
+
             grid.innerHTML = '';
 
             markets.forEach(market => {
@@ -410,41 +423,52 @@
                 card.className = 'card';
                 card.onclick = () => window.open(`https://polymarket.com/event/${market.slug}`, '_blank');
 
-                // Clean the question (remove HTML if any)
                 const questionText = market.question.replace(/<[^>]*>/g, '');
+
+                // Extract time range from title if possible
+                const timeStr = questionText.match(/\d+:\d+[AP]M-\d+:\d+[AP]M/);
+                const timeBadge = timeStr ? `<div class="date-badge" style="background: var(--accent-primary); color: white; opacity: 1;">${timeStr[0]}</div>` : '';
 
                 let outcomesHtml = '';
                 outcomes.forEach((outcome, index) => {
                     const price = parseFloat(prices[index]);
                     const percentage = Math.round(price * 100);
+                    const color = outcome.toLowerCase() === 'up' ? 'var(--success)' : (outcome.toLowerCase() === 'down' ? 'var(--danger)' : 'var(--accent-primary)');
 
                     outcomesHtml += `
                         <div class="outcome-bar">
-                            <div class="outcome-progress" style="width: ${percentage}%"></div>
+                            <div class="outcome-progress" style="width: ${percentage}%; background-color: ${color}; opacity: 0.3;"></div>
                             <div class="outcome-content">
-                                <span>${outcome}</span>
-                                <span class="outcome-price">${percentage}%</span>
+                                <span style="font-weight: 600;">${outcome}</span>
+                                <span class="outcome-price" style="color: ${color}">${percentage}%</span>
                             </div>
                         </div>
                     `;
                 });
 
                 card.innerHTML = `
-                    <div class="card-header">
-                        <img src="${market.image || 'https://polymarket.com/favicon.ico'}" alt="" class="card-image" onerror="this.src='https://polymarket.com/favicon.ico'">
-                        <div class="card-title">${questionText}</div>
+                    <div class="card-header" style="justify-content: space-between;">
+                        <div style="display: flex; gap: 1rem; align-items: center;">
+                            <img src="${market.image || 'https://polymarket.com/favicon.ico'}" alt="" class="card-image" onerror="this.src='https://polymarket.com/favicon.ico'">
+                            <div class="card-title" style="font-size: 1rem;">${questionText.split('-')[0].trim()}</div>
+                        </div>
+                        ${timeBadge}
                     </div>
                     <div class="outcomes">
                         ${outcomesHtml}
                     </div>
-                    <div class="card-footer">
+                    <div class="card-footer" style="padding-top: 0.75rem;">
                         <div class="volume-info">
-                            <span style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px;">24h Volume</span>
-                            <span class="volume-value">${formatCurrency(market.volume24hr)}</span>
+                            <span style="font-size: 0.6rem; text-transform: uppercase;">Total Volume</span>
+                            <span class="volume-value" style="font-size: 0.9rem;">${formatCurrency(market.volumeNum || market.volume)}</span>
                         </div>
-                        <div class="date-badge">
-                            ${new Date(market.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        <div class="volume-info" style="align-items: flex-end;">
+                            <span style="font-size: 0.6rem; text-transform: uppercase;">Liquidity</span>
+                            <span class="volume-value" style="font-size: 0.9rem;">${formatCurrency(market.liquidityNum || market.liquidity)}</span>
                         </div>
+                    </div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); text-align: center; margin-top: -0.5rem;">
+                        Resolves: ${new Date(market.endDate).toLocaleString([], { hour: '2-digit', minute: '2-digit' })} ET
                     </div>
                 `;
 
@@ -455,8 +479,8 @@
         // Initial fetch
         fetchMarkets();
 
-        // Refresh every 60 seconds
-        setInterval(fetchMarkets, 60000);
+        // Refresh every 30 seconds for speedrun markets
+        setInterval(fetchMarkets, 30000);
     </script>
 </body>
 
