@@ -377,12 +377,16 @@
 
         async function fetchMarkets() {
             try {
-                const response = await fetch(API_URL);
-                const data = await response.json();
+                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(API_URL)}`;
+                const response = await fetch(proxyUrl);
+                const proxyData = await response.json();
+
+                // AllOrigins returns the content as a string in the 'contents' property
+                const data = JSON.parse(proxyData.contents);
                 renderMarkets(data);
             } catch (error) {
                 console.error('Error fetching markets:', error);
-                grid.innerHTML = '<div style="color: var(--danger); text-align: center; grid-column: 1/-1;">Failed to load markets. Please try again later.</div>';
+                grid.innerHTML = '<div style="color: var(--danger); text-align: center; grid-column: 1/-1; padding: 2rem; background: var(--glass); border-radius: 20px;">Unable to bypass CORS restrictions. The Polymarket API prevents direct browser access from this domain.</div>';
             }
         }
 
