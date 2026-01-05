@@ -503,6 +503,9 @@
 
         <div class="center-panel">
             <div class="threat-display">
+                <div id="last-sync"
+                    style="position: absolute; top: 1rem; right: 1.5rem; font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">
+                    SYNC: INITIALIZING...</div>
                 <div class="probability-hero">
                     <div id="global-prob" class="prob-value">0%</div>
                     <div class="prob-label">Global Detonation Hazard</div>
@@ -582,31 +585,33 @@
             if (logs.children.length > 50) logs.removeChild(logs.lastChild);
         }
 
+        const EVENT_SLUG = 'nuclear-weapon-detonation-by-562';
+
         async function updateData() {
             addLog('Polling market data from Gamma...');
             try {
-                // Fetch all markets in one go if possible, or individual ones
-                // We'll use individual fetches to ensure robustness
-                const ids = Object.values(MARKETS);
-                const query = ids.map(id => `condition_id=${id}`).join('&');
-                const url = `https://gamma-api.polymarket.com/markets?${query}`;
-                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+                // Fetch event data to get all markets in this category
+                const url = `https://gamma-api.polymarket.com/events?slug=${EVENT_SLUG}`;
+                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
 
                 const response = await fetch(proxyUrl);
-                const proxyData = await response.json();
-                const data = JSON.parse(proxyData.contents);
+                if (!response.ok) throw new Error('Network response was not ok');
 
-                if (!Array.isArray(data)) throw new Error('Invalid API response');
+                const data = await response.json();
+                const event = data[0];
+                if (!event || !event.markets) throw new Error('Event data not found');
 
                 const results = {};
-                data.forEach(m => {
-                    // Prices are usually strings like ["0.04", "0.96"]
-                    const prices = typeof m.outcomePrices === 'string' ? JSON.parse(m.outcomePrices) : m.outcomePrices;
-                    const prob = (parseFloat(prices[0]) * 100).toFixed(1);
-                    results[m.conditionId] = prob;
+                event.markets.forEach(m => {
+                    if (m.outcomePrices) {
+                        const prices = typeof m.outcomePrices === 'string' ? JSON.parse(m.outcomePrices) : m.outcomePrices;
+                        // prices[0] is usually "Yes" probability
+                        const prob = (parseFloat(prices[0]) * 100).toFixed(1);
+                        results[m.conditionId] = prob;
+                    }
                 });
 
-                // Update UI
+                // Update individual timeline cards
                 const pMar = results[MARKETS.mar] || 0;
                 const pJun = results[MARKETS.jun] || 0;
                 const pDec = results[MARKETS.dec] || 0;
@@ -615,38 +620,63 @@
                 document.getElementById('price-jun').textContent = `${pJun}%`;
                 document.getElementById('price-dec').textContent = `${pDec}%`;
 
-                // Maximum probability across timelines is our "Current Hazard" level
-                const maxProb = Math.max(pMar, pJun, pDec);
-                document.getElementById('global-prob').textContent = `${maxProb}%`;
+                // Update Hero Probability
+                // We use the highest probability across timelines as the global hazard level
+                const maxProb = Math.max(parseFloat(pMar), parseFloat(pJun), parseFloat(pDec));
+
+                const globalProbEl = document.getElementById('global-prob');
+                const startProb = parseFloat(globalProbEl.textContent) || 0;
+                animateValue(globalProbEl, startProb, maxProb, 1000);
 
                 updateDefcon(maxProb);
-                addLog(`Sync complete. Hazard: ${maxProb}%.`);
+
+                const now = new Date();
+                document.getElementById('last-sync').textContent = `SYNC: ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
+
+                addLog(`Sync complete. System Status: ${maxProb > 10 ? 'ELEVATED' : 'NORMAL'}. Hazard: ${maxProb}%`);
 
             } catch (err) {
-                console.error(err);
-                addLog(`Error: ${err.message}`);
+                console.error('Fetch error:', err);
+                addLog(`Sync failed: ${err.message}. Retrying in 60s.`);
+                // Fallback to static if needed or just wait for next interval
             }
+        }
+
+        function animateValue(obj, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const val = (progress * (end - start) + start).toFixed(1);
+                obj.textContent = `${val}%`;
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
         }
 
         function updateDefcon(prob) {
             const levels = [5, 4, 3, 2, 1];
             let activeLevel = 5;
-
-            if (prob > 50) activeLevel = 1;
-            else if (prob > 20) activeLevel = 2;
-            else if (prob > 10) activeLevel = 3;
-            else if (prob > 5) activeLevel = 4;
+            if (prob > 25) activeLevel = 1;
+            else if (prob > 12) activeLevel = 2;
+            else if (prob > 6) activeLevel = 3;
+            else if (prob > 3) activeLevel = 4;
             else activeLevel = 5;
 
             levels.forEach(l => {
                 const el = document.getElementById(`defcon-${l}`);
-                if (l === activeLevel) el.classList.add('active');
-                else el.classList.remove('active');
+                if (el) {
+                    if (l === activeLevel) el.classList.add('active');
+                    else el.classList.remove('active');
+                }
             });
 
             // Background glow matching level
             const colors = { 1: '#ff0000', 2: '#ff3e3e', 3: '#ff9f1c', 4: '#f9d423', 5: '#00ff88' };
-            document.documentElement.style.setProperty('--accent-glow', `rgba(${activeLevel === 1 ? '255,0,0' : (activeLevel === 5 ? '0,255,136' : '255,62,62')}, 0.3)`);
+            const activeColor = colors[activeLevel];
+            document.documentElement.style.setProperty('--accent-glow', `${activeColor}4d`); // 30% alpha
         }
 
         function openMarket(slug) {
