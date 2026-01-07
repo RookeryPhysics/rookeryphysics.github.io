@@ -35,12 +35,6 @@
 
         body {
             background-color: var(--bg);
-            background-image:
-                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                radial-gradient(circle at 50% 0%, #222222 0%, transparent 60%);
-            background-size: 50px 50px, 50px 50px, 100% 100%;
-            background-attachment: fixed;
             color: var(--text);
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             min-height: 100vh;
@@ -50,6 +44,83 @@
             align-items: center;
             padding: 0.5rem;
             overflow-x: hidden;
+            position: relative;
+        }
+
+        .aurora-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            background: var(--bg);
+        }
+
+        .grid-overlay {
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            mask-image: radial-gradient(circle at 50% 50%, black 60%, transparent 100%);
+            pointer-events: none;
+        }
+
+        .aurora-beam {
+            position: absolute;
+            filter: blur(90px);
+            opacity: 0.4;
+            border-radius: 50%;
+            animation: float 20s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .beam-1 {
+            top: -20%;
+            left: -10%;
+            width: 60vw;
+            height: 60vw;
+            background: radial-gradient(circle, rgba(0, 100, 255, 0.4), transparent 70%);
+            animation-duration: 25s;
+        }
+
+        .beam-2 {
+            bottom: -20%;
+            right: -10%;
+            width: 70vw;
+            height: 70vw;
+            background: radial-gradient(circle, rgba(0, 200, 255, 0.25), transparent 70%);
+            animation-duration: 35s;
+            animation-direction: alternate-reverse;
+        }
+
+        .beam-3 {
+            top: 40%;
+            left: 30%;
+            width: 50vw;
+            height: 50vw;
+            background: radial-gradient(circle, rgba(50, 50, 255, 0.2), transparent 70%);
+            animation-duration: 45s;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            33% {
+                transform: translate(30px, 50px) scale(1.1);
+            }
+
+            66% {
+                transform: translate(-20px, 20px) scale(0.9);
+            }
+
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
         }
 
         .container {
@@ -137,7 +208,8 @@
             text-transform: uppercase;
             padding: 1.5rem 0;
             margin-top: auto;
-            min-height: 2rem; /* Keep some space at bottom */
+            min-height: 2rem;
+            /* Keep some space at bottom */
         }
 
         @media (max-width: 600px) {
@@ -306,6 +378,12 @@
 </head>
 
 <body>
+    <div class="aurora-container">
+        <div class="aurora-beam beam-1"></div>
+        <div class="aurora-beam beam-2"></div>
+        <div class="aurora-beam beam-3"></div>
+        <div class="grid-overlay"></div>
+    </div>
     <div class="container loading" id="main-container">
         <div style="margin-bottom: 1rem;">
             <svg width="64" height="64" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"
@@ -479,5 +557,3 @@
 </body>
 
 </html>
-
-
