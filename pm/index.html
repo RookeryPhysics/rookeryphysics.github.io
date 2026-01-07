@@ -4,568 +4,155 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>N-THREAT | Global Nuclear Detection Dashboard</title>
-    <meta name="description"
-        content="Advanced real-time monitoring of global nuclear threat probabilities using decentralized prediction markets.">
+    <title>Risk Monitor | Zen View</title>
+    <meta name="description" content="A minimalist view of global risk probabilities.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=JetBrains+Mono:wght@300;400;700&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #030303;
-            --alert-red: #ff3e3e;
-            --alert-orange: #ff9f1c;
-            --alert-yellow: #f9d423;
-            --alert-green: #00ff88;
-            --text-main: #ffffff;
+            --bg: #ffffff;
+            --text: #1a1a1a;
             --text-muted: #888888;
-            --glass: rgba(255, 255, 255, 0.05);
-            --border: rgba(255, 255, 255, 0.1);
-            --accent-glow: rgba(255, 62, 62, 0.3);
+            --accent: #000000;
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'JetBrains Mono', monospace;
+            -webkit-font-smoothing: antialiased;
         }
 
         body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            min-height: 100vh;
-            overflow-x: hidden;
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            height: 100vh;
             display: flex;
-            flex-direction: column;
-            background-image:
-                linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)),
-                url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop');
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-        }
-
-        /* Scanline Overlay */
-        body::before {
-            content: " ";
-            display: block;
-            position: fixed;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            z-index: 1000;
-            background-size: 100% 4px, 3px 100%;
-            pointer-events: none;
-        }
-
-        header {
-            padding: 1.5rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid var(--border);
-            backdrop-filter: blur(20px);
-            z-index: 100;
-            background: rgba(0, 0, 0, 0.4);
-        }
-
-        .system-status {
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-        }
-
-        .logo {
-            font-family: 'Orbitron', sans-serif;
-            font-weight: 900;
-            font-size: 1.8rem;
-            letter-spacing: 4px;
-            color: var(--alert-red);
-            text-shadow: 0 0 15px var(--accent-glow);
-            display: flex;
-            align-items: center;
-            gap: 0.8rem;
-        }
-
-        .logo svg {
-            filter: drop-shadow(0 0 5px var(--alert-red));
-        }
-
-        .live-indicator {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.8rem;
-            background: rgba(255, 62, 62, 0.1);
-            padding: 0.4rem 1rem;
-            border: 1px solid var(--alert-red);
-            border-radius: 4px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        .pulse-dot {
-            width: 8px;
-            height: 8px;
-            background: var(--alert-red);
-            border-radius: 50%;
-            animation: pulse 1s infinite;
-        }
-
-        @keyframes pulse {
-            0% {
-                transform: scale(1);
-                opacity: 1;
-            }
-
-            50% {
-                transform: scale(1.5);
-                opacity: 0.5;
-            }
-
-            100% {
-                transform: scale(1);
-                opacity: 1;
-            }
-        }
-
-        main {
-            flex: 1;
-            padding: 2rem;
-            display: grid;
-            grid-template-columns: 350px 1fr 350px;
-            gap: 2rem;
-            max-width: 1800px;
-            margin: 0 auto;
-            width: 100%;
-        }
-
-        /* Left Panel: DEFCON */
-        .side-panel {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-
-        .defcon-container {
-            background: var(--glass);
-            border: 1px solid var(--border);
-            padding: 1.5rem;
-            border-radius: 8px;
-            text-align: center;
-        }
-
-        .defcon-title {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            margin-bottom: 1.5rem;
-            letter-spacing: 2px;
-        }
-
-        .defcon-levels {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        .defcon-level {
-            padding: 1rem;
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            font-weight: 700;
-            font-size: 1.2rem;
-            opacity: 0.3;
-            transition: all 0.5s ease;
-        }
-
-        .defcon-level.active {
-            opacity: 1;
-            transform: scale(1.05);
-            box-shadow: 0 0 20px var(--accent-glow);
-            border-color: currentColor;
-        }
-
-        .level-1 {
-            color: #ffffff;
-            background: #000000;
-            border-color: #ff0000;
-        }
-
-        .level-2 {
-            color: #ff3e3e;
-        }
-
-        .level-3 {
-            color: #ff9f1c;
-        }
-
-        .level-4 {
-            color: #f9d423;
-        }
-
-        .level-5 {
-            color: #00ff88;
-        }
-
-        /* Center Panel: Map & Big Chart */
-        .center-panel {
-            display: flex;
-            flex-direction: column;
-            gap: 2rem;
-        }
-
-        .threat-display {
-            background: var(--glass);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 2rem;
-            position: relative;
-            overflow: hidden;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
-            min-height: 400px;
+            overflow: hidden;
         }
 
-        .threat-display::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
+        .container {
             width: 100%;
-            height: 100%;
-            background: radial-gradient(circle at center, rgba(255, 62, 62, 0.1) 0%, transparent 70%);
-            pointer-events: none;
-        }
-
-        .probability-hero {
+            max-width: 800px;
+            padding: 2rem;
             text-align: center;
-            z-index: 10;
+            animation: fadeIn 2s ease-out;
         }
 
-        .prob-value {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 8rem;
-            font-weight: 900;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .hero {
+            margin-bottom: 6rem;
+        }
+
+        #global-prob {
+            font-size: 10rem;
+            font-weight: 100;
+            letter-spacing: -0.05em;
             line-height: 1;
-            margin-bottom: 0.5rem;
-            background: linear-gradient(to bottom, #fff, #ff3e3e);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 0 20px rgba(255, 62, 62, 0.5));
+            margin-bottom: 1rem;
+            cursor: default;
         }
 
-        .prob-label {
-            font-size: 1.2rem;
-            color: var(--text-muted);
-            letter-spacing: 5px;
+        .label {
+            font-size: 0.9rem;
+            font-weight: 300;
             text-transform: uppercase;
+            letter-spacing: 0.3em;
+            color: var(--text-muted);
         }
 
-        /* Bottom Grid: Timeline Markets */
-        .timeline-grid {
+        .timeline {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 1.5rem;
+            gap: 2rem;
+            margin-top: 4rem;
         }
 
-        .market-card {
-            background: var(--glass);
-            border: 1px solid var(--border);
-            padding: 1.5rem;
-            border-radius: 8px;
-            transition: all 0.3s ease;
+        .market {
             cursor: pointer;
-            position: relative;
+            transition: opacity 0.3s ease;
+            text-decoration: none;
+            color: inherit;
         }
 
-        .market-card:hover {
-            border-color: var(--alert-red);
-            background: rgba(255, 62, 62, 0.05);
+        .market:hover {
+            opacity: 0.6;
         }
 
-        .market-date {
-            font-size: 0.75rem;
-            color: var(--text-muted);
+        .market-price {
+            font-size: 2.5rem;
+            font-weight: 200;
             margin-bottom: 0.5rem;
+            display: block;
         }
 
-        .market-name {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.1rem;
-            margin-bottom: 1rem;
-        }
-
-        .market-stats {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-        }
-
-        .price-big {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--alert-red);
-        }
-
-        .change-tag {
-            font-size: 0.8rem;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 2px 6px;
-            border-radius: 4px;
-        }
-
-        /* Right Panel: Logs */
-        .logs-panel {
-            background: var(--glass);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            display: flex;
-            flex-direction: column;
-            max-height: 600px;
-        }
-
-        .logs-header {
-            padding: 1rem;
-            border-bottom: 1px solid var(--border);
-            font-family: 'Orbitron', sans-serif;
-            font-size: 0.8rem;
-            letter-spacing: 1px;
-        }
-
-        .logs-content {
-            flex: 1;
-            padding: 1rem;
+        .market-label {
             font-size: 0.7rem;
-            overflow-y: auto;
-            color: var(--text-muted);
-            line-height: 1.6;
-        }
-
-        .log-entry {
-            margin-bottom: 0.5rem;
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .log-time {
-            color: var(--alert-red);
-        }
-
-        .log-msg {
-            color: #eee;
-        }
-
-        /* Ticker */
-        .ticker-wrap {
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            background: rgba(255, 62, 62, 0.1);
-            border-top: 1px solid var(--alert-red);
-            padding: 0.5rem 0;
-            backdrop-filter: blur(10px);
-            z-index: 200;
-        }
-
-        .ticker {
-            display: flex;
-            white-space: nowrap;
-            animation: ticker 30s linear infinite;
-        }
-
-        .ticker-item {
-            padding: 0 2rem;
-            font-size: 0.8rem;
+            font-weight: 400;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.2em;
+            color: var(--text-muted);
         }
 
-        @keyframes ticker {
-            0% {
-                transform: translateX(100%);
-            }
-
-            100% {
-                transform: translateX(-100%);
-            }
+        .footer {
+            position: fixed;
+            bottom: 3rem;
+            width: 100%;
+            text-align: center;
+            font-size: 0.7rem;
+            font-weight: 300;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            text-transform: uppercase;
         }
 
-        /* Responsive */
-        @media (max-width: 1200px) {
-            main {
-                grid-template-columns: 1fr;
-            }
-
-            .side-panel,
-            .logs-panel {
-                display: none;
-            }
+        #last-sync {
+            display: inline-block;
+            margin-left: 1rem;
         }
 
-        /* Glitch Effect */
-        .glitch {
-            position: relative;
-        }
-
-        .glitch::after {
-            content: attr(data-text);
-            position: absolute;
-            left: 2px;
-            text-shadow: -1px 0 red;
-            top: 0;
-            color: white;
-            background: black;
-            overflow: hidden;
-            clip: rect(0, 900px, 0, 0);
-            animation: glitch-anim 2s infinite linear alternate-reverse;
-        }
-
-        @keyframes glitch-anim {
-            0% {
-                clip: rect(44px, 9999px, 56px, 0);
-            }
-
-            20% {
-                clip: rect(12px, 9999px, 88px, 0);
-            }
-
-            40% {
-                clip: rect(67px, 9999px, 2px, 0);
-            }
-
-            60% {
-                clip: rect(34px, 9999px, 91px, 0);
-            }
-
-            80% {
-                clip: rect(98px, 9999px, 14px, 0);
-            }
-
-            100% {
-                clip: rect(5px, 9999px, 45px, 0);
-            }
+        @media (max-width: 600px) {
+            #global-prob { font-size: 6rem; }
+            .timeline { grid-template-columns: 1fr; gap: 2rem; }
+            .hero { margin-bottom: 4rem; }
         }
     </style>
 </head>
 
 <body>
-    <header>
-        <div class="system-status">
-            <div class="logo">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
-                    <path d="M12 2V12" stroke="currentColor" stroke-width="2" />
-                    <path d="M12 12L19 19" stroke="currentColor" stroke-width="2" />
-                    <path d="M12 12L5 19" stroke="currentColor" stroke-width="2" />
-                </svg>
-                N-THREAT
-            </div>
-            <div class="live-indicator">
-                <span class="pulse-dot"></span>
-                System Live: Signal Clear
-            </div>
-        </div>
-        <div id="system-time" style="font-size: 0.9rem; color: var(--text-muted);">00:00:00 UTC</div>
-    </header>
-
-    <main>
-        <div class="side-panel">
-            <div class="defcon-container">
-                <div class="defcon-title">DEFENSE READINESS CONDITION</div>
-                <div class="defcon-levels">
-                    <div id="defcon-1" class="defcon-level level-1">DEFCON 1</div>
-                    <div id="defcon-2" class="defcon-level level-2">DEFCON 2</div>
-                    <div id="defcon-3" class="defcon-level level-3">DEFCON 3</div>
-                    <div id="defcon-4" class="defcon-level level-4">DEFCON 4</div>
-                    <div id="defcon-5" class="defcon-level level-5 active">DEFCON 5</div>
-                </div>
-            </div>
-
-            <div class="defcon-container" style="margin-top: auto;">
-                <div class="defcon-title">SYSTEM METRICS</div>
-                <div style="font-size: 0.7rem; text-align: left; color: #aaa;">
-                    Network Sync: 100%<br>
-                    Quantum Drift: 0.003ns<br>
-                    Predictive Load: 12.4 TFLOPS<br>
-                    Data Source: Gamma Decentralized
-                </div>
-            </div>
+    <div class="container">
+        <div class="hero">
+            <div id="global-prob">0%</div>
+            <div class="label">Global Detonation Hazard</div>
         </div>
 
-        <div class="center-panel">
-            <div class="threat-display">
-                <div id="last-sync"
-                    style="position: absolute; top: 1rem; right: 1.5rem; font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">
-                    SYNC: INITIALIZING...</div>
-                <div class="probability-hero">
-                    <div id="global-prob" class="prob-value">0%</div>
-                    <div class="prob-label">Global Detonation Hazard</div>
-                </div>
-            </div>
-
-            <div class="timeline-grid">
-                <div class="market-card" id="market-mar" onclick="openMarket('nuclear-weapon-detonation-by-march-31')">
-                    <div class="market-date">Q1 TIMELINE</div>
-                    <div class="market-name">BY MARCH 31</div>
-                    <div class="market-stats">
-                        <div class="price-big" id="price-mar">--%</div>
-                        <div class="change-tag">PROB</div>
-                    </div>
-                </div>
-                <div class="market-card" id="market-jun"
-                    onclick="openMarket('nuclear-weapon-detonation-by-june-30-299')">
-                    <div class="market-date">Q2 TIMELINE</div>
-                    <div class="market-name">BY JUNE 30</div>
-                    <div class="market-stats">
-                        <div class="price-big" id="price-jun">--%</div>
-                        <div class="change-tag">PROB</div>
-                    </div>
-                </div>
-                <div class="market-card" id="market-dec"
-                    onclick="openMarket('nuclear-weapon-detonation-by-december-31')">
-                    <div class="market-date">YEAR END</div>
-                    <div class="market-name">BY DEC 31</div>
-                    <div class="market-stats">
-                        <div class="price-big" id="price-dec">--%</div>
-                        <div class="change-tag">PROB</div>
-                    </div>
-                </div>
-            </div>
+        <div class="timeline">
+            <a class="market" onclick="openMarket('nuclear-weapon-detonation-by-march-31')">
+                <span id="price-mar" class="market-price">--%</span>
+                <span class="market-label">Q1 End</span>
+            </a>
+            <a class="market" onclick="openMarket('nuclear-weapon-detonation-by-june-30-299')">
+                <span id="price-jun" class="market-price">--%</span>
+                <span class="market-label">Q2 End</span>
+            </a>
+            <a class="market" onclick="openMarket('nuclear-weapon-detonation-by-december-31')">
+                <span id="price-dec" class="market-price">--%</span>
+                <span class="market-label">Year End</span>
+            </a>
         </div>
+    </div>
 
-        <div class="side-panel">
-            <div class="logs-panel">
-                <div class="logs-header">TERMINAL FEED</div>
-                <div id="logs" class="logs-content">
-                    <div class="log-entry"><span class="log-time">[00:00]</span> <span class="log-msg">Initializing
-                            N-THREAT kernel...</span></div>
-                    <div class="log-entry"><span class="log-time">[00:00]</span> <span class="log-msg">Connecting to
-                            Gamma API...</span></div>
-                    <div class="log-entry"><span class="log-time">[00:00]</span> <span class="log-msg">Establishing
-                            secure handshake...</span></div>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <div class="ticker-wrap">
-        <div class="ticker">
-            <div class="ticker-item">WARNING: Real-time probabilities are derived from decentralized consensus. Accuracy
-                may vary.</div>
-            <div class="ticker-item">SITUATIONAL AWARENESS: HIGH</div>
-            <div class="ticker-item">PROTOCOL 74-ALPHA ACTIVE</div>
-            <div class="ticker-item">MARKET IDS: 0x4afb... , 0x0edd... , 0x42b4...</div>
-            <div class="ticker-item">RESOLUTION SOURCE: ATOMIC ENERGY AGENCY / GLOBAL PRESS RELEASES</div>
-        </div>
+    <div class="footer">
+        <span id="system-time">00:00:00 UTC</span>
+        <span id="last-sync">Syncing...</span>
     </div>
 
     <script>
@@ -575,43 +162,29 @@
             dec: '0x42b4e02c1e95ca7b5e8610c3c1fad1dff6c0a46d01de6ae12565df026e3fc5a6'
         };
 
-        const logs = document.getElementById('logs');
-        function addLog(msg) {
-            const time = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            const entry = document.createElement('div');
-            entry.className = 'log-entry';
-            entry.innerHTML = `<span class="log-time">[${time}]</span> <span class="log-msg">${msg}</span>`;
-            logs.prepend(entry);
-            if (logs.children.length > 50) logs.removeChild(logs.lastChild);
-        }
-
         const EVENT_SLUG = 'nuclear-weapon-detonation-by-562';
 
         async function updateData() {
-            addLog('Polling market data from Gamma...');
             try {
-                // Fetch event data to get all markets in this category
                 const url = `https://gamma-api.polymarket.com/events?slug=${EVENT_SLUG}`;
                 const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
 
                 const response = await fetch(proxyUrl);
-                if (!response.ok) throw new Error('Network response was not ok');
+                if (!response.ok) throw new Error('Network error');
 
                 const data = await response.json();
                 const event = data[0];
-                if (!event || !event.markets) throw new Error('Event data not found');
+                if (!event || !event.markets) throw new Error('Data not found');
 
                 const results = {};
                 event.markets.forEach(m => {
                     if (m.outcomePrices) {
                         const prices = typeof m.outcomePrices === 'string' ? JSON.parse(m.outcomePrices) : m.outcomePrices;
-                        // prices[0] is usually "Yes" probability
                         const prob = (parseFloat(prices[0]) * 100).toFixed(1);
                         results[m.conditionId] = prob;
                     }
                 });
 
-                // Update individual timeline cards
                 const pMar = results[MARKETS.mar] || 0;
                 const pJun = results[MARKETS.jun] || 0;
                 const pDec = results[MARKETS.dec] || 0;
@@ -620,25 +193,17 @@
                 document.getElementById('price-jun').textContent = `${pJun}%`;
                 document.getElementById('price-dec').textContent = `${pDec}%`;
 
-                // Update Hero Probability
-                // We use the highest probability across timelines as the global hazard level
                 const maxProb = Math.max(parseFloat(pMar), parseFloat(pJun), parseFloat(pDec));
-
                 const globalProbEl = document.getElementById('global-prob');
                 const startProb = parseFloat(globalProbEl.textContent) || 0;
-                animateValue(globalProbEl, startProb, maxProb, 1000);
-
-                updateDefcon(maxProb);
+                animateValue(globalProbEl, startProb, maxProb, 1500);
 
                 const now = new Date();
-                document.getElementById('last-sync').textContent = `SYNC: ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
-
-                addLog(`Sync complete. System Status: ${maxProb > 10 ? 'ELEVATED' : 'NORMAL'}. Hazard: ${maxProb}%`);
+                document.getElementById('last-sync').textContent = `• Updated ${now.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit' })}`;
 
             } catch (err) {
-                console.error('Fetch error:', err);
-                addLog(`Sync failed: ${err.message}. Retrying in 60s.`);
-                // Fallback to static if needed or just wait for next interval
+                console.error(err);
+                document.getElementById('last-sync').textContent = '• Sync delayed';
             }
         }
 
@@ -656,29 +221,6 @@
             window.requestAnimationFrame(step);
         }
 
-        function updateDefcon(prob) {
-            const levels = [5, 4, 3, 2, 1];
-            let activeLevel = 5;
-            if (prob > 25) activeLevel = 1;
-            else if (prob > 12) activeLevel = 2;
-            else if (prob > 6) activeLevel = 3;
-            else if (prob > 3) activeLevel = 4;
-            else activeLevel = 5;
-
-            levels.forEach(l => {
-                const el = document.getElementById(`defcon-${l}`);
-                if (el) {
-                    if (l === activeLevel) el.classList.add('active');
-                    else el.classList.remove('active');
-                }
-            });
-
-            // Background glow matching level
-            const colors = { 1: '#ff0000', 2: '#ff3e3e', 3: '#ff9f1c', 4: '#f9d423', 5: '#00ff88' };
-            const activeColor = colors[activeLevel];
-            document.documentElement.style.setProperty('--accent-glow', `${activeColor}4d`); // 30% alpha
-        }
-
         function openMarket(slug) {
             window.open(`https://polymarket.com/event/${slug}`, '_blank');
         }
@@ -689,7 +231,7 @@
         }, 1000);
 
         updateData();
-        setInterval(updateData, 60000); // Update every minute
+        setInterval(updateData, 60000);
     </script>
 </body>
 
