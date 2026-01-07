@@ -44,8 +44,15 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .hero {
@@ -77,14 +84,9 @@
         }
 
         .market {
-            cursor: pointer;
             transition: opacity 0.3s ease;
-            text-decoration: none;
             color: inherit;
-        }
-
-        .market:hover {
-            opacity: 0.6;
+            cursor: default;
         }
 
         .market-price {
@@ -120,9 +122,18 @@
         }
 
         @media (max-width: 600px) {
-            #global-prob { font-size: 6rem; }
-            .timeline { grid-template-columns: 1fr; gap: 2rem; }
-            .hero { margin-bottom: 4rem; }
+            #global-prob {
+                font-size: 6rem;
+            }
+
+            .timeline {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .hero {
+                margin-bottom: 4rem;
+            }
         }
     </style>
 </head>
@@ -131,22 +142,22 @@
     <div class="container">
         <div class="hero">
             <div id="global-prob">0%</div>
-            <div class="label">Global Detonation Hazard</div>
+            <div class="label">Nuclear detonation probability</div>
         </div>
 
         <div class="timeline">
-            <a class="market" onclick="openMarket('nuclear-weapon-detonation-by-march-31')">
+            <div class="market">
                 <span id="price-mar" class="market-price">--%</span>
-                <span class="market-label">Q1 End</span>
-            </a>
-            <a class="market" onclick="openMarket('nuclear-weapon-detonation-by-june-30-299')">
+                <span class="market-label">By March 31st</span>
+            </div>
+            <div class="market">
                 <span id="price-jun" class="market-price">--%</span>
-                <span class="market-label">Q2 End</span>
-            </a>
-            <a class="market" onclick="openMarket('nuclear-weapon-detonation-by-december-31')">
+                <span class="market-label">By June 30th</span>
+            </div>
+            <div class="market">
                 <span id="price-dec" class="market-price">--%</span>
-                <span class="market-label">Year End</span>
-            </a>
+                <span class="market-label">By December 31st</span>
+            </div>
         </div>
     </div>
 
@@ -219,10 +230,6 @@
                 }
             };
             window.requestAnimationFrame(step);
-        }
-
-        function openMarket(slug) {
-            window.open(`https://polymarket.com/event/${slug}`, '_blank');
         }
 
         setInterval(() => {
