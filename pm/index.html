@@ -161,25 +161,23 @@
     <div class="container">
         <div style="margin-bottom: 2rem;">
             <svg width="64" height="64" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"
-                style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));">
+                style="filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));">
                 <defs>
-                    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <linearGradient id="yellow-grad" x1="0%" y1="0%" x2="0%" y2="100%">
                         <stop offset="0%" stop-color="#FDE047" />
                         <stop offset="100%" stop-color="#FACC15" />
                     </linearGradient>
                 </defs>
-                <rect width="100" height="100" rx="24" fill="url(#bg-grad)" />
+                <rect width="100" height="100" rx="24" fill="#1a1a1a" />
                 <g transform="translate(50, 50)">
-                    <g fill="#1a1a1a">
+                    <g fill="url(#yellow-grad)">
                         <path d="M -7 -12.1 L -22 -38.1 A 44 44 0 0 1 22 -38.1 L 7 -12.1 A 14 14 0 0 0 -7 -12.1 Z" />
                         <path d="M -7 -12.1 L -22 -38.1 A 44 44 0 0 1 22 -38.1 L 7 -12.1 A 14 14 0 0 0 -7 -12.1 Z"
                             transform="rotate(120)" />
                         <path d="M -7 -12.1 L -22 -38.1 A 44 44 0 0 1 22 -38.1 L 7 -12.1 A 14 14 0 0 0 -7 -12.1 Z"
                             transform="rotate(240)" />
+                        <circle r="12" />
                     </g>
-                    <circle r="13" fill="#EF4444" stroke="#1a1a1a" stroke-width="1.5" />
-                    <path d="M -2 -5.5 L 2 -5.5 L 1.5 1.5 L -1.5 1.5 Z" fill="white" />
-                    <circle cy="5.5" r="2" fill="white" />
                 </g>
             </svg>
         </div>
