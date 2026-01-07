@@ -183,6 +183,123 @@
             font-size: clamp(3rem, 15vw, 6rem);
             letter-spacing: 0.1em;
         }
+
+        /* Roadster Popup Styles */
+        #popup-root {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 1000;
+        }
+
+        .roadster-popup {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px) saturate(180%);
+            -webkit-backdrop-filter: blur(12px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow:
+                0 4px 6px -1px rgba(0, 0, 0, 0.1),
+                0 2px 4px -1px rgba(0, 0, 0, 0.06),
+                inset 0 0 20px rgba(255, 255, 255, 0.5);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            overflow: hidden;
+            width: 200px;
+            height: 64px;
+            text-decoration: none;
+            color: #1a1a1a;
+            position: relative;
+        }
+
+        .roadster-popup:hover {
+            background: rgba(255, 255, 255, 0.85);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .roadster-popup.collapsed {
+            width: 64px;
+            padding: 8px;
+            gap: 0;
+            border-radius: 32px;
+        }
+
+        .roadster-popup img {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            object-fit: cover;
+            transition: all 0.4s ease;
+            flex-shrink: 0;
+        }
+
+        .roadster-popup.collapsed img {
+            border-radius: 24px;
+        }
+
+        .roadster-content {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            opacity: 1;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .roadster-popup.collapsed .roadster-content {
+            opacity: 0;
+            transform: translateX(10px);
+            pointer-events: none;
+        }
+
+        .roadster-text {
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: -0.01em;
+        }
+
+        .roadster-subtext {
+            font-size: 11px;
+            opacity: 0.5;
+            margin-top: 1px;
+        }
+
+        .collapse-toggle {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 20px;
+            height: 20px;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            line-height: 1;
+            opacity: 0;
+            transition: opacity 0.2s, background 0.2s;
+            z-index: 10;
+        }
+
+        .roadster-popup:hover .collapse-toggle {
+            opacity: 1;
+        }
+
+        .collapse-toggle:hover {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .roadster-popup.collapsed .collapse-toggle {
+            top: 2px;
+            right: 2px;
+            opacity: 0.3;
+        }
     </style>
 </head>
 
@@ -235,6 +352,55 @@
         <div id="system-time">00:00:00 UTC</div>
         <div id="last-sync" style="margin-top: 0.5rem; opacity: 0.5;">Syncing...</div>
     </div>
+
+    <!-- React App Root -->
+    <div id="popup-root"></div>
+
+    <!-- React and Dependencies -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        const RoadsterPopup = () => {
+            const [isCollapsed, setIsCollapsed] = useState(false);
+
+            const handleToggle = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsCollapsed(!isCollapsed);
+            };
+
+            return (
+                <div
+                    className={`roadster-popup ${isCollapsed ? 'collapsed' : ''}`}
+                    onClick={() => isCollapsed && setIsCollapsed(false)}
+                >
+                    <a href="../drive/" style={{ display: 'flex', alignItems: 'center', gap: '12px', textDecoration: 'none', color: 'inherit', width: '100%', height: '100%' }}>
+                        <img src="../drive/img.jpg" alt="Roadst3r" />
+                        {!isCollapsed && (
+                            <div className="roadster-content">
+                                <span className="roadster-text">Play Roadst3r</span>
+                                <span className="roadster-subtext">Voxel Driving Game</span>
+                            </div>
+                        )}
+                    </a>
+                    <div
+                        className="collapse-toggle"
+                        onClick={handleToggle}
+                        title={isCollapsed ? "Expand" : "Collapse"}
+                    >
+                        {isCollapsed ? '+' : '−'}
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('popup-root'));
+        root.render(<RoadsterPopup />);
+    </script>
 
     <script>
         const MARKETS = {
