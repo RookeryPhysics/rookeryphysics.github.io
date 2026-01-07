@@ -239,7 +239,8 @@
         async function updateData() {
             try {
                 const url = `https://gamma-api.polymarket.com/events?slug=${EVENT_SLUG}`;
-                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+                // Switched to corsproxy.io for lower latency
+                const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
 
                 const response = await fetch(proxyUrl);
                 if (!response.ok) throw new Error('Network error');
