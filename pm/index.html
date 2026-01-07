@@ -137,11 +137,7 @@
             text-transform: uppercase;
             padding: 1.5rem 0;
             margin-top: auto;
-        }
-
-        #last-sync {
-            display: block;
-            margin-top: 0.25rem;
+            min-height: 2rem; /* Keep some space at bottom */
         }
 
         @media (max-width: 600px) {
@@ -354,10 +350,8 @@
         </div>
     </div>
 
-    <div class="footer">
-        <div id="system-time">00:00:00 UTC</div>
-        <div id="last-sync" style="margin-top: 0.5rem; opacity: 0.5;">Syncing...</div>
-    </div>
+    <!-- Empty footer div to maintain vertical spacing -->
+    <div class="footer"></div>
 
     <!-- React App Root -->
     <div id="popup-root"></div>
@@ -460,12 +454,8 @@
                 const startProb = parseFloat(globalProbEl.textContent) || 0;
                 animateValue(globalProbEl, startProb, maxProb, 1500);
 
-                const now = new Date();
-                document.getElementById('last-sync').textContent = `• Updated ${now.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit' })}`;
-
             } catch (err) {
                 console.error(err);
-                document.getElementById('last-sync').textContent = '• Sync delayed';
             }
         }
 
@@ -483,14 +473,11 @@
             window.requestAnimationFrame(step);
         }
 
-        setInterval(() => {
-            const now = new Date();
-            document.getElementById('system-time').textContent = now.toISOString().replace('T', ' ').split('.')[0] + ' UTC';
-        }, 1000);
-
         updateData();
         setInterval(updateData, 60000);
     </script>
 </body>
 
 </html>
+
+
