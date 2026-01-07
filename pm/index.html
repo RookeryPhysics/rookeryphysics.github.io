@@ -142,19 +142,27 @@
 <body>
     <div class="container">
         <div style="margin-bottom: 2rem;">
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect width="24" height="24" rx="4" fill="#FACC15" />
-                <path
-                    d="M12 12L12 5.5C13.7232 5.5 15.3758 6.18482 16.5948 7.40381C17.8138 8.62279 18.5 10.2754 18.5 12H12Z"
-                    fill="black" />
-                <path
-                    d="M12 12L6.37 15.25C5.50838 13.7576 5.16597 12.0253 5.39763 10.3323C5.62928 8.63935 6.41908 7.1069 7.64019 5.98013L12 12Z"
-                    fill="black" />
-                <path
-                    d="M12 12L17.63 15.25C16.8087 16.6726 15.548 17.7813 14.0494 18.4201C12.5508 19.0589 10.8856 19.1973 9.29743 18.8159L12 12Z"
-                    fill="black" />
-                <circle cx="12" cy="12" r="2.5" fill="#FACC15" />
-                <circle cx="12" cy="12" r="1.5" fill="black" />
+            <svg width="64" height="64" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"
+                style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));">
+                <defs>
+                    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="#FDE047" />
+                        <stop offset="100%" stop-color="#FACC15" />
+                    </linearGradient>
+                </defs>
+                <rect width="100" height="100" rx="24" fill="url(#bg-grad)" />
+                <g transform="translate(50, 50)">
+                    <g fill="#1a1a1a">
+                        <path d="M -7 -12.1 L -22 -38.1 A 44 44 0 0 1 22 -38.1 L 7 -12.1 A 14 14 0 0 0 -7 -12.1 Z" />
+                        <path d="M -7 -12.1 L -22 -38.1 A 44 44 0 0 1 22 -38.1 L 7 -12.1 A 14 14 0 0 0 -7 -12.1 Z"
+                            transform="rotate(120)" />
+                        <path d="M -7 -12.1 L -22 -38.1 A 44 44 0 0 1 22 -38.1 L 7 -12.1 A 14 14 0 0 0 -7 -12.1 Z"
+                            transform="rotate(240)" />
+                    </g>
+                    <circle r="13" fill="#EF4444" stroke="#1a1a1a" stroke-width="1.5" />
+                    <path d="M -2 -5.5 L 2 -5.5 L 1.5 1.5 L -1.5 1.5 Z" fill="white" />
+                    <circle cy="5.5" r="2" fill="white" />
+                </g>
             </svg>
         </div>
         <div class="hero">
