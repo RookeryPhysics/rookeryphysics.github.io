@@ -154,11 +154,31 @@
                 margin-top: 1rem;
             }
         }
+
+        @keyframes pulse {
+            0% {
+                opacity: 0.3;
+            }
+
+            50% {
+                opacity: 0.7;
+            }
+
+            100% {
+                opacity: 0.3;
+            }
+        }
+
+        .loading #global-prob {
+            animation: pulse 1.5s infinite ease-in-out;
+            font-size: clamp(3rem, 15vw, 6rem);
+            letter-spacing: 0.1em;
+        }
     </style>
 </head>
 
 <body>
-    <div class="container">
+    <div class="container loading" id="main-container">
         <div style="margin-bottom: 1rem;">
             <svg width="64" height="64" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"
                 style="filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));">
@@ -182,7 +202,7 @@
             </svg>
         </div>
         <div class="hero">
-            <div id="global-prob">0%</div>
+            <div id="global-prob">SCANNING</div>
             <div class="label">Nuclear detonation probability in 2026</div>
         </div>
 
@@ -247,6 +267,14 @@
 
                 const maxProb = Math.max(parseFloat(pMar), parseFloat(pJun), parseFloat(pDec));
                 const globalProbEl = document.getElementById('global-prob');
+                const container = document.getElementById('main-container');
+
+                const isInitialLoad = container.classList.contains('loading');
+                if (isInitialLoad) {
+                    container.classList.remove('loading');
+                    globalProbEl.textContent = '0.0%';
+                }
+
                 const startProb = parseFloat(globalProbEl.textContent) || 0;
                 animateValue(globalProbEl, startProb, maxProb, 1500);
 
