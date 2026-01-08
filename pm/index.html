@@ -402,36 +402,34 @@
 
         const PolymarketLogo = () => {
             return (
-                <a href="https://polymarket.com/event/nuclear-weapon-detonation-by-2024" target="_blank" className="polymarket-logo" style={{
+                <a href="https://polymarket.com/event/nuclear-weapon-detonation-by-562" target="_blank" className="polymarket-logo" style={{
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     width: '64px',
                     height: '64px',
                     borderRadius: '20px',
-                    background: 'rgba(20, 20, 20, 0.8)',
+                    background: '#007aff',
                     border: '1px solid rgba(255, 255, 255, 0.1)',
-                    backdropFilter: 'blur(12px)',
-                    WebkitBackdropFilter: 'blur(12px)',
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3), inset 0 0 20px rgba(255, 255, 255, 0.05)',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3), inset 0 0 20px rgba(255, 255, 255, 0.2)',
                     transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    position: 'relative',
+                    overflow: 'hidden'
                 }}
                     onMouseEnter={e => {
                         e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.background = 'rgba(30, 30, 30, 0.9)';
-                        e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.5)';
+                        e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 122, 255, 0.4)';
                     }}
                     onMouseLeave={e => {
                         e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.background = 'rgba(20, 20, 20, 0.8)';
-                        e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3), inset 0 0 20px rgba(255, 255, 255, 0.05)';
+                        e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3), inset 0 0 20px rgba(255, 255, 255, 0.2)';
                     }}
                 >
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M22 6L14 14L10 10L2 18" stroke="#2e75ff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                        <path d="M22 6H16" stroke="#2e75ff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                        <path d="M22 6V12" stroke="#2e75ff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M21 7L13 15L9 11L3 17" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                        <path d="M21 7H15" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                        <path d="M21 7V13" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                 </a>
             );
