@@ -112,10 +112,6 @@
         .market-price {
             font-size: clamp(1.5rem, 6vw, 2.5rem);
             font-weight: 200;
-            width: 4.5em;
-            /* Fixed width for alignment */
-            text-align: right;
-            font-variant-numeric: tabular-nums;
         }
 
         .market-label {
@@ -125,21 +121,6 @@
             letter-spacing: 0.15em;
             color: var(--text-muted);
             display: block;
-        }
-
-        .price-link {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            margin-bottom: 0.25rem;
-            text-decoration: none;
-            color: inherit;
-            transition: opacity 0.2s;
-        }
-
-        .price-link:hover {
-            opacity: 0.8;
         }
 
         .footer {
@@ -153,20 +134,6 @@
             padding: 1.5rem 0;
             margin-top: auto;
             min-height: 2rem;
-            /* Keep some space at bottom */
-        }
-
-        .pm-mini-logo {
-            width: 24px;
-            height: 24px;
-            border-radius: 6px;
-            object-fit: contain;
-            opacity: 0.8;
-            transition: opacity 0.2s;
-        }
-
-        .pm-mini-logo:hover {
-            opacity: 1;
         }
 
         @media (max-width: 600px) {
@@ -334,27 +301,15 @@
 
         <div class="timeline">
             <div class="market">
-                <a href="https://polymarket.com/event/nuclear-weapon-detonation-by-562" target="_blank"
-                    class="price-link">
-                    <span id="price-mar" class="market-price">--%</span>
-                    <img src="pm.png" class="pm-mini-logo" alt="PM" />
-                </a>
+                <span id="price-mar" class="market-price">--%</span>
                 <span class="market-label">By March 31st</span>
             </div>
             <div class="market">
-                <a href="https://polymarket.com/event/nuclear-weapon-detonation-by-562" target="_blank"
-                    class="price-link">
-                    <span id="price-jun" class="market-price">--%</span>
-                    <img src="pm.png" class="pm-mini-logo" alt="PM" />
-                </a>
+                <span id="price-jun" class="market-price">--%</span>
                 <span class="market-label">By June 30th</span>
             </div>
             <div class="market">
-                <a href="https://polymarket.com/event/nuclear-weapon-detonation-by-562" target="_blank"
-                    class="price-link">
-                    <span id="price-dec" class="market-price">--%</span>
-                    <img src="pm.png" class="pm-mini-logo" alt="PM" />
-                </a>
+                <span id="price-dec" class="market-price">--%</span>
                 <span class="market-label">By December 31st</span>
             </div>
         </div>
@@ -465,10 +420,42 @@
             );
         };
 
-        const PolymarketLogo = () => null;
+        const PolymarketLogo = () => (
+            <a
+                href="https://polymarket.com/event/nuclear-weapon-detonation-by-562"
+                target="_blank"
+                style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '48px',
+                    height: '48px',
+                    background: 'rgba(20, 20, 20, 0.8)',
+                    backdropFilter: 'blur(12px) saturate(180%)',
+                    WebkitBackdropFilter: 'blur(12px) saturate(180%)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    borderRadius: '16px',
+                    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(255, 255, 255, 0.05)'
+                }}
+                onMouseEnter={e => {
+                    e.currentTarget.style.background = 'rgba(30, 30, 30, 0.9)';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.5)';
+                }}
+                onMouseLeave={e => {
+                    e.currentTarget.style.background = 'rgba(20, 20, 20, 0.8)';
+                    e.currentTarget.style.transform = 'none';
+                    e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(255, 255, 255, 0.05)';
+                }}
+            >
+                <img src="pm.png" alt="Polymarket" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
+            </a>
+        );
 
         const App = () => (
             <>
+                <PolymarketLogo />
                 <RoadsterPopup />
             </>
         );
