@@ -335,11 +335,15 @@
             const [isDragging, setIsDragging] = useState(false);
             const [startPos, setStartPos] = useState({ x: 0, y: 0 });
             const [startTime, setStartTime] = useState(0);
+            const [dragStartOffset, setDragStartOffset] = useState({ x: 0, y: 0 });
 
             if (!isVisible) return null;
 
             const handleStart = (clientX, clientY) => {
-                setStartPos({ x: clientX - offset.x, y: clientY - offset.y });
+                const currentOffsetX = offset.x;
+                const currentOffsetY = offset.y;
+                setStartPos({ x: clientX - currentOffsetX, y: clientY - currentOffsetY });
+                setDragStartOffset({ x: currentOffsetX, y: currentOffsetY });
                 setStartTime(Date.now());
                 setIsDragging(true);
             };
@@ -357,31 +361,39 @@
                 setIsDragging(false);
 
                 const timeElapsed = Date.now() - startTime;
-                const distance = Math.sqrt(offset.x * offset.x + offset.y * offset.y);
-                const velocity = distance / timeElapsed;
 
-                // Thresholds: Distance > 100px OR (Velocity > 0.5px/ms AND Distance > 20px)
-                if (distance > 100 || (velocity > 0.5 && distance > 20)) {
-                    // Fly off momentum effect
-                    const multiplier = 20;
+                // Calculate delta from where this specific drag started
+                const deltaX = offset.x - dragStartOffset.x;
+                const deltaY = offset.y - dragStartOffset.y;
+                const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                const velocity = distance / (timeElapsed || 1);
+
+                if (velocity > 0.5 && distance > 20) {
+                    // Send it flying in the direction of the drag
+                    const dirX = deltaX / distance;
+                    const dirY = deltaY / distance;
+                    const flyDistance = 1000;
+
                     setOffset({
-                        x: offset.x * multiplier,
-                        y: offset.y * multiplier
+                        x: offset.x + dirX * flyDistance,
+                        y: offset.y + dirY * flyDistance
                     });
                     setTimeout(() => setIsVisible(false), 500);
-                } else {
-                    // Snap back
-                    setOffset({ x: 0, y: 0 });
                 }
+                // Else: Do nothing, leave it where placed
             };
+
+            const dragDistance = Math.sqrt(
+                Math.pow(offset.x - dragStartOffset.x, 2) +
+                Math.pow(offset.y - dragStartOffset.y, 2)
+            );
 
             return (
                 <div
                     className="roadster-popup"
                     style={{
                         transform: `translate(${offset.x}px, ${offset.y}px)`,
-                        opacity: Math.max(0, 1 - Math.sqrt(offset.x ** 2 + offset.y ** 2) / 500),
-                        transition: isDragging ? 'none' : 'transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.5s',
+                        transition: isDragging ? 'none' : 'transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)',
                         cursor: isDragging ? 'grabbing' : 'pointer',
                         touchAction: 'none'
                     }}
@@ -403,11 +415,11 @@
                             color: 'inherit',
                             width: '100%',
                             height: '100%',
-                            pointerEvents: Math.max(Math.abs(offset.x), Math.abs(offset.y)) > 5 ? 'none' : 'auto'
+                            pointerEvents: dragDistance > 5 ? 'none' : 'auto'
                         }}
                         draggable="false"
                         onClick={(e) => {
-                            if (Math.max(Math.abs(offset.x), Math.abs(offset.y)) > 5) e.preventDefault();
+                            if (dragDistance > 5) e.preventDefault();
                         }}
                     >
                         <img src="../drive/img.jpg" alt="Roadst3r" draggable="false" />
@@ -425,16 +437,20 @@
                 href="https://polymarket.com/event/nuclear-weapon-detonation-by-562"
                 target="_blank"
                 style={{
+                    position: 'fixed',
+                    bottom: '24px',
+                    left: '24px',
+                    zIndex: 1000,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    width: '48px',
-                    height: '48px',
+                    width: '64px',
+                    height: '64px',
                     background: 'rgba(20, 20, 20, 0.8)',
                     backdropFilter: 'blur(12px) saturate(180%)',
                     WebkitBackdropFilter: 'blur(12px) saturate(180%)',
                     border: '1px solid rgba(255, 255, 255, 0.1)',
-                    borderRadius: '16px',
+                    borderRadius: '20px',
                     transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
                     boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(255, 255, 255, 0.05)'
                 }}
@@ -449,7 +465,7 @@
                     e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(255, 255, 255, 0.05)';
                 }}
             >
-                <img src="pm.png" alt="Polymarket" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
+                <img src="pm.png" alt="Polymarket" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
             </a>
         );
 
