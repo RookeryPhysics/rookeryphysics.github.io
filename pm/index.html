@@ -55,7 +55,7 @@
             height: 100%;
             z-index: -1;
             overflow: hidden;
-            background: var(--bg);
+            background: #020204;
         }
 
         .grid-overlay {
@@ -67,59 +67,73 @@
             background-size: 50px 50px;
             mask-image: radial-gradient(circle at 50% 50%, black 60%, transparent 100%);
             pointer-events: none;
+            z-index: 2;
         }
 
-        .aurora-beam {
+        .glow-point {
             position: absolute;
-            filter: blur(90px);
-            opacity: 0.4;
             border-radius: 50%;
-            animation: float 20s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
+            filter: blur(100px);
+            opacity: 0.6;
+            mix-blend-mode: screen;
+            animation: float 20s infinite ease-in-out alternate;
+            will-change: transform;
         }
 
-        .beam-1 {
+        .one {
             top: -20%;
-            left: -10%;
-            width: 60vw;
-            height: 60vw;
-            background: radial-gradient(circle, rgba(0, 100, 255, 0.4), transparent 70%);
+            left: -20%;
+            width: 80vw;
+            height: 80vw;
+            background: #00ffff;
             animation-duration: 25s;
         }
 
-        .beam-2 {
+        .two {
             bottom: -20%;
-            right: -10%;
-            width: 70vw;
-            height: 70vw;
-            background: radial-gradient(circle, rgba(0, 200, 255, 0.25), transparent 70%);
+            right: -20%;
+            width: 90vw;
+            height: 90vw;
+            background: #0044ff;
             animation-duration: 35s;
             animation-direction: alternate-reverse;
         }
 
-        .beam-3 {
-            top: 40%;
-            left: 30%;
+        .three {
+            top: 20%;
+            left: 20%;
+            width: 60vw;
+            height: 60vw;
+            background: #00aadd;
+            animation-duration: 30s;
+            opacity: 0.4;
+        }
+
+        .four {
+            bottom: 10%;
+            left: -10%;
             width: 50vw;
             height: 50vw;
-            background: radial-gradient(circle, rgba(50, 50, 255, 0.2), transparent 70%);
-            animation-duration: 45s;
+            background: #00ffaa;
+            animation-duration: 40s;
+            opacity: 0.3;
         }
 
         @keyframes float {
             0% {
-                transform: translate(0, 0) scale(1);
+                transform: translate(0, 0) scale(1) rotate(0deg);
             }
 
             33% {
-                transform: translate(30px, 50px) scale(1.1);
+                transform: translate(50px, 30px) scale(1.1) rotate(5deg);
             }
 
             66% {
-                transform: translate(-20px, 20px) scale(0.9);
+                transform: translate(-30px, 60px) scale(0.95) rotate(-5deg);
             }
 
             100% {
-                transform: translate(0, 0) scale(1);
+                transform: translate(20px, -20px) scale(1.05) rotate(3deg);
             }
         }
 
@@ -379,9 +393,10 @@
 
 <body>
     <div class="aurora-container">
-        <div class="aurora-beam beam-1"></div>
-        <div class="aurora-beam beam-2"></div>
-        <div class="aurora-beam beam-3"></div>
+        <div class="glow-point one"></div>
+        <div class="glow-point two"></div>
+        <div class="glow-point three"></div>
+        <div class="glow-point four"></div>
         <div class="grid-overlay"></div>
     </div>
     <div class="container loading" id="main-container">
