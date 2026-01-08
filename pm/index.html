@@ -330,7 +330,7 @@
     <script type="text/babel">
         const { useState } = React;
 
-        const RoadsterPopup = () => {
+        const RoadsterPopup = ({ onDragChange, onDismiss }) => {
             const [isVisible, setIsVisible] = useState(true);
             const [offset, setOffset] = useState({ x: 0, y: 0 });
             const [isDragging, setIsDragging] = useState(false);
@@ -348,14 +348,17 @@
                 setDragStartOffset({ x: currentOffsetX, y: currentOffsetY });
                 setStartTime(Date.now());
                 setIsDragging(true);
+                onDragChange(true, { x: currentOffsetX, y: currentOffsetY });
             };
 
             const handleMove = (clientX, clientY) => {
                 if (!isDragging) return;
-                setOffset({
+                const newOffset = {
                     x: clientX - startPos.x,
                     y: clientY - startPos.y
-                });
+                };
+                setOffset(newOffset);
+                onDragChange(true, newOffset);
             };
 
             const handleEnd = () => {
@@ -363,27 +366,44 @@
                 setIsDragging(false);
 
                 const timeElapsed = Date.now() - startTime;
-
-                // Calculate delta from where this specific drag started
                 const deltaX = offset.x - dragStartOffset.x;
                 const deltaY = offset.y - dragStartOffset.y;
                 const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
                 const velocity = distance / (timeElapsed || 1);
 
+                // Absolute viewport Y check for dismiss zone (top of screen)
+                // Start bottom is 24px, height is 64px. 
+                // Initial top is window.innerHeight - 24 - 64.
+                const currentTop = window.innerHeight - 24 - 64 + offset.y;
+
+                if (currentTop < 120) {
+                    // Dropped in dismiss zone
+                    setIsExiting(true);
+                    setOffset({ x: offset.x, y: offset.y - 200 }); // Glide up further
+                    setTimeout(() => {
+                        setIsVisible(false);
+                        onDismiss();
+                    }, 500);
+                    onDragChange(false, offset);
+                    return;
+                }
+
                 if (velocity > 0.5 && distance > 20) {
-                    // Send it gliding in the direction of the drag
                     setIsExiting(true);
                     const dirX = deltaX / distance;
                     const dirY = deltaY / distance;
                     const glideDistance = 1500;
-
                     setOffset({
                         x: offset.x + dirX * glideDistance,
                         y: offset.y + dirY * glideDistance
                     });
-                    setTimeout(() => setIsVisible(false), 1500);
+                    setTimeout(() => {
+                        setIsVisible(false);
+                        onDismiss();
+                    }, 1500);
                 }
-                // Else: Do nothing, leave it where placed
+
+                onDragChange(false, offset);
             };
 
             const dragDistance = Math.sqrt(
@@ -400,7 +420,8 @@
                             ? 'transform 1.5s cubic-bezier(0.1, 0.4, 0.2, 1)'
                             : (isDragging ? 'none' : 'transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)'),
                         cursor: isDragging ? 'grabbing' : 'pointer',
-                        touchAction: 'none'
+                        touchAction: 'none',
+                        zIndex: 2000
                     }}
                     onTouchStart={(e) => handleStart(e.touches[0].clientX, e.touches[0].clientY)}
                     onTouchMove={(e) => handleMove(e.touches[0].clientX, e.touches[0].clientY)}
@@ -469,12 +490,81 @@
             );
         };
 
-        const App = () => (
-            <>
-                <PolymarketLogo />
-                <RoadsterPopup />
-            </>
-        );
+        const DismissZone = ({ active, hovering }) => {
+            return (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '150px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    pointerEvents: 'none',
+                    zIndex: 1000,
+                    opacity: active ? 1 : 0,
+                    transition: 'opacity 0.3s ease',
+                    background: active ? 'linear-gradient(to bottom, rgba(255, 0, 0, 0.15), transparent)' : 'none'
+                }}>
+                    <div style={{
+                        width: '60px',
+                        height: '60px',
+                        borderRadius: '50%',
+                        border: '2px solid rgba(255, 255, 255, 0.3)',
+                        background: hovering ? 'rgba(255, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.2)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white',
+                        fontSize: '24px',
+                        fontWeight: '300',
+                        transform: hovering ? 'scale(1.2)' : 'scale(1)',
+                        transition: 'all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                    }}>
+                        ✕
+                    </div>
+                    <div style={{
+                        marginTop: '12px',
+                        fontSize: '10px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.1em',
+                        color: 'rgba(255, 255, 255, 0.5)',
+                        opacity: active ? 1 : 0,
+                        transform: active ? 'translateY(0)' : 'translateY(10px)',
+                        transition: 'all 0.3s'
+                    }}>
+                        Drag here to dismiss
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [dragState, setDragState] = useState({ dragging: false, offset: { x: 0, y: 0 } });
+            const [isVisible, setIsVisible] = useState(true);
+
+            const handleDragChange = (dragging, offset) => {
+                setDragState({ dragging, offset });
+            };
+
+            const currentTop = window.innerHeight - 24 - 64 + dragState.offset.y;
+            const isHoveringZone = dragState.dragging && currentTop < 150;
+
+            return (
+                <>
+                    <DismissZone active={dragState.dragging && isVisible} hovering={isHoveringZone} />
+                    <PolymarketLogo />
+                    {isVisible && (
+                        <RoadsterPopup
+                            onDragChange={handleDragChange}
+                            onDismiss={() => setIsVisible(false)}
+                        />
+                    )}
+                </>
+            );
+        };
 
         const root = ReactDOM.createRoot(document.getElementById('popup-root'));
         root.render(<App />);
