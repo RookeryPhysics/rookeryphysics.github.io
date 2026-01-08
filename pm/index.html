@@ -455,7 +455,7 @@
                         position: 'absolute',
                         bottom: '-4px',
                         left: '50%',
-                        transform: 'translateX(-50%)',
+                        transform: 'translateX(calc(-50% + 32px))',
                         width: '28px',
                         height: '28px',
                         background: '#0077F2',
@@ -467,8 +467,8 @@
                         transition: 'transform 0.2s',
                         zIndex: 10
                     }}
-                    onMouseEnter={e => e.currentTarget.style.transform = 'translateX(-50%) scale(1.1)'}
-                    onMouseLeave={e => e.currentTarget.style.transform = 'translateX(-50%) scale(1)'}
+                    onMouseEnter={e => e.currentTarget.style.transform = 'translateX(calc(-50% + 32px)) scale(1.1)'}
+                    onMouseLeave={e => e.currentTarget.style.transform = 'translateX(calc(-50% + 32px)) scale(1)'}
                 >
                     <img src="pm.png" alt="Polymarket" style={{ width: '16px', height: '16px', objectFit: 'contain' }} />
                 </a>,
