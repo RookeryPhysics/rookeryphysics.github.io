@@ -388,21 +388,6 @@
                     return;
                 }
 
-                if (velocity > 0.5 && distance > 20) {
-                    setIsExiting(true);
-                    const dirX = deltaX / distance;
-                    const dirY = deltaY / distance;
-                    const glideDistance = 1500;
-                    setOffset({
-                        x: offset.x + dirX * glideDistance,
-                        y: offset.y + dirY * glideDistance
-                    });
-                    setTimeout(() => {
-                        setIsVisible(false);
-                        onDismiss();
-                    }, 1500);
-                }
-
                 onDragChange(false, offset);
             };
 
