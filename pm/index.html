@@ -112,8 +112,6 @@
         .market-price {
             font-size: clamp(1.5rem, 6vw, 2.5rem);
             font-weight: 200;
-            margin-bottom: 0.25rem;
-            display: block;
         }
 
         .market-label {
@@ -122,6 +120,22 @@
             text-transform: uppercase;
             letter-spacing: 0.15em;
             color: var(--text-muted);
+            display: block;
+        }
+
+        .price-link {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 0.25rem;
+            text-decoration: none;
+            color: inherit;
+            transition: opacity 0.2s;
+        }
+
+        .price-link:hover {
+            opacity: 0.8;
         }
 
         .footer {
@@ -136,6 +150,19 @@
             margin-top: auto;
             min-height: 2rem;
             /* Keep some space at bottom */
+        }
+
+        .pm-mini-logo {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            object-fit: contain;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+
+        .pm-mini-logo:hover {
+            opacity: 1;
         }
 
         @media (max-width: 600px) {
@@ -311,36 +338,6 @@
             right: 2px;
             opacity: 0.3;
         }
-
-        .polymarket-popup {
-            background: rgba(20, 20, 20, 0.8);
-            backdrop-filter: blur(12px) saturate(180%);
-            -webkit-backdrop-filter: blur(12px) saturate(180%);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            padding: 8px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            box-shadow:
-                0 4px 6px -1px rgba(0, 0, 0, 0.5),
-                0 2px 4px -1px rgba(0, 0, 0, 0.3),
-                inset 0 0 20px rgba(255, 255, 255, 0.05);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            cursor: pointer;
-            overflow: hidden;
-            width: 200px;
-            height: 64px;
-            text-decoration: none;
-            color: #ffffff;
-            position: relative;
-        }
-
-        .polymarket-popup:hover {
-            background: rgba(30, 30, 30, 0.9);
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
-        }
     </style>
 </head>
 
@@ -376,15 +373,27 @@
 
         <div class="timeline">
             <div class="market">
-                <span id="price-mar" class="market-price">--%</span>
+                <a href="https://polymarket.com/event/nuclear-weapon-detonation-by-562" target="_blank"
+                    class="price-link">
+                    <span id="price-mar" class="market-price">--%</span>
+                    <img src="pm.png" class="pm-mini-logo" alt="PM" />
+                </a>
                 <span class="market-label">By March 31st</span>
             </div>
             <div class="market">
-                <span id="price-jun" class="market-price">--%</span>
+                <a href="https://polymarket.com/event/nuclear-weapon-detonation-by-562" target="_blank"
+                    class="price-link">
+                    <span id="price-jun" class="market-price">--%</span>
+                    <img src="pm.png" class="pm-mini-logo" alt="PM" />
+                </a>
                 <span class="market-label">By June 30th</span>
             </div>
             <div class="market">
-                <span id="price-dec" class="market-price">--%</span>
+                <a href="https://polymarket.com/event/nuclear-weapon-detonation-by-562" target="_blank"
+                    class="price-link">
+                    <span id="price-dec" class="market-price">--%</span>
+                    <img src="pm.png" class="pm-mini-logo" alt="PM" />
+                </a>
                 <span class="market-label">By December 31st</span>
             </div>
         </div>
@@ -438,21 +447,10 @@
             );
         };
 
-        const PolymarketLogo = () => {
-            return (
-                <a href="https://polymarket.com/event/nuclear-weapon-detonation-by-562" target="_blank" className="polymarket-popup">
-                    <img src="pm.png" alt="Polymarket" style={{ width: '48px', height: '48px', objectFit: 'contain', borderRadius: '12px', background: 'white', padding: '4px' }} />
-                    <div style={{ display: 'flex', flexDirection: 'column', lineHeight: '1.2' }}>
-                        <span style={{ fontSize: '14px', fontWeight: '500', letterSpacing: '-0.01em' }}>Polymarket</span>
-                        <span style={{ fontSize: '11px', opacity: '0.5', fontWeight: '400', marginTop: '1px' }}>View Odds</span>
-                    </div>
-                </a>
-            );
-        };
+        const PolymarketLogo = () => null;
 
         const App = () => (
             <>
-                <PolymarketLogo />
                 <RoadsterPopup />
             </>
         );
