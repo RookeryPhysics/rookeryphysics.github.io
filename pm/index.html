@@ -272,7 +272,7 @@
 <body>
 
     <div class="container loading" id="main-container">
-        <div style="margin-bottom: 1rem;">
+        <div style="margin-bottom: 1rem; position: relative; display: inline-block;">
             <svg width="64" height="64" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"
                 style="filter: drop-shadow(0 0 20px rgba(255,255,255,0.05));">
                 <defs>
@@ -293,6 +293,7 @@
                     </g>
                 </g>
             </svg>
+            <div id="pm-logo-target"></div>
         </div>
         <div class="hero">
             <div id="global-prob">SCANNING</div>
@@ -432,42 +433,37 @@
             );
         };
 
-        const PolymarketLogo = () => (
-            <a
-                href="https://polymarket.com/event/nuclear-weapon-detonation-by-562"
-                target="_blank"
-                style={{
-                    position: 'fixed',
-                    bottom: '24px',
-                    left: '24px',
-                    zIndex: 1000,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '64px',
-                    height: '64px',
-                    background: 'rgba(20, 20, 20, 0.8)',
-                    backdropFilter: 'blur(12px) saturate(180%)',
-                    WebkitBackdropFilter: 'blur(12px) saturate(180%)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    borderRadius: '20px',
-                    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(255, 255, 255, 0.05)'
-                }}
-                onMouseEnter={e => {
-                    e.currentTarget.style.background = 'rgba(30, 30, 30, 0.9)';
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.5)';
-                }}
-                onMouseLeave={e => {
-                    e.currentTarget.style.background = 'rgba(20, 20, 20, 0.8)';
-                    e.currentTarget.style.transform = 'none';
-                    e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(255, 255, 255, 0.05)';
-                }}
-            >
-                <img src="pm.png" alt="Polymarket" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
-            </a>
-        );
+        const PolymarketLogo = () => {
+            const container = document.getElementById('pm-logo-target');
+            if (!container) return null;
+
+            return ReactDOM.createPortal(
+                <a
+                    href="https://polymarket.com/event/nuclear-weapon-detonation-by-562"
+                    target="_blank"
+                    style={{
+                        position: 'absolute',
+                        bottom: '-8px',
+                        right: '-8px',
+                        width: '28px',
+                        height: '28px',
+                        background: '#0077F2',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 0 0 2px rgba(5, 5, 5, 1)',
+                        transition: 'transform 0.2s',
+                        zIndex: 10
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
+                    onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                >
+                    <img src="pm.png" alt="Polymarket" style={{ width: '16px', height: '16px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
+                </a>,
+                container
+            );
+        };
 
         const App = () => (
             <>
