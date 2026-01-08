@@ -337,6 +337,7 @@
             const [startPos, setStartPos] = useState({ x: 0, y: 0 });
             const [startTime, setStartTime] = useState(0);
             const [dragStartOffset, setDragStartOffset] = useState({ x: 0, y: 0 });
+            const [isExiting, setIsExiting] = useState(false);
 
             if (!isVisible) return null;
 
@@ -370,16 +371,17 @@
                 const velocity = distance / (timeElapsed || 1);
 
                 if (velocity > 0.5 && distance > 20) {
-                    // Send it flying in the direction of the drag
+                    // Send it gliding in the direction of the drag
+                    setIsExiting(true);
                     const dirX = deltaX / distance;
                     const dirY = deltaY / distance;
-                    const flyDistance = 1000;
+                    const glideDistance = 1500;
 
                     setOffset({
-                        x: offset.x + dirX * flyDistance,
-                        y: offset.y + dirY * flyDistance
+                        x: offset.x + dirX * glideDistance,
+                        y: offset.y + dirY * glideDistance
                     });
-                    setTimeout(() => setIsVisible(false), 500);
+                    setTimeout(() => setIsVisible(false), 1500);
                 }
                 // Else: Do nothing, leave it where placed
             };
@@ -394,7 +396,9 @@
                     className="roadster-popup"
                     style={{
                         transform: `translate(${offset.x}px, ${offset.y}px)`,
-                        transition: isDragging ? 'none' : 'transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                        transition: isExiting
+                            ? 'transform 1.5s cubic-bezier(0.1, 0.4, 0.2, 1)'
+                            : (isDragging ? 'none' : 'transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)'),
                         cursor: isDragging ? 'grabbing' : 'pointer',
                         touchAction: 'none'
                     }}
