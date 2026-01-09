@@ -1,0 +1,815 @@
+body {
+    margin: 0;
+    overflow: hidden;
+    background-color: #87CEEB;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+}
+
+#game-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1;
+}
+
+#ui-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.instructions {
+    position: absolute;
+    top: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    text-align: center;
+    font-size: 14px;
+    pointer-events: none;
+    backdrop-filter: blur(4px);
+    animation: fadeOut 5s forwards;
+    animation-delay: 5s;
+    width: 80%;
+    max-width: 400px;
+    z-index: 15;
+}
+
+/* --- Game Over Modal --- */
+#game-over-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.85);
+    padding: 20px 40px;
+    border-radius: 15px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    text-align: center;
+    color: white;
+    z-index: 200;
+    display: none;
+    backdrop-filter: blur(5px);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    min-width: 200px;
+    pointer-events: none;
+}
+
+#game-over-modal h2 {
+    margin: 0 0 10px 0;
+    color: #ff3366;
+    font-size: 24px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+#game-over-modal p {
+    margin: 0;
+    font-size: 20px;
+    color: #ffd700;
+    font-weight: bold;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+#game-over-modal.active {
+    display: block;
+    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes popIn {
+    from {
+        transform: translate(-50%, -50%) scale(0.8);
+        opacity: 0;
+    }
+
+    to {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+}
+
+/* --- Controls Layout --- */
+
+#movement-zone {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 180px;
+    height: 180px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    pointer-events: auto;
+}
+
+#stick-knob {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+#heading-arrow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    transform-origin: center center;
+    z-index: 10;
+}
+
+#heading-arrow::before {
+    content: '';
+    position: absolute;
+    width: 6px;
+    height: 14px;
+    background-color: #ff3366;
+    left: -3px;
+    bottom: 2px;
+    border-radius: 3px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+#heading-arrow::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-bottom: 16px solid #ff3366;
+    left: -10px;
+    bottom: 14px;
+    filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.3));
+}
+
+
+
+
+
+
+/* --- Settings Button --- */
+#settings-btn {
+    position: absolute;
+    top: 60px;
+    left: 20px;
+    width: 50px;
+    height: 50px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-radius: 50%;
+    color: white;
+    font-size: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    pointer-events: auto;
+    backdrop-filter: blur(4px);
+    z-index: 30;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.3s ease;
+}
+
+#settings-btn:active {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(0.95);
+}
+
+/* --- Settings Modal --- */
+#settings-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 200;
+    pointer-events: auto;
+}
+
+#settings-modal.active {
+    display: flex;
+}
+
+#settings-modal-content {
+    background: rgba(20, 20, 30, 0.95);
+    padding: 30px;
+    border-radius: 15px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(10px);
+    max-width: 400px;
+    width: 80%;
+    position: relative;
+    color: white;
+    text-align: center;
+}
+
+#settings-modal-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 30px;
+    color: white;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#settings-modal-close:hover {
+    color: #ff3366;
+}
+
+/* --- Day/Night Toggle Button --- */
+#time-btn {
+    position: relative;
+    margin: 20px auto;
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-radius: 50%;
+    color: white;
+    font-size: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    pointer-events: auto;
+    backdrop-filter: blur(4px);
+    z-index: 20;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    transition: transform 0.2s, background 0.2s;
+}
+
+#time-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.05);
+}
+
+#time-btn:active {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(0.95);
+}
+
+/* --- Share Button --- */
+#share-btn {
+    position: absolute;
+    top: 60px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-radius: 50%;
+    color: white;
+    font-size: 24px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    pointer-events: auto;
+    backdrop-filter: blur(4px);
+    z-index: 20;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
+
+#share-btn:active {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(0.95);
+}
+
+/* --- Share Modal --- */
+#share-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    pointer-events: auto;
+}
+
+#share-modal.active {
+    display: flex;
+}
+
+#share-modal-content {
+    background: rgba(20, 20, 30, 0.95);
+    padding: 30px;
+    border-radius: 15px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(10px);
+    max-width: 400px;
+    width: 80%;
+    max-height: 80%;
+    /* Increased height */
+    overflow-y: auto;
+    /* Added scroll for content overflow */
+    position: relative;
+}
+
+/* Allow normal interactions inside modal on mobile */
+#share-modal,
+#share-modal * {
+    touch-action: auto;
+}
+
+/* Re-enable text selection for the share link input */
+#share-link {
+    user-select: text;
+    -webkit-user-select: text;
+}
+
+#share-modal-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 30px;
+    color: white;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#share-modal-close:hover {
+    color: #ff3366;
+}
+
+/* --- Vehicle Modal --- */
+#vehicle-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 70vw;
+    /* Reduced from 90vw */
+    max-width: 350px;
+    /* Reduced from 500px */
+    height: 60vh;
+    /* Reduced from 80vh */
+    max-height: 350px;
+    /* Reduced from 500px */
+    background: rgba(20, 20, 30, 0.95);
+    padding: 20px;
+    border-radius: 15px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(10px);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    pointer-events: auto;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    overflow: hidden;
+}
+
+#vehicle-modal.active {
+    display: flex;
+    opacity: 1;
+}
+
+#vehicle-modal-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 30px;
+    color: white;
+    cursor: pointer;
+    background: none;
+    border: none;
+    z-index: 101;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+#modal-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 50;
+}
+
+#color-palette {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    z-index: 102;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 10px;
+    border-radius: 20px;
+    backdrop-filter: blur(4px);
+    width: 80%;
+    max-width: 250px;
+}
+
+.color-swatch {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    transition: transform 0.2s, border-color 0.2s;
+}
+
+.color-swatch:hover,
+.color-swatch.selected {
+    transform: scale(1.2);
+    border-color: white;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+#vehicle-info {
+    position: absolute;
+    bottom: 50px;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    color: white;
+    pointer-events: none;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+#vehicle-name {
+    font-size: 32px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+#vehicle-stats {
+    font-size: 16px;
+    opacity: 0.8;
+}
+
+/* --- Pedestrian Modal --- */
+#pedestrian-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80vw;
+    max-width: 400px;
+    height: 70vh;
+    max-height: 500px;
+    background: rgba(20, 20, 30, 0.95);
+    padding: 20px;
+    border-radius: 15px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(10px);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    pointer-events: auto;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    overflow: hidden;
+}
+
+#pedestrian-modal.active {
+    display: flex;
+    opacity: 1;
+}
+
+/* Re-enable text selection and touch interactions for the username input */
+#player-username {
+    user-select: text;
+    -webkit-user-select: text;
+    touch-action: auto;
+}
+
+#pedestrian-modal-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 30px;
+    color: white;
+    cursor: pointer;
+    background: none;
+    border: none;
+    z-index: 101;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+#ped-modal-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 50;
+}
+
+#ped-color-palette {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    z-index: 102;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 10px;
+    border-radius: 20px;
+    backdrop-filter: blur(4px);
+    width: 80%;
+    max-width: 250px;
+}
+
+#score-board {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    color: #ffcc00;
+    font-size: 24px;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+    pointer-events: none;
+    z-index: 10;
+}
+
+/* --- Chat UI --- */
+#chat-container {
+    position: absolute;
+    top: 65px;
+    left: 90px;
+    right: 90px;
+    width: auto;
+    height: auto;
+    max-height: 400px;
+    pointer-events: none;
+    display: none;
+    flex-direction: column-reverse;
+    justify-content: flex-end;
+    z-index: 40;
+    gap: 10px;
+}
+
+#chat-messages {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    justify-content: flex-start;
+}
+
+.chat-message {
+    background: rgba(0, 0, 0, 0.6);
+    color: rgba(255, 255, 255, 0.9);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    line-height: 1.4;
+    align-self: flex-start;
+    backdrop-filter: blur(2px);
+    text-shadow: 0 1px 2px black;
+    border-left: 3px solid rgba(255, 255, 255, 0.5);
+    max-width: 100%;
+    word-wrap: break-word;
+    animation: fadeIn 0.3s ease-out;
+    transition: opacity 1s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+#chat-input-container {
+    pointer-events: auto;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+    display: flex;
+}
+
+#chat-input-container:hover,
+#chat-input-container:focus-within {
+    opacity: 1;
+}
+
+#chat-input {
+    width: 100%;
+    background: rgba(20, 20, 30, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 14px;
+    outline: none;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    user-select: text;
+    -webkit-user-select: text;
+    touch-action: auto;
+}
+
+#chat-input:focus {
+    border-color: #ff3366;
+    box-shadow: 0 0 8px rgba(255, 51, 102, 0.4);
+}
+
+#chat-input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+
+#fps-counter {
+    position: absolute;
+    top: 20px;
+    left: 120px;
+    color: #00ff00;
+    font-family: monospace;
+    font-size: 12px;
+    /* Made slightly smaller */
+    background: rgba(0, 0, 0, 0.8);
+    padding: 4px 8px;
+    border-radius: 4px;
+    pointer-events: none;
+    z-index: 10;
+    transition: opacity 0.3s ease;
+    display: none;
+}
+
+#collapse-btn {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: 30px;
+    height: 30px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-radius: 50%;
+    color: white;
+    font-size: 16px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    pointer-events: auto;
+    backdrop-filter: blur(4px);
+    z-index: 30;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.3s ease;
+}
+
+#collapse-btn:active {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(0.95);
+}
+
+/* HUD Hidden State */
+body.hud-hidden #fps-counter,
+body.hud-hidden #score-board,
+body.hud-hidden #settings-btn,
+body.hud-hidden #share-btn,
+body.hud-hidden #chat-container,
+body.hud-hidden .instructions {
+    opacity: 0;
+    pointer-events: none;
+}
+
+#res-control {
+    position: relative;
+    margin: 20px auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 15px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    width: 80%;
+    pointer-events: auto;
+}
+
+#res-label {
+    color: white;
+    font-size: 10px;
+    margin-bottom: 2px;
+    text-transform: uppercase;
+    font-weight: bold;
+    text-shadow: 0 1px 2px black;
+}
+
+#res-slider {
+    width: 100%;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+.modal-reset-btn {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    z-index: 101;
+    backdrop-filter: blur(4px);
+    transition: background 0.2s, transform 0.1s;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.modal-reset-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.modal-reset-btn:active {
+    transform: scale(0.95);
+}
+
+#score-board,
+
+#share-btn,
+.instructions {
+    transition: opacity 0.3s ease;
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
+}
