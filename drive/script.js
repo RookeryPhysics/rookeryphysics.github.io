@@ -1,4372 +1,4372 @@
-        // --- Variables ---
-        let scene, camera, renderer;
-        let settingsMiniatureSceneSuper, settingsMiniatureCameraSuper, settingsMiniatureRendererSuper;
-        let settingsMiniatureSceneHyper, settingsMiniatureCameraHyper, settingsMiniatureRendererHyper;
-        let settingsMiniatureSceneHyper2, settingsMiniatureCameraHyper2, settingsMiniatureRendererHyper2;
-        let miniatureGroupSuper, miniatureGroupHyper, miniatureGroupHyper2;
-        let raycaster = new THREE.Raycaster();
-        let mouse = new THREE.Vector2();
+// --- Variables ---
+let scene, camera, renderer;
+let settingsMiniatureSceneSuper, settingsMiniatureCameraSuper, settingsMiniatureRendererSuper;
+let settingsMiniatureSceneHyper, settingsMiniatureCameraHyper, settingsMiniatureRendererHyper;
+let settingsMiniatureSceneHyper2, settingsMiniatureCameraHyper2, settingsMiniatureRendererHyper2;
+let miniatureGroupSuper, miniatureGroupHyper, miniatureGroupHyper2;
+let raycaster = new THREE.Raycaster();
+let mouse = new THREE.Vector2();
 
-        // Multiplayer
-        let socket;
-        let otherPlayers = {};
+// Multiplayer
+let socket;
+let otherPlayers = {};
 
-        // Modal Variables
-        let vehicleModalOpen = false;
-        let modalScene, modalCamera, modalRenderer;
-        let modalCarGroup;
-        let holdTimer = null;
-        let isHolding = false;
-        const HOLD_DURATION = 600; // ms
-        const vehicleModal = document.getElementById('vehicle-modal');
-        const vehicleModalClose = document.getElementById('vehicle-modal-close');
+// Modal Variables
+let vehicleModalOpen = false;
+let modalScene, modalCamera, modalRenderer;
+let modalCarGroup;
+let holdTimer = null;
+let isHolding = false;
+const HOLD_DURATION = 600; // ms
+const vehicleModal = document.getElementById('vehicle-modal');
+const vehicleModalClose = document.getElementById('vehicle-modal-close');
 
-        let pedestrianModalOpen = false;
-        let pedModalScene, pedModalCamera, pedModalRenderer;
-        let pedModalPedGroup;
-        let tempPedColors = null;
-        const pedestrianModal = document.getElementById('pedestrian-modal');
-        const pedestrianModalClose = document.getElementById('pedestrian-modal-close');
+let pedestrianModalOpen = false;
+let pedModalScene, pedModalCamera, pedModalRenderer;
+let pedModalPedGroup;
+let tempPedColors = null;
+const pedestrianModal = document.getElementById('pedestrian-modal');
+const pedestrianModalClose = document.getElementById('pedestrian-modal-close');
 
-        // Modal Car Dragging
-        let isDraggingModalCar = false;
-        let lastDragX = 0;
-        // Paint Logic
-        let selectedColor = 0xff0000; // Default red
-        // Persistent Colors Initialization
-        const savedVehicleColors = localStorage.getItem('vehicleColors');
-        const vehicleColors = savedVehicleColors ? JSON.parse(savedVehicleColors) : {
-            supercar: { body: 0xffffff, spoiler: 0x000000, windshield: 0x223344 },
-            hypercar: { body: 0xFFD700, spoiler: 0x111111, windshield: 0x223344 },
-            hypercar2: { body: 0x00ffff, spoiler: 0x222222, windshield: 0x112233 }
-        };
-        // Ensure all types exist if loaded from old storage
-        if (!vehicleColors.supercar) vehicleColors.supercar = { body: 0xffffff, spoiler: 0x000000, windshield: 0x223344 };
-        if (!vehicleColors.hypercar) vehicleColors.hypercar = { body: 0xFFD700, spoiler: 0x111111, windshield: 0x223344 };
-        if (!vehicleColors.hypercar2) vehicleColors.hypercar2 = { body: 0x00ffff, spoiler: 0x222222, windshield: 0x112233 };
+// Modal Car Dragging
+let isDraggingModalCar = false;
+let lastDragX = 0;
+// Paint Logic
+let selectedColor = 0xff0000; // Default red
+// Persistent Colors Initialization
+const savedVehicleColors = localStorage.getItem('vehicleColors');
+const vehicleColors = savedVehicleColors ? JSON.parse(savedVehicleColors) : {
+    supercar: { body: 0xffffff, spoiler: 0x000000, windshield: 0x223344 },
+    hypercar: { body: 0xFFD700, spoiler: 0x111111, windshield: 0x223344 },
+    hypercar2: { body: 0x00ffff, spoiler: 0x222222, windshield: 0x112233 }
+};
+// Ensure all types exist if loaded from old storage
+if (!vehicleColors.supercar) vehicleColors.supercar = { body: 0xffffff, spoiler: 0x000000, windshield: 0x223344 };
+if (!vehicleColors.hypercar) vehicleColors.hypercar = { body: 0xFFD700, spoiler: 0x111111, windshield: 0x223344 };
+if (!vehicleColors.hypercar2) vehicleColors.hypercar2 = { body: 0x00ffff, spoiler: 0x222222, windshield: 0x112233 };
 
-        if (!vehicleColors.supercar.windshield) vehicleColors.supercar.windshield = 0x223344;
-        if (!vehicleColors.hypercar.windshield) vehicleColors.hypercar.windshield = 0x223344;
-        if (!vehicleColors.hypercar2.windshield) vehicleColors.hypercar2.windshield = 0x112233;
+if (!vehicleColors.supercar.windshield) vehicleColors.supercar.windshield = 0x223344;
+if (!vehicleColors.hypercar.windshield) vehicleColors.hypercar.windshield = 0x223344;
+if (!vehicleColors.hypercar2.windshield) vehicleColors.hypercar2.windshield = 0x112233;
 
-        const savedPedColors = localStorage.getItem('pedestrianColors');
-        const defaultPedestrianColors = savedPedColors ? JSON.parse(savedPedColors) : {
-            shirt: 0x111111, pants: 0x111111, skin: 0xffccaa, robe: 0x000000, hat: 0x555555
-        };
-        const paintColors = [
-            0xFF0000, 0xFF7F00, 0xFFFF00, 0x7FFF00, 0x00FF00, 0x00FF7F,
-            0x00FFFF, 0x007FFF, 0x0000FF, 0x7F00FF, 0xFF00FF, 0xFF007F,
-            0xFFFFFF, 0xCCCCCC, 0x888888, 0x444444, 0x000000, 0xFF1493,
-            0x00008B, 0x5F9EA0, 0x4682B4, 0x20B2AA, 0x008080, 0x008B8B
-        ];
-        const clothingColors = [
-            0xFFFFFF, 0xDDDDDD, 0xAAAAAA, 0x777777, 0x333333, 0x111111,
-            0x2C3E50, 0x4A6A8A, 0x5D6D7E, 0x2E4053, 0x1E272E, 0x556B2F,
-            0x224422, 0x8A9A5B, 0x663333, 0x800020, 0x704214, 0xD2B48C,
-            0x9E5B6D, 0x7E5E60, 0x4B3832, 0x3C2F2F, 0x004040, 0x483D8B
-        ];
-        let paintRaycaster = new THREE.Raycaster();
-        let modalMouse = new THREE.Vector2();
-        let isPaintClick = false;
-        let isChatting = false;
+const savedPedColors = localStorage.getItem('pedestrianColors');
+const defaultPedestrianColors = savedPedColors ? JSON.parse(savedPedColors) : {
+    shirt: 0x111111, pants: 0x111111, skin: 0xffccaa, robe: 0x000000, hat: 0x555555
+};
+const paintColors = [
+    0xFF0000, 0xFF7F00, 0xFFFF00, 0x7FFF00, 0x00FF00, 0x00FF7F,
+    0x00FFFF, 0x007FFF, 0x0000FF, 0x7F00FF, 0xFF00FF, 0xFF007F,
+    0xFFFFFF, 0xCCCCCC, 0x888888, 0x444444, 0x000000, 0xFF1493,
+    0x00008B, 0x5F9EA0, 0x4682B4, 0x20B2AA, 0x008080, 0x008B8B
+];
+const clothingColors = [
+    0xFFFFFF, 0xDDDDDD, 0xAAAAAA, 0x777777, 0x333333, 0x111111,
+    0x2C3E50, 0x4A6A8A, 0x5D6D7E, 0x2E4053, 0x1E272E, 0x556B2F,
+    0x224422, 0x8A9A5B, 0x663333, 0x800020, 0x704214, 0xD2B48C,
+    0x9E5B6D, 0x7E5E60, 0x4B3832, 0x3C2F2F, 0x004040, 0x483D8B
+];
+let paintRaycaster = new THREE.Raycaster();
+let modalMouse = new THREE.Vector2();
+let isPaintClick = false;
+let isChatting = false;
 
-        let player;
-        let initialSpawnX = 0;
-        let initialSpawnZ = 0;
-        let carType = 'hypercar';
-        let currentCarMesh = null;
-        let ambientLight, sunLight;
+let player;
+let initialSpawnX = 0;
+let initialSpawnZ = 0;
+let carType = 'hypercar';
+let currentCarMesh = null;
+let ambientLight, sunLight;
 
-        let isNightMode = false;
+let isNightMode = false;
 
-        let controlMode = 'vehicle'; // 'vehicle' or 'pedestrian'
-        let userPedestrian = null;
+let controlMode = 'vehicle'; // 'vehicle' or 'pedestrian'
+let userPedestrian = null;
 
-        // ... (skipping lines to match context if needed, but I can just replace the block down to initVehicleModal if I'm careful, or just separate calls)
-        // Actually, I will do separate replacements to be safe.
+// ... (skipping lines to match context if needed, but I can just replace the block down to initVehicleModal if I'm careful, or just separate calls)
+// Actually, I will do separate replacements to be safe.
 
 
-        let score = 0;
-        let highScore = localStorage.getItem('highScore') || 0;
-        const scoreElement = document.getElementById('score-board');
-        const fpsElement = document.getElementById('fps-counter');
+let score = 0;
+let highScore = localStorage.getItem('highScore') || 0;
+const scoreElement = document.getElementById('score-board');
+const fpsElement = document.getElementById('fps-counter');
 
-        const allPedestrians = [];
-        const activeObstacles = [];
-        const particles = [];
-        const floatingTexts = [];
-        const particlePool = []; // Object Pool for particles
-        const pedestrianPool = []; // Object Pool for pedestrians
-        const trafficPool = []; // Object Pool for traffic cars
-        const trafficVehicles = []; // Active Traffic NPCs
-        const fallingObjects = []; // Active falling items (light posts)
+const allPedestrians = [];
+const activeObstacles = [];
+const particles = [];
+const floatingTexts = [];
+const particlePool = []; // Object Pool for particles
+const pedestrianPool = []; // Object Pool for pedestrians
+const trafficPool = []; // Object Pool for traffic cars
+const trafficVehicles = []; // Active Traffic NPCs
+const fallingObjects = []; // Active falling items (light posts)
 
-        // Reusable Geometries for Particles
-        const debrisGeometry = new THREE.BoxGeometry(0.8, 0.8, 0.8);
-        const smokeBaseGeometry = new THREE.BoxGeometry(1, 1, 1);
-        const debrisMaterialCache = new Map(); // Cache materials for debris
+// Reusable Geometries for Particles
+const debrisGeometry = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+const smokeBaseGeometry = new THREE.BoxGeometry(1, 1, 1);
+const debrisMaterialCache = new Map(); // Cache materials for debris
 
-        // Mobile Detection for Performance Optimization
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+// Mobile Detection for Performance Optimization
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
 
-        // Frame skip settings for mobile optimization
-        const PEDESTRIAN_UPDATE_INTERVAL = 1;
-        const TRAFFIC_UPDATE_INTERVAL = 1;
-        const COLLISION_CHECK_INTERVAL = 1;
-        const PARTICLE_UPDATE_INTERVAL = 1;
+// Frame skip settings for mobile optimization
+const PEDESTRIAN_UPDATE_INTERVAL = 1;
+const TRAFFIC_UPDATE_INTERVAL = 1;
+const COLLISION_CHECK_INTERVAL = 1;
+const PARTICLE_UPDATE_INTERVAL = 1;
 
-        // Snow System
-        let snowSystem, snowGeo;
-        const snowCount = 500; // Unified for mobile and desktop
-        const snowRange = 320;
+// Snow System
+let snowSystem, snowGeo;
+const snowCount = 500; // Unified for mobile and desktop
+const snowRange = 320;
 
-        // Cache materials to reduce draw calls
-        const materialCache = new Map();
-        const buildingMaterialCache = new Map();
+// Cache materials to reduce draw calls
+const materialCache = new Map();
+const buildingMaterialCache = new Map();
 
-        // Pre-computed Textures
-        let dayGroundTexture, nightGroundTexture;
-        let lightSpotTexture, billboardTexture;
+// Pre-computed Textures
+let dayGroundTexture, nightGroundTexture;
+let lightSpotTexture, billboardTexture;
 
-        let lastChunkUpdatePos = new THREE.Vector3(99999, 99999, 99999);
-        let lastLightUpdatePos = new THREE.Vector3(99999, 99999, 99999); // Init for light throttling
+let lastChunkUpdatePos = new THREE.Vector3(99999, 99999, 99999);
+let lastLightUpdatePos = new THREE.Vector3(99999, 99999, 99999); // Init for light throttling
 
-        const pedGeometries = {};
-        const buildingGeometries = {};
-        let groundGeometry, groundMaterial;
-        let roadTileGeometry, roadMaterial;
-        let lineTileGeometry, lineMaterial;
-        let lakeTileGeometry, lakeMaterial;
-        let grassGeometry, grassMaterial;
-        let poleGeometry, poleMaterial, lightBulbGeometry, lightBulbMaterial, poleBaseGeometry;
-        let billboardGeometry, billboardMaterial, billboardPostGeometry, billboardPostMaterial;
+const pedGeometries = {};
+const buildingGeometries = {};
+let groundGeometry, groundMaterial;
+let roadTileGeometry, roadMaterial;
+let lineTileGeometry, lineMaterial;
+let lakeTileGeometry, lakeMaterial;
+let grassGeometry, grassMaterial;
+let poleGeometry, poleMaterial, lightBulbGeometry, lightBulbMaterial, poleBaseGeometry;
+let billboardGeometry, billboardMaterial, billboardPostGeometry, billboardPostMaterial;
 
-        let lightSpotGeometry, lightSpotMaterial;
+let lightSpotGeometry, lightSpotMaterial;
 
-        // Tree Resources
-        const treeGeometries = {};
-        let treeTrunkMaterial, treeLeavesMaterial;
+// Tree Resources
+const treeGeometries = {};
+let treeTrunkMaterial, treeLeavesMaterial;
 
-        // Voxel Score Resources
-        const voxelScoreGeometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-        const voxelScoreMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+// Voxel Score Resources
+const voxelScoreGeometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+const voxelScoreMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
 
-        const CULL_DIST = 220;
-        const CULL_DIST_SQ = CULL_DIST * CULL_DIST;
-        const CHUNK_SIZE = 200;
-        const CHUNK_RENDER_DIST = 1;
-        const activeChunks = new Map();
-        const ROAD_TILE_SIZE = 10;
-        const ROAD_WIDTH_THRESHOLD = 0.25;
+const CULL_DIST = 220;
+const CULL_DIST_SQ = CULL_DIST * CULL_DIST;
+const CHUNK_SIZE = 200;
+const CHUNK_RENDER_DIST = 1;
+const activeChunks = new Map();
+const ROAD_TILE_SIZE = 10;
+const ROAD_WIDTH_THRESHOLD = 0.25;
 
-        // Physics
-        let ACCELERATION = 0.15;
-        const FRICTION = 0.97;
-        const BRAKING_FRICTION = 0.90;
-        let MAX_SPEED = 2.0;
-        const PLAYER_BASE_Y = 0.05;
-        const GRAVITY = 0.02;
-        let isGameOver = false;
-        let isAirborne = false;
+// Physics
+let ACCELERATION = 0.15;
+const FRICTION = 0.97;
+const BRAKING_FRICTION = 0.90;
+let MAX_SPEED = 2.0;
+const PLAYER_BASE_Y = 0.05;
+const GRAVITY = 0.02;
+let isGameOver = false;
+let isAirborne = false;
 
-        // Movement
-        const velocity = new THREE.Vector3();
-        let moveInput = { x: 0, y: 0 };
-        let smoothedInputX = 0;
-        let smoothedInputY = 0;
-        const keysPressed = {};
-        let carPitch = 0;
-        let carRoll = 0;
-        let lastForwardVel = 0;
+// Movement
+const velocity = new THREE.Vector3();
+let moveInput = { x: 0, y: 0 };
+let smoothedInputX = 0;
+let smoothedInputY = 0;
+const keysPressed = {};
+let carPitch = 0;
+let carRoll = 0;
+let lastForwardVel = 0;
 
-        // Camera
-        let cameraAngle = 0;
-        let cameraVerticalAngle = 0.5;
-        const CAMERA_DIST = 25;
-        let isManualCamera = false;
-        let manualCamTimer = 0;
+// Camera
+let cameraAngle = 0;
+let cameraVerticalAngle = 0.5;
+const CAMERA_DIST = 25;
+let isManualCamera = false;
+let manualCamTimer = 0;
 
-        // Input
-        let moveTouchId = null;
-        let camTouchId = null;
-        let camLastPos = { x: 0, y: 0 };
-        const joystickRadius = 90;
-        let lastTapTime = 0;
+// Input
+let moveTouchId = null;
+let camTouchId = null;
+let camLastPos = { x: 0, y: 0 };
+const joystickRadius = 90;
+let lastTapTime = 0;
 
-        // FPS
-        let lastTime = performance.now();
-        let frameCount = 0;
-        let globalFrame = 0;
+// FPS
+let lastTime = performance.now();
+let frameCount = 0;
+let globalFrame = 0;
 
-        // Elements
-        const stickKnob = document.getElementById('stick-knob');
-        const headingArrow = document.getElementById('heading-arrow');
-        const movementZone = document.getElementById('movement-zone');
+// Elements
+const stickKnob = document.getElementById('stick-knob');
+const headingArrow = document.getElementById('heading-arrow');
+const movementZone = document.getElementById('movement-zone');
 
-        const timeBtn = document.getElementById('time-btn');
-        const collapseBtn = document.getElementById('collapse-btn');
-        const settingsBtn = document.getElementById('settings-btn');
-        const settingsModal = document.getElementById('settings-modal');
-        const settingsModalClose = document.getElementById('settings-modal-close');
-        const shareBtn = document.getElementById('share-btn');
-        const shareModal = document.getElementById('share-modal');
-        const shareModalClose = document.getElementById('share-modal-close');
-        const shareLinkInput = document.getElementById('share-link');
-        const copyLinkBtn = document.getElementById('copy-link-btn');
-        const snapShareDiv = document.querySelector('.snapchat-creative-kit-share');
-        const snapFallbackLink = document.getElementById('snap-fallback-link');
+const timeBtn = document.getElementById('time-btn');
+const collapseBtn = document.getElementById('collapse-btn');
+const settingsBtn = document.getElementById('settings-btn');
+const settingsModal = document.getElementById('settings-modal');
+const settingsModalClose = document.getElementById('settings-modal-close');
+const shareBtn = document.getElementById('share-btn');
+const shareModal = document.getElementById('share-modal');
+const shareModalClose = document.getElementById('share-modal-close');
+const shareLinkInput = document.getElementById('share-link');
+const copyLinkBtn = document.getElementById('copy-link-btn');
+const snapShareDiv = document.querySelector('.snapchat-creative-kit-share');
+const snapFallbackLink = document.getElementById('snap-fallback-link');
 
-        init();
-        animate();
+init();
+animate();
 
-        /**
-         * Helper to merge multiple geometries into one BufferGeometry.
-         */
-        function mergeGeometries(geos) {
-            let totalPos = 0, totalNorm = 0, totalUV = 0;
-            for (let g of geos) {
-                totalPos += g.attributes.position.array.length;
-                totalNorm += g.attributes.normal.array.length;
-                totalUV += g.attributes.uv.array.length;
-            }
-            const posArr = new Float32Array(totalPos);
-            const normArr = new Float32Array(totalNorm);
-            const uvArr = new Float32Array(totalUV);
-            let offsetPos = 0, offsetNorm = 0, offsetUV = 0;
-            for (let g of geos) {
-                posArr.set(g.attributes.position.array, offsetPos);
-                normArr.set(g.attributes.normal.array, offsetNorm);
-                uvArr.set(g.attributes.uv.array, offsetUV);
-                offsetPos += g.attributes.position.array.length;
-                offsetNorm += g.attributes.normal.array.length;
-                offsetUV += g.attributes.uv.array.length;
-                g.dispose(); // Cleanup
-            }
-            const merged = new THREE.BufferGeometry();
-            merged.setAttribute('position', new THREE.BufferAttribute(posArr, 3));
-            merged.setAttribute('normal', new THREE.BufferAttribute(normArr, 3));
-            merged.setAttribute('uv', new THREE.BufferAttribute(uvArr, 2));
-            return merged;
-        }
+/**
+ * Helper to merge multiple geometries into one BufferGeometry.
+ */
+function mergeGeometries(geos) {
+    let totalPos = 0, totalNorm = 0, totalUV = 0;
+    for (let g of geos) {
+        totalPos += g.attributes.position.array.length;
+        totalNorm += g.attributes.normal.array.length;
+        totalUV += g.attributes.uv.array.length;
+    }
+    const posArr = new Float32Array(totalPos);
+    const normArr = new Float32Array(totalNorm);
+    const uvArr = new Float32Array(totalUV);
+    let offsetPos = 0, offsetNorm = 0, offsetUV = 0;
+    for (let g of geos) {
+        posArr.set(g.attributes.position.array, offsetPos);
+        normArr.set(g.attributes.normal.array, offsetNorm);
+        uvArr.set(g.attributes.uv.array, offsetUV);
+        offsetPos += g.attributes.position.array.length;
+        offsetNorm += g.attributes.normal.array.length;
+        offsetUV += g.attributes.uv.array.length;
+        g.dispose(); // Cleanup
+    }
+    const merged = new THREE.BufferGeometry();
+    merged.setAttribute('position', new THREE.BufferAttribute(posArr, 3));
+    merged.setAttribute('normal', new THREE.BufferAttribute(normArr, 3));
+    merged.setAttribute('uv', new THREE.BufferAttribute(uvArr, 2));
+    return merged;
+}
 
-        /**
-         * Generate a detailed voxel-style pine tree geometry.
-         */
-        function createVoxelTreeDatas() {
-            const trunkGeos = [];
-            const leavesGeos = [];
-            const voxelSize = 1.0;
+/**
+ * Generate a detailed voxel-style pine tree geometry.
+ */
+function createVoxelTreeDatas() {
+    const trunkGeos = [];
+    const leavesGeos = [];
+    const voxelSize = 1.0;
 
-            // --- Trunk ---
-            // Core trunk
-            for (let y = 0; y < 6; y++) {
-                // 2x2 base
-                [-0.5 * voxelSize, 0.5 * voxelSize].forEach(x => {
-                    [-0.5 * voxelSize, 0.5 * voxelSize].forEach(z => {
-                        const g = new THREE.BoxGeometry(voxelSize, voxelSize, voxelSize);
-                        g.translate(x, y * voxelSize + voxelSize / 2, z);
-                        trunkGeos.push(g);
-                    });
-                });
-            }
-            // Upper trunk (hidden mostly)
-            for (let y = 6; y < 14; y++) {
+    // --- Trunk ---
+    // Core trunk
+    for (let y = 0; y < 6; y++) {
+        // 2x2 base
+        [-0.5 * voxelSize, 0.5 * voxelSize].forEach(x => {
+            [-0.5 * voxelSize, 0.5 * voxelSize].forEach(z => {
                 const g = new THREE.BoxGeometry(voxelSize, voxelSize, voxelSize);
-                g.translate(0, y * voxelSize + voxelSize / 2, 0);
+                g.translate(x, y * voxelSize + voxelSize / 2, z);
                 trunkGeos.push(g);
-            }
-
-            // --- Leaves ---
-            // Create a conical distribution of voxels
-            const layers = 18;
-            const startY = 3.5;
-            const heightStep = 1.2;
-
-            for (let l = 0; l < layers; l++) {
-                const y = startY + l * heightStep;
-                const progress = l / (layers - 1); // 0 (bottom) to 1 (top)
-
-                // Radius curve: wide at bottom, tapers to point
-                // Adds some noise to radius for irregularity
-                const baseRad = 7.5 * (1.0 - Math.pow(progress, 0.9));
-
-                // Density: how many blocks in this ring
-                const circumference = 2 * Math.PI * baseRad;
-                const count = Math.ceil(circumference / (voxelSize * 0.9));
-
-                if (baseRad < 0.6) {
-                    // Top tip
-                    const g = new THREE.BoxGeometry(voxelSize, voxelSize, voxelSize);
-                    g.translate(0, y, 0);
-                    leavesGeos.push(g);
-                    continue;
-                }
-
-                for (let i = 0; i < count; i++) {
-                    const angle = (i / count) * Math.PI * 2 + (Math.random() * 0.5);
-                    // Vary radius slightly for "messy" look
-                    const r = baseRad + (Math.random() - 0.5) * 1.5;
-
-                    if (r < 0.8) continue; // Don't clip trunk too much
-
-                    const vx = Math.cos(angle) * r;
-                    const vz = Math.sin(angle) * r;
-
-                    // Random chance to drop a voxel (sparseness)
-                    if (Math.random() > 0.85) continue;
-
-                    const g = new THREE.BoxGeometry(voxelSize, voxelSize, voxelSize);
-                    g.translate(vx, y + (Math.random() - 0.5) * 0.5, vz);
-                    leavesGeos.push(g);
-                }
-            }
-
-            return {
-                trunk: mergeGeometries(trunkGeos),
-                leaves: mergeGeometries(leavesGeos)
-            };
-        }
-
-        /**
-         * Initialize the game scene, renderer, listeners, and entities.
-         */
-        function init() {
-            const container = document.getElementById('game-container');
-
-            // Compute absolute share URL for reliability across domains/hosts
-            const shareUrl = new URL('/drive', window.location.origin).toString().replace(/\/$/, '');
-            if (shareLinkInput) shareLinkInput.value = shareUrl;
-            if (snapShareDiv) {
-                snapShareDiv.setAttribute('data-share-url', shareUrl);
-                if (!snapShareDiv.getAttribute('data-share-text')) {
-                    snapShareDiv.setAttribute('data-share-text', 'Come drive this voxel racer!');
-                }
-            }
-            if (snapFallbackLink) {
-                snapFallbackLink.href = 'https://www.snapchat.com/compose?attachmentUrl=' + encodeURIComponent(shareUrl);
-            }
-
-            scene = new THREE.Scene();
-
-            // Initial Day Mode Setup
-            const dayColor = 0x87CEEB;
-            scene.background = new THREE.Color(dayColor);
-            scene.fog = new THREE.Fog(0xa0d8ef, 50, 240);
-
-            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 800);
-
-            // Optimization: Limit pixel ratio to 1.5 by default (max), adjustable by user.
-            renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-            renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.BasicShadowMap;
-            renderer.autoClear = false;
-            container.appendChild(renderer.domElement);
-
-            // Lighting
-            ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-            scene.add(ambientLight);
-
-            sunLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            sunLight.position.set(50, 100, 50);
-            sunLight.castShadow = true;
-            // Optimization: Adjustable shadow map texture
-            sunLight.shadow.mapSize.width = 1024;
-            sunLight.shadow.mapSize.height = 1024;
-            sunLight.shadow.camera.near = 0.5;
-            sunLight.shadow.camera.far = 300;
-            const d = 100;
-            sunLight.shadow.camera.left = -d;
-            sunLight.shadow.camera.right = d;
-            sunLight.shadow.camera.top = d;
-            sunLight.shadow.camera.bottom = -d;
-            scene.add(sunLight);
-
-            // Settings Miniature Scene - Supercar
-            settingsMiniatureSceneSuper = new THREE.Scene();
-            settingsMiniatureCameraSuper = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
-            settingsMiniatureCameraSuper.position.set(0, 0, 3.5);
-
-            const canvasSuper = document.getElementById('settings-miniature-canvas-supercar');
-            settingsMiniatureRendererSuper = new THREE.WebGLRenderer({ canvas: canvasSuper, alpha: true, antialias: true });
-            settingsMiniatureRendererSuper.setSize(120, 120);
-            settingsMiniatureRendererSuper.setPixelRatio(window.devicePixelRatio);
-            settingsMiniatureRendererSuper.setClearColor(0x000000, 0);
-
-            const ambSuper = new THREE.AmbientLight(0xffffff, 0.8);
-            settingsMiniatureSceneSuper.add(ambSuper);
-            const dirSuper = new THREE.DirectionalLight(0xffffff, 1.0);
-            dirSuper.position.set(2, 5, 5);
-            settingsMiniatureSceneSuper.add(dirSuper);
-
-            miniatureGroupSuper = new THREE.Group();
-            settingsMiniatureSceneSuper.add(miniatureGroupSuper);
-
-            // Settings Miniature Scene - Hypercar
-            settingsMiniatureSceneHyper = new THREE.Scene();
-            settingsMiniatureCameraHyper = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
-            settingsMiniatureCameraHyper.position.set(0, 0, 3.5);
-
-            const canvasHyper = document.getElementById('settings-miniature-canvas-hypercar');
-            settingsMiniatureRendererHyper = new THREE.WebGLRenderer({ canvas: canvasHyper, alpha: true, antialias: true });
-            settingsMiniatureRendererHyper.setSize(120, 120);
-            settingsMiniatureRendererHyper.setPixelRatio(window.devicePixelRatio);
-            settingsMiniatureRendererHyper.setClearColor(0x000000, 0);
-
-            const ambHyper = new THREE.AmbientLight(0xffffff, 0.8);
-            settingsMiniatureSceneHyper.add(ambHyper);
-            const dirHyper = new THREE.DirectionalLight(0xffffff, 1.0);
-            dirHyper.position.set(2, 5, 5);
-            settingsMiniatureSceneHyper.add(dirHyper);
-
-            miniatureGroupHyper = new THREE.Group();
-            settingsMiniatureSceneHyper.add(miniatureGroupHyper);
-
-            // Miniature click handling
-            const btnSuper = document.getElementById('miniature-container-supercar');
-            if (btnSuper) {
-                btnSuper.addEventListener('click', (e) => { e.stopPropagation(); selectCarType('supercar'); });
-                btnSuper.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); selectCarType('supercar'); }, { passive: false });
-            }
-            const btnHyper = document.getElementById('miniature-container-hypercar');
-            if (btnHyper) {
-                btnHyper.addEventListener('click', (e) => { e.stopPropagation(); selectCarType('hypercar'); });
-                btnHyper.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); selectCarType('hypercar'); }, { passive: false });
-            }
-
-            // Settings Miniature Scene - Hypercar 2.0
-            settingsMiniatureSceneHyper2 = new THREE.Scene();
-            settingsMiniatureCameraHyper2 = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
-            settingsMiniatureCameraHyper2.position.set(0, 0, 3.5);
-
-            const canvasHyper2 = document.getElementById('settings-miniature-canvas-hypercar2');
-            settingsMiniatureRendererHyper2 = new THREE.WebGLRenderer({ canvas: canvasHyper2, alpha: true, antialias: true });
-            settingsMiniatureRendererHyper2.setSize(120, 120);
-            settingsMiniatureRendererHyper2.setPixelRatio(window.devicePixelRatio);
-            settingsMiniatureRendererHyper2.setClearColor(0x000000, 0);
-
-            const ambHyper2 = new THREE.AmbientLight(0xffffff, 0.8);
-            settingsMiniatureSceneHyper2.add(ambHyper2);
-            const dirHyper2 = new THREE.DirectionalLight(0xffffff, 1.0);
-            dirHyper2.position.set(2, 5, 5);
-            settingsMiniatureSceneHyper2.add(dirHyper2);
-
-            miniatureGroupHyper2 = new THREE.Group();
-            settingsMiniatureSceneHyper2.add(miniatureGroupHyper2);
-
-            const btnHyper2 = document.getElementById('miniature-container-hypercar2');
-            if (btnHyper2) {
-                btnHyper2.addEventListener('click', (e) => { e.stopPropagation(); selectCarType('hypercar2'); });
-                btnHyper2.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); selectCarType('hypercar2'); }, { passive: false });
-            }
-
-
-
-            // PRE-GENERATE TEXTURES (Speed Boost)
-            dayGroundTexture = createGroundTexture(false);
-            nightGroundTexture = createGroundTexture(true);
-
-            // Geometry Init
-            initPedestrianGeometries();
-            initWorldGeometries();
-
-            // Player Init
-            createPlayer();
-            updateMiniatureModels();
-            createSnow();
-
-            // Entities - Reduced count for mobile optimization
-            const pedestrianCount = 80; // Unified for mobile and desktop
-            for (let i = 0; i < pedestrianCount; i++) {
-                createPedestrianData();
-            }
-
-            // Events
-            window.addEventListener('resize', onWindowResize);
-
-            // Keyboard Controls
-            document.addEventListener('keydown', (e) => {
-                if (moveTouchId !== null) return;
-                const k = e.key;
-                if (['w', 'a', 's', 'd', 'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight'].includes(k) ||
-                    ['W', 'A', 'S', 'D'].includes(k)) {
-                    keysPressed[k.toLowerCase()] = true;
-                    if (k.startsWith('Arrow')) keysPressed[k] = true; // Handle Arrow keys specifically if needed or just normalize
-                    updateMoveInputFromKeys();
-                }
             });
-            document.addEventListener('keyup', (e) => {
-                const k = e.key;
-                if (['w', 'a', 's', 'd', 'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight'].includes(k) ||
-                    ['W', 'A', 'S', 'D'].includes(k)) {
-                    keysPressed[k.toLowerCase()] = false;
-                    if (k.startsWith('Arrow')) keysPressed[k] = false;
-                    if (moveTouchId === null) updateMoveInputFromKeys();
+        });
+    }
+    // Upper trunk (hidden mostly)
+    for (let y = 6; y < 14; y++) {
+        const g = new THREE.BoxGeometry(voxelSize, voxelSize, voxelSize);
+        g.translate(0, y * voxelSize + voxelSize / 2, 0);
+        trunkGeos.push(g);
+    }
+
+    // --- Leaves ---
+    // Create a conical distribution of voxels
+    const layers = 18;
+    const startY = 3.5;
+    const heightStep = 1.2;
+
+    for (let l = 0; l < layers; l++) {
+        const y = startY + l * heightStep;
+        const progress = l / (layers - 1); // 0 (bottom) to 1 (top)
+
+        // Radius curve: wide at bottom, tapers to point
+        // Adds some noise to radius for irregularity
+        const baseRad = 7.5 * (1.0 - Math.pow(progress, 0.9));
+
+        // Density: how many blocks in this ring
+        const circumference = 2 * Math.PI * baseRad;
+        const count = Math.ceil(circumference / (voxelSize * 0.9));
+
+        if (baseRad < 0.6) {
+            // Top tip
+            const g = new THREE.BoxGeometry(voxelSize, voxelSize, voxelSize);
+            g.translate(0, y, 0);
+            leavesGeos.push(g);
+            continue;
+        }
+
+        for (let i = 0; i < count; i++) {
+            const angle = (i / count) * Math.PI * 2 + (Math.random() * 0.5);
+            // Vary radius slightly for "messy" look
+            const r = baseRad + (Math.random() - 0.5) * 1.5;
+
+            if (r < 0.8) continue; // Don't clip trunk too much
+
+            const vx = Math.cos(angle) * r;
+            const vz = Math.sin(angle) * r;
+
+            // Random chance to drop a voxel (sparseness)
+            if (Math.random() > 0.85) continue;
+
+            const g = new THREE.BoxGeometry(voxelSize, voxelSize, voxelSize);
+            g.translate(vx, y + (Math.random() - 0.5) * 0.5, vz);
+            leavesGeos.push(g);
+        }
+    }
+
+    return {
+        trunk: mergeGeometries(trunkGeos),
+        leaves: mergeGeometries(leavesGeos)
+    };
+}
+
+/**
+ * Initialize the game scene, renderer, listeners, and entities.
+ */
+function init() {
+    const container = document.getElementById('game-container');
+
+    // Compute absolute share URL for reliability across domains/hosts
+    const shareUrl = new URL('/drive', window.location.origin).toString().replace(/\/$/, '');
+    if (shareLinkInput) shareLinkInput.value = shareUrl;
+    if (snapShareDiv) {
+        snapShareDiv.setAttribute('data-share-url', shareUrl);
+        if (!snapShareDiv.getAttribute('data-share-text')) {
+            snapShareDiv.setAttribute('data-share-text', 'Come drive this voxel racer!');
+        }
+    }
+    if (snapFallbackLink) {
+        snapFallbackLink.href = 'https://www.snapchat.com/compose?attachmentUrl=' + encodeURIComponent(shareUrl);
+    }
+
+    scene = new THREE.Scene();
+
+    // Initial Day Mode Setup
+    const dayColor = 0x87CEEB;
+    scene.background = new THREE.Color(dayColor);
+    scene.fog = new THREE.Fog(0xa0d8ef, 50, 240);
+
+    camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 800);
+
+    // Optimization: Limit pixel ratio to 1.5 by default (max), adjustable by user.
+    renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.BasicShadowMap;
+    renderer.autoClear = false;
+    container.appendChild(renderer.domElement);
+
+    // Lighting
+    ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+
+    sunLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    sunLight.position.set(50, 100, 50);
+    sunLight.castShadow = true;
+    // Optimization: Adjustable shadow map texture
+    sunLight.shadow.mapSize.width = 1024;
+    sunLight.shadow.mapSize.height = 1024;
+    sunLight.shadow.camera.near = 0.5;
+    sunLight.shadow.camera.far = 300;
+    const d = 100;
+    sunLight.shadow.camera.left = -d;
+    sunLight.shadow.camera.right = d;
+    sunLight.shadow.camera.top = d;
+    sunLight.shadow.camera.bottom = -d;
+    scene.add(sunLight);
+
+    // Settings Miniature Scene - Supercar
+    settingsMiniatureSceneSuper = new THREE.Scene();
+    settingsMiniatureCameraSuper = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
+    settingsMiniatureCameraSuper.position.set(0, 0, 3.5);
+
+    const canvasSuper = document.getElementById('settings-miniature-canvas-supercar');
+    settingsMiniatureRendererSuper = new THREE.WebGLRenderer({ canvas: canvasSuper, alpha: true, antialias: true });
+    settingsMiniatureRendererSuper.setSize(120, 120);
+    settingsMiniatureRendererSuper.setPixelRatio(window.devicePixelRatio);
+    settingsMiniatureRendererSuper.setClearColor(0x000000, 0);
+
+    const ambSuper = new THREE.AmbientLight(0xffffff, 0.8);
+    settingsMiniatureSceneSuper.add(ambSuper);
+    const dirSuper = new THREE.DirectionalLight(0xffffff, 1.0);
+    dirSuper.position.set(2, 5, 5);
+    settingsMiniatureSceneSuper.add(dirSuper);
+
+    miniatureGroupSuper = new THREE.Group();
+    settingsMiniatureSceneSuper.add(miniatureGroupSuper);
+
+    // Settings Miniature Scene - Hypercar
+    settingsMiniatureSceneHyper = new THREE.Scene();
+    settingsMiniatureCameraHyper = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
+    settingsMiniatureCameraHyper.position.set(0, 0, 3.5);
+
+    const canvasHyper = document.getElementById('settings-miniature-canvas-hypercar');
+    settingsMiniatureRendererHyper = new THREE.WebGLRenderer({ canvas: canvasHyper, alpha: true, antialias: true });
+    settingsMiniatureRendererHyper.setSize(120, 120);
+    settingsMiniatureRendererHyper.setPixelRatio(window.devicePixelRatio);
+    settingsMiniatureRendererHyper.setClearColor(0x000000, 0);
+
+    const ambHyper = new THREE.AmbientLight(0xffffff, 0.8);
+    settingsMiniatureSceneHyper.add(ambHyper);
+    const dirHyper = new THREE.DirectionalLight(0xffffff, 1.0);
+    dirHyper.position.set(2, 5, 5);
+    settingsMiniatureSceneHyper.add(dirHyper);
+
+    miniatureGroupHyper = new THREE.Group();
+    settingsMiniatureSceneHyper.add(miniatureGroupHyper);
+
+    // Miniature click handling
+    const btnSuper = document.getElementById('miniature-container-supercar');
+    if (btnSuper) {
+        btnSuper.addEventListener('click', (e) => { e.stopPropagation(); selectCarType('supercar'); });
+        btnSuper.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); selectCarType('supercar'); }, { passive: false });
+    }
+    const btnHyper = document.getElementById('miniature-container-hypercar');
+    if (btnHyper) {
+        btnHyper.addEventListener('click', (e) => { e.stopPropagation(); selectCarType('hypercar'); });
+        btnHyper.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); selectCarType('hypercar'); }, { passive: false });
+    }
+
+    // Settings Miniature Scene - Hypercar 2.0
+    settingsMiniatureSceneHyper2 = new THREE.Scene();
+    settingsMiniatureCameraHyper2 = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
+    settingsMiniatureCameraHyper2.position.set(0, 0, 3.5);
+
+    const canvasHyper2 = document.getElementById('settings-miniature-canvas-hypercar2');
+    settingsMiniatureRendererHyper2 = new THREE.WebGLRenderer({ canvas: canvasHyper2, alpha: true, antialias: true });
+    settingsMiniatureRendererHyper2.setSize(120, 120);
+    settingsMiniatureRendererHyper2.setPixelRatio(window.devicePixelRatio);
+    settingsMiniatureRendererHyper2.setClearColor(0x000000, 0);
+
+    const ambHyper2 = new THREE.AmbientLight(0xffffff, 0.8);
+    settingsMiniatureSceneHyper2.add(ambHyper2);
+    const dirHyper2 = new THREE.DirectionalLight(0xffffff, 1.0);
+    dirHyper2.position.set(2, 5, 5);
+    settingsMiniatureSceneHyper2.add(dirHyper2);
+
+    miniatureGroupHyper2 = new THREE.Group();
+    settingsMiniatureSceneHyper2.add(miniatureGroupHyper2);
+
+    const btnHyper2 = document.getElementById('miniature-container-hypercar2');
+    if (btnHyper2) {
+        btnHyper2.addEventListener('click', (e) => { e.stopPropagation(); selectCarType('hypercar2'); });
+        btnHyper2.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); selectCarType('hypercar2'); }, { passive: false });
+    }
+
+
+
+    // PRE-GENERATE TEXTURES (Speed Boost)
+    dayGroundTexture = createGroundTexture(false);
+    nightGroundTexture = createGroundTexture(true);
+
+    // Geometry Init
+    initPedestrianGeometries();
+    initWorldGeometries();
+
+    // Player Init
+    createPlayer();
+    updateMiniatureModels();
+    createSnow();
+
+    // Entities - Reduced count for mobile optimization
+    const pedestrianCount = 80; // Unified for mobile and desktop
+    for (let i = 0; i < pedestrianCount; i++) {
+        createPedestrianData();
+    }
+
+    // Events
+    window.addEventListener('resize', onWindowResize);
+
+    // Keyboard Controls
+    document.addEventListener('keydown', (e) => {
+        if (moveTouchId !== null) return;
+        const k = e.key;
+        if (['w', 'a', 's', 'd', 'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight'].includes(k) ||
+            ['W', 'A', 'S', 'D'].includes(k)) {
+            keysPressed[k.toLowerCase()] = true;
+            if (k.startsWith('Arrow')) keysPressed[k] = true; // Handle Arrow keys specifically if needed or just normalize
+            updateMoveInputFromKeys();
+        }
+    });
+    document.addEventListener('keyup', (e) => {
+        const k = e.key;
+        if (['w', 'a', 's', 'd', 'ArrowUp', 'ArrowLeft', 'ArrowDown', 'ArrowRight'].includes(k) ||
+            ['W', 'A', 'S', 'D'].includes(k)) {
+            keysPressed[k.toLowerCase()] = false;
+            if (k.startsWith('Arrow')) keysPressed[k] = false;
+            if (moveTouchId === null) updateMoveInputFromKeys();
+        }
+    });
+    document.addEventListener('touchstart', onTouchStart, { passive: false });
+    document.addEventListener('touchmove', onTouchMove, { passive: false });
+    document.addEventListener('touchend', onTouchEnd, { passive: false });
+    document.addEventListener('mousedown', onMouseDown);
+
+
+
+    timeBtn.addEventListener('mousedown', (e) => { e.stopPropagation(); toggleDayNight(); updateMiniatureModels(); });
+    timeBtn.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); toggleDayNight(); updateMiniatureModels(); }, { passive: false });
+
+    // Pimp My Ride Button
+    const pimpBtn = document.getElementById('settings-pimp-btn');
+    if (pimpBtn) {
+        pimpBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeSettingsModal();
+            openVehicleModal();
+        });
+        pimpBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            closeSettingsModal();
+            openVehicleModal();
+        }, { passive: false });
+    }
+
+    // Modify Player Button
+    const pimpPedBtn = document.getElementById('settings-pimp-ped-btn');
+    if (pimpPedBtn) {
+        pimpPedBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeSettingsModal();
+            openPedestrianModal();
+        });
+        pimpPedBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            closeSettingsModal();
+            openPedestrianModal();
+        }, { passive: false });
+    }
+
+
+
+    const resSlider = document.getElementById('res-slider');
+    resSlider.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        document.getElementById('res-label').innerText = "RESOLUTION: " + val.toFixed(2);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, val));
+        if (modalRenderer) modalRenderer.setPixelRatio(val);
+
+        // Also update shadow resolution
+        if (sunLight && sunLight.shadow) {
+            const shadowSize = Math.round(1024 * val);
+            sunLight.shadow.mapSize.width = shadowSize;
+            sunLight.shadow.mapSize.height = shadowSize;
+            if (sunLight.shadow.map) {
+                sunLight.shadow.map.dispose();
+                sunLight.shadow.map = null;
+            }
+        }
+    });
+
+
+    // Stop propagation to prevent driving while sliding
+    resSlider.addEventListener('mousedown', (e) => e.stopPropagation());
+    resSlider.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: false });
+
+    // FPS Toggle Logic
+    const toggleFpsBtn = document.getElementById('toggle-fps-btn');
+    if (toggleFpsBtn) {
+        const updateFpsBtnState = () => {
+            const fpsCounter = document.getElementById('fps-counter');
+            // Check computed style to act correctly on first click
+            const isHidden = window.getComputedStyle(fpsCounter).display === 'none';
+            if (isHidden) {
+                fpsCounter.style.display = 'block';
+                toggleFpsBtn.innerText = "Hide FPS";
+                toggleFpsBtn.style.background = "rgba(255,255,255,0.3)";
+            } else {
+                fpsCounter.style.display = 'none';
+                toggleFpsBtn.innerText = "Show FPS";
+                toggleFpsBtn.style.background = "rgba(255,255,255,0.1)";
+            }
+        };
+
+        toggleFpsBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            updateFpsBtnState();
+        });
+        toggleFpsBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            updateFpsBtnState();
+        }, { passive: false });
+    }
+
+    collapseBtn.addEventListener('mousedown', (e) => { e.stopPropagation(); toggleHUD(); });
+    collapseBtn.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); toggleHUD(); }, { passive: false });
+
+    settingsBtn.addEventListener('mousedown', (e) => { e.stopPropagation(); openSettingsModal(); });
+    settingsBtn.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); openSettingsModal(); }, { passive: false });
+
+    settingsModalClose.addEventListener('click', closeSettingsModal);
+    settingsModal.addEventListener('click', (e) => { if (e.target === settingsModal) closeSettingsModal(); });
+    settingsModalClose.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); closeSettingsModal(); }, { passive: false });
+    settingsModal.addEventListener('touchstart', (e) => { if (e.target === settingsModal) { e.preventDefault(); e.stopPropagation(); closeSettingsModal(); } }, { passive: false });
+
+    shareBtn.addEventListener('mousedown', (e) => { e.stopPropagation(); openShareModal(); });
+    shareBtn.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); openShareModal(); }, { passive: false });
+
+    shareModalClose.addEventListener('click', closeShareModal);
+    shareModal.addEventListener('click', (e) => { if (e.target === shareModal) closeShareModal(); });
+
+    copyLinkBtn.addEventListener('click', copyShareLink);
+
+    // Mobile touch handlers for modal actions
+    shareModalClose.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); closeShareModal(); }, { passive: false });
+    shareModal.addEventListener('touchstart', (e) => {
+        if (e.target === shareModal) { e.preventDefault(); e.stopPropagation(); closeShareModal(); }
+    }, { passive: false });
+    copyLinkBtn.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); copyShareLink(); }, { passive: false });
+
+    // Event listeners for modal car dragging and painting
+    const mCanvas = document.getElementById('modal-canvas');
+    mCanvas.addEventListener('mousedown', onModalMouseDown, false);
+    mCanvas.addEventListener('mousemove', onModalMouseMove, false);
+    mCanvas.addEventListener('mouseup', onModalMouseUp, false);
+    mCanvas.addEventListener('mouseleave', onModalMouseUp, false);
+
+    mCanvas.addEventListener('touchstart', onModalTouchStart, { passive: false });
+    mCanvas.addEventListener('touchmove', onModalTouchMove, { passive: false });
+    mCanvas.addEventListener('touchend', onModalTouchEnd, { passive: false });
+
+    vehicleModalClose.addEventListener('click', closeVehicleModal);
+    vehicleModalClose.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); closeVehicleModal(); }, { passive: false });
+
+    // Reset Buttons
+    const vReset = document.getElementById('vehicle-reset-btn');
+    vReset.addEventListener('mousedown', (e) => { e.stopPropagation(); resetVehicleDefaults(); });
+    vReset.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); resetVehicleDefaults(); }, { passive: false });
+
+    const pReset = document.getElementById('pedestrian-reset-btn');
+    pReset.addEventListener('mousedown', (e) => {
+        e.stopPropagation();
+        const usernameInput = document.getElementById('player-username');
+        if (usernameInput) usernameInput.blur();
+        resetPedestrianDefaults();
+    });
+    pReset.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const usernameInput = document.getElementById('player-username');
+        if (usernameInput) usernameInput.blur();
+        resetPedestrianDefaults();
+    }, { passive: false });
+
+    // Username Input Logic
+    const usernameInput = document.getElementById('player-username');
+    if (usernameInput) {
+        const savedName = localStorage.getItem('playerUsername');
+        if (savedName) usernameInput.value = savedName;
+
+        usernameInput.addEventListener('input', (e) => {
+            localStorage.setItem('playerUsername', e.target.value);
+        });
+        usernameInput.addEventListener('mousedown', (e) => e.stopPropagation());
+        usernameInput.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: false });
+        usernameInput.addEventListener('touchend', (e) => e.stopPropagation(), { passive: false });
+        usernameInput.addEventListener('keydown', (e) => e.stopPropagation());
+    }
+
+    initVehicleModal();
+    initColorPalette();
+
+    initPedestrianModal();
+    initPedestrianColorPalette();
+    initSocket();
+}
+
+// --- Vehicle Modal Functions ---
+/**
+ * Initialize the vehicle color palette UI.
+ */
+function initColorPalette() {
+    const container = document.getElementById('color-palette');
+    paintColors.forEach((col, index) => {
+        const div = document.createElement('div');
+        div.className = 'color-swatch';
+        div.style.backgroundColor = '#' + new THREE.Color(col).getHexString();
+        div.dataset.color = col;
+        if (index === 0) div.classList.add('selected');
+
+        div.addEventListener('click', (e) => {
+            // Prevent modal drag/close
+            e.stopPropagation();
+            document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+            div.classList.add('selected');
+            selectedColor = parseInt(div.dataset.color);
+        });
+        // Touch support
+        div.addEventListener('touchstart', (e) => {
+            e.preventDefault(); // Prevent ghost clicks
+            e.stopPropagation();
+            document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+            div.classList.add('selected');
+            selectedColor = parseInt(div.dataset.color);
+        }, { passive: false });
+
+        container.appendChild(div);
+    });
+}
+
+/**
+ * Handle mouse down on the vehicle modal canvas.
+ * @param {MouseEvent} event 
+ */
+function onModalMouseDown(event) {
+    if (event.target === vehicleModalClose) return;
+    isDraggingModalCar = true;
+    isPaintClick = true; // Assume click until moved
+    lastDragX = event.clientX;
+}
+
+/**
+ * Handle mouse move on the vehicle modal canvas for rotation.
+ * @param {MouseEvent} event 
+ */
+function onModalMouseMove(event) {
+    if (!isDraggingModalCar) return;
+    isPaintClick = false; // Movement detected, not a static click
+    const deltaX = event.clientX - lastDragX;
+    modalCarGroup.rotation.y += deltaX * 0.015;
+    lastDragX = event.clientX;
+}
+
+/**
+ * Handle mouse up on the vehicle modal canvas to finish drag or click.
+ * @param {MouseEvent} event 
+ */
+function onModalMouseUp(event) {
+    if (isDraggingModalCar && isPaintClick) {
+        // It was a click!
+        handlePaintClick(event.clientX, event.clientY);
+    }
+    isDraggingModalCar = false;
+}
+
+/**
+ * Handle touch start on the vehicle modal canvas.
+ * @param {TouchEvent} event 
+ */
+function onModalTouchStart(event) {
+    if (event.target === vehicleModalClose) return;
+    isDraggingModalCar = true;
+    isPaintClick = true;
+    lastDragX = event.touches[0].clientX;
+    event.preventDefault();
+}
+
+/**
+ * Handle touch move on the vehicle modal canvas.
+ * @param {TouchEvent} event 
+ */
+function onModalTouchMove(event) {
+    if (!isDraggingModalCar) return;
+    const currentX = event.touches[0].clientX;
+    // Threshold for "movement" to avoid micro-jitters preventing clicks
+    if (Math.abs(currentX - lastDragX) > 2) {
+        isPaintClick = false;
+    }
+    const deltaX = currentX - lastDragX;
+    modalCarGroup.rotation.y += deltaX * 0.015;
+    lastDragX = currentX;
+    event.preventDefault();
+}
+
+/**
+ * Handle touch end on the vehicle modal canvas.
+ * @param {TouchEvent} event 
+ */
+function onModalTouchEnd(event) {
+    if (isDraggingModalCar && isPaintClick) {
+        // Use changedTouches for position
+        const t = event.changedTouches[0];
+        handlePaintClick(t.clientX, t.clientY);
+    }
+    isDraggingModalCar = false;
+    event.preventDefault(); // Prevent double firing if browser synthesizes mouse events
+}
+
+/**
+ * Process a painting click on the 3D model in the vehicle modal.
+ * @param {number} clientX - X coordinate of the click
+ * @param {number} clientY - Y coordinate of the click
+ */
+function handlePaintClick(clientX, clientY) {
+    // Raycast logic
+    if (!modalRenderer || !modalCamera) return;
+
+    const rect = modalRenderer.domElement.getBoundingClientRect();
+    modalMouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    modalMouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+
+    paintRaycaster.setFromCamera(modalMouse, modalCamera);
+
+    // Intersect with modal car
+    // Note: modalCarGroup has a child which is the car Group
+    const intersects = paintRaycaster.intersectObjects(modalCarGroup.children, true);
+
+    if (intersects.length > 0) {
+        const hit = intersects[0];
+        const mesh = hit.object;
+
+        if (mesh.isMesh) {
+            if (mesh.userData.paintable === false || mesh.userData.partGroup === 'light' || mesh.userData.partGroup === 'non-paintable') return; // Non-paintable parts like wheels, lights, etc.
+
+            if (mesh.userData.partType === 'glass') {
+                // For glass, create a new transparent material
+                mesh.material = new THREE.MeshStandardMaterial({
+                    color: selectedColor,
+                    transparent: true,
+                    opacity: 0.6, // Adjust for desired transparency
+                    metalness: 0.8,
+                    roughness: 0.1
+                });
+                vehicleColors[carType].windshield = selectedColor; // Save windshield color
+            } else if (mesh.userData.partGroup === 'body') {
+                // For body parts
+                mesh.material.color.setHex(selectedColor);
+                vehicleColors[carType].body = selectedColor; // Save body color
+            } else if (mesh.userData.partGroup === 'spoiler') {
+                // For spoiler parts
+                mesh.material.color.setHex(selectedColor);
+                vehicleColors[carType].spoiler = selectedColor; // Save spoiler color
+            }
+
+            // If emissive exists and is not black, update it too? 
+            // This part remains unchanged, typically emissive is for lights.
+            if (mesh.material.emissive && mesh.material.emissive.getHex() > 0) {
+                // Only if it's not a light component we probably shouldn't touch emissive
+                // For now just albedo.
+            }
+
+            // Sync with Player Car
+            // Find the index of this mesh in the modal hierarchy
+            // The structure is modalCarGroup -> carGroup -> [Mesh1, Mesh2, ...]
+            // We need to find which child index of carGroup matches `mesh`.
+
+            const carGroup = modalCarGroup.children[0];
+            if (!carGroup) return;
+
+            let foundIndex = -1;
+            for (let i = 0; i < carGroup.children.length; i++) {
+                if (carGroup.children[i] === mesh) {
+                    foundIndex = i;
+                    break;
                 }
-            });
-            document.addEventListener('touchstart', onTouchStart, { passive: false });
-            document.addEventListener('touchmove', onTouchMove, { passive: false });
-            document.addEventListener('touchend', onTouchEnd, { passive: false });
-            document.addEventListener('mousedown', onMouseDown);
-
-
-
-            timeBtn.addEventListener('mousedown', (e) => { e.stopPropagation(); toggleDayNight(); updateMiniatureModels(); });
-            timeBtn.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); toggleDayNight(); updateMiniatureModels(); }, { passive: false });
-
-            // Pimp My Ride Button
-            const pimpBtn = document.getElementById('settings-pimp-btn');
-            if (pimpBtn) {
-                pimpBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    closeSettingsModal();
-                    openVehicleModal();
-                });
-                pimpBtn.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    closeSettingsModal();
-                    openVehicleModal();
-                }, { passive: false });
             }
 
-            // Modify Player Button
-            const pimpPedBtn = document.getElementById('settings-pimp-ped-btn');
-            if (pimpPedBtn) {
-                pimpPedBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    closeSettingsModal();
-                    openPedestrianModal();
-                });
-                pimpPedBtn.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    closeSettingsModal();
-                    openPedestrianModal();
-                }, { passive: false });
-            }
-
-
-
-            const resSlider = document.getElementById('res-slider');
-            resSlider.addEventListener('input', (e) => {
-                const val = parseFloat(e.target.value);
-                document.getElementById('res-label').innerText = "RESOLUTION: " + val.toFixed(2);
-                renderer.setPixelRatio(Math.min(window.devicePixelRatio, val));
-                if (modalRenderer) modalRenderer.setPixelRatio(val);
-
-                // Also update shadow resolution
-                if (sunLight && sunLight.shadow) {
-                    const shadowSize = Math.round(1024 * val);
-                    sunLight.shadow.mapSize.width = shadowSize;
-                    sunLight.shadow.mapSize.height = shadowSize;
-                    if (sunLight.shadow.map) {
-                        sunLight.shadow.map.dispose();
-                        sunLight.shadow.map = null;
-                    }
-                }
-            });
-
-
-            // Stop propagation to prevent driving while sliding
-            resSlider.addEventListener('mousedown', (e) => e.stopPropagation());
-            resSlider.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: false });
-
-            // FPS Toggle Logic
-            const toggleFpsBtn = document.getElementById('toggle-fps-btn');
-            if (toggleFpsBtn) {
-                const updateFpsBtnState = () => {
-                    const fpsCounter = document.getElementById('fps-counter');
-                    // Check computed style to act correctly on first click
-                    const isHidden = window.getComputedStyle(fpsCounter).display === 'none';
-                    if (isHidden) {
-                        fpsCounter.style.display = 'block';
-                        toggleFpsBtn.innerText = "Hide FPS";
-                        toggleFpsBtn.style.background = "rgba(255,255,255,0.3)";
-                    } else {
-                        fpsCounter.style.display = 'none';
-                        toggleFpsBtn.innerText = "Show FPS";
-                        toggleFpsBtn.style.background = "rgba(255,255,255,0.1)";
-                    }
-                };
-
-                toggleFpsBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    updateFpsBtnState();
-                });
-                toggleFpsBtn.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    updateFpsBtnState();
-                }, { passive: false });
-            }
-
-            collapseBtn.addEventListener('mousedown', (e) => { e.stopPropagation(); toggleHUD(); });
-            collapseBtn.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); toggleHUD(); }, { passive: false });
-
-            settingsBtn.addEventListener('mousedown', (e) => { e.stopPropagation(); openSettingsModal(); });
-            settingsBtn.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); openSettingsModal(); }, { passive: false });
-
-            settingsModalClose.addEventListener('click', closeSettingsModal);
-            settingsModal.addEventListener('click', (e) => { if (e.target === settingsModal) closeSettingsModal(); });
-            settingsModalClose.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); closeSettingsModal(); }, { passive: false });
-            settingsModal.addEventListener('touchstart', (e) => { if (e.target === settingsModal) { e.preventDefault(); e.stopPropagation(); closeSettingsModal(); } }, { passive: false });
-
-            shareBtn.addEventListener('mousedown', (e) => { e.stopPropagation(); openShareModal(); });
-            shareBtn.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); openShareModal(); }, { passive: false });
-
-            shareModalClose.addEventListener('click', closeShareModal);
-            shareModal.addEventListener('click', (e) => { if (e.target === shareModal) closeShareModal(); });
-
-            copyLinkBtn.addEventListener('click', copyShareLink);
-
-            // Mobile touch handlers for modal actions
-            shareModalClose.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); closeShareModal(); }, { passive: false });
-            shareModal.addEventListener('touchstart', (e) => {
-                if (e.target === shareModal) { e.preventDefault(); e.stopPropagation(); closeShareModal(); }
-            }, { passive: false });
-            copyLinkBtn.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); copyShareLink(); }, { passive: false });
-
-            // Event listeners for modal car dragging and painting
-            const mCanvas = document.getElementById('modal-canvas');
-            mCanvas.addEventListener('mousedown', onModalMouseDown, false);
-            mCanvas.addEventListener('mousemove', onModalMouseMove, false);
-            mCanvas.addEventListener('mouseup', onModalMouseUp, false);
-            mCanvas.addEventListener('mouseleave', onModalMouseUp, false);
-
-            mCanvas.addEventListener('touchstart', onModalTouchStart, { passive: false });
-            mCanvas.addEventListener('touchmove', onModalTouchMove, { passive: false });
-            mCanvas.addEventListener('touchend', onModalTouchEnd, { passive: false });
-
-            vehicleModalClose.addEventListener('click', closeVehicleModal);
-            vehicleModalClose.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); closeVehicleModal(); }, { passive: false });
-
-            // Reset Buttons
-            const vReset = document.getElementById('vehicle-reset-btn');
-            vReset.addEventListener('mousedown', (e) => { e.stopPropagation(); resetVehicleDefaults(); });
-            vReset.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); resetVehicleDefaults(); }, { passive: false });
-
-            const pReset = document.getElementById('pedestrian-reset-btn');
-            pReset.addEventListener('mousedown', (e) => {
-                e.stopPropagation();
-                const usernameInput = document.getElementById('player-username');
-                if (usernameInput) usernameInput.blur();
-                resetPedestrianDefaults();
-            });
-            pReset.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const usernameInput = document.getElementById('player-username');
-                if (usernameInput) usernameInput.blur();
-                resetPedestrianDefaults();
-            }, { passive: false });
-
-            // Username Input Logic
-            const usernameInput = document.getElementById('player-username');
-            if (usernameInput) {
-                const savedName = localStorage.getItem('playerUsername');
-                if (savedName) usernameInput.value = savedName;
-
-                usernameInput.addEventListener('input', (e) => {
-                    localStorage.setItem('playerUsername', e.target.value);
-                });
-                usernameInput.addEventListener('mousedown', (e) => e.stopPropagation());
-                usernameInput.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: false });
-                usernameInput.addEventListener('touchend', (e) => e.stopPropagation(), { passive: false });
-                usernameInput.addEventListener('keydown', (e) => e.stopPropagation());
-            }
-
-            initVehicleModal();
-            initColorPalette();
-
-            initPedestrianModal();
-            initPedestrianColorPalette();
-            initSocket();
-        }
-
-        // --- Vehicle Modal Functions ---
-        /**
-         * Initialize the vehicle color palette UI.
-         */
-        function initColorPalette() {
-            const container = document.getElementById('color-palette');
-            paintColors.forEach((col, index) => {
-                const div = document.createElement('div');
-                div.className = 'color-swatch';
-                div.style.backgroundColor = '#' + new THREE.Color(col).getHexString();
-                div.dataset.color = col;
-                if (index === 0) div.classList.add('selected');
-
-                div.addEventListener('click', (e) => {
-                    // Prevent modal drag/close
-                    e.stopPropagation();
-                    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
-                    div.classList.add('selected');
-                    selectedColor = parseInt(div.dataset.color);
-                });
-                // Touch support
-                div.addEventListener('touchstart', (e) => {
-                    e.preventDefault(); // Prevent ghost clicks
-                    e.stopPropagation();
-                    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
-                    div.classList.add('selected');
-                    selectedColor = parseInt(div.dataset.color);
-                }, { passive: false });
-
-                container.appendChild(div);
-            });
-        }
-
-        /**
-         * Handle mouse down on the vehicle modal canvas.
-         * @param {MouseEvent} event 
-         */
-        function onModalMouseDown(event) {
-            if (event.target === vehicleModalClose) return;
-            isDraggingModalCar = true;
-            isPaintClick = true; // Assume click until moved
-            lastDragX = event.clientX;
-        }
-
-        /**
-         * Handle mouse move on the vehicle modal canvas for rotation.
-         * @param {MouseEvent} event 
-         */
-        function onModalMouseMove(event) {
-            if (!isDraggingModalCar) return;
-            isPaintClick = false; // Movement detected, not a static click
-            const deltaX = event.clientX - lastDragX;
-            modalCarGroup.rotation.y += deltaX * 0.015;
-            lastDragX = event.clientX;
-        }
-
-        /**
-         * Handle mouse up on the vehicle modal canvas to finish drag or click.
-         * @param {MouseEvent} event 
-         */
-        function onModalMouseUp(event) {
-            if (isDraggingModalCar && isPaintClick) {
-                // It was a click!
-                handlePaintClick(event.clientX, event.clientY);
-            }
-            isDraggingModalCar = false;
-        }
-
-        /**
-         * Handle touch start on the vehicle modal canvas.
-         * @param {TouchEvent} event 
-         */
-        function onModalTouchStart(event) {
-            if (event.target === vehicleModalClose) return;
-            isDraggingModalCar = true;
-            isPaintClick = true;
-            lastDragX = event.touches[0].clientX;
-            event.preventDefault();
-        }
-
-        /**
-         * Handle touch move on the vehicle modal canvas.
-         * @param {TouchEvent} event 
-         */
-        function onModalTouchMove(event) {
-            if (!isDraggingModalCar) return;
-            const currentX = event.touches[0].clientX;
-            // Threshold for "movement" to avoid micro-jitters preventing clicks
-            if (Math.abs(currentX - lastDragX) > 2) {
-                isPaintClick = false;
-            }
-            const deltaX = currentX - lastDragX;
-            modalCarGroup.rotation.y += deltaX * 0.015;
-            lastDragX = currentX;
-            event.preventDefault();
-        }
-
-        /**
-         * Handle touch end on the vehicle modal canvas.
-         * @param {TouchEvent} event 
-         */
-        function onModalTouchEnd(event) {
-            if (isDraggingModalCar && isPaintClick) {
-                // Use changedTouches for position
-                const t = event.changedTouches[0];
-                handlePaintClick(t.clientX, t.clientY);
-            }
-            isDraggingModalCar = false;
-            event.preventDefault(); // Prevent double firing if browser synthesizes mouse events
-        }
-
-        /**
-         * Process a painting click on the 3D model in the vehicle modal.
-         * @param {number} clientX - X coordinate of the click
-         * @param {number} clientY - Y coordinate of the click
-         */
-        function handlePaintClick(clientX, clientY) {
-            // Raycast logic
-            if (!modalRenderer || !modalCamera) return;
-
-            const rect = modalRenderer.domElement.getBoundingClientRect();
-            modalMouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
-            modalMouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
-
-            paintRaycaster.setFromCamera(modalMouse, modalCamera);
-
-            // Intersect with modal car
-            // Note: modalCarGroup has a child which is the car Group
-            const intersects = paintRaycaster.intersectObjects(modalCarGroup.children, true);
-
-            if (intersects.length > 0) {
-                const hit = intersects[0];
-                const mesh = hit.object;
-
-                if (mesh.isMesh) {
-                    if (mesh.userData.paintable === false || mesh.userData.partGroup === 'light' || mesh.userData.partGroup === 'non-paintable') return; // Non-paintable parts like wheels, lights, etc.
-
-                    if (mesh.userData.partType === 'glass') {
-                        // For glass, create a new transparent material
-                        mesh.material = new THREE.MeshStandardMaterial({
+            if (foundIndex !== -1 && currentCarMesh) {
+                const playerMeshPart = currentCarMesh.children[foundIndex];
+                if (playerMeshPart && playerMeshPart.isMesh) {
+                    if (playerMeshPart.userData.partType === 'glass') {
+                        playerMeshPart.material = new THREE.MeshStandardMaterial({
                             color: selectedColor,
                             transparent: true,
-                            opacity: 0.6, // Adjust for desired transparency
+                            opacity: 0.6,
                             metalness: 0.8,
                             roughness: 0.1
                         });
-                        vehicleColors[carType].windshield = selectedColor; // Save windshield color
-                    } else if (mesh.userData.partGroup === 'body') {
-                        // For body parts
-                        mesh.material.color.setHex(selectedColor);
-                        vehicleColors[carType].body = selectedColor; // Save body color
-                    } else if (mesh.userData.partGroup === 'spoiler') {
-                        // For spoiler parts
-                        mesh.material.color.setHex(selectedColor);
-                        vehicleColors[carType].spoiler = selectedColor; // Save spoiler color
+                    } else {
+                        playerMeshPart.material.color.setHex(selectedColor);
                     }
-
-                    // If emissive exists and is not black, update it too? 
-                    // This part remains unchanged, typically emissive is for lights.
-                    if (mesh.material.emissive && mesh.material.emissive.getHex() > 0) {
-                        // Only if it's not a light component we probably shouldn't touch emissive
-                        // For now just albedo.
-                    }
-
-                    // Sync with Player Car
-                    // Find the index of this mesh in the modal hierarchy
-                    // The structure is modalCarGroup -> carGroup -> [Mesh1, Mesh2, ...]
-                    // We need to find which child index of carGroup matches `mesh`.
-
-                    const carGroup = modalCarGroup.children[0];
-                    if (!carGroup) return;
-
-                    let foundIndex = -1;
-                    for (let i = 0; i < carGroup.children.length; i++) {
-                        if (carGroup.children[i] === mesh) {
-                            foundIndex = i;
-                            break;
-                        }
-                    }
-
-                    if (foundIndex !== -1 && currentCarMesh) {
-                        const playerMeshPart = currentCarMesh.children[foundIndex];
-                        if (playerMeshPart && playerMeshPart.isMesh) {
-                            if (playerMeshPart.userData.partType === 'glass') {
-                                playerMeshPart.material = new THREE.MeshStandardMaterial({
-                                    color: selectedColor,
-                                    transparent: true,
-                                    opacity: 0.6,
-                                    metalness: 0.8,
-                                    roughness: 0.1
-                                });
-                            } else {
-                                playerMeshPart.material.color.setHex(selectedColor);
-                            }
-                        }
-                    }
-                }
-                // Persistent save
-                localStorage.setItem('vehicleColors', JSON.stringify(vehicleColors));
-                if (socket) {
-                    socket.emit('updatePlayerDetails', { vehicleColors: vehicleColors });
                 }
             }
         }
-
-
-        /**
-         * Initialize the vehicle customization modal (scene, camera, renderer).
-         */
-        function initVehicleModal() {
-            modalScene = new THREE.Scene();
-            modalCamera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-            modalCamera.position.set(0, 1.25, 3.5); // Adjusted Y and Z for smaller car and lower car
-            modalCamera.lookAt(0, -1.05, 0); // Look lower to shift vehicle up
-
-            const canvas = document.getElementById('modal-canvas');
-            modalRenderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
-
-            const resSlider = document.getElementById('res-slider');
-            const currentRes = resSlider ? parseFloat(resSlider.value) : 1.0;
-            modalRenderer.setPixelRatio(currentRes);
-
-            modalRenderer.setClearColor(0x000000, 0); // Transparent
-
-            // Lights for modal
-            const amb = new THREE.AmbientLight(0xffffff, 0.6);
-            modalScene.add(amb);
-            const dir = new THREE.DirectionalLight(0xffffff, 1.0);
-            dir.position.set(5, 10, 5);
-            modalScene.add(dir);
-            const spot = new THREE.SpotLight(0xffffff, 0.8);
-            spot.position.set(-5, 5, 5);
-            modalScene.add(spot);
-
-            modalCarGroup = new THREE.Group();
-            modalScene.add(modalCarGroup);
+        // Persistent save
+        localStorage.setItem('vehicleColors', JSON.stringify(vehicleColors));
+        if (socket) {
+            socket.emit('updatePlayerDetails', { vehicleColors: vehicleColors });
         }
-
-        /**
-         * Open the vehicle customization modal and display the car.
-         */
-        function openVehicleModal() {
-            vehicleModal.classList.add('active');
-            vehicleModalOpen = true;
-
-            const width = vehicleModal.clientWidth;
-            const height = vehicleModal.clientHeight;
-            modalRenderer.setSize(width, height, false);
-            modalCamera.aspect = width / height;
-            modalCamera.updateProjectionMatrix();
-
-            // Clear previous
-            while (modalCarGroup.children.length > 0) {
-                modalCarGroup.remove(modalCarGroup.children[0]);
-            }
-
-            // Build current car for modal
-            const mesh = createVehicle({
-                type: carType,
-                bodyColor: vehicleColors[carType].body, // Pass saved body color
-                spoilerColor: vehicleColors[carType].spoiler, // Pass saved spoiler color
-                windshieldColor: vehicleColors[carType].windshield, // Pass saved windshield color
-                addLights: true,
-                scale: 0.25
-            });
-
-            // Rotate continuously in animate loop
-            modalCarGroup.add(mesh);
-
-            // Pause game? Maybe just set flag to ignore inputs
-        }
-
-        /**
-         * Close the vehicle customization modal.
-         */
-        function closeVehicleModal() {
-            vehicleModal.classList.remove('active');
-            vehicleModalOpen = false;
-        }
-
-        function openSettingsModal() {
-            settingsModal.classList.add('active');
-        }
-
-        function closeSettingsModal() {
-            settingsModal.classList.remove('active');
-            updatePlayerLabel();
-        }
-
-        /**
-         * Create a username label sprite.
-         * @param {string} name 
-         * @returns {THREE.Sprite}
-         */
-        function createUsernameLabel(name) {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            const fontSize = 48;
-            ctx.font = `bold ${fontSize}px sans-serif`;
-            const textWidth = ctx.measureText(name).width;
-
-            // Pad the canvas
-            const width = textWidth + 40;
-            const height = fontSize + 40;
-
-            canvas.width = width;
-            canvas.height = height;
-
-            ctx.font = `bold ${fontSize}px sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-
-            // Text Stroke (Outline)
-            ctx.strokeStyle = 'black';
-            ctx.lineWidth = 6;
-            ctx.lineJoin = 'round';
-            ctx.strokeText(name, width / 2, height / 2);
-
-            // Text Fill
-            ctx.fillStyle = 'white';
-            ctx.fillText(name, width / 2, height / 2);
-
-            const tex = new THREE.CanvasTexture(canvas);
-            const mat = new THREE.SpriteMaterial({ map: tex, sizeAttenuation: true, depthTest: false, depthWrite: false, transparent: true, opacity: 0.7 });
-
-            const sprite = new THREE.Sprite(mat);
-            // Adjust scale. Pixels to World Units ratio.
-            const scaleFactor = 0.02;
-            sprite.scale.set(canvas.width * scaleFactor, canvas.height * scaleFactor, 1);
-            sprite.renderOrder = 999;
-
-            return sprite;
-        }
-
-        /**
-         * Update the username label on player/vehicle.
-         */
-        function updatePlayerLabel() {
-            const name = localStorage.getItem('playerUsername');
+    }
+}
 
 
+/**
+ * Initialize the vehicle customization modal (scene, camera, renderer).
+ */
+function initVehicleModal() {
+    modalScene = new THREE.Scene();
+    modalCamera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+    modalCamera.position.set(0, 1.25, 3.5); // Adjusted Y and Z for smaller car and lower car
+    modalCamera.lookAt(0, -1.05, 0); // Look lower to shift vehicle up
 
-            // Refactored logic below:
+    const canvas = document.getElementById('modal-canvas');
+    modalRenderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
 
-            // 1. Vehicle Logic
-            if (currentCarMesh) {
-                // Remove any existing label first
-                for (let i = currentCarMesh.children.length - 1; i >= 0; i--) {
-                    if (currentCarMesh.children[i].userData.isNameLabel) {
-                        currentCarMesh.remove(currentCarMesh.children[i]);
-                    }
-                }
+    const resSlider = document.getElementById('res-slider');
+    const currentRes = resSlider ? parseFloat(resSlider.value) : 1.0;
+    modalRenderer.setPixelRatio(currentRes);
 
-                // If in vehicle mode AND name exists, add it
-                if (controlMode === 'vehicle' && name && name.trim() !== '') {
-                    const label = createUsernameLabel(name);
-                    label.position.set(0, 3.5, 0); // Car height offset
-                    label.userData.isNameLabel = true;
-                    currentCarMesh.add(label);
-                }
-            }
+    modalRenderer.setClearColor(0x000000, 0); // Transparent
 
-            // 2. Pedestrian Logic
-            if (userPedestrian && userPedestrian.mesh) {
-                // Remove existing
-                for (let i = userPedestrian.mesh.children.length - 1; i >= 0; i--) {
-                    if (userPedestrian.mesh.children[i].userData.isNameLabel) {
-                        userPedestrian.mesh.remove(userPedestrian.mesh.children[i]);
-                    }
-                }
+    // Lights for modal
+    const amb = new THREE.AmbientLight(0xffffff, 0.6);
+    modalScene.add(amb);
+    const dir = new THREE.DirectionalLight(0xffffff, 1.0);
+    dir.position.set(5, 10, 5);
+    modalScene.add(dir);
+    const spot = new THREE.SpotLight(0xffffff, 0.8);
+    spot.position.set(-5, 5, 5);
+    modalScene.add(spot);
 
-                // Pedestrian always implies pedestrian mode, so add if name exists
-                if (name && name.trim() !== '') {
-                    const label = createUsernameLabel(name);
-                    label.position.set(0, 2.5, 0); // Ped height offset
-                    label.userData.isNameLabel = true;
-                    userPedestrian.mesh.add(label);
-                }
+    modalCarGroup = new THREE.Group();
+    modalScene.add(modalCarGroup);
+}
+
+/**
+ * Open the vehicle customization modal and display the car.
+ */
+function openVehicleModal() {
+    vehicleModal.classList.add('active');
+    vehicleModalOpen = true;
+
+    const width = vehicleModal.clientWidth;
+    const height = vehicleModal.clientHeight;
+    modalRenderer.setSize(width, height, false);
+    modalCamera.aspect = width / height;
+    modalCamera.updateProjectionMatrix();
+
+    // Clear previous
+    while (modalCarGroup.children.length > 0) {
+        modalCarGroup.remove(modalCarGroup.children[0]);
+    }
+
+    // Build current car for modal
+    const mesh = createVehicle({
+        type: carType,
+        bodyColor: vehicleColors[carType].body, // Pass saved body color
+        spoilerColor: vehicleColors[carType].spoiler, // Pass saved spoiler color
+        windshieldColor: vehicleColors[carType].windshield, // Pass saved windshield color
+        addLights: true,
+        scale: 0.25
+    });
+
+    // Rotate continuously in animate loop
+    modalCarGroup.add(mesh);
+
+    // Pause game? Maybe just set flag to ignore inputs
+}
+
+/**
+ * Close the vehicle customization modal.
+ */
+function closeVehicleModal() {
+    vehicleModal.classList.remove('active');
+    vehicleModalOpen = false;
+}
+
+function openSettingsModal() {
+    settingsModal.classList.add('active');
+}
+
+function closeSettingsModal() {
+    settingsModal.classList.remove('active');
+    updatePlayerLabel();
+}
+
+/**
+ * Create a username label sprite.
+ * @param {string} name 
+ * @returns {THREE.Sprite}
+ */
+function createUsernameLabel(name) {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const fontSize = 48;
+    ctx.font = `bold ${fontSize}px sans-serif`;
+    const textWidth = ctx.measureText(name).width;
+
+    // Pad the canvas
+    const width = textWidth + 40;
+    const height = fontSize + 40;
+
+    canvas.width = width;
+    canvas.height = height;
+
+    ctx.font = `bold ${fontSize}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Text Stroke (Outline)
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 6;
+    ctx.lineJoin = 'round';
+    ctx.strokeText(name, width / 2, height / 2);
+
+    // Text Fill
+    ctx.fillStyle = 'white';
+    ctx.fillText(name, width / 2, height / 2);
+
+    const tex = new THREE.CanvasTexture(canvas);
+    const mat = new THREE.SpriteMaterial({ map: tex, sizeAttenuation: true, depthTest: false, depthWrite: false, transparent: true, opacity: 0.7 });
+
+    const sprite = new THREE.Sprite(mat);
+    // Adjust scale. Pixels to World Units ratio.
+    const scaleFactor = 0.02;
+    sprite.scale.set(canvas.width * scaleFactor, canvas.height * scaleFactor, 1);
+    sprite.renderOrder = 999;
+
+    return sprite;
+}
+
+/**
+ * Update the username label on player/vehicle.
+ */
+function updatePlayerLabel() {
+    const name = localStorage.getItem('playerUsername');
+
+
+
+    // Refactored logic below:
+
+    // 1. Vehicle Logic
+    if (currentCarMesh) {
+        // Remove any existing label first
+        for (let i = currentCarMesh.children.length - 1; i >= 0; i--) {
+            if (currentCarMesh.children[i].userData.isNameLabel) {
+                currentCarMesh.remove(currentCarMesh.children[i]);
             }
         }
 
-        // --- Pedestrian Modal Functions ---
-        /**
-         * Initialize the pedestrian color palette UI.
-         */
-        function initPedestrianColorPalette() {
-            const container = document.getElementById('ped-color-palette');
-            clothingColors.forEach((col, index) => {
-                const div = document.createElement('div');
-                div.className = 'color-swatch';
-                div.style.backgroundColor = '#' + new THREE.Color(col).getHexString();
-                div.dataset.color = col;
-                if (index === 0) div.classList.add('selected');
-
-                div.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const usernameInput = document.getElementById('player-username');
-                    if (usernameInput) usernameInput.blur();
-                    document.querySelectorAll('#ped-color-palette .color-swatch').forEach(s => s.classList.remove('selected'));
-                    div.classList.add('selected');
-                    selectedColor = parseInt(div.dataset.color);
-                });
-                div.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const usernameInput = document.getElementById('player-username');
-                    if (usernameInput) usernameInput.blur();
-                    document.querySelectorAll('#ped-color-palette .color-swatch').forEach(s => s.classList.remove('selected'));
-                    div.classList.add('selected');
-                    selectedColor = parseInt(div.dataset.color);
-                }, { passive: false });
-
-                container.appendChild(div);
-            });
+        // If in vehicle mode AND name exists, add it
+        if (controlMode === 'vehicle' && name && name.trim() !== '') {
+            const label = createUsernameLabel(name);
+            label.position.set(0, 3.5, 0); // Car height offset
+            label.userData.isNameLabel = true;
+            currentCarMesh.add(label);
         }
+    }
 
-        /**
-         * Initialize the pedestrian customization modal.
-         */
-        function initPedestrianModal() {
-            pedModalScene = new THREE.Scene();
-            pedModalCamera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-            pedModalCamera.position.set(0, 1.0, 5.0);
-            pedModalCamera.lookAt(0, 0, 0);
-
-            const canvas = document.getElementById('ped-modal-canvas');
-            pedModalRenderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
-
-            const resSlider = document.getElementById('res-slider');
-            const currentRes = resSlider ? parseFloat(resSlider.value) : 1.0;
-            pedModalRenderer.setPixelRatio(currentRes);
-            pedModalRenderer.setClearColor(0x000000, 0);
-
-            const amb = new THREE.AmbientLight(0xffffff, 0.8);
-            pedModalScene.add(amb);
-            const dir = new THREE.DirectionalLight(0xffffff, 1.0);
-            dir.position.set(5, 10, 5);
-            pedModalScene.add(dir);
-
-            pedModalPedGroup = new THREE.Group();
-            pedModalScene.add(pedModalPedGroup);
-
-            // Canvas events
-            canvas.addEventListener('mousedown', onPedModalMouseDown, false);
-            canvas.addEventListener('mousemove', onPedModalMouseMove, false);
-            canvas.addEventListener('mouseup', onPedModalMouseUp, false);
-            canvas.addEventListener('mouseleave', onPedModalMouseUp, false);
-            canvas.addEventListener('touchstart', onPedModalTouchStart, { passive: false });
-            canvas.addEventListener('touchmove', onPedModalTouchMove, { passive: false });
-            canvas.addEventListener('touchend', onPedModalTouchEnd, { passive: false });
-
-            pedestrianModalClose.addEventListener('click', closePedestrianModal);
-            pedestrianModalClose.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); closePedestrianModal(); }, { passive: false });
-        }
-
-        /**
-         * Open the pedestrian customization modal with current player settings.
-         */
-        function openPedestrianModal() {
-            // Using existing userPedestrian colors or defaults if not spawned
-            const sourceColors = userPedestrian ? userPedestrian.colors : defaultPedestrianColors;
-            tempPedColors = { ...sourceColors };
-
-            pedestrianModal.classList.add('active');
-            pedestrianModalOpen = true;
-
-            const width = pedestrianModal.clientWidth;
-            const height = pedestrianModal.clientHeight;
-            pedModalRenderer.setSize(width, height, false);
-            pedModalCamera.aspect = width / height;
-            pedModalCamera.updateProjectionMatrix();
-
-            while (pedModalPedGroup.children.length > 0) {
-                pedModalPedGroup.remove(pedModalPedGroup.children[0]);
+    // 2. Pedestrian Logic
+    if (userPedestrian && userPedestrian.mesh) {
+        // Remove existing
+        for (let i = userPedestrian.mesh.children.length - 1; i >= 0; i--) {
+            if (userPedestrian.mesh.children[i].userData.isNameLabel) {
+                userPedestrian.mesh.remove(userPedestrian.mesh.children[i]);
             }
-
-            // Create a copy of the user pedestrian for the modal using temp colors
-            const dummyData = { isUser: true, ...(userPedestrian || {}), colors: tempPedColors };
-            const mesh = buildPedestrianMesh(dummyData);
-            mesh.scale.set(0.45, 0.45, 0.45);
-            mesh.position.y = 0.4;
-            mesh.position.x = -0.6; // Shift left to make room for pants
-            pedModalPedGroup.add(mesh);
-
-            // Add a pants preview group since robe hides them
-            const pantsPreview = new THREE.Group();
-            const pLegL = new THREE.Mesh(pedGeometries.leg, getCachedMaterial(tempPedColors.pants));
-            pLegL.position.set(-0.25, 0, 0);
-            pLegL.userData.partGroup = 'pants';
-            const pLegR = new THREE.Mesh(pedGeometries.leg, getCachedMaterial(tempPedColors.pants));
-            pLegR.position.set(0.25, 0, 0);
-            pLegR.userData.partGroup = 'pants';
-            pantsPreview.add(pLegL, pLegR);
-            pantsPreview.position.set(0.8, 0.2, 0); // Positioned higher to the right
-            pantsPreview.scale.set(0.45, 0.45, 0.45);
-            pedModalPedGroup.add(pantsPreview);
         }
 
-        /**
-         * Close the pedestrian customization modal and save changes.
-         */
-        function closePedestrianModal() {
+        // Pedestrian always implies pedestrian mode, so add if name exists
+        if (name && name.trim() !== '') {
+            const label = createUsernameLabel(name);
+            label.position.set(0, 2.5, 0); // Ped height offset
+            label.userData.isNameLabel = true;
+            userPedestrian.mesh.add(label);
+        }
+    }
+}
+
+// --- Pedestrian Modal Functions ---
+/**
+ * Initialize the pedestrian color palette UI.
+ */
+function initPedestrianColorPalette() {
+    const container = document.getElementById('ped-color-palette');
+    clothingColors.forEach((col, index) => {
+        const div = document.createElement('div');
+        div.className = 'color-swatch';
+        div.style.backgroundColor = '#' + new THREE.Color(col).getHexString();
+        div.dataset.color = col;
+        if (index === 0) div.classList.add('selected');
+
+        div.addEventListener('click', (e) => {
+            e.stopPropagation();
             const usernameInput = document.getElementById('player-username');
             if (usernameInput) usernameInput.blur();
-            if (tempPedColors) {
-                // Apply temp colors to userPedestrian if active
-                if (userPedestrian) {
-                    userPedestrian.colors = { ...tempPedColors };
-
-                    // Sync the world mesh
-                    if (userPedestrian.mesh) {
-                        userPedestrian.mesh.traverse(child => {
-                            if (child.isMesh && child.userData.partGroup) {
-                                const group = child.userData.partGroup;
-                                if (userPedestrian.colors[group] !== undefined) {
-                                    child.material = getCachedMaterial(userPedestrian.colors[group]);
-                                }
-                            }
-                        });
-                    }
-                }
-                // Persistent save
-                localStorage.setItem('pedestrianColors', JSON.stringify(tempPedColors));
-                // Update global default for next spawn
-                Object.assign(defaultPedestrianColors, tempPedColors);
-            }
-
-            pedestrianModal.classList.remove('active');
-            pedestrianModalOpen = false;
-            updatePlayerLabel();
-
-            if (socket) {
-                const username = document.getElementById('player-username').value;
-                socket.emit('updatePlayerDetails', { vehicleColors: vehicleColors, username: username, pedestrianColors: tempPedColors });
-            }
-        }
-
-        /**
-         * Handle mouse down on the pedestrian modal canvas.
-         * @param {MouseEvent} event 
-         */
-        function onPedModalMouseDown(event) {
+            document.querySelectorAll('#ped-color-palette .color-swatch').forEach(s => s.classList.remove('selected'));
+            div.classList.add('selected');
+            selectedColor = parseInt(div.dataset.color);
+        });
+        div.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             const usernameInput = document.getElementById('player-username');
-            if (usernameInput && document.activeElement === usernameInput) {
-                usernameInput.blur();
-            }
-            isDraggingModalCar = true; // Reuse vehicle dragging state
-            isPaintClick = true;
-            lastDragX = event.clientX;
-        }
+            if (usernameInput) usernameInput.blur();
+            document.querySelectorAll('#ped-color-palette .color-swatch').forEach(s => s.classList.remove('selected'));
+            div.classList.add('selected');
+            selectedColor = parseInt(div.dataset.color);
+        }, { passive: false });
 
-        /**
-         * Handle mouse move on the pedestrian modal canvas.
-         * @param {MouseEvent} event 
-         */
-        function onPedModalMouseMove(event) {
-            if (!isDraggingModalCar) return;
-            isPaintClick = false;
-            const deltaX = event.clientX - lastDragX;
-            pedModalPedGroup.rotation.y += deltaX * 0.015;
-            lastDragX = event.clientX;
-        }
+        container.appendChild(div);
+    });
+}
 
-        /**
-         * Handle mouse up on the pedestrian modal canvas.
-         * @param {MouseEvent} event 
-         */
-        function onPedModalMouseUp(event) {
-            if (isDraggingModalCar && isPaintClick) {
-                handlePedestrianPaintClick(event.clientX, event.clientY);
-            }
-            isDraggingModalCar = false;
-        }
+/**
+ * Initialize the pedestrian customization modal.
+ */
+function initPedestrianModal() {
+    pedModalScene = new THREE.Scene();
+    pedModalCamera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+    pedModalCamera.position.set(0, 1.0, 5.0);
+    pedModalCamera.lookAt(0, 0, 0);
 
-        /**
-         * Handle touch start on the pedestrian modal canvas.
-         * @param {TouchEvent} event 
-         */
-        function onPedModalTouchStart(event) {
-            const usernameInput = document.getElementById('player-username');
-            if (usernameInput && document.activeElement === usernameInput) {
-                usernameInput.blur();
-            }
-            isDraggingModalCar = true;
-            isPaintClick = true;
-            lastDragX = event.touches[0].clientX;
-            event.preventDefault();
-        }
+    const canvas = document.getElementById('ped-modal-canvas');
+    pedModalRenderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
 
-        /**
-         * Handle touch move on the pedestrian modal canvas.
-         * @param {TouchEvent} event 
-         */
-        function onPedModalTouchMove(event) {
-            if (!isDraggingModalCar) return;
-            const currentX = event.touches[0].clientX;
-            if (Math.abs(currentX - lastDragX) > 2) isPaintClick = false;
-            const deltaX = currentX - lastDragX;
-            pedModalPedGroup.rotation.y += deltaX * 0.015;
-            lastDragX = currentX;
-            event.preventDefault();
-        }
+    const resSlider = document.getElementById('res-slider');
+    const currentRes = resSlider ? parseFloat(resSlider.value) : 1.0;
+    pedModalRenderer.setPixelRatio(currentRes);
+    pedModalRenderer.setClearColor(0x000000, 0);
 
-        /**
-         * Handle touch end on the pedestrian modal canvas.
-         * @param {TouchEvent} event 
-         */
-        function onPedModalTouchEnd(event) {
-            if (isDraggingModalCar && isPaintClick) {
-                const t = event.changedTouches[0];
-                handlePedestrianPaintClick(t.clientX, t.clientY);
-            }
-            isDraggingModalCar = false;
-            event.preventDefault();
-        }
+    const amb = new THREE.AmbientLight(0xffffff, 0.8);
+    pedModalScene.add(amb);
+    const dir = new THREE.DirectionalLight(0xffffff, 1.0);
+    dir.position.set(5, 10, 5);
+    pedModalScene.add(dir);
 
-        /**
-         * Process a paint click for the pedestrian model.
-         * @param {number} clientX 
-         * @param {number} clientY 
-         */
-        function handlePedestrianPaintClick(clientX, clientY) {
-            if (!pedModalRenderer || !pedModalCamera || !tempPedColors) return;
-            const rect = pedModalRenderer.domElement.getBoundingClientRect();
-            modalMouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
-            modalMouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
-            paintRaycaster.setFromCamera(modalMouse, pedModalCamera);
-            const intersects = paintRaycaster.intersectObjects(pedModalPedGroup.children, true);
+    pedModalPedGroup = new THREE.Group();
+    pedModalScene.add(pedModalPedGroup);
 
-            if (intersects.length > 0) {
-                const mesh = intersects[0].object;
-                if (mesh.isMesh && mesh.userData.partGroup) {
-                    const group = mesh.userData.partGroup;
-                    if (group === 'skin') return; // Cannot edit skin color
+    // Canvas events
+    canvas.addEventListener('mousedown', onPedModalMouseDown, false);
+    canvas.addEventListener('mousemove', onPedModalMouseMove, false);
+    canvas.addEventListener('mouseup', onPedModalMouseUp, false);
+    canvas.addEventListener('mouseleave', onPedModalMouseUp, false);
+    canvas.addEventListener('touchstart', onPedModalTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', onPedModalTouchMove, { passive: false });
+    canvas.addEventListener('touchend', onPedModalTouchEnd, { passive: false });
 
-                    // Update temp data independently
-                    if (tempPedColors[group] !== undefined) {
-                        tempPedColors[group] = selectedColor;
-                    }
+    pedestrianModalClose.addEventListener('click', closePedestrianModal);
+    pedestrianModalClose.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); closePedestrianModal(); }, { passive: false });
+}
 
-                    // Sync only modal mesh
-                    pedModalPedGroup.traverse(child => {
-                        if (child.isMesh && child.userData.partGroup === group) {
-                            child.material = getCachedMaterial(selectedColor);
-                        }
-                    });
-                }
-            }
-        }
+/**
+ * Open the pedestrian customization modal with current player settings.
+ */
+function openPedestrianModal() {
+    // Using existing userPedestrian colors or defaults if not spawned
+    const sourceColors = userPedestrian ? userPedestrian.colors : defaultPedestrianColors;
+    tempPedColors = { ...sourceColors };
 
-        /**
-         * Reset vehicle colors to factory defaults.
-         */
-        function resetVehicleDefaults() {
-            const defaults = {
-                supercar: { body: 0xffffff, spoiler: 0x000000, windshield: 0x223344 },
-                hypercar: { body: 0xFFD700, spoiler: 0x111111, windshield: 0x223344 },
-                hypercar2: { body: 0x00ffff, spoiler: 0x222222, windshield: 0x112233 }
-            };
-            Object.assign(vehicleColors, JSON.parse(JSON.stringify(defaults)));
-            localStorage.setItem('vehicleColors', JSON.stringify(vehicleColors));
-            if (socket) {
-                socket.emit('updatePlayerDetails', { vehicleColors: vehicleColors });
-            }
+    pedestrianModal.classList.add('active');
+    pedestrianModalOpen = true;
 
-            // Re-open/refresh the modal content to rebuild from new colors
-            openVehicleModal();
-            // Sync with player car
-            loadCarModel(carType);
-        }
+    const width = pedestrianModal.clientWidth;
+    const height = pedestrianModal.clientHeight;
+    pedModalRenderer.setSize(width, height, false);
+    pedModalCamera.aspect = width / height;
+    pedModalCamera.updateProjectionMatrix();
 
-        /**
-         * Reset pedestrian clothing colors to defaults.
-         */
-        function resetPedestrianDefaults() {
-            const defaults = {
-                shirt: 0x111111, pants: 0x111111, skin: 0xffccaa, robe: 0x000000, hat: 0x555555
-            };
+    while (pedModalPedGroup.children.length > 0) {
+        pedModalPedGroup.remove(pedModalPedGroup.children[0]);
+    }
 
-            if (tempPedColors) {
-                Object.assign(tempPedColors, JSON.parse(JSON.stringify(defaults)));
+    // Create a copy of the user pedestrian for the modal using temp colors
+    const dummyData = { isUser: true, ...(userPedestrian || {}), colors: tempPedColors };
+    const mesh = buildPedestrianMesh(dummyData);
+    mesh.scale.set(0.45, 0.45, 0.45);
+    mesh.position.y = 0.4;
+    mesh.position.x = -0.6; // Shift left to make room for pants
+    pedModalPedGroup.add(mesh);
 
-                // Sync only modal mesh immediately to show visual change
-                pedModalPedGroup.traverse(child => {
+    // Add a pants preview group since robe hides them
+    const pantsPreview = new THREE.Group();
+    const pLegL = new THREE.Mesh(pedGeometries.leg, getCachedMaterial(tempPedColors.pants));
+    pLegL.position.set(-0.25, 0, 0);
+    pLegL.userData.partGroup = 'pants';
+    const pLegR = new THREE.Mesh(pedGeometries.leg, getCachedMaterial(tempPedColors.pants));
+    pLegR.position.set(0.25, 0, 0);
+    pLegR.userData.partGroup = 'pants';
+    pantsPreview.add(pLegL, pLegR);
+    pantsPreview.position.set(0.8, 0.2, 0); // Positioned higher to the right
+    pantsPreview.scale.set(0.45, 0.45, 0.45);
+    pedModalPedGroup.add(pantsPreview);
+}
+
+/**
+ * Close the pedestrian customization modal and save changes.
+ */
+function closePedestrianModal() {
+    const usernameInput = document.getElementById('player-username');
+    if (usernameInput) usernameInput.blur();
+    if (tempPedColors) {
+        // Apply temp colors to userPedestrian if active
+        if (userPedestrian) {
+            userPedestrian.colors = { ...tempPedColors };
+
+            // Sync the world mesh
+            if (userPedestrian.mesh) {
+                userPedestrian.mesh.traverse(child => {
                     if (child.isMesh && child.userData.partGroup) {
                         const group = child.userData.partGroup;
-                        if (tempPedColors[group] !== undefined) {
-                            child.material = getCachedMaterial(tempPedColors[group]);
+                        if (userPedestrian.colors[group] !== undefined) {
+                            child.material = getCachedMaterial(userPedestrian.colors[group]);
                         }
                     }
                 });
             }
+        }
+        // Persistent save
+        localStorage.setItem('pedestrianColors', JSON.stringify(tempPedColors));
+        // Update global default for next spawn
+        Object.assign(defaultPedestrianColors, tempPedColors);
+    }
 
-            // Reset Username
-            const usernameInput = document.getElementById('player-username');
-            if (usernameInput) {
-                usernameInput.value = '';
-                localStorage.removeItem('playerUsername');
+    pedestrianModal.classList.remove('active');
+    pedestrianModalOpen = false;
+    updatePlayerLabel();
+
+    if (socket) {
+        const username = document.getElementById('player-username').value;
+        socket.emit('updatePlayerDetails', { vehicleColors: vehicleColors, username: username, pedestrianColors: tempPedColors });
+    }
+}
+
+/**
+ * Handle mouse down on the pedestrian modal canvas.
+ * @param {MouseEvent} event 
+ */
+function onPedModalMouseDown(event) {
+    const usernameInput = document.getElementById('player-username');
+    if (usernameInput && document.activeElement === usernameInput) {
+        usernameInput.blur();
+    }
+    isDraggingModalCar = true; // Reuse vehicle dragging state
+    isPaintClick = true;
+    lastDragX = event.clientX;
+}
+
+/**
+ * Handle mouse move on the pedestrian modal canvas.
+ * @param {MouseEvent} event 
+ */
+function onPedModalMouseMove(event) {
+    if (!isDraggingModalCar) return;
+    isPaintClick = false;
+    const deltaX = event.clientX - lastDragX;
+    pedModalPedGroup.rotation.y += deltaX * 0.015;
+    lastDragX = event.clientX;
+}
+
+/**
+ * Handle mouse up on the pedestrian modal canvas.
+ * @param {MouseEvent} event 
+ */
+function onPedModalMouseUp(event) {
+    if (isDraggingModalCar && isPaintClick) {
+        handlePedestrianPaintClick(event.clientX, event.clientY);
+    }
+    isDraggingModalCar = false;
+}
+
+/**
+ * Handle touch start on the pedestrian modal canvas.
+ * @param {TouchEvent} event 
+ */
+function onPedModalTouchStart(event) {
+    const usernameInput = document.getElementById('player-username');
+    if (usernameInput && document.activeElement === usernameInput) {
+        usernameInput.blur();
+    }
+    isDraggingModalCar = true;
+    isPaintClick = true;
+    lastDragX = event.touches[0].clientX;
+    event.preventDefault();
+}
+
+/**
+ * Handle touch move on the pedestrian modal canvas.
+ * @param {TouchEvent} event 
+ */
+function onPedModalTouchMove(event) {
+    if (!isDraggingModalCar) return;
+    const currentX = event.touches[0].clientX;
+    if (Math.abs(currentX - lastDragX) > 2) isPaintClick = false;
+    const deltaX = currentX - lastDragX;
+    pedModalPedGroup.rotation.y += deltaX * 0.015;
+    lastDragX = currentX;
+    event.preventDefault();
+}
+
+/**
+ * Handle touch end on the pedestrian modal canvas.
+ * @param {TouchEvent} event 
+ */
+function onPedModalTouchEnd(event) {
+    if (isDraggingModalCar && isPaintClick) {
+        const t = event.changedTouches[0];
+        handlePedestrianPaintClick(t.clientX, t.clientY);
+    }
+    isDraggingModalCar = false;
+    event.preventDefault();
+}
+
+/**
+ * Process a paint click for the pedestrian model.
+ * @param {number} clientX 
+ * @param {number} clientY 
+ */
+function handlePedestrianPaintClick(clientX, clientY) {
+    if (!pedModalRenderer || !pedModalCamera || !tempPedColors) return;
+    const rect = pedModalRenderer.domElement.getBoundingClientRect();
+    modalMouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    modalMouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+    paintRaycaster.setFromCamera(modalMouse, pedModalCamera);
+    const intersects = paintRaycaster.intersectObjects(pedModalPedGroup.children, true);
+
+    if (intersects.length > 0) {
+        const mesh = intersects[0].object;
+        if (mesh.isMesh && mesh.userData.partGroup) {
+            const group = mesh.userData.partGroup;
+            if (group === 'skin') return; // Cannot edit skin color
+
+            // Update temp data independently
+            if (tempPedColors[group] !== undefined) {
+                tempPedColors[group] = selectedColor;
             }
-        }
 
-        // --- Share Modal Functions ---
-        /**
-         * Open the share modal.
-         */
-        function openShareModal() {
-            shareModal.classList.add('active');
-        }
-
-        /**
-         * Close the share modal.
-         */
-        function closeShareModal() {
-            shareModal.classList.remove('active');
-        }
-
-        /**
-         * Copy the share link to clipboard.
-         */
-        function copyShareLink() {
-            const text = shareLinkInput.value;
-            const showCopied = () => {
-                copyLinkBtn.textContent = 'Copied!';
-                setTimeout(() => { copyLinkBtn.textContent = 'Copy'; }, 1200);
-            };
-            const fallbackCopy = () => {
-                try {
-                    const ta = document.createElement('textarea');
-                    ta.value = text;
-                    ta.setAttribute('readonly', '');
-                    ta.style.position = 'fixed';
-                    ta.style.top = '-9999px';
-                    document.body.appendChild(ta);
-                    ta.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(ta);
-                    showCopied();
-                } catch (err) {
-                    showCopied();
+            // Sync only modal mesh
+            pedModalPedGroup.traverse(child => {
+                if (child.isMesh && child.userData.partGroup === group) {
+                    child.material = getCachedMaterial(selectedColor);
                 }
-            };
-
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(text).then(showCopied).catch(fallbackCopy);
-            } else {
-                fallbackCopy();
-            }
+            });
         }
+    }
+}
 
-        // --- Day/Night Toggle System (Updated for Brightness) ---
+/**
+ * Reset vehicle colors to factory defaults.
+ */
+function resetVehicleDefaults() {
+    const defaults = {
+        supercar: { body: 0xffffff, spoiler: 0x000000, windshield: 0x223344 },
+        hypercar: { body: 0xFFD700, spoiler: 0x111111, windshield: 0x223344 },
+        hypercar2: { body: 0x00ffff, spoiler: 0x222222, windshield: 0x112233 }
+    };
+    Object.assign(vehicleColors, JSON.parse(JSON.stringify(defaults)));
+    localStorage.setItem('vehicleColors', JSON.stringify(vehicleColors));
+    if (socket) {
+        socket.emit('updatePlayerDetails', { vehicleColors: vehicleColors });
+    }
 
-        /**
-         * Toggle the visibility of the Heads-Up Display (HUD).
-         */
-        function toggleHUD() {
-            document.body.classList.toggle('hud-hidden');
-            const isHidden = document.body.classList.contains('hud-hidden');
-            const collapseBtn = document.getElementById('collapse-btn');
+    // Re-open/refresh the modal content to rebuild from new colors
+    openVehicleModal();
+    // Sync with player car
+    loadCarModel(carType);
+}
 
-            // Eye when hidden (click to show), Eye Slash when visible (click to hide)
-            const iconEye = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
-            const iconEyeSlash = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
+/**
+ * Reset pedestrian clothing colors to defaults.
+ */
+function resetPedestrianDefaults() {
+    const defaults = {
+        shirt: 0x111111, pants: 0x111111, skin: 0xffccaa, robe: 0x000000, hat: 0x555555
+    };
 
-            if (collapseBtn) {
-                collapseBtn.innerHTML = isHidden ? iconEye : iconEyeSlash;
-            }
-        }
+    if (tempPedColors) {
+        Object.assign(tempPedColors, JSON.parse(JSON.stringify(defaults)));
 
-        /**
-         * Toggle between Day and Night modes, updating lighting and materials.
-         */
-        function toggleDayNight() {
-            isNightMode = !isNightMode;
-
-            if (isNightMode) {
-                const duskColor = 0x1a1a2e;
-                scene.background.setHex(duskColor);
-                scene.fog.color.setHex(duskColor);
-                scene.fog.near = 30;
-                scene.fog.far = 180;
-
-                // BRIGHTER NIGHT SETTINGS
-                ambientLight.intensity = 0.55;
-                sunLight.color.setHex(0xaaccff);
-                sunLight.intensity = 0.6;
-
-                const instr = document.querySelector('.instructions');
-                if (instr) instr.innerHTML = "Night Run<br>Left Stick: Drive";
-                timeBtn.innerText = "☀️";
-
-                roadMaterial.color.setHex(0x222222);
-                lineMaterial.color.setHex(0xaa8800);
-                grassMaterial.color.setHex(0x335533);
-                lightBulbMaterial.emissiveIntensity = 3.0; // Very bright
-                lightSpotMaterial.opacity = 0.8; // Turn on ground spots
-                billboardMaterial.emissiveIntensity = 0.8; // Bright ads at night
-
-                // Swap texture instantly
-                groundMaterial.map = nightGroundTexture;
-
-            } else {
-                const dayColor = 0x87CEEB;
-                scene.background.setHex(dayColor);
-                scene.fog.color.setHex(0xa0d8ef);
-                scene.fog.near = 50;
-                scene.fog.far = 240;
-
-                ambientLight.intensity = 0.6;
-                sunLight.color.setHex(0xffffff);
-                sunLight.intensity = 0.8;
-
-                const instr = document.querySelector('.instructions');
-                if (instr) instr.innerHTML = "Day Run<br>Left Stick: Drive";
-                timeBtn.innerText = "🌙";
-
-                roadMaterial.color.setHex(0x333333);
-                lineMaterial.color.setHex(0xffcc00);
-                grassMaterial.color.setHex(0x44aa44);
-                lightBulbMaterial.emissiveIntensity = 0.2; // Dim
-                lightSpotMaterial.opacity = 0.0; // Hide ground spots
-                billboardMaterial.emissiveIntensity = 0.1; // Dimm ads in day
-
-                // Swap texture instantly
-                groundMaterial.map = dayGroundTexture;
-            }
-
-            // Update buildings to swap window textures
-            activeChunks.forEach(chunk => {
-                chunk.mesh.traverse(child => {
-                    if (child.userData.isBuilding) {
-                        const seed = child.userData.seed;
-                        // Swap entire material reference to cached Day/Night material
-                        child.material = getBuildingMaterial(seed, isNightMode);
-                    }
-                });
-            });
-
-            // Update traffic lights
-            trafficVehicles.forEach(npc => {
-                npc.mesh.traverse(child => {
-                    if (child.isLight) {
-                        // Only enable spotlights at night
-                        child.visible = isNightMode;
-                    }
-                });
-            });
-
-            loadCarModel(carType);
-        }
-
-        // --- Miniature UI ---
-
-        /**
-         * Update the position of the 2D miniature UI element based on camera projection.
-         */
-
-
-        /**
-         * Update the 3D model shown in the miniature UI.
-         */
-        function updateMiniatureModels() {
-            // Update Supercar Miniature
-            while (miniatureGroupSuper.children.length > 0) {
-                miniatureGroupSuper.remove(miniatureGroupSuper.children[0]);
-            }
-            const meshSuper = createVehicle({
-                type: 'supercar',
-                color: vehicleColors['supercar'],
-                addLights: false,
-                scale: 0.4
-            });
-            meshSuper.position.y = -0.5;
-            miniatureGroupSuper.add(meshSuper);
-
-            // Update Hypercar Miniature
-            while (miniatureGroupHyper.children.length > 0) {
-                miniatureGroupHyper.remove(miniatureGroupHyper.children[0]);
-            }
-            const meshHyper = createVehicle({
-                type: 'hypercar',
-                color: vehicleColors['hypercar'],
-                addLights: false,
-                scale: 0.35
-            });
-            meshHyper.position.y = -0.5;
-            miniatureGroupHyper.add(meshHyper);
-
-            // Update Hypercar 2.0 Miniature
-            while (miniatureGroupHyper2.children.length > 0) {
-                miniatureGroupHyper2.remove(miniatureGroupHyper2.children[0]);
-            }
-            const meshHyper2 = createVehicle({
-                type: 'hypercar2',
-                color: vehicleColors['hypercar2'],
-                addLights: false,
-                scale: 0.35
-            });
-            meshHyper2.position.y = -0.5;
-            miniatureGroupHyper2.add(meshHyper2);
-
-            // Highlight selected
-            const btnSuper = document.getElementById('miniature-container-supercar');
-            const btnHyper = document.getElementById('miniature-container-hypercar');
-            const btnHyper2 = document.getElementById('miniature-container-hypercar2');
-            if (btnSuper && btnHyper && btnHyper2) {
-                [btnSuper, btnHyper, btnHyper2].forEach(b => {
-                    b.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-                    b.style.boxShadow = 'none';
-                });
-
-                let selectedBtn;
-                if (carType === 'supercar') selectedBtn = btnSuper;
-                else if (carType === 'hypercar') selectedBtn = btnHyper;
-                else if (carType === 'hypercar2') selectedBtn = btnHyper2;
-
-                if (selectedBtn) {
-                    selectedBtn.style.borderColor = 'rgba(255, 255, 255, 1.0)';
-                    selectedBtn.style.boxShadow = '0 0 15px rgba(255, 255, 255, 0.5)';
+        // Sync only modal mesh immediately to show visual change
+        pedModalPedGroup.traverse(child => {
+            if (child.isMesh && child.userData.partGroup) {
+                const group = child.userData.partGroup;
+                if (tempPedColors[group] !== undefined) {
+                    child.material = getCachedMaterial(tempPedColors[group]);
                 }
             }
+        });
+    }
+
+    // Reset Username
+    const usernameInput = document.getElementById('player-username');
+    if (usernameInput) {
+        usernameInput.value = '';
+        localStorage.removeItem('playerUsername');
+    }
+}
+
+// --- Share Modal Functions ---
+/**
+ * Open the share modal.
+ */
+function openShareModal() {
+    shareModal.classList.add('active');
+}
+
+/**
+ * Close the share modal.
+ */
+function closeShareModal() {
+    shareModal.classList.remove('active');
+}
+
+/**
+ * Copy the share link to clipboard.
+ */
+function copyShareLink() {
+    const text = shareLinkInput.value;
+    const showCopied = () => {
+        copyLinkBtn.textContent = 'Copied!';
+        setTimeout(() => { copyLinkBtn.textContent = 'Copy'; }, 1200);
+    };
+    const fallbackCopy = () => {
+        try {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.setAttribute('readonly', '');
+            ta.style.position = 'fixed';
+            ta.style.top = '-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            showCopied();
+        } catch (err) {
+            showCopied();
         }
+    };
 
-        function selectCarType(type) {
-            if (carType === type) return;
-            loadCarModel(type);
-            velocity.y = 0.5;
-            isAirborne = true;
-            updateMiniatureModels();
-        }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(showCopied).catch(fallbackCopy);
+    } else {
+        fallbackCopy();
+    }
+}
 
-        /**
-         * Check if a click coordinates intersect with the miniature UI.
-         * @param {number} clientX 
-         * @param {number} clientY 
-         * @returns {boolean}
-         */
+// --- Day/Night Toggle System (Updated for Brightness) ---
 
+/**
+ * Toggle the visibility of the Heads-Up Display (HUD).
+ */
+function toggleHUD() {
+    document.body.classList.toggle('hud-hidden');
+    const isHidden = document.body.classList.contains('hud-hidden');
+    const collapseBtn = document.getElementById('collapse-btn');
 
-        /**
-         * Check if a click intersects with the player vehicle.
-         * @param {number} clientX 
-         * @param {number} clientY 
-         * @returns {boolean}
-         */
-        function checkVehicleTap(clientX, clientY) {
-            if (!player) return false;
-            mouse.x = (clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(clientY / window.innerHeight) * 2 + 1;
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(player.children, true);
-            return intersects.length > 0;
-        }
+    // Eye when hidden (click to show), Eye Slash when visible (click to hide)
+    const iconEye = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
+    const iconEyeSlash = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
 
-        /**
-         * Check if a click intersects with the user's pedestrian.
-         * @param {number} clientX 
-         * @param {number} clientY 
-         * @returns {boolean}
-         */
-        function checkPedestrianTap(clientX, clientY) {
-            if (controlMode !== 'pedestrian' || !userPedestrian || !userPedestrian.mesh) return false;
-            mouse.x = (clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(clientY / window.innerHeight) * 2 + 1;
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(userPedestrian.mesh.children, true);
-            return intersects.length > 0;
-        }
+    if (collapseBtn) {
+        collapseBtn.innerHTML = isHidden ? iconEye : iconEyeSlash;
+    }
+}
 
-        /**
-         * Handle a tap on the vehicle (e.g., getting out).
-         */
-        function handleVehicleTap() {
-            if (controlMode === 'vehicle') {
-                velocity.set(0, 0, 0);
-                spawnPedestrianBesidePlayer();
-            } else if (controlMode === 'pedestrian') {
-                enterVehicle();
+/**
+ * Toggle between Day and Night modes, updating lighting and materials.
+ */
+function toggleDayNight() {
+    isNightMode = !isNightMode;
+
+    if (isNightMode) {
+        const duskColor = 0x1a1a2e;
+        scene.background.setHex(duskColor);
+        scene.fog.color.setHex(duskColor);
+        scene.fog.near = 30;
+        scene.fog.far = 180;
+
+        // BRIGHTER NIGHT SETTINGS
+        ambientLight.intensity = 0.55;
+        sunLight.color.setHex(0xaaccff);
+        sunLight.intensity = 0.6;
+
+        const instr = document.querySelector('.instructions');
+        if (instr) instr.innerHTML = "Night Run<br>Left Stick: Drive";
+        timeBtn.innerText = "☀️";
+
+        roadMaterial.color.setHex(0x222222);
+        lineMaterial.color.setHex(0xaa8800);
+        grassMaterial.color.setHex(0x335533);
+        lightBulbMaterial.emissiveIntensity = 3.0; // Very bright
+        lightSpotMaterial.opacity = 0.8; // Turn on ground spots
+        billboardMaterial.emissiveIntensity = 0.8; // Bright ads at night
+
+        // Swap texture instantly
+        groundMaterial.map = nightGroundTexture;
+
+    } else {
+        const dayColor = 0x87CEEB;
+        scene.background.setHex(dayColor);
+        scene.fog.color.setHex(0xa0d8ef);
+        scene.fog.near = 50;
+        scene.fog.far = 240;
+
+        ambientLight.intensity = 0.6;
+        sunLight.color.setHex(0xffffff);
+        sunLight.intensity = 0.8;
+
+        const instr = document.querySelector('.instructions');
+        if (instr) instr.innerHTML = "Day Run<br>Left Stick: Drive";
+        timeBtn.innerText = "🌙";
+
+        roadMaterial.color.setHex(0x333333);
+        lineMaterial.color.setHex(0xffcc00);
+        grassMaterial.color.setHex(0x44aa44);
+        lightBulbMaterial.emissiveIntensity = 0.2; // Dim
+        lightSpotMaterial.opacity = 0.0; // Hide ground spots
+        billboardMaterial.emissiveIntensity = 0.1; // Dimm ads in day
+
+        // Swap texture instantly
+        groundMaterial.map = dayGroundTexture;
+    }
+
+    // Update buildings to swap window textures
+    activeChunks.forEach(chunk => {
+        chunk.mesh.traverse(child => {
+            if (child.userData.isBuilding) {
+                const seed = child.userData.seed;
+                // Swap entire material reference to cached Day/Night material
+                child.material = getBuildingMaterial(seed, isNightMode);
             }
-        }
+        });
+    });
 
-        /**
-         * Handle a tap on the user pedestrian (e.g., open customization).
-         */
-        function handlePedestrianTap() {
-            openPedestrianModal();
-        }
-
-        /**
-         * Transition from pedestrian mode back to vehicle mode.
-         */
-        function enterVehicle() {
-            if (userPedestrian) {
-                scene.remove(userPedestrian.mesh);
-                userPedestrian = null;
+    // Update traffic lights
+    trafficVehicles.forEach(npc => {
+        npc.mesh.traverse(child => {
+            if (child.isLight) {
+                // Only enable spotlights at night
+                child.visible = isNightMode;
             }
-            controlMode = 'vehicle';
-            controlMode = 'vehicle';
-            centerCamera();
-            updatePlayerLabel();
+        });
+    });
+
+    loadCarModel(carType);
+}
+
+// --- Miniature UI ---
+
+/**
+ * Update the position of the 2D miniature UI element based on camera projection.
+ */
+
+
+/**
+ * Update the 3D model shown in the miniature UI.
+ */
+function updateMiniatureModels() {
+    // Update Supercar Miniature
+    while (miniatureGroupSuper.children.length > 0) {
+        miniatureGroupSuper.remove(miniatureGroupSuper.children[0]);
+    }
+    const meshSuper = createVehicle({
+        type: 'supercar',
+        color: vehicleColors['supercar'],
+        addLights: false,
+        scale: 0.4
+    });
+    meshSuper.position.y = -0.5;
+    miniatureGroupSuper.add(meshSuper);
+
+    // Update Hypercar Miniature
+    while (miniatureGroupHyper.children.length > 0) {
+        miniatureGroupHyper.remove(miniatureGroupHyper.children[0]);
+    }
+    const meshHyper = createVehicle({
+        type: 'hypercar',
+        color: vehicleColors['hypercar'],
+        addLights: false,
+        scale: 0.35
+    });
+    meshHyper.position.y = -0.5;
+    miniatureGroupHyper.add(meshHyper);
+
+    // Update Hypercar 2.0 Miniature
+    while (miniatureGroupHyper2.children.length > 0) {
+        miniatureGroupHyper2.remove(miniatureGroupHyper2.children[0]);
+    }
+    const meshHyper2 = createVehicle({
+        type: 'hypercar2',
+        color: vehicleColors['hypercar2'],
+        addLights: false,
+        scale: 0.35
+    });
+    meshHyper2.position.y = -0.5;
+    miniatureGroupHyper2.add(meshHyper2);
+
+    // Highlight selected
+    const btnSuper = document.getElementById('miniature-container-supercar');
+    const btnHyper = document.getElementById('miniature-container-hypercar');
+    const btnHyper2 = document.getElementById('miniature-container-hypercar2');
+    if (btnSuper && btnHyper && btnHyper2) {
+        [btnSuper, btnHyper, btnHyper2].forEach(b => {
+            b.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+            b.style.boxShadow = 'none';
+        });
+
+        let selectedBtn;
+        if (carType === 'supercar') selectedBtn = btnSuper;
+        else if (carType === 'hypercar') selectedBtn = btnHyper;
+        else if (carType === 'hypercar2') selectedBtn = btnHyper2;
+
+        if (selectedBtn) {
+            selectedBtn.style.borderColor = 'rgba(255, 255, 255, 1.0)';
+            selectedBtn.style.boxShadow = '0 0 15px rgba(255, 255, 255, 0.5)';
         }
+    }
+}
 
-        /**
-         * Spawn a pedestrian character beside the player vehicle.
-         */
-        function spawnPedestrianBesidePlayer() {
-            // Remove from allPedestrians if we are recycling createPedestrianData
-            // But createPedestrianData adds to allPedestrians array.
-            // We should create a separate pedestrian for the user.
+function selectCarType(type) {
+    if (carType === type) return;
+    loadCarModel(type);
+    velocity.y = 0.5;
+    isAirborne = true;
+    updateMiniatureModels();
+}
 
-            const angle = player.rotation.y + (Math.random() < 0.5 ? Math.PI / 2 : -Math.PI / 2);
-            const dist = 5.0;
-            const pos = new THREE.Vector3(
-                player.position.x + Math.sin(angle) * dist,
-                2.0,
-                player.position.z + Math.cos(angle) * dist
-            );
+/**
+ * Check if a click coordinates intersect with the miniature UI.
+ * @param {number} clientX 
+ * @param {number} clientY 
+ * @returns {boolean}
+ */
 
-            // Create user pedestrian data manually to avoid AI loop interference
-            const colors = { ...defaultPedestrianColors };
 
-            userPedestrian = {
-                position: pos,
-                velocity: new THREE.Vector3(0, 0, 0),
-                rotation: Math.atan2(player.position.x - pos.x, player.position.z - pos.z),
-                animPhase: 0,
-                mesh: null,
-                colors: colors,
-                isUser: true
-            };
+/**
+ * Check if a click intersects with the player vehicle.
+ * @param {number} clientX 
+ * @param {number} clientY 
+ * @returns {boolean}
+ */
+function checkVehicleTap(clientX, clientY) {
+    if (!player) return false;
+    mouse.x = (clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(clientY / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects(player.children, true);
+    return intersects.length > 0;
+}
 
-            userPedestrian.mesh = buildPedestrianMesh(userPedestrian);
-            userPedestrian.mesh.position.copy(userPedestrian.position);
-            userPedestrian.mesh.rotation.y = userPedestrian.rotation;
+/**
+ * Check if a click intersects with the user's pedestrian.
+ * @param {number} clientX 
+ * @param {number} clientY 
+ * @returns {boolean}
+ */
+function checkPedestrianTap(clientX, clientY) {
+    if (controlMode !== 'pedestrian' || !userPedestrian || !userPedestrian.mesh) return false;
+    mouse.x = (clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(clientY / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects(userPedestrian.mesh.children, true);
+    return intersects.length > 0;
+}
 
-            controlMode = 'pedestrian';
-            updatePlayerLabel();
+/**
+ * Handle a tap on the vehicle (e.g., getting out).
+ */
+function handleVehicleTap() {
+    if (controlMode === 'vehicle') {
+        velocity.set(0, 0, 0);
+        spawnPedestrianBesidePlayer();
+    } else if (controlMode === 'pedestrian') {
+        enterVehicle();
+    }
+}
 
-            scene.add(userPedestrian.mesh);
-        }
+/**
+ * Handle a tap on the user pedestrian (e.g., open customization).
+ */
+function handlePedestrianTap() {
+    openPedestrianModal();
+}
 
-        // --- Infinite Map System ---
+/**
+ * Transition from pedestrian mode back to vehicle mode.
+ */
+function enterVehicle() {
+    if (userPedestrian) {
+        scene.remove(userPedestrian.mesh);
+        userPedestrian = null;
+    }
+    controlMode = 'vehicle';
+    controlMode = 'vehicle';
+    centerCamera();
+    updatePlayerLabel();
+}
 
-        /**
-         * Create a texture for the fake light spot on the ground.
-         * @returns {THREE.CanvasTexture}
-         */
-        function createLightSpotTexture() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 64; canvas.height = 64;
-            const ctx = canvas.getContext('2d');
-            const grd = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
-            grd.addColorStop(0, 'rgba(255, 255, 200, 0.8)'); // Bright warm center
-            grd.addColorStop(0.3, 'rgba(255, 255, 220, 0.3)');
-            grd.addColorStop(1, 'rgba(0, 0, 0, 0)');
-            ctx.fillStyle = grd;
-            ctx.fillRect(0, 0, 64, 64);
-            const tex = new THREE.CanvasTexture(canvas);
-            return tex;
-        }
+/**
+ * Spawn a pedestrian character beside the player vehicle.
+ */
+function spawnPedestrianBesidePlayer() {
+    // Remove from allPedestrians if we are recycling createPedestrianData
+    // But createPedestrianData adds to allPedestrians array.
+    // We should create a separate pedestrian for the user.
 
-        /**
-         * Create a texture for billboards with the text "YOUR AD HERE".
-         * @returns {THREE.CanvasTexture}
-         */
-        function createBillboardTexture() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 512;
-            canvas.height = 256;
-            const ctx = canvas.getContext('2d');
+    const angle = player.rotation.y + (Math.random() < 0.5 ? Math.PI / 2 : -Math.PI / 2);
+    const dist = 5.0;
+    const pos = new THREE.Vector3(
+        player.position.x + Math.sin(angle) * dist,
+        2.0,
+        player.position.z + Math.cos(angle) * dist
+    );
 
-            // Background gradient
-            const grad = ctx.createLinearGradient(0, 0, 0, 256);
-            grad.addColorStop(0, '#1a1a2e');
-            grad.addColorStop(1, '#16213e');
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, 512, 256);
+    // Create user pedestrian data manually to avoid AI loop interference
+    const colors = { ...defaultPedestrianColors };
 
-            // Scanning lines
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
-            ctx.lineWidth = 1;
-            for (let i = 0; i < 256; i += 4) {
-                ctx.beginPath();
-                ctx.moveTo(0, i);
-                ctx.lineTo(512, i);
-                ctx.stroke();
-            }
+    userPedestrian = {
+        position: pos,
+        velocity: new THREE.Vector3(0, 0, 0),
+        rotation: Math.atan2(player.position.x - pos.x, player.position.z - pos.z),
+        animPhase: 0,
+        mesh: null,
+        colors: colors,
+        isUser: true
+    };
 
-            // Glow effect
-            ctx.shadowBlur = 20;
-            ctx.shadowColor = '#00d2ff';
+    userPedestrian.mesh = buildPedestrianMesh(userPedestrian);
+    userPedestrian.mesh.position.copy(userPedestrian.position);
+    userPedestrian.mesh.rotation.y = userPedestrian.rotation;
 
-            // Text border
-            ctx.strokeStyle = '#00d2ff';
-            ctx.lineWidth = 12;
-            ctx.strokeRect(30, 30, 452, 196);
+    controlMode = 'pedestrian';
+    updatePlayerLabel();
 
-            // Text
-            const textGrad = ctx.createLinearGradient(0, 80, 0, 180);
-            textGrad.addColorStop(0, '#ffffff');
-            textGrad.addColorStop(1, '#00d2ff');
-            ctx.fillStyle = textGrad;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
+    scene.add(userPedestrian.mesh);
+}
 
-            // Title: YOUR AD HERE
-            ctx.font = 'bold 54px "Segoe UI", Tahoma, sans-serif';
-            ctx.shadowBlur = 25;
-            ctx.shadowColor = '#00d2ff';
-            ctx.fillText('YOUR AD HERE', 256, 105);
-            ctx.shadowBlur = 0;
-            ctx.fillText('YOUR AD HERE', 256, 105);
+// --- Infinite Map System ---
 
-            // Subtitle: Phone Number
-            ctx.font = 'bold 36px "Segoe UI", Tahoma, sans-serif';
-            ctx.shadowBlur = 20;
-            ctx.shadowColor = '#00d2ff';
-            ctx.fillText('+1 306 250 4250', 256, 165);
-            ctx.shadowBlur = 0;
-            ctx.fillText('+1 306 250 4250', 256, 165);
+/**
+ * Create a texture for the fake light spot on the ground.
+ * @returns {THREE.CanvasTexture}
+ */
+function createLightSpotTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 64; canvas.height = 64;
+    const ctx = canvas.getContext('2d');
+    const grd = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grd.addColorStop(0, 'rgba(255, 255, 200, 0.8)'); // Bright warm center
+    grd.addColorStop(0.3, 'rgba(255, 255, 220, 0.3)');
+    grd.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, 0, 64, 64);
+    const tex = new THREE.CanvasTexture(canvas);
+    return tex;
+}
 
-            const texture = new THREE.CanvasTexture(canvas);
-            texture.anisotropy = 4; // Better quality at angles
-            return texture;
-        }
+/**
+ * Create a texture for billboards with the text "YOUR AD HERE".
+ * @returns {THREE.CanvasTexture}
+ */
+function createBillboardTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 256;
+    const ctx = canvas.getContext('2d');
 
-        /**
-         * Initialize geometries and materials for world objects (road, grass, poles).
-         */
-        function initWorldGeometries() {
-            groundGeometry = new THREE.PlaneGeometry(CHUNK_SIZE, CHUNK_SIZE);
-            groundMaterial = new THREE.MeshStandardMaterial({
-                roughness: 0.9, metalness: 0.1, map: dayGroundTexture
-            });
+    // Background gradient
+    const grad = ctx.createLinearGradient(0, 0, 0, 256);
+    grad.addColorStop(0, '#1a1a2e');
+    grad.addColorStop(1, '#16213e');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 512, 256);
 
-            roadTileGeometry = new THREE.PlaneGeometry(ROAD_TILE_SIZE, ROAD_TILE_SIZE);
-            roadMaterial = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.4, metalness: 0.2 });
+    // Scanning lines
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 256; i += 4) {
+        ctx.beginPath();
+        ctx.moveTo(0, i);
+        ctx.lineTo(512, i);
+        ctx.stroke();
+    }
 
-            lineTileGeometry = new THREE.PlaneGeometry(2, 6);
-            lineMaterial = new THREE.MeshBasicMaterial({ color: 0xffcc00 });
+    // Glow effect
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = '#00d2ff';
 
-            // Lake Geometry and Material
-            lakeTileGeometry = new THREE.PlaneGeometry(ROAD_TILE_SIZE, ROAD_TILE_SIZE);
-            lakeMaterial = new THREE.MeshStandardMaterial({
-                color: 0x88ccff,
-                roughness: 0.0,
-                metalness: 0.1,
-                opacity: 0.85,
-                transparent: true
-            });
+    // Text border
+    ctx.strokeStyle = '#00d2ff';
+    ctx.lineWidth = 12;
+    ctx.strokeRect(30, 30, 452, 196);
 
-            buildingGeometries.small = new THREE.BoxGeometry(10, 30, 10);
-            buildingGeometries.tall = new THREE.BoxGeometry(15, 80, 15);
-            buildingGeometries.wide = new THREE.BoxGeometry(30, 25, 20);
+    // Text
+    const textGrad = ctx.createLinearGradient(0, 80, 0, 180);
+    textGrad.addColorStop(0, '#ffffff');
+    textGrad.addColorStop(1, '#00d2ff');
+    ctx.fillStyle = textGrad;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
 
-            // Grass Geometry
-            grassGeometry = new THREE.PlaneGeometry(0.8, 2.0);
-            grassMaterial = new THREE.MeshStandardMaterial({
-                color: 0x44aa44,
-                roughness: 1.0,
-                side: THREE.DoubleSide
-            });
+    // Title: YOUR AD HERE
+    ctx.font = 'bold 54px "Segoe UI", Tahoma, sans-serif';
+    ctx.shadowBlur = 25;
+    ctx.shadowColor = '#00d2ff';
+    ctx.fillText('YOUR AD HERE', 256, 105);
+    ctx.shadowBlur = 0;
+    ctx.fillText('YOUR AD HERE', 256, 105);
 
-            // Streetlight Geometries - San Francisco Style
-            const poleShaftH = 10;
-            const poleBaseH = 2.5;
+    // Subtitle: Phone Number
+    ctx.font = 'bold 36px "Segoe UI", Tahoma, sans-serif';
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = '#00d2ff';
+    ctx.fillText('+1 306 250 4250', 256, 165);
+    ctx.shadowBlur = 0;
+    ctx.fillText('+1 306 250 4250', 256, 165);
 
-            // 1. Decorative Base
-            const bGeo = new THREE.CylinderGeometry(0.6, 0.7, poleBaseH, 8);
-            bGeo.translate(0, poleBaseH / 2, 0); // Sits on ground
-            poleBaseGeometry = bGeo;
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.anisotropy = 4; // Better quality at angles
+    return texture;
+}
 
-            // 2. Tapered Shaft
-            const pGeo = new THREE.CylinderGeometry(0.2, 0.35, poleShaftH, 8);
-            pGeo.translate(0, poleBaseH + poleShaftH / 2, 0); // Sits on top of base
-            poleGeometry = pGeo;
+/**
+ * Initialize geometries and materials for world objects (road, grass, poles).
+ */
+function initWorldGeometries() {
+    groundGeometry = new THREE.PlaneGeometry(CHUNK_SIZE, CHUNK_SIZE);
+    groundMaterial = new THREE.MeshStandardMaterial({
+        roughness: 0.9, metalness: 0.1, map: dayGroundTexture
+    });
 
-            // Dark Green Iron look
-            poleMaterial = new THREE.MeshStandardMaterial({ color: 0x1a2b1a, roughness: 0.4, metalness: 0.3 });
+    roadTileGeometry = new THREE.PlaneGeometry(ROAD_TILE_SIZE, ROAD_TILE_SIZE);
+    roadMaterial = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.4, metalness: 0.2 });
 
-            // 3. Light Bulb (Spherical/Oval)
-            lightBulbGeometry = new THREE.SphereGeometry(0.65, 16, 16);
-            lightBulbMaterial = new THREE.MeshStandardMaterial({
-                color: 0xfffee0, // Off white yellow
-                emissive: 0xffccaa,
-                emissiveIntensity: 0.8,
-                roughness: 0.1
-            });
+    lineTileGeometry = new THREE.PlaneGeometry(2, 6);
+    lineMaterial = new THREE.MeshBasicMaterial({ color: 0xffcc00 });
 
-            // Light Spot on Road (Fake volumetric lighting)
-            lightSpotTexture = createLightSpotTexture();
+    // Lake Geometry and Material
+    lakeTileGeometry = new THREE.PlaneGeometry(ROAD_TILE_SIZE, ROAD_TILE_SIZE);
+    lakeMaterial = new THREE.MeshStandardMaterial({
+        color: 0x88ccff,
+        roughness: 0.0,
+        metalness: 0.1,
+        opacity: 0.85,
+        transparent: true
+    });
 
-            // SIGNIFICANTLY WIDENED LIGHT SPOT
-            lightSpotGeometry = new THREE.PlaneGeometry(70, 70);
+    buildingGeometries.small = new THREE.BoxGeometry(10, 30, 10);
+    buildingGeometries.tall = new THREE.BoxGeometry(15, 80, 15);
+    buildingGeometries.wide = new THREE.BoxGeometry(30, 25, 20);
 
-            lightSpotMaterial = new THREE.MeshBasicMaterial({
-                map: lightSpotTexture,
-                transparent: true,
-                opacity: 0,
-                depthWrite: false,
-                blending: THREE.AdditiveBlending,
-                side: THREE.DoubleSide
-            });
+    // Grass Geometry
+    grassGeometry = new THREE.PlaneGeometry(0.8, 2.0);
+    grassMaterial = new THREE.MeshStandardMaterial({
+        color: 0x44aa44,
+        roughness: 1.0,
+        side: THREE.DoubleSide
+    });
 
-            // Billboard Geometries
-            // Main board: smaller thin rectangular prism
-            billboardGeometry = new THREE.BoxGeometry(10, 5, 0.4);
-            billboardGeometry.translate(0, 8.5, 0); // Bottom is at 6 units
+    // Streetlight Geometries - San Francisco Style
+    const poleShaftH = 10;
+    const poleBaseH = 2.5;
 
-            // Posts: Standard posts
-            billboardPostGeometry = new THREE.BoxGeometry(0.3, 6, 0.3);
-            billboardPostGeometry.translate(0, 3, 0);
+    // 1. Decorative Base
+    const bGeo = new THREE.CylinderGeometry(0.6, 0.7, poleBaseH, 8);
+    bGeo.translate(0, poleBaseH / 2, 0); // Sits on ground
+    poleBaseGeometry = bGeo;
 
-            billboardTexture = createBillboardTexture();
-            billboardMaterial = new THREE.MeshStandardMaterial({
-                color: 0xffffff,
-                map: billboardTexture,
-                emissive: 0xffffff,
-                emissiveMap: billboardTexture,
-                emissiveIntensity: 0.1, // Subtle glow
-                roughness: 0.5,
-                metalness: 0.1
-            });
-            billboardPostMaterial = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.8, metalness: 0.2 });
+    // 2. Tapered Shaft
+    const pGeo = new THREE.CylinderGeometry(0.2, 0.35, poleShaftH, 8);
+    pGeo.translate(0, poleBaseH + poleShaftH / 2, 0); // Sits on top of base
+    poleGeometry = pGeo;
 
-            // --- Coniferous Tree Geometries (Snowy Pine Style) ---
-            const treeData = createVoxelTreeDatas();
-            treeGeometries.trunk = treeData.trunk;
-            // Tree leaves are now a single merged mesh
-            treeGeometries.leaves = treeData.leaves;
+    // Dark Green Iron look
+    poleMaterial = new THREE.MeshStandardMaterial({ color: 0x1a2b1a, roughness: 0.4, metalness: 0.3 });
 
-            // Materials
-            treeTrunkMaterial = new THREE.MeshStandardMaterial({ color: 0x4a3c31, roughness: 0.9 });
-            treeLeavesMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9 });
-        }
+    // 3. Light Bulb (Spherical/Oval)
+    lightBulbGeometry = new THREE.SphereGeometry(0.65, 16, 16);
+    lightBulbMaterial = new THREE.MeshStandardMaterial({
+        color: 0xfffee0, // Off white yellow
+        emissive: 0xffccaa,
+        emissiveIntensity: 0.8,
+        roughness: 0.1
+    });
 
-        /**
-         * Generate a procedural ground texture.
-         * @param {boolean} isNight - Whether to generate night version
-         * @returns {THREE.CanvasTexture}
-         */
-        function createGroundTexture(isNight) {
-            const canvas = document.createElement('canvas');
-            canvas.width = 256;
-            canvas.height = 256;
-            const ctx = canvas.getContext('2d');
+    // Light Spot on Road (Fake volumetric lighting)
+    lightSpotTexture = createLightSpotTexture();
 
+    // SIGNIFICANTLY WIDENED LIGHT SPOT
+    lightSpotGeometry = new THREE.PlaneGeometry(70, 70);
+
+    lightSpotMaterial = new THREE.MeshBasicMaterial({
+        map: lightSpotTexture,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        side: THREE.DoubleSide
+    });
+
+    // Billboard Geometries
+    // Main board: smaller thin rectangular prism
+    billboardGeometry = new THREE.BoxGeometry(10, 5, 0.4);
+    billboardGeometry.translate(0, 8.5, 0); // Bottom is at 6 units
+
+    // Posts: Standard posts
+    billboardPostGeometry = new THREE.BoxGeometry(0.3, 6, 0.3);
+    billboardPostGeometry.translate(0, 3, 0);
+
+    billboardTexture = createBillboardTexture();
+    billboardMaterial = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        map: billboardTexture,
+        emissive: 0xffffff,
+        emissiveMap: billboardTexture,
+        emissiveIntensity: 0.1, // Subtle glow
+        roughness: 0.5,
+        metalness: 0.1
+    });
+    billboardPostMaterial = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.8, metalness: 0.2 });
+
+    // --- Coniferous Tree Geometries (Snowy Pine Style) ---
+    const treeData = createVoxelTreeDatas();
+    treeGeometries.trunk = treeData.trunk;
+    // Tree leaves are now a single merged mesh
+    treeGeometries.leaves = treeData.leaves;
+
+    // Materials
+    treeTrunkMaterial = new THREE.MeshStandardMaterial({ color: 0x4a3c31, roughness: 0.9 });
+    treeLeavesMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9 });
+}
+
+/**
+ * Generate a procedural ground texture.
+ * @param {boolean} isNight - Whether to generate night version
+ * @returns {THREE.CanvasTexture}
+ */
+function createGroundTexture(isNight) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 256;
+    const ctx = canvas.getContext('2d');
+
+    if (isNight) {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, 256, 256);
+        ctx.strokeStyle = '#e0e0e0';
+    } else {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, 256, 256);
+        ctx.strokeStyle = '#e0e0e0';
+    }
+
+    ctx.lineWidth = 4;
+    const cells = 4;
+    const step = 256 / cells;
+    for (let i = 0; i <= cells; i++) {
+        ctx.beginPath(); ctx.moveTo(i * step, 0); ctx.lineTo(i * step, 256); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, i * step); ctx.lineTo(256, i * step); ctx.stroke();
+    }
+
+    ctx.fillStyle = isNight ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.05)';
+    for (let i = 0; i < 50; i++) {
+        const x = Math.random() * 256;
+        const y = Math.random() * 256;
+        const w = Math.random() * 10 + 2;
+        ctx.fillRect(x, y, w, w);
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    return texture;
+}
+
+// Generate a building texture with windows
+/**
+ * Generate a procedural building texture with windows.
+ * @param {number} seed - Random seed for building style
+ * @param {boolean} isNight - Whether to generate night version
+ * @returns {THREE.CanvasTexture}
+ */
+function createBuildingTexture(seed, isNight) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 128;
+    canvas.height = 128;
+    const ctx = canvas.getContext('2d');
+
+    // 1. Base Frame Color
+    const baseColor = isNight
+        ? (seed > 0.5 ? '#111122' : '#050510')
+        : (seed > 0.5 ? '#222222' : '#333333');
+
+    ctx.fillStyle = baseColor;
+    ctx.fillRect(0, 0, 128, 128);
+
+    // Windows configuration
+    const rows = 12;
+    const cols = 6;
+    const pW = 128 / cols;
+    const pH = 128 / rows;
+    const gap = 1.5;
+
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            const x = (c * pW) + gap;
+            const y = (r * pH) + gap;
+            const w = pW - (gap * 2);
+            const h = pH - (gap * 2);
+
+            // Punch a hole in the base color to allow translucency
+            ctx.clearRect(x, y, w, h);
+
+            // Window Color
+            let winColor;
             if (isNight) {
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(0, 0, 256, 256);
-                ctx.strokeStyle = '#e0e0e0';
+                const lightOn = Math.random() > 0.3;
+                if (lightOn) {
+                    winColor = seed > 0.5 ? 'rgba(77, 168, 255, 0.85)' : 'rgba(0, 212, 255, 0.85)';
+                } else {
+                    winColor = 'rgba(0, 17, 51, 0.9)';
+                }
             } else {
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(0, 0, 256, 256);
-                ctx.strokeStyle = '#e0e0e0';
+                winColor = seed > 0.5 ? 'rgba(68, 136, 255, 0.75)' : 'rgba(51, 153, 255, 0.75)';
             }
 
-            ctx.lineWidth = 4;
-            const cells = 4;
-            const step = 256 / cells;
-            for (let i = 0; i <= cells; i++) {
-                ctx.beginPath(); ctx.moveTo(i * step, 0); ctx.lineTo(i * step, 256); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(0, i * step); ctx.lineTo(256, i * step); ctx.stroke();
-            }
+            // Draw window with gradient for realism
+            const grad = ctx.createLinearGradient(x, y, x + w, y + h);
+            grad.addColorStop(0, winColor);
+            grad.addColorStop(1, 'rgba(0,0,0,0.1)'); // Depth effect
 
-            ctx.fillStyle = isNight ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.05)';
-            for (let i = 0; i < 50; i++) {
-                const x = Math.random() * 256;
-                const y = Math.random() * 256;
-                const w = Math.random() * 10 + 2;
-                ctx.fillRect(x, y, w, w);
-            }
+            ctx.fillStyle = grad;
+            ctx.fillRect(x, y, w, h);
 
-            const texture = new THREE.CanvasTexture(canvas);
-            texture.wrapS = THREE.RepeatWrapping;
-            texture.wrapT = THREE.RepeatWrapping;
-            return texture;
+            // Add a subtle reflection highlight
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.lineWidth = 0.5;
+            ctx.beginPath();
+            ctx.moveTo(x, y + h * 0.2);
+            ctx.lineTo(x + w * 0.8, y);
+            ctx.stroke();
         }
+    }
 
-        // Generate a building texture with windows
-        /**
-         * Generate a procedural building texture with windows.
-         * @param {number} seed - Random seed for building style
-         * @param {boolean} isNight - Whether to generate night version
-         * @returns {THREE.CanvasTexture}
-         */
-        function createBuildingTexture(seed, isNight) {
-            const canvas = document.createElement('canvas');
-            canvas.width = 128;
-            canvas.height = 128;
-            const ctx = canvas.getContext('2d');
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.RepeatWrapping;
+    return tex;
+}
 
-            // 1. Base Frame Color
-            const baseColor = isNight
-                ? (seed > 0.5 ? '#111122' : '#050510')
-                : (seed > 0.5 ? '#222222' : '#333333');
+/**
+ * Generate a pseudo-random number based on x, z coordinates.
+ * @param {number} x 
+ * @param {number} z 
+ * @returns {number} Value between 0 and 1
+ */
+function pseudoRandom(x, z) {
+    const val = Math.sin(x * 12.9898 + z * 78.233) * 43758.5453;
+    return val - Math.floor(val);
+}
 
-            ctx.fillStyle = baseColor;
-            ctx.fillRect(0, 0, 128, 128);
+// Raw Road Function for flow calculations
+/**
+ * Calculate raw noise value for road generation.
+ * @param {number} x
+ * @param {number} z
+ * @returns {number} Raw noise value (can be negative)
+ */
+function getRawRoadValue(x, z) {
+    const scale = 0.005;
+    const v1 = Math.sin(x * scale) + Math.cos(z * scale);
+    const v2 = Math.sin(x * scale * 0.5 + z * scale * 0.2) * 0.5;
+    return v1 + v2;
+}
 
-            // Windows configuration
-            const rows = 12;
-            const cols = 6;
-            const pW = 128 / cols;
-            const pH = 128 / rows;
-            const gap = 1.5;
+// Visual Road Value (Absolute)
+/**
+ * Calculate absolute road value (0 is center of road).
+ * @param {number} x
+ * @param {number} z
+ * @returns {number}
+ */
+function getRoadValue(x, z) {
+    return Math.abs(getRawRoadValue(x, z));
+}
 
-            for (let r = 0; r < rows; r++) {
-                for (let c = 0; c < cols; c++) {
-                    const x = (c * pW) + gap;
-                    const y = (r * pH) + gap;
-                    const w = pW - (gap * 2);
-                    const h = pH - (gap * 2);
+// Calculate tangent of the road isoline for smooth traffic flow
+/**
+ * Calculate the direction (tangent) of the road at a point.
+ * @param {number} x
+ * @param {number} z
+ * @returns {THREE.Vector3} Normalized tangent vector
+ */
+function getRoadTangent(x, z) {
+    const scale = 0.005;
+    // Function f = sin(xs) + cos(zs) + 0.5*sin(xs0.5 + zs0.2)
+    // Derivative wrt x:
+    const dx = scale * Math.cos(x * scale) + 0.5 * scale * 0.5 * Math.cos(x * scale * 0.5 + z * scale * 0.2);
+    // Derivative wrt z:
+    const dz = -scale * Math.sin(z * scale) + 0.5 * scale * 0.2 * Math.cos(x * scale * 0.5 + z * scale * 0.2);
 
-                    // Punch a hole in the base color to allow translucency
-                    ctx.clearRect(x, y, w, h);
+    // Tangent is perpendicular to gradient (dx, dz).
+    const t = new THREE.Vector3(-dz, 0, dx);
+    t.normalize();
+    return t;
+}
 
-                    // Window Color
-                    let winColor;
-                    if (isNight) {
-                        const lightOn = Math.random() > 0.3;
-                        if (lightOn) {
-                            winColor = seed > 0.5 ? 'rgba(77, 168, 255, 0.85)' : 'rgba(0, 212, 255, 0.85)';
-                        } else {
-                            winColor = 'rgba(0, 17, 51, 0.9)';
-                        }
-                    } else {
-                        winColor = seed > 0.5 ? 'rgba(68, 136, 255, 0.75)' : 'rgba(51, 153, 255, 0.75)';
-                    }
+/**
+ * Check if a position is on a frozen lake.
+ * @param {number} x
+ * @param {number} z
+ * @returns {boolean}
+ */
+function isLake(x, z) {
+    // Ensure no overlap with road (add buffer)
+    if (getRoadValue(x, z) < ROAD_WIDTH_THRESHOLD + 0.15) return false;
 
-                    // Draw window with gradient for realism
-                    const grad = ctx.createLinearGradient(x, y, x + w, y + h);
-                    grad.addColorStop(0, winColor);
-                    grad.addColorStop(1, 'rgba(0,0,0,0.1)'); // Depth effect
+    const scale = 0.008;
+    // Noise function for lakes
+    const val = Math.sin(x * scale) + Math.cos(z * scale * 1.3) + Math.sin(x * scale * 0.5 + z * scale * 0.5);
+    return val > 1.8;
+}
 
-                    ctx.fillStyle = grad;
-                    ctx.fillRect(x, y, w, h);
+/**
+ * Separating Axis Theorem (SAT) for 2D Oriented Bounding Boxes (OBB).
+ * Boxes are defined by center (x, z), half-extents (hw, hl), and rotation.
+ */
+function intersectOBB(x1, z1, hw1, hl1, rot1, x2, z2, hw2, hl2, rot2) {
+    const dx = x2 - x1;
+    const dz = z2 - z1;
 
-                    // Add a subtle reflection highlight
-                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-                    ctx.lineWidth = 0.5;
-                    ctx.beginPath();
-                    ctx.moveTo(x, y + h * 0.2);
-                    ctx.lineTo(x + w * 0.8, y);
-                    ctx.stroke();
+    const cos1 = Math.cos(rot1), sin1 = Math.sin(rot1);
+    const cos2 = Math.cos(rot2), sin2 = Math.sin(rot2);
+
+    const axes = [
+        { x: cos1, z: -sin1 }, { x: sin1, z: cos1 },
+        { x: cos2, z: -sin2 }, { x: sin2, z: cos2 }
+    ];
+
+    for (let axis of axes) {
+        const r1 = Math.abs(hw1 * (cos1 * axis.x - sin1 * axis.z)) +
+            Math.abs(hl1 * (sin1 * axis.x + cos1 * axis.z));
+        const r2 = Math.abs(hw2 * (cos2 * axis.x - sin2 * axis.z)) +
+            Math.abs(hl2 * (sin2 * axis.x + cos2 * axis.z));
+        const dist = Math.abs(dx * axis.x + dz * axis.z);
+        if (dist > r1 + r2) return false;
+    }
+    return true;
+}
+
+/**
+ * Clean up resources for a map chunk.
+ * @param {Object} chunkData
+ */
+function disposeChunk(chunkData) {
+    if (!chunkData) return;
+    const group = chunkData.mesh;
+    // Iterate and dispose geometries/materials
+    group.traverse(child => {
+        if (child.isMesh) {
+            // Don't dispose shared geometries
+        }
+    });
+    scene.remove(group);
+}
+
+/**
+ * Get the current active position (player or pedestrian).
+ * @returns {THREE.Vector3}
+ */
+function getActivePosition() {
+    if (controlMode === 'pedestrian' && userPedestrian) {
+        return userPedestrian.position;
+    }
+    return player.position;
+}
+
+/**
+ * Update loop to create new map chunks and remove old ones.
+ */
+function updateChunks() {
+    if (!player) return;
+    const centerPos = getActivePosition();
+    if (centerPos.distanceToSquared(lastChunkUpdatePos) < 2500) return;
+    lastChunkUpdatePos.copy(centerPos);
+    const px = centerPos.x;
+    const pz = centerPos.z;
+    const currentChunkX = Math.floor(px / CHUNK_SIZE + 0.5);
+    const currentChunkZ = Math.floor(pz / CHUNK_SIZE + 0.5);
+
+    const newKeys = new Set();
+
+    // Generate valid keys
+    for (let x = -CHUNK_RENDER_DIST; x <= CHUNK_RENDER_DIST; x++) {
+        for (let z = -CHUNK_RENDER_DIST; z <= CHUNK_RENDER_DIST; z++) {
+            const cx = currentChunkX + x;
+            const cz = currentChunkZ + z;
+            const key = `${cx},${cz}`;
+            newKeys.add(key);
+            if (!activeChunks.has(key)) createChunk(cx, cz);
+        }
+    }
+
+    // Garbage Collection
+    for (const [key, chunkData] of activeChunks) {
+        if (!newKeys.has(key)) {
+            disposeChunk(chunkData);
+            activeChunks.delete(key);
+        }
+    }
+}
+
+/**
+ * Get or create a cached material for a building.
+ * @param {number} seed 
+ * @param {boolean} isNight 
+ * @returns {THREE.Material}
+ */
+function getBuildingMaterial(seed, isNight) {
+    // Bucket seed into 3 types to reduce material count
+    let type = 0;
+    if (seed < 0.3) type = 1;
+    else if (seed < 0.6) type = 2;
+    else type = 3;
+
+    const key = `${type}_${isNight}`;
+    if (!buildingMaterialCache.has(key)) {
+        // Generate texture for this bucket
+        const map = createBuildingTexture(seed, isNight);
+        const mat = new THREE.MeshStandardMaterial({
+            map: map,
+            roughness: 0.1, // Glassier
+            metalness: 0.4, // More reflective
+            transparent: true,
+            opacity: 0.95 // Keep it mostly solid but allow light through
+        });
+        if (isNight) {
+            mat.emissive = new THREE.Color(0x222222); // Slight glow for windows visibility
+            mat.emissiveMap = map;
+            mat.emissiveIntensity = 0.5;
+        }
+        buildingMaterialCache.set(key, mat);
+    }
+    return buildingMaterialCache.get(key);
+}
+
+/**
+ * Create a new map chunk at grid coordinates (cx, cz).
+ * @param {number} cx 
+ * @param {number} cz 
+ */
+function createChunk(cx, cz) {
+    const group = new THREE.Group();
+    const chunkX = cx * CHUNK_SIZE;
+    const chunkZ = cz * CHUNK_SIZE;
+    group.position.set(chunkX, 0, chunkZ);
+
+    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    ground.frustumCulled = false;
+    group.add(ground);
+
+    const roadMatrices = [];
+    const lineMatrices = [];
+    const lakeMatrices = [];
+    const poleMatrices = [];
+    const armMatrices = [];
+    const bulbMatrices = [];
+    const spotMatrices = [];
+    const billboardMatrices = [];
+    const billboardPostMatrices = [];
+
+    const obstacles = [];
+    const roadMapPositions = [];
+    const roadSet = new Set();
+    const halfSize = CHUNK_SIZE / 2;
+
+    // Pre-allocate Objects to avoid GC
+    const dummy = new THREE.Object3D();
+
+    for (let lx = -halfSize; lx < halfSize; lx += ROAD_TILE_SIZE) {
+        for (let lz = -halfSize; lz < halfSize; lz += ROAD_TILE_SIZE) {
+            const wx = chunkX + lx + ROAD_TILE_SIZE / 2;
+            const wz = chunkZ + lz + ROAD_TILE_SIZE / 2;
+
+            const rawVal = getRawRoadValue(wx, wz);
+            const val = Math.abs(rawVal);
+
+            if (val < ROAD_WIDTH_THRESHOLD) {
+                // IT IS ROAD
+                dummy.position.set(lx + ROAD_TILE_SIZE / 2, 0.1, lz + ROAD_TILE_SIZE / 2);
+                dummy.rotation.x = -Math.PI / 2;
+                dummy.rotation.y = 0;
+                dummy.rotation.z = 0;
+                dummy.scale.set(1, 1, 1);
+                dummy.updateMatrix();
+
+                roadMatrices.push(dummy.matrix.clone());
+                roadSet.add(`${lx + ROAD_TILE_SIZE / 2},${lz + ROAD_TILE_SIZE / 2}`);
+                roadMapPositions.push({ x: wx, z: wz });
+
+                if (val < 0.03) {
+                    dummy.position.set(lx + ROAD_TILE_SIZE / 2, 0.15, lz + ROAD_TILE_SIZE / 2);
+                    dummy.updateMatrix();
+                    lineMatrices.push(dummy.matrix.clone());
                 }
-            }
 
-            const tex = new THREE.CanvasTexture(canvas);
-            tex.wrapS = THREE.RepeatWrapping;
-            tex.wrapT = THREE.RepeatWrapping;
-            return tex;
-        }
-
-        /**
-         * Generate a pseudo-random number based on x, z coordinates.
-         * @param {number} x 
-         * @param {number} z 
-         * @returns {number} Value between 0 and 1
-         */
-        function pseudoRandom(x, z) {
-            const val = Math.sin(x * 12.9898 + z * 78.233) * 43758.5453;
-            return val - Math.floor(val);
-        }
-
-        // Raw Road Function for flow calculations
-        /**
-         * Calculate raw noise value for road generation.
-         * @param {number} x
-         * @param {number} z
-         * @returns {number} Raw noise value (can be negative)
-         */
-        function getRawRoadValue(x, z) {
-            const scale = 0.005;
-            const v1 = Math.sin(x * scale) + Math.cos(z * scale);
-            const v2 = Math.sin(x * scale * 0.5 + z * scale * 0.2) * 0.5;
-            return v1 + v2;
-        }
-
-        // Visual Road Value (Absolute)
-        /**
-         * Calculate absolute road value (0 is center of road).
-         * @param {number} x
-         * @param {number} z
-         * @returns {number}
-         */
-        function getRoadValue(x, z) {
-            return Math.abs(getRawRoadValue(x, z));
-        }
-
-        // Calculate tangent of the road isoline for smooth traffic flow
-        /**
-         * Calculate the direction (tangent) of the road at a point.
-         * @param {number} x
-         * @param {number} z
-         * @returns {THREE.Vector3} Normalized tangent vector
-         */
-        function getRoadTangent(x, z) {
-            const scale = 0.005;
-            // Function f = sin(xs) + cos(zs) + 0.5*sin(xs0.5 + zs0.2)
-            // Derivative wrt x:
-            const dx = scale * Math.cos(x * scale) + 0.5 * scale * 0.5 * Math.cos(x * scale * 0.5 + z * scale * 0.2);
-            // Derivative wrt z:
-            const dz = -scale * Math.sin(z * scale) + 0.5 * scale * 0.2 * Math.cos(x * scale * 0.5 + z * scale * 0.2);
-
-            // Tangent is perpendicular to gradient (dx, dz).
-            const t = new THREE.Vector3(-dz, 0, dx);
-            t.normalize();
-            return t;
-        }
-
-        /**
-         * Check if a position is on a frozen lake.
-         * @param {number} x
-         * @param {number} z
-         * @returns {boolean}
-         */
-        function isLake(x, z) {
-            // Ensure no overlap with road (add buffer)
-            if (getRoadValue(x, z) < ROAD_WIDTH_THRESHOLD + 0.15) return false;
-
-            const scale = 0.008;
-            // Noise function for lakes
-            const val = Math.sin(x * scale) + Math.cos(z * scale * 1.3) + Math.sin(x * scale * 0.5 + z * scale * 0.5);
-            return val > 1.8;
-        }
-
-        /**
-         * Separating Axis Theorem (SAT) for 2D Oriented Bounding Boxes (OBB).
-         * Boxes are defined by center (x, z), half-extents (hw, hl), and rotation.
-         */
-        function intersectOBB(x1, z1, hw1, hl1, rot1, x2, z2, hw2, hl2, rot2) {
-            const dx = x2 - x1;
-            const dz = z2 - z1;
-
-            const cos1 = Math.cos(rot1), sin1 = Math.sin(rot1);
-            const cos2 = Math.cos(rot2), sin2 = Math.sin(rot2);
-
-            const axes = [
-                { x: cos1, z: -sin1 }, { x: sin1, z: cos1 },
-                { x: cos2, z: -sin2 }, { x: sin2, z: cos2 }
-            ];
-
-            for (let axis of axes) {
-                const r1 = Math.abs(hw1 * (cos1 * axis.x - sin1 * axis.z)) +
-                    Math.abs(hl1 * (sin1 * axis.x + cos1 * axis.z));
-                const r2 = Math.abs(hw2 * (cos2 * axis.x - sin2 * axis.z)) +
-                    Math.abs(hl2 * (sin2 * axis.x + cos2 * axis.z));
-                const dist = Math.abs(dx * axis.x + dz * axis.z);
-                if (dist > r1 + r2) return false;
-            }
-            return true;
-        }
-
-        /**
-         * Clean up resources for a map chunk.
-         * @param {Object} chunkData
-         */
-        function disposeChunk(chunkData) {
-            if (!chunkData) return;
-            const group = chunkData.mesh;
-            // Iterate and dispose geometries/materials
-            group.traverse(child => {
-                if (child.isMesh) {
-                    // Don't dispose shared geometries
-                }
-            });
-            scene.remove(group);
-        }
-
-        /**
-         * Get the current active position (player or pedestrian).
-         * @returns {THREE.Vector3}
-         */
-        function getActivePosition() {
-            if (controlMode === 'pedestrian' && userPedestrian) {
-                return userPedestrian.position;
-            }
-            return player.position;
-        }
-
-        /**
-         * Update loop to create new map chunks and remove old ones.
-         */
-        function updateChunks() {
-            if (!player) return;
-            const centerPos = getActivePosition();
-            if (centerPos.distanceToSquared(lastChunkUpdatePos) < 2500) return;
-            lastChunkUpdatePos.copy(centerPos);
-            const px = centerPos.x;
-            const pz = centerPos.z;
-            const currentChunkX = Math.floor(px / CHUNK_SIZE + 0.5);
-            const currentChunkZ = Math.floor(pz / CHUNK_SIZE + 0.5);
-
-            const newKeys = new Set();
-
-            // Generate valid keys
-            for (let x = -CHUNK_RENDER_DIST; x <= CHUNK_RENDER_DIST; x++) {
-                for (let z = -CHUNK_RENDER_DIST; z <= CHUNK_RENDER_DIST; z++) {
-                    const cx = currentChunkX + x;
-                    const cz = currentChunkZ + z;
-                    const key = `${cx},${cz}`;
-                    newKeys.add(key);
-                    if (!activeChunks.has(key)) createChunk(cx, cz);
-                }
-            }
-
-            // Garbage Collection
-            for (const [key, chunkData] of activeChunks) {
-                if (!newKeys.has(key)) {
-                    disposeChunk(chunkData);
-                    activeChunks.delete(key);
-                }
-            }
-        }
-
-        /**
-         * Get or create a cached material for a building.
-         * @param {number} seed 
-         * @param {boolean} isNight 
-         * @returns {THREE.Material}
-         */
-        function getBuildingMaterial(seed, isNight) {
-            // Bucket seed into 3 types to reduce material count
-            let type = 0;
-            if (seed < 0.3) type = 1;
-            else if (seed < 0.6) type = 2;
-            else type = 3;
-
-            const key = `${type}_${isNight}`;
-            if (!buildingMaterialCache.has(key)) {
-                // Generate texture for this bucket
-                const map = createBuildingTexture(seed, isNight);
-                const mat = new THREE.MeshStandardMaterial({
-                    map: map,
-                    roughness: 0.1, // Glassier
-                    metalness: 0.4, // More reflective
-                    transparent: true,
-                    opacity: 0.95 // Keep it mostly solid but allow light through
-                });
-                if (isNight) {
-                    mat.emissive = new THREE.Color(0x222222); // Slight glow for windows visibility
-                    mat.emissiveMap = map;
-                    mat.emissiveIntensity = 0.5;
-                }
-                buildingMaterialCache.set(key, mat);
-            }
-            return buildingMaterialCache.get(key);
-        }
-
-        /**
-         * Create a new map chunk at grid coordinates (cx, cz).
-         * @param {number} cx 
-         * @param {number} cz 
-         */
-        function createChunk(cx, cz) {
-            const group = new THREE.Group();
-            const chunkX = cx * CHUNK_SIZE;
-            const chunkZ = cz * CHUNK_SIZE;
-            group.position.set(chunkX, 0, chunkZ);
-
-            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-            ground.rotation.x = -Math.PI / 2;
-            ground.receiveShadow = true;
-            ground.frustumCulled = false;
-            group.add(ground);
-
-            const roadMatrices = [];
-            const lineMatrices = [];
-            const lakeMatrices = [];
-            const poleMatrices = [];
-            const armMatrices = [];
-            const bulbMatrices = [];
-            const spotMatrices = [];
-            const billboardMatrices = [];
-            const billboardPostMatrices = [];
-
-            const obstacles = [];
-            const roadMapPositions = [];
-            const roadSet = new Set();
-            const halfSize = CHUNK_SIZE / 2;
-
-            // Pre-allocate Objects to avoid GC
-            const dummy = new THREE.Object3D();
-
-            for (let lx = -halfSize; lx < halfSize; lx += ROAD_TILE_SIZE) {
-                for (let lz = -halfSize; lz < halfSize; lz += ROAD_TILE_SIZE) {
-                    const wx = chunkX + lx + ROAD_TILE_SIZE / 2;
-                    const wz = chunkZ + lz + ROAD_TILE_SIZE / 2;
-
-                    const rawVal = getRawRoadValue(wx, wz);
-                    const val = Math.abs(rawVal);
-
-                    if (val < ROAD_WIDTH_THRESHOLD) {
-                        // IT IS ROAD
-                        dummy.position.set(lx + ROAD_TILE_SIZE / 2, 0.1, lz + ROAD_TILE_SIZE / 2);
-                        dummy.rotation.x = -Math.PI / 2;
-                        dummy.rotation.y = 0;
-                        dummy.rotation.z = 0;
-                        dummy.scale.set(1, 1, 1);
-                        dummy.updateMatrix();
-
-                        roadMatrices.push(dummy.matrix.clone());
-                        roadSet.add(`${lx + ROAD_TILE_SIZE / 2},${lz + ROAD_TILE_SIZE / 2}`);
-                        roadMapPositions.push({ x: wx, z: wz });
-
-                        if (val < 0.03) {
-                            dummy.position.set(lx + ROAD_TILE_SIZE / 2, 0.15, lz + ROAD_TILE_SIZE / 2);
-                            dummy.updateMatrix();
-                            lineMatrices.push(dummy.matrix.clone());
-                        }
-
-                        // --- NPC TRAFFIC SPAWNING ---
-                        // Only spawn on valid "lanes" (between center and edge)
-                        // Lanes are approx 0.05 to 0.20
-                        if (val > 0.05 && val < 0.20) {
-                            if (Math.random() < 0.01) { // 1% chance per road tile
-                                spawnTrafficCar(wx, 0.5, wz, rawVal > 0);
-                            }
-                        }
-
-                    } else if (isLake(wx, wz)) {
-                        // IT IS A LAKE
-                        dummy.position.set(lx + ROAD_TILE_SIZE / 2, 0.02, lz + ROAD_TILE_SIZE / 2);
-                        dummy.rotation.x = -Math.PI / 2;
-                        dummy.rotation.y = 0;
-                        dummy.rotation.z = 0;
-                        dummy.scale.set(1, 1, 1);
-                        dummy.updateMatrix();
-                        lakeMatrices.push(dummy.matrix.clone());
-
-                    } else {
-                        // IT IS GRASS/GROUND
-                        // CHECK IF WE ARE NEXT TO A ROAD (EDGE DETECTION)
-                        // Check neighbors
-                        const nRightVal = getRoadValue(wx + ROAD_TILE_SIZE, wz);
-                        const nLeftVal = getRoadValue(wx - ROAD_TILE_SIZE, wz);
-                        const nTopVal = getRoadValue(wx, wz + ROAD_TILE_SIZE);
-                        const nBottomVal = getRoadValue(wx, wz - ROAD_TILE_SIZE);
-
-                        let placeLight = false;
-                        let rotY = 0;
-
-                        const LIGHT_SPACING = 60; // Units apart
-                        const FREQ_CHECK = (Math.abs(wx) + Math.abs(wz)) % LIGHT_SPACING < ROAD_TILE_SIZE;
-
-                        if (FREQ_CHECK) {
-                            if (nRightVal < ROAD_WIDTH_THRESHOLD) {
-                                placeLight = true; rotY = Math.PI / 2; // Face Right
-                            } else if (nLeftVal < ROAD_WIDTH_THRESHOLD) {
-                                placeLight = true; rotY = -Math.PI / 2; // Face Left
-                            } else if (nTopVal < ROAD_WIDTH_THRESHOLD) {
-                                placeLight = true; rotY = 0; // Face Top (Z+)
-                            } else if (nBottomVal < ROAD_WIDTH_THRESHOLD) {
-                                placeLight = true; rotY = Math.PI; // Face Bottom
-                            }
-                        }
-
-                        if (placeLight) {
-                            const pX = lx + ROAD_TILE_SIZE / 2;
-                            const pZ = lz + ROAD_TILE_SIZE / 2;
-
-                            // 1. Pole Shaft
-                            dummy.position.set(pX, 0, pZ);
-                            dummy.rotation.set(0, rotY, 0);
-                            dummy.scale.set(1, 1, 1);
-                            dummy.updateMatrix();
-                            poleMatrices.push(dummy.matrix.clone());
-
-                            // 2. Base (using armMatrices container)
-                            dummy.position.set(pX, 0, pZ);
-                            dummy.rotation.set(0, rotY, 0); // Rotation doesn't matter much for cylinder
-                            dummy.scale.set(1, 1, 1);
-                            dummy.updateMatrix();
-                            armMatrices.push(dummy.matrix.clone());
-
-                            // 3. Bulb (Top of pole)
-                            // Height = base 2.5 + shaft 10 = 12.5
-                            dummy.position.set(pX, 12.5, pZ);
-                            dummy.rotation.set(0, 0, 0);
-                            dummy.scale.set(1, 1, 1);
-                            dummy.updateMatrix();
-                            bulbMatrices.push(dummy.matrix.clone());
-
-                            // 4. Light Spot (Ground Glare) - Centered
-                            dummy.position.set(pX, 0.16, pZ);
-                            dummy.rotation.set(-Math.PI / 2, 0, 0); // Flat on ground
-                            dummy.scale.set(1, 1, 1);
-                            dummy.updateMatrix();
-                            spotMatrices.push(dummy.matrix.clone());
-
-                            obstacles.push({
-                                x: chunkX + pX,
-                                z: chunkZ + pZ,
-                                radiusSq: 1.0,
-                                isLightpost: true,
-                                height: 13,
-                                instanceIndex: poleMatrices.length - 1,
-                                rotY: rotY
-                            });
-                        }
+                // --- NPC TRAFFIC SPAWNING ---
+                // Only spawn on valid "lanes" (between center and edge)
+                // Lanes are approx 0.05 to 0.20
+                if (val > 0.05 && val < 0.20) {
+                    if (Math.random() < 0.01) { // 1% chance per road tile
+                        spawnTrafficCar(wx, 0.5, wz, rawVal > 0);
                     }
                 }
-            }
 
-            if (roadMatrices.length > 0) {
-                const roadMesh = new THREE.InstancedMesh(roadTileGeometry, roadMaterial, roadMatrices.length);
-                roadMesh.receiveShadow = true;
-                for (let i = 0; i < roadMatrices.length; i++) roadMesh.setMatrixAt(i, roadMatrices[i]);
-                group.add(roadMesh);
-            }
-            if (lineMatrices.length > 0) {
-                const lineMesh = new THREE.InstancedMesh(lineTileGeometry, lineMaterial, lineMatrices.length);
-                for (let i = 0; i < lineMatrices.length; i++) lineMesh.setMatrixAt(i, lineMatrices[i]);
-                group.add(lineMesh);
-            }
-            if (lakeMatrices.length > 0) {
-                const lakeMesh = new THREE.InstancedMesh(lakeTileGeometry, lakeMaterial, lakeMatrices.length);
-                lakeMesh.receiveShadow = true;
-                for (let i = 0; i < lakeMatrices.length; i++) lakeMesh.setMatrixAt(i, lakeMatrices[i]);
-                group.add(lakeMesh);
-            }
-            let poleMesh, bulbMesh, armMesh, spotMesh;
-            if (poleMatrices.length > 0) {
-                poleMesh = new THREE.InstancedMesh(poleGeometry, poleMaterial, poleMatrices.length);
-                poleMesh.castShadow = true;
-                for (let i = 0; i < poleMatrices.length; i++) poleMesh.setMatrixAt(i, poleMatrices[i]);
-                group.add(poleMesh);
-            }
-            if (bulbMatrices.length > 0) {
-                bulbMesh = new THREE.InstancedMesh(lightBulbGeometry, lightBulbMaterial, bulbMatrices.length);
-                for (let i = 0; i < bulbMatrices.length; i++) bulbMesh.setMatrixAt(i, bulbMatrices[i]);
-                group.add(bulbMesh);
-            }
-            if (armMatrices.length > 0) {
-                // RENDER AS POLE BASE
-                armMesh = new THREE.InstancedMesh(poleBaseGeometry, poleMaterial, armMatrices.length);
-                armMesh.receiveShadow = true;
-                armMesh.castShadow = true;
-                for (let i = 0; i < armMatrices.length; i++) armMesh.setMatrixAt(i, armMatrices[i]);
-                group.add(armMesh);
-            }
-            if (spotMatrices.length > 0) {
-                spotMesh = new THREE.InstancedMesh(lightSpotGeometry, lightSpotMaterial, spotMatrices.length);
-                for (let i = 0; i < spotMatrices.length; i++) spotMesh.setMatrixAt(i, spotMatrices[i]);
-                group.add(spotMesh);
-            }
+            } else if (isLake(wx, wz)) {
+                // IT IS A LAKE
+                dummy.position.set(lx + ROAD_TILE_SIZE / 2, 0.02, lz + ROAD_TILE_SIZE / 2);
+                dummy.rotation.x = -Math.PI / 2;
+                dummy.rotation.y = 0;
+                dummy.rotation.z = 0;
+                dummy.scale.set(1, 1, 1);
+                dummy.updateMatrix();
+                lakeMatrices.push(dummy.matrix.clone());
 
-            let seed = pseudoRandom(cx, cz);
-            // obstacles array already initialized above
-            const numObjects = seed > 0.8 ? 15 : (seed > 0.4 ? 4 : 2);
+            } else {
+                // IT IS GRASS/GROUND
+                // CHECK IF WE ARE NEXT TO A ROAD (EDGE DETECTION)
+                // Check neighbors
+                const nRightVal = getRoadValue(wx + ROAD_TILE_SIZE, wz);
+                const nLeftVal = getRoadValue(wx - ROAD_TILE_SIZE, wz);
+                const nTopVal = getRoadValue(wx, wz + ROAD_TILE_SIZE);
+                const nBottomVal = getRoadValue(wx, wz - ROAD_TILE_SIZE);
 
-            for (let i = 0; i < numObjects; i++) {
-                seed = pseudoRandom(seed, i);
-                const bx = (pseudoRandom(seed * 10, i) - 0.5) * (CHUNK_SIZE - 20);
-                const bz = (pseudoRandom(seed * 20, i) - 0.5) * (CHUNK_SIZE - 20);
-                const snapX = Math.round(bx / ROAD_TILE_SIZE) * ROAD_TILE_SIZE + ROAD_TILE_SIZE / 2;
-                const snapZ = Math.round(bz / ROAD_TILE_SIZE) * ROAD_TILE_SIZE + ROAD_TILE_SIZE / 2;
+                let placeLight = false;
+                let rotY = 0;
 
-                let onRoad = false;
-                if (roadSet.has(`${snapX},${snapZ}`)) onRoad = true;
-                if (!onRoad) {
-                    const worldX = chunkX + bx;
-                    const worldZ = chunkZ + bz;
-                    if (getRoadValue(worldX, worldZ) < ROAD_WIDTH_THRESHOLD + 0.1) onRoad = true;
+                const LIGHT_SPACING = 60; // Units apart
+                const FREQ_CHECK = (Math.abs(wx) + Math.abs(wz)) % LIGHT_SPACING < ROAD_TILE_SIZE;
+
+                if (FREQ_CHECK) {
+                    if (nRightVal < ROAD_WIDTH_THRESHOLD) {
+                        placeLight = true; rotY = Math.PI / 2; // Face Right
+                    } else if (nLeftVal < ROAD_WIDTH_THRESHOLD) {
+                        placeLight = true; rotY = -Math.PI / 2; // Face Left
+                    } else if (nTopVal < ROAD_WIDTH_THRESHOLD) {
+                        placeLight = true; rotY = 0; // Face Top (Z+)
+                    } else if (nBottomVal < ROAD_WIDTH_THRESHOLD) {
+                        placeLight = true; rotY = Math.PI; // Face Bottom
+                    }
                 }
 
-                if (onRoad) continue;
+                if (placeLight) {
+                    const pX = lx + ROAD_TILE_SIZE / 2;
+                    const pZ = lz + ROAD_TILE_SIZE / 2;
 
-                let geo, radius, height, width, depth;
-                if (seed < 0.3) { geo = buildingGeometries.small; radius = 8; height = 30; width = 10; depth = 10; }
-                else if (seed < 0.6) { geo = buildingGeometries.tall; radius = 10; height = 80; width = 15; depth = 15; }
-                else { geo = buildingGeometries.wide; radius = 15; height = 25; width = 30; depth = 20; }
-
-                const mat = getBuildingMaterial(seed, isNightMode);
-                const mesh = new THREE.Mesh(geo, mat);
-                const rot = (pseudoRandom(seed * 30, i) * Math.PI * 4);
-                mesh.position.set(bx, geo.parameters.height / 2, bz);
-                mesh.rotation.y = rot;
-                mesh.castShadow = true;
-                mesh.receiveShadow = true;
-                mesh.matrixAutoUpdate = false;
-                mesh.updateMatrix();
-
-                mesh.userData = { isBuilding: true, seed: seed };
-
-                group.add(mesh);
-                obstacles.push({ x: chunkX + bx, z: chunkZ + bz, radiusSq: radius * radius, isBuilding: true, rotation: rot, height: height, width: width, depth: depth });
-            }
-
-            // --- BILLBOARD PLACEMENT ---
-            let bSeed = pseudoRandom(cx + 10.5, cz + 20.7);
-            const numBillboards = bSeed > 0.6 ? 3 : 1;
-
-            for (let i = 0; i < numBillboards; i++) {
-                bSeed = pseudoRandom(bSeed, i + 50);
-                const bx = (pseudoRandom(bSeed * 1.5, i) - 0.5) * (CHUNK_SIZE - 60);
-                const bz = (pseudoRandom(bSeed * 2.5, i) - 0.5) * (CHUNK_SIZE - 60);
-                const worldX = chunkX + bx;
-                const worldZ = chunkZ + bz;
-
-                const distToRoad = getRoadValue(worldX, worldZ);
-                // Place billboards near the road edge
-                if (distToRoad > ROAD_WIDTH_THRESHOLD + 0.02 && distToRoad < ROAD_WIDTH_THRESHOLD + 0.15) {
-                    // Orientation: Face the road using the gradient
-                    // Road center is roughly where f=0. Gradient (dx, dz) points away from center.
-                    // We want to face TOWARD the road, so we use negative gradient.
-                    const scale = 0.005;
-                    const gradX = scale * Math.cos(worldX * scale) + 0.25 * scale * Math.cos(worldX * scale * 0.5 + worldZ * scale * 0.2);
-                    const gradZ = -scale * Math.sin(worldZ * scale) + 0.1 * scale * Math.cos(worldX * scale * 0.5 + worldZ * scale * 0.2);
-                    const angle = Math.atan2(-gradX, -gradZ) + Math.PI / 2; // Rotated 90 degrees
-
-                    dummy.position.set(bx, 0, bz);
-                    dummy.rotation.set(0, angle, 0);
+                    // 1. Pole Shaft
+                    dummy.position.set(pX, 0, pZ);
+                    dummy.rotation.set(0, rotY, 0);
                     dummy.scale.set(1, 1, 1);
                     dummy.updateMatrix();
-                    billboardMatrices.push(dummy.matrix.clone());
+                    poleMatrices.push(dummy.matrix.clone());
 
-                    const bInstIdx = billboardMatrices.length - 1;
-
-                    // Post 1
-                    const pOffset1 = new THREE.Vector3(-3.5, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), angle);
-                    dummy.position.set(bx + pOffset1.x, 0, bz + pOffset1.z);
-                    dummy.rotation.set(0, angle, 0);
+                    // 2. Base (using armMatrices container)
+                    dummy.position.set(pX, 0, pZ);
+                    dummy.rotation.set(0, rotY, 0); // Rotation doesn't matter much for cylinder
+                    dummy.scale.set(1, 1, 1);
                     dummy.updateMatrix();
-                    billboardPostMatrices.push(dummy.matrix.clone());
+                    armMatrices.push(dummy.matrix.clone());
 
-                    // Post 2
-                    const pOffset2 = new THREE.Vector3(3.5, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), angle);
-                    dummy.position.set(bx + pOffset2.x, 0, bz + pOffset2.z);
-                    dummy.rotation.set(0, angle, 0);
+                    // 3. Bulb (Top of pole)
+                    // Height = base 2.5 + shaft 10 = 12.5
+                    dummy.position.set(pX, 12.5, pZ);
+                    dummy.rotation.set(0, 0, 0);
+                    dummy.scale.set(1, 1, 1);
                     dummy.updateMatrix();
-                    billboardPostMatrices.push(dummy.matrix.clone());
+                    bulbMatrices.push(dummy.matrix.clone());
 
-                    const bpInstIdxStart = billboardPostMatrices.length - 2;
+                    // 4. Light Spot (Ground Glare) - Centered
+                    dummy.position.set(pX, 0.16, pZ);
+                    dummy.rotation.set(-Math.PI / 2, 0, 0); // Flat on ground
+                    dummy.scale.set(1, 1, 1);
+                    dummy.updateMatrix();
+                    spotMatrices.push(dummy.matrix.clone());
 
                     obstacles.push({
-                        x: worldX, z: worldZ,
-                        isBillboard: true,
-                        rotation: angle,
-                        height: 11, width: 10, depth: 1,
-                        instanceIndex: bInstIdx,
-                        postInstanceIndex: bpInstIdxStart
+                        x: chunkX + pX,
+                        z: chunkZ + pZ,
+                        radiusSq: 1.0,
+                        isLightpost: true,
+                        height: 13,
+                        instanceIndex: poleMatrices.length - 1,
+                        rotY: rotY
                     });
                 }
             }
+        }
+    }
 
-            // --- CONIFEROUS TREES ---
-            let tSeed = pseudoRandom(cx + 42.1, cz + 13.7);
-            const numTrees = 7 + Math.floor(tSeed * 12); // Reduced density
+    if (roadMatrices.length > 0) {
+        const roadMesh = new THREE.InstancedMesh(roadTileGeometry, roadMaterial, roadMatrices.length);
+        roadMesh.receiveShadow = true;
+        for (let i = 0; i < roadMatrices.length; i++) roadMesh.setMatrixAt(i, roadMatrices[i]);
+        group.add(roadMesh);
+    }
+    if (lineMatrices.length > 0) {
+        const lineMesh = new THREE.InstancedMesh(lineTileGeometry, lineMaterial, lineMatrices.length);
+        for (let i = 0; i < lineMatrices.length; i++) lineMesh.setMatrixAt(i, lineMatrices[i]);
+        group.add(lineMesh);
+    }
+    if (lakeMatrices.length > 0) {
+        const lakeMesh = new THREE.InstancedMesh(lakeTileGeometry, lakeMaterial, lakeMatrices.length);
+        lakeMesh.receiveShadow = true;
+        for (let i = 0; i < lakeMatrices.length; i++) lakeMesh.setMatrixAt(i, lakeMatrices[i]);
+        group.add(lakeMesh);
+    }
+    let poleMesh, bulbMesh, armMesh, spotMesh;
+    if (poleMatrices.length > 0) {
+        poleMesh = new THREE.InstancedMesh(poleGeometry, poleMaterial, poleMatrices.length);
+        poleMesh.castShadow = true;
+        for (let i = 0; i < poleMatrices.length; i++) poleMesh.setMatrixAt(i, poleMatrices[i]);
+        group.add(poleMesh);
+    }
+    if (bulbMatrices.length > 0) {
+        bulbMesh = new THREE.InstancedMesh(lightBulbGeometry, lightBulbMaterial, bulbMatrices.length);
+        for (let i = 0; i < bulbMatrices.length; i++) bulbMesh.setMatrixAt(i, bulbMatrices[i]);
+        group.add(bulbMesh);
+    }
+    if (armMatrices.length > 0) {
+        // RENDER AS POLE BASE
+        armMesh = new THREE.InstancedMesh(poleBaseGeometry, poleMaterial, armMatrices.length);
+        armMesh.receiveShadow = true;
+        armMesh.castShadow = true;
+        for (let i = 0; i < armMatrices.length; i++) armMesh.setMatrixAt(i, armMatrices[i]);
+        group.add(armMesh);
+    }
+    if (spotMatrices.length > 0) {
+        spotMesh = new THREE.InstancedMesh(lightSpotGeometry, lightSpotMaterial, spotMatrices.length);
+        for (let i = 0; i < spotMatrices.length; i++) spotMesh.setMatrixAt(i, spotMatrices[i]);
+        group.add(spotMesh);
+    }
 
-            for (let i = 0; i < numTrees; i++) {
-                tSeed = pseudoRandom(tSeed, i + 200);
-                const tx = (pseudoRandom(tSeed * 1.7, i) - 0.5) * (CHUNK_SIZE - 10);
-                const tz = (pseudoRandom(tSeed * 1.9, i) - 0.5) * (CHUNK_SIZE - 10);
+    let seed = pseudoRandom(cx, cz);
+    // obstacles array already initialized above
+    const numObjects = seed > 0.8 ? 15 : (seed > 0.4 ? 4 : 2);
 
-                const worldX = chunkX + tx;
-                const worldZ = chunkZ + tz;
+    for (let i = 0; i < numObjects; i++) {
+        seed = pseudoRandom(seed, i);
+        const bx = (pseudoRandom(seed * 10, i) - 0.5) * (CHUNK_SIZE - 20);
+        const bz = (pseudoRandom(seed * 20, i) - 0.5) * (CHUNK_SIZE - 20);
+        const snapX = Math.round(bx / ROAD_TILE_SIZE) * ROAD_TILE_SIZE + ROAD_TILE_SIZE / 2;
+        const snapZ = Math.round(bz / ROAD_TILE_SIZE) * ROAD_TILE_SIZE + ROAD_TILE_SIZE / 2;
 
-                // 1. Check Road Distance (Avoid road and shoulder)
-                const rVal = getRoadValue(worldX, worldZ);
-                if (rVal < 0.35) continue;
+        let onRoad = false;
+        if (roadSet.has(`${snapX},${snapZ}`)) onRoad = true;
+        if (!onRoad) {
+            const worldX = chunkX + bx;
+            const worldZ = chunkZ + bz;
+            if (getRoadValue(worldX, worldZ) < ROAD_WIDTH_THRESHOLD + 0.1) onRoad = true;
+        }
 
-                // 2. Check Overlap with existing obstacles
-                let overlap = false;
-                for (let j = 0; j < obstacles.length; j++) {
-                    const ob = obstacles[j];
-                    const dx = worldX - ob.x;
-                    const dz = worldZ - ob.z;
-                    const dSq = dx * dx + dz * dz;
-                    // Tree radius approx 5 (was 3), plus obstacle radius
-                    const rSum = 6 + Math.sqrt(ob.radiusSq || 1);
-                    if (dSq < rSum * rSum) {
-                        overlap = true;
-                        break;
-                    }
-                }
-                if (overlap) continue;
+        if (onRoad) continue;
 
-                // Spawn Tree Mesh Group
-                const treeGroup = new THREE.Group();
-                treeGroup.position.set(tx, 0, tz);
+        let geo, radius, height, width, depth;
+        if (seed < 0.3) { geo = buildingGeometries.small; radius = 8; height = 30; width = 10; depth = 10; }
+        else if (seed < 0.6) { geo = buildingGeometries.tall; radius = 10; height = 80; width = 15; depth = 15; }
+        else { geo = buildingGeometries.wide; radius = 15; height = 25; width = 30; depth = 20; }
 
-                // Trunk
-                const trunk = new THREE.Mesh(treeGeometries.trunk, treeTrunkMaterial);
-                trunk.castShadow = true;
-                trunk.receiveShadow = true;
-                treeGroup.add(trunk);
+        const mat = getBuildingMaterial(seed, isNightMode);
+        const mesh = new THREE.Mesh(geo, mat);
+        const rot = (pseudoRandom(seed * 30, i) * Math.PI * 4);
+        mesh.position.set(bx, geo.parameters.height / 2, bz);
+        mesh.rotation.y = rot;
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        mesh.matrixAutoUpdate = false;
+        mesh.updateMatrix();
 
-                // Leaves
-                const leaves = new THREE.Mesh(treeGeometries.leaves, treeLeavesMaterial);
-                leaves.castShadow = true;
-                leaves.receiveShadow = true;
-                treeGroup.add(leaves);
+        mesh.userData = { isBuilding: true, seed: seed };
 
-                // Randomize
-                const scale = 0.8 + pseudoRandom(tSeed * 5, i) * 0.5; // 0.8 to 1.3
-                treeGroup.scale.set(scale, scale, scale);
-                treeGroup.rotation.y = pseudoRandom(tSeed * 7, i) * Math.PI * 2;
+        group.add(mesh);
+        obstacles.push({ x: chunkX + bx, z: chunkZ + bz, radiusSq: radius * radius, isBuilding: true, rotation: rot, height: height, width: width, depth: depth });
+    }
 
-                treeGroup.matrixAutoUpdate = false;
-                treeGroup.updateMatrix();
+    // --- BILLBOARD PLACEMENT ---
+    let bSeed = pseudoRandom(cx + 10.5, cz + 20.7);
+    const numBillboards = bSeed > 0.6 ? 3 : 1;
 
-                group.add(treeGroup);
+    for (let i = 0; i < numBillboards; i++) {
+        bSeed = pseudoRandom(bSeed, i + 50);
+        const bx = (pseudoRandom(bSeed * 1.5, i) - 0.5) * (CHUNK_SIZE - 60);
+        const bz = (pseudoRandom(bSeed * 2.5, i) - 0.5) * (CHUNK_SIZE - 60);
+        const worldX = chunkX + bx;
+        const worldZ = chunkZ + bz;
 
-                obstacles.push({
-                    x: worldX, z: worldZ,
-                    radiusSq: 5 * 5,
-                    isTree: true,
-                    height: 25,
-                    mesh: treeGroup // Store reference for toppling
-                });
-            }
+        const distToRoad = getRoadValue(worldX, worldZ);
+        // Place billboards near the road edge
+        if (distToRoad > ROAD_WIDTH_THRESHOLD + 0.02 && distToRoad < ROAD_WIDTH_THRESHOLD + 0.15) {
+            // Orientation: Face the road using the gradient
+            // Road center is roughly where f=0. Gradient (dx, dz) points away from center.
+            // We want to face TOWARD the road, so we use negative gradient.
+            const scale = 0.005;
+            const gradX = scale * Math.cos(worldX * scale) + 0.25 * scale * Math.cos(worldX * scale * 0.5 + worldZ * scale * 0.2);
+            const gradZ = -scale * Math.sin(worldZ * scale) + 0.1 * scale * Math.cos(worldX * scale * 0.5 + worldZ * scale * 0.2);
+            const angle = Math.atan2(-gradX, -gradZ) + Math.PI / 2; // Rotated 90 degrees
 
-            let bMesh, bpMesh;
-            if (billboardMatrices.length > 0) {
-                bMesh = new THREE.InstancedMesh(billboardGeometry, billboardMaterial, billboardMatrices.length);
-                bMesh.castShadow = true;
-                bMesh.receiveShadow = true;
-                for (let i = 0; i < billboardMatrices.length; i++) bMesh.setMatrixAt(i, billboardMatrices[i]);
-                group.add(bMesh);
+            dummy.position.set(bx, 0, bz);
+            dummy.rotation.set(0, angle, 0);
+            dummy.scale.set(1, 1, 1);
+            dummy.updateMatrix();
+            billboardMatrices.push(dummy.matrix.clone());
 
-                bpMesh = new THREE.InstancedMesh(billboardPostGeometry, billboardPostMaterial, billboardPostMatrices.length);
-                bpMesh.castShadow = true;
-                bpMesh.receiveShadow = true;
-                for (let i = 0; i < billboardPostMatrices.length; i++) bpMesh.setMatrixAt(i, billboardPostMatrices[i]);
-                group.add(bpMesh);
-            }
+            const bInstIdx = billboardMatrices.length - 1;
 
+            // Post 1
+            const pOffset1 = new THREE.Vector3(-3.5, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), angle);
+            dummy.position.set(bx + pOffset1.x, 0, bz + pOffset1.z);
+            dummy.rotation.set(0, angle, 0);
+            dummy.updateMatrix();
+            billboardPostMatrices.push(dummy.matrix.clone());
 
+            // Post 2
+            const pOffset2 = new THREE.Vector3(3.5, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), angle);
+            dummy.position.set(bx + pOffset2.x, 0, bz + pOffset2.z);
+            dummy.rotation.set(0, angle, 0);
+            dummy.updateMatrix();
+            billboardPostMatrices.push(dummy.matrix.clone());
 
-            scene.add(group);
-            activeChunks.set(`${cx},${cz}`, {
-                mesh: group,
-                obstacles: obstacles,
-                roads: roadMapPositions,
-                poleMesh: poleMesh,
-                bulbMesh: bulbMesh,
-                armMesh: armMesh,
-                spotMesh: spotMesh,
-                billboardMesh: bMesh,
-                billboardPostMesh: bpMesh
+            const bpInstIdxStart = billboardPostMatrices.length - 2;
+
+            obstacles.push({
+                x: worldX, z: worldZ,
+                isBillboard: true,
+                rotation: angle,
+                height: 11, width: 10, depth: 1,
+                instanceIndex: bInstIdx,
+                postInstanceIndex: bpInstIdxStart
             });
         }
+    }
 
-        // --- Entities ---
-        /**
-         * Initialize geometries for pedestrian parts.
-         */
-        function initPedestrianGeometries() {
-            pedGeometries.head = new THREE.BoxGeometry(0.6, 0.6, 0.6);
-            pedGeometries.body = new THREE.BoxGeometry(0.8, 1.2, 0.5);
-            pedGeometries.arm = new THREE.BoxGeometry(0.25, 1.0, 0.25);
-            pedGeometries.arm.translate(0, -0.4, 0);
-            pedGeometries.leg = new THREE.BoxGeometry(0.3, 1.2, 0.3);
-            pedGeometries.leg.translate(0, -0.6, 0);
-            pedGeometries.robe = new THREE.BoxGeometry(0.9, 2.4, 0.6);
-            pedGeometries.cape = new THREE.BoxGeometry(1.0, 2.2, 0.1);
-            pedGeometries.turban = new THREE.BoxGeometry(0.68, 0.35, 0.68);
-        }
-        /**
-         * Generate a random pedestrian data object and add to pool.
-         */
-        function createPedestrianData() {
-            const angle = Math.random() * Math.PI * 2;
-            const dist = Math.random() * 200 + 50;
-            const pedData = {
-                position: new THREE.Vector3(Math.sin(angle) * dist, 2.0, Math.cos(angle) * dist),
-                velocity: new THREE.Vector3((Math.random() - 0.5) * 0.2, 0, (Math.random() - 0.5) * 0.2),
-                rotation: Math.random() * Math.PI * 2,
-                animPhase: Math.random() * 100,
-                isActive: false, mesh: null,
-                colors: { shirt: Math.random() * 0xffffff, pants: Math.random() * 0xffffff, skin: 0xffccaa }
-            };
-            allPedestrians.push(pedData);
-        }
-        /**
-         * Get or create a material for a specific color hex.
-         * @param {number} colorHex 
-         * @returns {THREE.Material}
-         */
-        function getCachedMaterial(colorHex) {
-            const hex = Math.floor(colorHex);
-            if (!materialCache.has(hex)) materialCache.set(hex, new THREE.MeshStandardMaterial({ color: hex }));
-            return materialCache.get(hex);
-        }
-        /**
-         * Build a 3D mesh group for a pedestrian based on its data.
-         * @param {Object} data 
-         * @returns {THREE.Group}
-         */
-        function buildPedestrianMesh(data) {
-            const group = new THREE.Group();
-            const skinMat = getCachedMaterial(data.colors.skin);
-            const shirtMat = getCachedMaterial(data.colors.shirt);
-            const pantsMat = getCachedMaterial(data.colors.pants);
-            const head = new THREE.Mesh(pedGeometries.head, skinMat); head.position.y = 0.9; head.castShadow = true; group.add(head);
-            const body = new THREE.Mesh(pedGeometries.body, shirtMat); body.position.y = 0; body.castShadow = true; group.add(body);
-            const armL = new THREE.Mesh(pedGeometries.arm, shirtMat); armL.position.set(-0.55, 0.4, 0); armL.castShadow = true; group.add(armL);
-            const armR = new THREE.Mesh(pedGeometries.arm, shirtMat); armR.position.set(0.55, 0.4, 0); armR.castShadow = true; group.add(armR);
-            const legL = new THREE.Mesh(pedGeometries.leg, pantsMat); legL.position.set(-0.25, -0.6, 0); legL.castShadow = true; group.add(legL);
-            const legR = new THREE.Mesh(pedGeometries.leg, pantsMat); legR.position.set(0.25, -0.6, 0); legR.castShadow = true; group.add(legR);
+    // --- CONIFEROUS TREES ---
+    let tSeed = pseudoRandom(cx + 42.1, cz + 13.7);
+    const numTrees = 7 + Math.floor(tSeed * 12); // Reduced density
 
-            if (data.isUser) {
-                const robeMat = getCachedMaterial(data.colors.robe || 0x000000);
-                const robe = new THREE.Mesh(pedGeometries.robe, robeMat);
-                robe.position.y = -0.6;
-                robe.castShadow = true;
-                robe.userData.partGroup = "robe";
-                group.add(robe);
+    for (let i = 0; i < numTrees; i++) {
+        tSeed = pseudoRandom(tSeed, i + 200);
+        const tx = (pseudoRandom(tSeed * 1.7, i) - 0.5) * (CHUNK_SIZE - 10);
+        const tz = (pseudoRandom(tSeed * 1.9, i) - 0.5) * (CHUNK_SIZE - 10);
 
+        const worldX = chunkX + tx;
+        const worldZ = chunkZ + tz;
 
-                const hatMat = getCachedMaterial(data.colors.hat || 0x555555);
-                const turban = new THREE.Mesh(pedGeometries.turban, hatMat);
-                turban.position.y = 1.35;
-                turban.castShadow = true;
-                turban.userData.partGroup = "hat";
-                group.add(turban);
-            }
+        // 1. Check Road Distance (Avoid road and shoulder)
+        const rVal = getRoadValue(worldX, worldZ);
+        if (rVal < 0.35) continue;
 
-            // Tag parts for painting
-            head.userData.partGroup = 'skin';
-            body.userData.partGroup = 'shirt';
-            armL.userData.partGroup = 'shirt';
-            armR.userData.partGroup = 'shirt';
-            legL.userData.partGroup = 'pants';
-            legR.userData.partGroup = 'pants';
-
-            // Assign limbs to userData, preserving existing properties if any
-            if (!group.userData) group.userData = {};
-            group.userData.limbs = { head, body, armL, armR, legL, legR };
-            return group;
-        }
-
-        /**
-         * Update the material colors of an existing pedestrian mesh from the pool.
-         * @param {THREE.Group} mesh 
-         * @param {Object} colors 
-         */
-        function applyPedestrianColors(mesh, colors) {
-            const skinMat = getCachedMaterial(colors.skin);
-            const shirtMat = getCachedMaterial(colors.shirt);
-            const pantsMat = getCachedMaterial(colors.pants);
-
-            if (mesh.userData.limbs) {
-                mesh.userData.limbs.head.material = skinMat;
-                mesh.userData.limbs.body.material = shirtMat;
-                mesh.userData.limbs.armL.material = shirtMat;
-                mesh.userData.limbs.armR.material = shirtMat;
-                mesh.userData.limbs.legL.material = pantsMat;
-                mesh.userData.limbs.legR.material = pantsMat;
+        // 2. Check Overlap with existing obstacles
+        let overlap = false;
+        for (let j = 0; j < obstacles.length; j++) {
+            const ob = obstacles[j];
+            const dx = worldX - ob.x;
+            const dz = worldZ - ob.z;
+            const dSq = dx * dx + dz * dz;
+            // Tree radius approx 5 (was 3), plus obstacle radius
+            const rSum = 6 + Math.sqrt(ob.radiusSq || 1);
+            if (dSq < rSum * rSum) {
+                overlap = true;
+                break;
             }
         }
+        if (overlap) continue;
 
-        // --- CAR MODELS & HEADLIGHTS ---
+        // Spawn Tree Mesh Group
+        const treeGroup = new THREE.Group();
+        treeGroup.position.set(tx, 0, tz);
 
-        /**
-         * Create headlight spotlights and add them to a vehicle group.
-         * @param {THREE.Group} group
-         * @param {number} xOffset
-         * @param {number} y
-         * @param {number} z
-         * @param {number} [intensity=2]
-         */
-        function createHeadlights(group, xOffset, y, z, intensity = 2) {
-            // NPC lights only visible at night, controlled by toggle
-            const spotL = new THREE.SpotLight(0xffffdd, intensity);
-            spotL.position.set(-xOffset, y, z);
-            spotL.angle = Math.PI / 6;
-            spotL.penumbra = 0.3;
-            spotL.decay = 1.5;
-            spotL.distance = 60;
-            spotL.castShadow = false;
-            spotL.target.position.set(-xOffset, 0, z + 20);
-            spotL.visible = isNightMode;
-            spotL.isLight = true;
-            group.add(spotL);
-            group.add(spotL.target);
+        // Trunk
+        const trunk = new THREE.Mesh(treeGeometries.trunk, treeTrunkMaterial);
+        trunk.castShadow = true;
+        trunk.receiveShadow = true;
+        treeGroup.add(trunk);
 
-            const spotR = new THREE.SpotLight(0xffffdd, intensity);
-            spotR.position.set(xOffset, y, z);
-            spotR.angle = Math.PI / 6;
-            spotR.penumbra = 0.3;
-            spotR.decay = 1.5;
-            spotR.distance = 60;
-            spotR.target.position.set(xOffset, 0, z + 20);
-            spotR.visible = isNightMode;
-            spotR.isLight = true;
-            group.add(spotR);
-            group.add(spotR.target);
+        // Leaves
+        const leaves = new THREE.Mesh(treeGeometries.leaves, treeLeavesMaterial);
+        leaves.castShadow = true;
+        leaves.receiveShadow = true;
+        treeGroup.add(leaves);
+
+        // Randomize
+        const scale = 0.8 + pseudoRandom(tSeed * 5, i) * 0.5; // 0.8 to 1.3
+        treeGroup.scale.set(scale, scale, scale);
+        treeGroup.rotation.y = pseudoRandom(tSeed * 7, i) * Math.PI * 2;
+
+        treeGroup.matrixAutoUpdate = false;
+        treeGroup.updateMatrix();
+
+        group.add(treeGroup);
+
+        obstacles.push({
+            x: worldX, z: worldZ,
+            radiusSq: 5 * 5,
+            isTree: true,
+            height: 25,
+            mesh: treeGroup // Store reference for toppling
+        });
+    }
+
+    let bMesh, bpMesh;
+    if (billboardMatrices.length > 0) {
+        bMesh = new THREE.InstancedMesh(billboardGeometry, billboardMaterial, billboardMatrices.length);
+        bMesh.castShadow = true;
+        bMesh.receiveShadow = true;
+        for (let i = 0; i < billboardMatrices.length; i++) bMesh.setMatrixAt(i, billboardMatrices[i]);
+        group.add(bMesh);
+
+        bpMesh = new THREE.InstancedMesh(billboardPostGeometry, billboardPostMaterial, billboardPostMatrices.length);
+        bpMesh.castShadow = true;
+        bpMesh.receiveShadow = true;
+        for (let i = 0; i < billboardPostMatrices.length; i++) bpMesh.setMatrixAt(i, billboardPostMatrices[i]);
+        group.add(bpMesh);
+    }
+
+
+
+    scene.add(group);
+    activeChunks.set(`${cx},${cz}`, {
+        mesh: group,
+        obstacles: obstacles,
+        roads: roadMapPositions,
+        poleMesh: poleMesh,
+        bulbMesh: bulbMesh,
+        armMesh: armMesh,
+        spotMesh: spotMesh,
+        billboardMesh: bMesh,
+        billboardPostMesh: bpMesh
+    });
+}
+
+// --- Entities ---
+/**
+ * Initialize geometries for pedestrian parts.
+ */
+function initPedestrianGeometries() {
+    pedGeometries.head = new THREE.BoxGeometry(0.6, 0.6, 0.6);
+    pedGeometries.body = new THREE.BoxGeometry(0.8, 1.2, 0.5);
+    pedGeometries.arm = new THREE.BoxGeometry(0.25, 1.0, 0.25);
+    pedGeometries.arm.translate(0, -0.4, 0);
+    pedGeometries.leg = new THREE.BoxGeometry(0.3, 1.2, 0.3);
+    pedGeometries.leg.translate(0, -0.6, 0);
+    pedGeometries.robe = new THREE.BoxGeometry(0.9, 2.4, 0.6);
+    pedGeometries.cape = new THREE.BoxGeometry(1.0, 2.2, 0.1);
+    pedGeometries.turban = new THREE.BoxGeometry(0.68, 0.35, 0.68);
+}
+/**
+ * Generate a random pedestrian data object and add to pool.
+ */
+function createPedestrianData() {
+    const angle = Math.random() * Math.PI * 2;
+    const dist = Math.random() * 200 + 50;
+    const pedData = {
+        position: new THREE.Vector3(Math.sin(angle) * dist, 2.0, Math.cos(angle) * dist),
+        velocity: new THREE.Vector3((Math.random() - 0.5) * 0.2, 0, (Math.random() - 0.5) * 0.2),
+        rotation: Math.random() * Math.PI * 2,
+        animPhase: Math.random() * 100,
+        isActive: false, mesh: null,
+        colors: { shirt: Math.random() * 0xffffff, pants: Math.random() * 0xffffff, skin: 0xffccaa }
+    };
+    allPedestrians.push(pedData);
+}
+/**
+ * Get or create a material for a specific color hex.
+ * @param {number} colorHex 
+ * @returns {THREE.Material}
+ */
+function getCachedMaterial(colorHex) {
+    const hex = Math.floor(colorHex);
+    if (!materialCache.has(hex)) materialCache.set(hex, new THREE.MeshStandardMaterial({ color: hex }));
+    return materialCache.get(hex);
+}
+/**
+ * Build a 3D mesh group for a pedestrian based on its data.
+ * @param {Object} data 
+ * @returns {THREE.Group}
+ */
+function buildPedestrianMesh(data) {
+    const group = new THREE.Group();
+    const skinMat = getCachedMaterial(data.colors.skin);
+    const shirtMat = getCachedMaterial(data.colors.shirt);
+    const pantsMat = getCachedMaterial(data.colors.pants);
+    const head = new THREE.Mesh(pedGeometries.head, skinMat); head.position.y = 0.9; head.castShadow = true; group.add(head);
+    const body = new THREE.Mesh(pedGeometries.body, shirtMat); body.position.y = 0; body.castShadow = true; group.add(body);
+    const armL = new THREE.Mesh(pedGeometries.arm, shirtMat); armL.position.set(-0.55, 0.4, 0); armL.castShadow = true; group.add(armL);
+    const armR = new THREE.Mesh(pedGeometries.arm, shirtMat); armR.position.set(0.55, 0.4, 0); armR.castShadow = true; group.add(armR);
+    const legL = new THREE.Mesh(pedGeometries.leg, pantsMat); legL.position.set(-0.25, -0.6, 0); legL.castShadow = true; group.add(legL);
+    const legR = new THREE.Mesh(pedGeometries.leg, pantsMat); legR.position.set(0.25, -0.6, 0); legR.castShadow = true; group.add(legR);
+
+    if (data.isUser) {
+        const robeMat = getCachedMaterial(data.colors.robe || 0x000000);
+        const robe = new THREE.Mesh(pedGeometries.robe, robeMat);
+        robe.position.y = -0.6;
+        robe.castShadow = true;
+        robe.userData.partGroup = "robe";
+        group.add(robe);
+
+
+        const hatMat = getCachedMaterial(data.colors.hat || 0x555555);
+        const turban = new THREE.Mesh(pedGeometries.turban, hatMat);
+        turban.position.y = 1.35;
+        turban.castShadow = true;
+        turban.userData.partGroup = "hat";
+        group.add(turban);
+    }
+
+    // Tag parts for painting
+    head.userData.partGroup = 'skin';
+    body.userData.partGroup = 'shirt';
+    armL.userData.partGroup = 'shirt';
+    armR.userData.partGroup = 'shirt';
+    legL.userData.partGroup = 'pants';
+    legR.userData.partGroup = 'pants';
+
+    // Assign limbs to userData, preserving existing properties if any
+    if (!group.userData) group.userData = {};
+    group.userData.limbs = { head, body, armL, armR, legL, legR };
+    return group;
+}
+
+/**
+ * Update the material colors of an existing pedestrian mesh from the pool.
+ * @param {THREE.Group} mesh 
+ * @param {Object} colors 
+ */
+function applyPedestrianColors(mesh, colors) {
+    const skinMat = getCachedMaterial(colors.skin);
+    const shirtMat = getCachedMaterial(colors.shirt);
+    const pantsMat = getCachedMaterial(colors.pants);
+
+    if (mesh.userData.limbs) {
+        mesh.userData.limbs.head.material = skinMat;
+        mesh.userData.limbs.body.material = shirtMat;
+        mesh.userData.limbs.armL.material = shirtMat;
+        mesh.userData.limbs.armR.material = shirtMat;
+        mesh.userData.limbs.legL.material = pantsMat;
+        mesh.userData.limbs.legR.material = pantsMat;
+    }
+}
+
+// --- CAR MODELS & HEADLIGHTS ---
+
+/**
+ * Create headlight spotlights and add them to a vehicle group.
+ * @param {THREE.Group} group
+ * @param {number} xOffset
+ * @param {number} y
+ * @param {number} z
+ * @param {number} [intensity=2]
+ */
+function createHeadlights(group, xOffset, y, z, intensity = 2) {
+    // NPC lights only visible at night, controlled by toggle
+    const spotL = new THREE.SpotLight(0xffffdd, intensity);
+    spotL.position.set(-xOffset, y, z);
+    spotL.angle = Math.PI / 6;
+    spotL.penumbra = 0.3;
+    spotL.decay = 1.5;
+    spotL.distance = 60;
+    spotL.castShadow = false;
+    spotL.target.position.set(-xOffset, 0, z + 20);
+    spotL.visible = isNightMode;
+    spotL.isLight = true;
+    group.add(spotL);
+    group.add(spotL.target);
+
+    const spotR = new THREE.SpotLight(0xffffdd, intensity);
+    spotR.position.set(xOffset, y, z);
+    spotR.angle = Math.PI / 6;
+    spotR.penumbra = 0.3;
+    spotR.decay = 1.5;
+    spotR.distance = 60;
+    spotR.target.position.set(xOffset, 0, z + 20);
+    spotR.visible = isNightMode;
+    spotR.isLight = true;
+    group.add(spotR);
+    group.add(spotR.target);
+}
+
+// --- Vehicle Abstraction ---
+/**
+ * Factory function to create a vehicle mesh.
+ * @param {Object} config - Configuration object (type, color, lights, scale)
+ * @returns {THREE.Group}
+ */
+function createVehicle(config) {
+    const type = config.type || 'supercar';
+    let bc = config.bodyColor;
+    let sc = config.spoilerColor;
+    let wc = config.windshieldColor;
+
+    if (typeof config.color === 'number') {
+        bc = config.color;
+    } else if (config.color && typeof config.color === 'object') {
+        if (bc === undefined || bc === null) bc = config.color.body;
+        if (sc === undefined || sc === null) sc = config.color.spoiler;
+        if (wc === undefined || wc === null) wc = config.color.windshield;
+    }
+
+    const bodyColor = bc !== undefined && bc !== null ? bc : null;
+    const spoilerColor = sc !== undefined && sc !== null ? sc : null;
+    const windshieldColor = wc !== undefined && wc !== null ? wc : null;
+    const addLights = config.addLights !== undefined ? config.addLights : true;
+    const scale = config.scale || 1.0;
+
+    let mesh;
+    if (type === 'supercar') {
+        mesh = buildSupercarMesh(addLights, bodyColor, spoilerColor, windshieldColor); // Pass body, spoiler, and windshield colors
+    } else if (type === 'hypercar') {
+        mesh = buildHypercarMesh(addLights, bodyColor, spoilerColor, windshieldColor); // Pass body, spoiler, and windshield colors
+    } else if (type === 'hypercar2') {
+        mesh = buildHypercar2Mesh(addLights, bodyColor, spoilerColor, windshieldColor);
+    } else {
+        mesh = buildSupercarMesh(addLights, bodyColor, spoilerColor, windshieldColor); // Default to supercar
+    }
+
+    if (scale !== 1.0) {
+        mesh.scale.set(scale, scale, scale);
+    }
+
+    return mesh;
+}
+
+/**
+ * Build a "Supercar" style vehicle mesh.
+ * @param {boolean} [addLights=true]
+ * @param {number|null} [bodyColor]
+ * @param {number|null} [spoilerColor]
+ * @returns {THREE.Group}
+ */
+function buildSupercarMesh(addLights = true, bodyColor = null, spoilerColor = null, windshieldColor = null) {
+    const group = new THREE.Group();
+
+    // Materials
+    const currentBodyColor = bodyColor ? bodyColor : vehicleColors.supercar.body;
+    const currentSpoilerColor = spoilerColor ? spoilerColor : vehicleColors.supercar.spoiler;
+    const currentWindshieldColor = windshieldColor ? windshieldColor : vehicleColors.supercar.windshield;
+
+    const bodyMat = new THREE.MeshStandardMaterial({ color: currentBodyColor, roughness: 0.3, metalness: 0.2 });
+    const spoilerMat = new THREE.MeshStandardMaterial({ color: currentSpoilerColor, roughness: 0.3, metalness: 0.2 }); // Uses provided spoilerColor
+    const secondaryMat = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.1, metalness: 0.6 }); // Glossy black accents
+    const glassMat = new THREE.MeshStandardMaterial({
+        color: currentWindshieldColor, // Custom or default tint
+        roughness: 0.1,
+        metalness: 0.7,
+        transparent: true,
+        opacity: 0.7 // Slightly transparent
+    });
+    const rimMat = new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.9, roughness: 0.2 });
+
+    const lightIntensity = isNightMode ? 5.0 : 0.5;
+    const tailLightMat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: lightIntensity * 1.5 });
+    const headLightMat = new THREE.MeshStandardMaterial({ color: 0xaaccff, emissive: 0xaaccff, emissiveIntensity: lightIntensity });
+
+    // Main Body (Split into Rear and Hood)
+    // Rear Body (Chassis under cabin and rear)
+    const mainBodyGeo = new THREE.BoxGeometry(2.1, 0.5, 3.6);
+    const mainBody = new THREE.Mesh(mainBodyGeo, bodyMat);
+    mainBody.position.set(0, 0.5, -0.5);
+    mainBody.userData.partGroup = 'body'; // Mark as body part
+    group.add(mainBody);
+
+    // Side Skirts
+    const skirtGeo = new THREE.BoxGeometry(0.2, 0.2, 3.0); // Depth, Height, Length
+    const skirtL = new THREE.Mesh(skirtGeo, spoilerMat);
+    skirtL.position.set(-1.15, 0.15, -0.5); // Positioned to the left side
+    skirtL.userData.partGroup = 'spoiler'; // Mark as spoiler part
+    group.add(skirtL);
+
+    const skirtR = new THREE.Mesh(skirtGeo, spoilerMat);
+    skirtR.position.set(1.15, 0.15, -0.5); // Positioned to the right side
+    skirtR.userData.partGroup = 'spoiler'; // Mark as spoiler part
+    group.add(skirtR);
+
+    // Hood (Front nose)
+    const hoodGeo = new THREE.BoxGeometry(2.1, 0.5, 1.0);
+    const hood = new THREE.Mesh(hoodGeo, bodyMat);
+    hood.position.set(0, 0.5, 1.8);
+    hood.userData.partGroup = 'body'; // Mark as body part
+    group.add(hood);
+
+    // Cabin (Teardrop style)
+    const cabinGeo = new THREE.BoxGeometry(1.3, 0.4, 2.2);
+    const cabin = new THREE.Mesh(cabinGeo, glassMat);
+    cabin.position.set(0, 0.9, 0.2);
+    cabin.userData = { partType: 'glass', partGroup: 'glass' }; // Mark as glass part
+    group.add(cabin);
+
+    // Fenders (Wide arches)
+    const fenderGeo = new THREE.BoxGeometry(0.6, 0.65, 1.2);
+    const fl = new THREE.Mesh(fenderGeo, bodyMat); fl.position.set(-1.1, 0.525, 1.6); fl.userData.partGroup = 'body'; group.add(fl); // Mark as body part
+    const fr = new THREE.Mesh(fenderGeo, bodyMat); fr.position.set(1.1, 0.525, 1.6); fr.userData.partGroup = 'body'; group.add(fr); // Mark as body part
+
+    const rearFenderGeo = new THREE.BoxGeometry(0.7, 0.7, 1.4);
+    const rl = new THREE.Mesh(rearFenderGeo, bodyMat); rl.position.set(-1.15, 0.55, -1.4); rl.userData.partGroup = 'body'; group.add(rl); // Mark as body part
+    const rr = new THREE.Mesh(rearFenderGeo, bodyMat); rr.position.set(1.15, 0.55, -1.4); rr.userData.partGroup = 'body'; group.add(rr); // Mark as body part
+
+    // Spoiler (Aggressive Wing)
+    const wingPillarGeo = new THREE.BoxGeometry(0.1, 0.5, 0.5);
+    const pL = new THREE.Mesh(wingPillarGeo, spoilerMat); pL.position.set(-0.6, 0.9, -2.0); pL.userData.partGroup = 'spoiler'; group.add(pL); // Mark as spoiler part
+    const pR = new THREE.Mesh(wingPillarGeo, spoilerMat); pR.position.set(0.6, 0.9, -2.0); pR.userData.partGroup = 'spoiler'; group.add(pR); // Mark as spoiler part
+
+    const wingGeo = new THREE.BoxGeometry(2.8, 0.05, 0.8);
+    const wing = new THREE.Mesh(wingGeo, spoilerMat);
+    wing.position.set(0, 1.15, -2.1);
+    wing.userData.partGroup = 'spoiler'; // Mark as spoiler part
+    group.add(wing);
+
+    // Lights
+    // Rear light strip (Cyberpunk style)
+    const stripGeo = new THREE.BoxGeometry(2.0, 0.1, 0.1);
+    const strip = new THREE.Mesh(stripGeo, tailLightMat);
+    strip.position.set(0, 0.6, -2.35);
+    strip.userData.partGroup = 'light'; // Mark as light
+    group.add(strip);
+
+    // Headlights (Angled slits)
+    const hlGeo = new THREE.BoxGeometry(0.5, 0.05, 0.2);
+    const hlL = new THREE.Mesh(hlGeo, headLightMat); hlL.position.set(-0.9, 0.5, 2.3); hlL.rotation.y = 0.2; hlL.userData.partGroup = 'light'; group.add(hlL); // Mark as light
+    const hlR = new THREE.Mesh(hlGeo, headLightMat); hlR.position.set(0.9, 0.5, 2.3); hlR.rotation.y = -0.2; hlR.userData.partGroup = 'light'; group.add(hlR); // Mark as light
+    // Wheels
+    const wheelGeo = new THREE.BoxGeometry(0.6, 0.8, 0.8); // Using box for style consistency with low poly
+    const positions = [
+        { x: -1.15, z: 1.6 }, { x: 1.15, z: 1.6 }, // Front
+        { x: -1.25, z: -1.4 }, { x: 1.25, z: -1.4 } // Rear (Wider)
+    ];
+
+    positions.forEach(pos => {
+        const w = new THREE.Mesh(wheelGeo, secondaryMat);
+        w.position.set(pos.x, 0.4, pos.z);
+        w.userData = { paintable: false };
+        group.add(w);
+
+        // Rim detail
+        const rim = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, 0.5), rimMat);
+        rim.position.set(pos.x + (pos.x > 0 ? 0.26 : -0.26), 0.4, pos.z);
+        rim.userData = { paintable: false };
+        group.add(rim);
+    });
+
+    if (addLights) {
+        // Cooler blue-ish headlights for the black car
+        createHeadlights(group, 0.9, 0.5, 2.4, 12.0);
+    }
+
+    return group;
+}
+
+/**
+ * Build a "Hypercar" style vehicle mesh.
+ * @param {boolean} [addLights=true] 
+ * @param {number|null} [bodyColor] 
+ * @param {number|null} [spoilerColor] 
+ * @returns {THREE.Group}
+ */
+function buildHypercarMesh(addLights = true, bodyColor = null, spoilerColor = null, windshieldColor = null) {
+    const group = new THREE.Group();
+    const currentBodyColor = bodyColor ? bodyColor : vehicleColors.hypercar.body;
+    const currentSpoilerColor = spoilerColor ? spoilerColor : vehicleColors.hypercar.spoiler;
+    const currentWindshieldColor = windshieldColor ? windshieldColor : vehicleColors.hypercar.windshield;
+    const bodyMat = new THREE.MeshStandardMaterial({ color: currentBodyColor, roughness: 0.2, metalness: 0.6 });
+    const carbonMat = new THREE.MeshStandardMaterial({ color: currentSpoilerColor, roughness: 0.5, metalness: 0.5 }); // Carbon mat for spoiler is now paintable
+    const glassMat = new THREE.MeshStandardMaterial({
+        color: currentWindshieldColor, // Custom or default tint
+        roughness: 0.1,
+        metalness: 0.7,
+        transparent: true,
+        opacity: 0.7 // Slightly transparent
+    });
+
+    const lightIntensity = isNightMode ? 5.0 : 0.5;
+    const tailLightMat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: lightIntensity });
+    const headLightMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: lightIntensity });
+    const exhaustMat = new THREE.MeshStandardMaterial({ color: 0x8888ff, metalness: 1.0, roughness: 0.2, emissive: 0x2222ff, emissiveIntensity: isNightMode ? 2.0 : 0.5 });
+
+    const chassisGeo = new THREE.BoxGeometry(2.0, 0.5, 4.4);
+    const chassis = new THREE.Mesh(chassisGeo, bodyMat); chassis.position.y = 0.5; chassis.userData.partGroup = 'body'; group.add(chassis);
+    const cabinGeo = new THREE.BoxGeometry(1.4, 0.5, 2.0);
+    const cabin = new THREE.Mesh(cabinGeo, glassMat); cabin.position.set(0, 1.0, 0.2);
+    cabin.userData = { partType: 'glass', partGroup: 'glass' };
+    group.add(cabin);
+    const fenderGeoFront = new THREE.BoxGeometry(0.8, 0.65, 1.2);
+    const fenderGeoRear = new THREE.BoxGeometry(0.9, 0.72, 1.4);
+    const fl = new THREE.Mesh(fenderGeoFront, bodyMat); fl.position.set(-1.2, 0.525, 1.4); fl.userData.partGroup = 'body'; group.add(fl);
+    const fr = new THREE.Mesh(fenderGeoFront, bodyMat); fr.position.set(1.2, 0.525, 1.4); fr.userData.partGroup = 'body'; group.add(fr);
+    const rl = new THREE.Mesh(fenderGeoRear, bodyMat); rl.position.set(-1.25, 0.6, -1.2); rl.userData.partGroup = 'body'; group.add(rl);
+    const rr = new THREE.Mesh(fenderGeoRear, bodyMat); rr.position.set(1.25, 0.6, -1.2); rr.userData.partGroup = 'body'; group.add(rr);
+    const skirtGeo = new THREE.BoxGeometry(0.4, 0.2, 2.0);
+    const skirtL = new THREE.Mesh(skirtGeo, carbonMat); skirtL.position.set(-1.1, 0.3, 0.1); skirtL.userData.partGroup = 'spoiler'; group.add(skirtL);
+    const skirtR = new THREE.Mesh(skirtGeo, carbonMat); skirtR.position.set(1.1, 0.3, 0.1); skirtR.userData.partGroup = 'spoiler'; group.add(skirtR);
+    const wingPillarGeo = new THREE.BoxGeometry(0.2, 0.6, 0.4);
+    const wpL = new THREE.Mesh(wingPillarGeo, carbonMat); wpL.position.set(-0.5, 0.8, -1.8); wpL.userData.partGroup = 'spoiler'; group.add(wpL);
+    const wpR = new THREE.Mesh(wingPillarGeo, carbonMat); wpR.position.set(0.5, 0.8, -1.8); wpR.userData.partGroup = 'spoiler'; group.add(wpR);
+    const wingBladeGeo = new THREE.BoxGeometry(2.6, 0.1, 0.8);
+    const wing = new THREE.Mesh(wingBladeGeo, carbonMat); wing.position.set(0, 1.1, -1.9); wing.userData.partGroup = 'spoiler'; group.add(wing);
+    const exhaustBoxGeo = new THREE.BoxGeometry(0.6, 0.4, 0.1);
+    const exhaustBox = new THREE.Mesh(exhaustBoxGeo, carbonMat); exhaustBox.position.set(0, 0.6, -2.25); group.add(exhaustBox);
+    const pipeGeo = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+    [[-0.15, 0.1], [0.15, 0.1], [-0.15, -0.1], [0.15, -0.1]].forEach(off => {
+        const pipe = new THREE.Mesh(pipeGeo, exhaustMat); pipe.position.set(off[0], 0.6 + off[1], -2.31); group.add(pipe);
+    });
+    const tlGeo = new THREE.BoxGeometry(0.1, 0.4, 0.1);
+    const tlL = new THREE.Mesh(tlGeo, tailLightMat); tlL.position.set(-1.4, 0.7, -1.9); group.add(tlL);
+    const tlR = new THREE.Mesh(tlGeo, tailLightMat); tlR.position.set(1.4, 0.7, -1.9); group.add(tlR);
+    const hlGeo = new THREE.BoxGeometry(0.6, 0.1, 0.2);
+    const hlL = new THREE.Mesh(hlGeo, headLightMat); hlL.position.set(-1.0, 0.5, 2.0); group.add(hlL);
+    const hlR = new THREE.Mesh(hlGeo, headLightMat); hlR.position.set(1.0, 0.5, 2.0); group.add(hlR);
+
+    // Wheels
+    const wheelGeo = new THREE.BoxGeometry(0.9, 0.8, 0.8);
+    const wheelMat = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.9 });
+
+    const flWheel = new THREE.Mesh(wheelGeo, wheelMat); flWheel.position.set(-1.25, 0.4, 1.4); flWheel.userData = { paintable: false }; group.add(flWheel);
+    const frWheel = new THREE.Mesh(wheelGeo, wheelMat); frWheel.position.set(1.25, 0.4, 1.4); frWheel.userData = { paintable: false }; group.add(frWheel);
+    const rlWheel = new THREE.Mesh(wheelGeo, wheelMat); rlWheel.position.set(-1.35, 0.45, -1.2); rlWheel.userData = { paintable: false }; group.add(rlWheel);
+    const rrWheel = new THREE.Mesh(wheelGeo, wheelMat); rrWheel.position.set(1.35, 0.45, -1.2); rrWheel.userData = { paintable: false }; group.add(rrWheel);
+
+    if (addLights) {
+        createHeadlights(group, 1.0, 0.5, 2.0, 10.0);
+    }
+    return group;
+}
+
+/**
+ * Build a "Hypercar 2.0" style vehicle mesh.
+ * @param {boolean} [addLights=true] 
+ * @param {number|null} [bodyColor] 
+ * @param {number|null} [spoilerColor] 
+ * @returns {THREE.Group}
+ */
+function buildHypercar2Mesh(addLights = true, bodyColor = null, spoilerColor = null, windshieldColor = null) {
+    const group = new THREE.Group();
+    const currentBodyColor = bodyColor ? bodyColor : vehicleColors.hypercar2.body;
+    const currentSpoilerColor = spoilerColor ? spoilerColor : vehicleColors.hypercar2.spoiler;
+    const currentWindshieldColor = windshieldColor ? windshieldColor : vehicleColors.hypercar2.windshield;
+
+    const bodyMat = new THREE.MeshStandardMaterial({ color: currentBodyColor, roughness: 0.1, metalness: 0.8 });
+    const techMat = new THREE.MeshStandardMaterial({ color: currentSpoilerColor, roughness: 0.3, metalness: 0.7 });
+    const glassMat = new THREE.MeshStandardMaterial({
+        color: currentWindshieldColor,
+        roughness: 0.05,
+        metalness: 0.9,
+        transparent: true,
+        opacity: 0.6
+    });
+
+    const lightIntensity = isNightMode ? 6.0 : 0.8;
+    const glowMat = new THREE.MeshStandardMaterial({
+        color: 0x00ffff,
+        emissive: 0x00ffff,
+        emissiveIntensity: lightIntensity
+    });
+    const headLightMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: lightIntensity });
+    const engineMat = new THREE.MeshStandardMaterial({ color: 0x444444, metalness: 1.0, roughness: 0.2 });
+
+    // Main Chassis - Sleeker, lower
+    const chassisGeo = new THREE.BoxGeometry(2.2, 0.4, 4.8);
+    const chassis = new THREE.Mesh(chassisGeo, bodyMat);
+    chassis.position.y = 0.4;
+    chassis.userData.partGroup = 'body';
+    group.add(chassis);
+
+    // Center spine / Shark fin
+    const spineGeo = new THREE.BoxGeometry(0.1, 0.6, 2.5);
+    const spine = new THREE.Mesh(spineGeo, techMat);
+    spine.position.set(0, 1.0, -0.5);
+    spine.userData.partGroup = 'spoiler';
+    group.add(spine);
+
+    // Modern wrap-around cabin
+    const cabinGeo = new THREE.BoxGeometry(1.6, 0.45, 2.2);
+    const cabin = new THREE.Mesh(cabinGeo, glassMat);
+    cabin.position.set(0, 0.85, 0.3);
+    cabin.userData = { partType: 'glass', partGroup: 'glass' };
+    group.add(cabin);
+
+    // Aggressive wide fenders
+    const fenderGeoFront = new THREE.BoxGeometry(0.9, 0.6, 1.4);
+    const fl = new THREE.Mesh(fenderGeoFront, bodyMat); fl.position.set(-1.25, 0.5, 1.6); fl.userData.partGroup = 'body'; group.add(fl);
+    const fr = new THREE.Mesh(fenderGeoFront, bodyMat); fr.position.set(1.25, 0.5, 1.6); fr.userData.partGroup = 'body'; group.add(fr);
+
+    const fenderGeoRear = new THREE.BoxGeometry(1.0, 0.75, 1.8);
+    const rl = new THREE.Mesh(fenderGeoRear, bodyMat); rl.position.set(-1.3, 0.55, -1.2); rl.userData.partGroup = 'body'; group.add(rl);
+    const rr = new THREE.Mesh(fenderGeoRear, bodyMat); rr.position.set(1.3, 0.55, -1.2); rr.userData.partGroup = 'body'; group.add(rr);
+
+    // Aerodynamic side pods
+    const podGeo = new THREE.BoxGeometry(0.3, 0.3, 2.4);
+    const podL = new THREE.Mesh(podGeo, techMat); podL.position.set(-1.1, 0.3, 0.2); podL.userData.partGroup = 'spoiler'; group.add(podL);
+    const podR = new THREE.Mesh(podGeo, techMat); podR.position.set(1.1, 0.3, 0.2); podR.userData.partGroup = 'spoiler'; group.add(podR);
+
+    // Futuristic Rear Wing (Integrated)
+    const wingGeo = new THREE.BoxGeometry(2.8, 0.08, 0.8);
+    const wing = new THREE.Mesh(wingGeo, techMat);
+    wing.position.set(0, 1.1, -2.1);
+    wing.userData.partGroup = 'spoiler';
+    group.add(wing);
+
+    // Light strip details
+    const stripGeo = new THREE.BoxGeometry(0.05, 0.05, 4.0);
+    const stripL = new THREE.Mesh(stripGeo, glowMat); stripL.position.set(-0.6, 0.6, 0.4); group.add(stripL);
+    const stripR = new THREE.Mesh(stripGeo, glowMat); stripR.position.set(0.6, 0.6, 0.4); group.add(stripR);
+
+    // Rear light bar
+    const barGeo = new THREE.BoxGeometry(2.0, 0.05, 0.1);
+    const bar = new THREE.Mesh(barGeo, new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: lightIntensity * 2 }));
+    bar.position.set(0, 0.6, -2.41);
+    group.add(bar);
+
+    // Headlights (Vertical futuristic strips)
+    const hlGeo = new THREE.BoxGeometry(0.1, 0.4, 0.1);
+    const hlL = new THREE.Mesh(hlGeo, headLightMat); hlL.position.set(-1.0, 0.6, 2.4); group.add(hlL);
+    const hlR = new THREE.Mesh(hlGeo, headLightMat); hlR.position.set(1.0, 0.6, 2.4); group.add(hlR);
+
+    // Engine detail (V12 block look)
+    const engGeo = new THREE.BoxGeometry(0.8, 0.4, 1.2);
+    const engine = new THREE.Mesh(engGeo, engineMat);
+    engine.position.set(0, 0.7, -0.8);
+    group.add(engine);
+
+    // Wheels
+    const wheelGeo = new THREE.BoxGeometry(1.0, 0.9, 0.9);
+    const wheelMat = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.9 });
+    const rimMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2, metalness: 0.8 });
+
+    const wheels = [
+        { x: -1.3, y: 0.45, z: 1.6 },
+        { x: 1.3, y: 0.45, z: 1.6 },
+        { x: -1.4, y: 0.5, z: -1.2 },
+        { x: 1.4, y: 0.5, z: -1.2 }
+    ];
+
+    wheels.forEach(wPos => {
+        const w = new THREE.Mesh(wheelGeo, wheelMat);
+        w.position.set(wPos.x, wPos.y, wPos.z);
+        w.userData = { paintable: false };
+        group.add(w);
+
+        // Rim accent (Changed from glowMat to black rimMat)
+        const rimGeo = new THREE.BoxGeometry(0.05, 0.6, 0.6);
+        const rim = new THREE.Mesh(rimGeo, rimMat);
+        rim.position.set(wPos.x + (wPos.x > 0 ? 0.48 : -0.48), wPos.y, wPos.z);
+        group.add(rim);
+    });
+
+    if (addLights) {
+        createHeadlights(group, 1.0, 0.6, 2.4, 15.0);
+    }
+    return group;
+}
+
+// --- NPC TRAFFIC SYSTEM ---
+
+/**
+ * Spawn an NPC traffic car at a specific position.
+ * @param {number} x 
+ * @param {number} y 
+ * @param {number} z 
+ * @param {boolean} isPositiveLane - Direction of travel (based on road raw map)
+ */
+function spawnTrafficCar(x, y, z, isPositiveLane) {
+    // Random color
+    const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffaa00, 0xaa00aa, 0xffffff, 0x222222];
+    const col = colors[Math.floor(Math.random() * colors.length)];
+
+    let mesh;
+    if (trafficPool.length > 0) {
+        mesh = trafficPool.pop();
+        mesh.visible = true;
+        // Update color of existing mesh
+        mesh.traverse(child => {
+            if (child.isMesh && (child.userData.partGroup === 'body' || child.userData.partGroup === 'spoiler')) {
+                child.material.color.setHex(col);
+            }
+        });
+    } else {
+        mesh = createVehicle({
+            type: 'supercar',
+            color: col,
+            addLights: true,
+            scale: 1.6
+        });
+    }
+    mesh.position.set(x, y, z);
+    scene.add(mesh);
+
+    trafficVehicles.push({
+        mesh: mesh,
+        speed: 0.4 + Math.random() * 0.2,
+        laneDir: isPositiveLane ? 1 : -1,
+        velocity: new THREE.Vector3(),
+        pushedVelocity: new THREE.Vector3(),
+        targetRawValue: getRawRoadValue(x, z),
+        color: col
+    });
+}
+
+/**
+ * Update loop for all traffic vehicles (movement, rotation, cleanup).
+ * @param {number} time 
+ */
+function updateTraffic(time) {
+    if (!player) return;
+    const pPos = getActivePosition();
+
+    for (let i = trafficVehicles.length - 1; i >= 0; i--) {
+        const car = trafficVehicles[i];
+        const mesh = car.mesh;
+
+        // 1. Path following movement
+        const tangent = getRoadTangent(mesh.position.x, mesh.position.z);
+        if (car.laneDir < 0) tangent.negate();
+        car.velocity.copy(tangent).multiplyScalar(car.speed);
+
+        // 2. Return-to-path logic (soft correction towards original lane)
+        const scale = 0.005;
+        const currentRaw = getRawRoadValue(mesh.position.x, mesh.position.z);
+        const diff = car.targetRawValue - currentRaw;
+        // Gradient of getRawRoadValue (same math as getRoadTangent)
+        const gradX = scale * Math.cos(mesh.position.x * scale) + 0.25 * scale * Math.cos(mesh.position.x * scale * 0.5 + mesh.position.z * scale * 0.2);
+        const gradZ = -scale * Math.sin(mesh.position.z * scale) + 0.1 * scale * Math.cos(mesh.position.x * scale * 0.5 + mesh.position.z * scale * 0.2);
+
+        // Gently nudge towards the target lane raw value
+        car.velocity.x += gradX * diff * 80.0;
+        car.velocity.z += gradZ * diff * 80.0;
+
+        // 3. Apply physics
+        mesh.position.add(car.velocity);
+        if (car.pushedVelocity) {
+            mesh.position.add(car.pushedVelocity);
+            car.pushedVelocity.multiplyScalar(0.92); // Friction for push
         }
 
-        // --- Vehicle Abstraction ---
-        /**
-         * Factory function to create a vehicle mesh.
-         * @param {Object} config - Configuration object (type, color, lights, scale)
-         * @returns {THREE.Group}
-         */
-        function createVehicle(config) {
-            const type = config.type || 'supercar';
-            let bc = config.bodyColor;
-            let sc = config.spoilerColor;
-            let wc = config.windshieldColor;
-
-            if (typeof config.color === 'number') {
-                bc = config.color;
-            } else if (config.color && typeof config.color === 'object') {
-                if (bc === undefined || bc === null) bc = config.color.body;
-                if (sc === undefined || sc === null) sc = config.color.spoiler;
-                if (wc === undefined || wc === null) wc = config.color.windshield;
-            }
-
-            const bodyColor = bc !== undefined && bc !== null ? bc : null;
-            const spoilerColor = sc !== undefined && sc !== null ? sc : null;
-            const windshieldColor = wc !== undefined && wc !== null ? wc : null;
-            const addLights = config.addLights !== undefined ? config.addLights : true;
-            const scale = config.scale || 1.0;
-
-            let mesh;
-            if (type === 'supercar') {
-                mesh = buildSupercarMesh(addLights, bodyColor, spoilerColor, windshieldColor); // Pass body, spoiler, and windshield colors
-            } else if (type === 'hypercar') {
-                mesh = buildHypercarMesh(addLights, bodyColor, spoilerColor, windshieldColor); // Pass body, spoiler, and windshield colors
-            } else if (type === 'hypercar2') {
-                mesh = buildHypercar2Mesh(addLights, bodyColor, spoilerColor, windshieldColor);
-            } else {
-                mesh = buildSupercarMesh(addLights, bodyColor, spoilerColor, windshieldColor); // Default to supercar
-            }
-
-            if (scale !== 1.0) {
-                mesh.scale.set(scale, scale, scale);
-            }
-
-            return mesh;
+        // 4. Rotate to face total movement
+        const totalMove = new THREE.Vector3().copy(car.velocity).add(car.pushedVelocity || new THREE.Vector3());
+        if (totalMove.lengthSq() > 0.001) {
+            const angle = Math.atan2(totalMove.x, totalMove.z);
+            mesh.rotation.y = angle;
         }
 
-        /**
-         * Build a "Supercar" style vehicle mesh.
-         * @param {boolean} [addLights=true]
-         * @param {number|null} [bodyColor]
-         * @param {number|null} [spoilerColor]
-         * @returns {THREE.Group}
-         */
-        function buildSupercarMesh(addLights = true, bodyColor = null, spoilerColor = null, windshieldColor = null) {
-            const group = new THREE.Group();
+        // 5. Keep on ground / simple bounce
+        const t = time || performance.now();
+        mesh.position.y = PLAYER_BASE_Y + Math.sin(t * 0.02 + i) * 0.03;
 
-            // Materials
-            const currentBodyColor = bodyColor ? bodyColor : vehicleColors.supercar.body;
-            const currentSpoilerColor = spoilerColor ? spoilerColor : vehicleColors.supercar.spoiler;
-            const currentWindshieldColor = windshieldColor ? windshieldColor : vehicleColors.supercar.windshield;
+        // 6. Culling
+        const dx = mesh.position.x - pPos.x;
+        const dz = mesh.position.z - pPos.z;
+        if (dx * dx + dz * dz > CULL_DIST_SQ * 1.5) {
+            scene.remove(mesh);
+            trafficPool.push(mesh);
+            trafficVehicles.splice(i, 1);
+        }
+    }
+}
 
-            const bodyMat = new THREE.MeshStandardMaterial({ color: currentBodyColor, roughness: 0.3, metalness: 0.2 });
-            const spoilerMat = new THREE.MeshStandardMaterial({ color: currentSpoilerColor, roughness: 0.3, metalness: 0.2 }); // Uses provided spoilerColor
-            const secondaryMat = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.1, metalness: 0.6 }); // Glossy black accents
-            const glassMat = new THREE.MeshStandardMaterial({
-                color: currentWindshieldColor, // Custom or default tint
-                roughness: 0.1,
-                metalness: 0.7,
-                transparent: true,
-                opacity: 0.7 // Slightly transparent
-            });
-            const rimMat = new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.9, roughness: 0.2 });
+/**
+ * Create the main player object (container for vehicle).
+ */
+function createPlayer() {
+    player = new THREE.Group();
 
-            const lightIntensity = isNightMode ? 5.0 : 0.5;
-            const tailLightMat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: lightIntensity * 1.5 });
-            const headLightMat = new THREE.MeshStandardMaterial({ color: 0xaaccff, emissive: 0xaaccff, emissiveIntensity: lightIntensity });
+    // Find a valid spawn point on the road
+    let spawnX = 0, spawnZ = 0;
+    // Search nearby for a road
+    for (let i = 0; i < 5000; i += 10) {
+        if (getRoadValue(i, 0) < 0.1) { spawnX = i; break; }
+        if (getRoadValue(-i, 0) < 0.1) { spawnX = -i; break; }
+        if (getRoadValue(0, i) < 0.1) { spawnZ = i; break; }
+        if (getRoadValue(0, -i) < 0.1) { spawnZ = -i; break; }
+    }
 
-            // Main Body (Split into Rear and Hood)
-            // Rear Body (Chassis under cabin and rear)
-            const mainBodyGeo = new THREE.BoxGeometry(2.1, 0.5, 3.6);
-            const mainBody = new THREE.Mesh(mainBodyGeo, bodyMat);
-            mainBody.position.set(0, 0.5, -0.5);
-            mainBody.userData.partGroup = 'body'; // Mark as body part
-            group.add(mainBody);
+    player.position.set(spawnX, PLAYER_BASE_Y, spawnZ);
+    initialSpawnX = spawnX;
+    initialSpawnZ = spawnZ;
+    scene.add(player);
+    // Default to hypercar
+    loadCarModel('hypercar');
+    centerCamera(); // Center camera after spawning
+}
 
-            // Side Skirts
-            const skirtGeo = new THREE.BoxGeometry(0.2, 0.2, 3.0); // Depth, Height, Length
-            const skirtL = new THREE.Mesh(skirtGeo, spoilerMat);
-            skirtL.position.set(-1.15, 0.15, -0.5); // Positioned to the left side
-            skirtL.userData.partGroup = 'spoiler'; // Mark as spoiler part
-            group.add(skirtL);
+/**
+ * Load the 3D model for the player's car into the player group.
+ * @param {string} type - 'supercar' or 'hypercar'
+ */
+function loadCarModel(type) {
+    if (currentCarMesh) {
+        player.remove(currentCarMesh);
+        // Dispose logic for car would go here if we were generating new geoms constantly,
+        // but we are rebuilding small groups. 
+    }
+    carType = type;
+    currentCarMesh = createVehicle({
+        type: type,
+        color: vehicleColors[type],
+        addLights: true,
+        scale: 1.8
+    });
 
-            const skirtR = new THREE.Mesh(skirtGeo, spoilerMat);
-            skirtR.position.set(1.15, 0.15, -0.5); // Positioned to the right side
-            skirtR.userData.partGroup = 'spoiler'; // Mark as spoiler part
-            group.add(skirtR);
+    if (type === 'supercar') {
+        ACCELERATION = 0.1; MAX_SPEED = 3.2;
+    } else if (type === 'hypercar') {
+        ACCELERATION = 0.14; MAX_SPEED = 4.2;
+    }
+    currentCarMesh.traverse((child) => {
+        if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+        }
+    });
+    player.add(currentCarMesh);
+    updatePlayerLabel();
+}
 
-            // Hood (Front nose)
-            const hoodGeo = new THREE.BoxGeometry(2.1, 0.5, 1.0);
-            const hood = new THREE.Mesh(hoodGeo, bodyMat);
-            hood.position.set(0, 0.5, 1.8);
-            hood.userData.partGroup = 'body'; // Mark as body part
-            group.add(hood);
+/**
+ * Switch between vehicle models (Supercar/Hypercar) and trigger jump animation.
+ */
+function toggleCarModel() {
+    let newType;
+    if (carType === 'supercar') newType = 'hypercar';
+    else if (carType === 'hypercar') newType = 'hypercar2';
+    else newType = 'supercar';
+    selectCarType(newType);
+}
 
-            // Cabin (Teardrop style)
-            const cabinGeo = new THREE.BoxGeometry(1.3, 0.4, 2.2);
-            const cabin = new THREE.Mesh(cabinGeo, glassMat);
-            cabin.position.set(0, 0.9, 0.2);
-            cabin.userData = { partType: 'glass', partGroup: 'glass' }; // Mark as glass part
-            group.add(cabin);
+/**
+ * Handle manual camera movement via mouse.
+ * @param {MouseEvent} e 
+ */
+function onMouseMoveCam(e) {
+    const dx = e.clientX - camLastPos.x;
+    const dy = e.clientY - camLastPos.y;
+    updateCameraAngle(dx, dy);
+    camLastPos = { x: e.clientX, y: e.clientY };
+}
 
-            // Fenders (Wide arches)
-            const fenderGeo = new THREE.BoxGeometry(0.6, 0.65, 1.2);
-            const fl = new THREE.Mesh(fenderGeo, bodyMat); fl.position.set(-1.1, 0.525, 1.6); fl.userData.partGroup = 'body'; group.add(fl); // Mark as body part
-            const fr = new THREE.Mesh(fenderGeo, bodyMat); fr.position.set(1.1, 0.525, 1.6); fr.userData.partGroup = 'body'; group.add(fr); // Mark as body part
+/**
+ * Handle global mouse down events (game interactions).
+ * @param {MouseEvent} e 
+ */
+function onMouseDown(e) {
+    // Check if clicking inside settings modal or any active modal
+    if (settingsModal.classList.contains('active')) {
+        const rect = settingsModal.querySelector('.modal-content').getBoundingClientRect();
+        if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
+            return; // Ignore clicks inside modal
+        }
+    } else if (vehicleModalOpen || pedestrianModalOpen) {
+        return; // Usually these have their own overlay handling, but safety first
+    }
 
-            const rearFenderGeo = new THREE.BoxGeometry(0.7, 0.7, 1.4);
-            const rl = new THREE.Mesh(rearFenderGeo, bodyMat); rl.position.set(-1.15, 0.55, -1.4); rl.userData.partGroup = 'body'; group.add(rl); // Mark as body part
-            const rr = new THREE.Mesh(rearFenderGeo, bodyMat); rr.position.set(1.15, 0.55, -1.4); rr.userData.partGroup = 'body'; group.add(rr); // Mark as body part
+    // Check miniature hold/click
 
-            // Spoiler (Aggressive Wing)
-            const wingPillarGeo = new THREE.BoxGeometry(0.1, 0.5, 0.5);
-            const pL = new THREE.Mesh(wingPillarGeo, spoilerMat); pL.position.set(-0.6, 0.9, -2.0); pL.userData.partGroup = 'spoiler'; group.add(pL); // Mark as spoiler part
-            const pR = new THREE.Mesh(wingPillarGeo, spoilerMat); pR.position.set(0.6, 0.9, -2.0); pR.userData.partGroup = 'spoiler'; group.add(pR); // Mark as spoiler part
 
-            const wingGeo = new THREE.BoxGeometry(2.8, 0.05, 0.8);
-            const wing = new THREE.Mesh(wingGeo, spoilerMat);
-            wing.position.set(0, 1.15, -2.1);
-            wing.userData.partGroup = 'spoiler'; // Mark as spoiler part
-            group.add(wing);
 
-            // Lights
-            // Rear light strip (Cyberpunk style)
-            const stripGeo = new THREE.BoxGeometry(2.0, 0.1, 0.1);
-            const strip = new THREE.Mesh(stripGeo, tailLightMat);
-            strip.position.set(0, 0.6, -2.35);
-            strip.userData.partGroup = 'light'; // Mark as light
-            group.add(strip);
 
-            // Headlights (Angled slits)
-            const hlGeo = new THREE.BoxGeometry(0.5, 0.05, 0.2);
-            const hlL = new THREE.Mesh(hlGeo, headLightMat); hlL.position.set(-0.9, 0.5, 2.3); hlL.rotation.y = 0.2; hlL.userData.partGroup = 'light'; group.add(hlL); // Mark as light
-            const hlR = new THREE.Mesh(hlGeo, headLightMat); hlR.position.set(0.9, 0.5, 2.3); hlR.rotation.y = -0.2; hlR.userData.partGroup = 'light'; group.add(hlR); // Mark as light
-            // Wheels
-            const wheelGeo = new THREE.BoxGeometry(0.6, 0.8, 0.8); // Using box for style consistency with low poly
-            const positions = [
-                { x: -1.15, z: 1.6 }, { x: 1.15, z: 1.6 }, // Front
-                { x: -1.25, z: -1.4 }, { x: 1.25, z: -1.4 } // Rear (Wider)
-            ];
+    if (checkVehicleTap(e.clientX, e.clientY)) {
+        handleVehicleTap();
+        return;
+    }
 
-            positions.forEach(pos => {
-                const w = new THREE.Mesh(wheelGeo, secondaryMat);
-                w.position.set(pos.x, 0.4, pos.z);
-                w.userData = { paintable: false };
-                group.add(w);
+    if (e.target === timeBtn || e.target === shareBtn) return;
+    const now = Date.now();
+    if (now - lastTapTime < 250) emitWheelSmoke();
+    lastTapTime = now;
+    if (e.clientX < window.innerWidth / 2) {
+    } else {
+        isManualCamera = true;
+        manualCamTimer = 120;
+        camLastPos = { x: e.clientX, y: e.clientY };
+        document.addEventListener('mousemove', onMouseMoveCam);
+        document.addEventListener('mouseup', () => { document.removeEventListener('mousemove', onMouseMoveCam); });
+    }
+}
 
-                // Rim detail
-                const rim = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.5, 0.5), rimMat);
-                rim.position.set(pos.x + (pos.x > 0 ? 0.26 : -0.26), 0.4, pos.z);
-                rim.userData = { paintable: false };
-                group.add(rim);
-            });
+/**
+ * Handle global touch start events (joystick, interactions).
+ * @param {TouchEvent} e 
+ */
+function onTouchStart(e) {
+    // If share modal is open and the touch is inside the modal content,
+    // allow default behavior so clicks/taps work as expected.
+    if (shareModal.classList.contains('active')) {
+        if (e.target === shareModal) {
+            // Tapping on backdrop closes the modal
+            closeShareModal();
+            return;
+        }
+        if (e.target.closest && e.target.closest('#share-modal-content')) {
+            return;
+        }
+    }
 
-            if (addLights) {
-                // Cooler blue-ish headlights for the black car
-                createHeadlights(group, 0.9, 0.5, 2.4, 12.0);
-            }
+    // Allow native touch/focus for inputs (chat, username fields)
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.closest('#chat-input-container')) {
+        return;
+    }
 
-            return group;
+    e.preventDefault();
+    const touches = e.changedTouches;
+    const zoneRect = movementZone.getBoundingClientRect();
+    const zoneCenter = { x: zoneRect.left + zoneRect.width / 2, y: zoneRect.top + zoneRect.height / 2 };
+    const now = Date.now();
+    if (now - lastTapTime < 250) emitWheelSmoke();
+    lastTapTime = now;
+    for (let i = 0; i < touches.length; i++) {
+        const t = touches[i];
+
+
+        if (checkVehicleTap(t.clientX, t.clientY)) {
+            handleVehicleTap();
+            continue;
+        }
+        if (t.target === timeBtn) {
+            toggleDayNight();
+            continue;
+        }
+        if (t.target === shareBtn) {
+            openShareModal();
+            continue;
         }
 
-        /**
-         * Build a "Hypercar" style vehicle mesh.
-         * @param {boolean} [addLights=true] 
-         * @param {number|null} [bodyColor] 
-         * @param {number|null} [spoilerColor] 
-         * @returns {THREE.Group}
-         */
-        function buildHypercarMesh(addLights = true, bodyColor = null, spoilerColor = null, windshieldColor = null) {
-            const group = new THREE.Group();
-            const currentBodyColor = bodyColor ? bodyColor : vehicleColors.hypercar.body;
-            const currentSpoilerColor = spoilerColor ? spoilerColor : vehicleColors.hypercar.spoiler;
-            const currentWindshieldColor = windshieldColor ? windshieldColor : vehicleColors.hypercar.windshield;
-            const bodyMat = new THREE.MeshStandardMaterial({ color: currentBodyColor, roughness: 0.2, metalness: 0.6 });
-            const carbonMat = new THREE.MeshStandardMaterial({ color: currentSpoilerColor, roughness: 0.5, metalness: 0.5 }); // Carbon mat for spoiler is now paintable
-            const glassMat = new THREE.MeshStandardMaterial({
-                color: currentWindshieldColor, // Custom or default tint
-                roughness: 0.1,
-                metalness: 0.7,
-                transparent: true,
-                opacity: 0.7 // Slightly transparent
-            });
-
-            const lightIntensity = isNightMode ? 5.0 : 0.5;
-            const tailLightMat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: lightIntensity });
-            const headLightMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: lightIntensity });
-            const exhaustMat = new THREE.MeshStandardMaterial({ color: 0x8888ff, metalness: 1.0, roughness: 0.2, emissive: 0x2222ff, emissiveIntensity: isNightMode ? 2.0 : 0.5 });
-
-            const chassisGeo = new THREE.BoxGeometry(2.0, 0.5, 4.4);
-            const chassis = new THREE.Mesh(chassisGeo, bodyMat); chassis.position.y = 0.5; chassis.userData.partGroup = 'body'; group.add(chassis);
-            const cabinGeo = new THREE.BoxGeometry(1.4, 0.5, 2.0);
-            const cabin = new THREE.Mesh(cabinGeo, glassMat); cabin.position.set(0, 1.0, 0.2);
-            cabin.userData = { partType: 'glass', partGroup: 'glass' };
-            group.add(cabin);
-            const fenderGeoFront = new THREE.BoxGeometry(0.8, 0.65, 1.2);
-            const fenderGeoRear = new THREE.BoxGeometry(0.9, 0.72, 1.4);
-            const fl = new THREE.Mesh(fenderGeoFront, bodyMat); fl.position.set(-1.2, 0.525, 1.4); fl.userData.partGroup = 'body'; group.add(fl);
-            const fr = new THREE.Mesh(fenderGeoFront, bodyMat); fr.position.set(1.2, 0.525, 1.4); fr.userData.partGroup = 'body'; group.add(fr);
-            const rl = new THREE.Mesh(fenderGeoRear, bodyMat); rl.position.set(-1.25, 0.6, -1.2); rl.userData.partGroup = 'body'; group.add(rl);
-            const rr = new THREE.Mesh(fenderGeoRear, bodyMat); rr.position.set(1.25, 0.6, -1.2); rr.userData.partGroup = 'body'; group.add(rr);
-            const skirtGeo = new THREE.BoxGeometry(0.4, 0.2, 2.0);
-            const skirtL = new THREE.Mesh(skirtGeo, carbonMat); skirtL.position.set(-1.1, 0.3, 0.1); skirtL.userData.partGroup = 'spoiler'; group.add(skirtL);
-            const skirtR = new THREE.Mesh(skirtGeo, carbonMat); skirtR.position.set(1.1, 0.3, 0.1); skirtR.userData.partGroup = 'spoiler'; group.add(skirtR);
-            const wingPillarGeo = new THREE.BoxGeometry(0.2, 0.6, 0.4);
-            const wpL = new THREE.Mesh(wingPillarGeo, carbonMat); wpL.position.set(-0.5, 0.8, -1.8); wpL.userData.partGroup = 'spoiler'; group.add(wpL);
-            const wpR = new THREE.Mesh(wingPillarGeo, carbonMat); wpR.position.set(0.5, 0.8, -1.8); wpR.userData.partGroup = 'spoiler'; group.add(wpR);
-            const wingBladeGeo = new THREE.BoxGeometry(2.6, 0.1, 0.8);
-            const wing = new THREE.Mesh(wingBladeGeo, carbonMat); wing.position.set(0, 1.1, -1.9); wing.userData.partGroup = 'spoiler'; group.add(wing);
-            const exhaustBoxGeo = new THREE.BoxGeometry(0.6, 0.4, 0.1);
-            const exhaustBox = new THREE.Mesh(exhaustBoxGeo, carbonMat); exhaustBox.position.set(0, 0.6, -2.25); group.add(exhaustBox);
-            const pipeGeo = new THREE.BoxGeometry(0.1, 0.1, 0.1);
-            [[-0.15, 0.1], [0.15, 0.1], [-0.15, -0.1], [0.15, -0.1]].forEach(off => {
-                const pipe = new THREE.Mesh(pipeGeo, exhaustMat); pipe.position.set(off[0], 0.6 + off[1], -2.31); group.add(pipe);
-            });
-            const tlGeo = new THREE.BoxGeometry(0.1, 0.4, 0.1);
-            const tlL = new THREE.Mesh(tlGeo, tailLightMat); tlL.position.set(-1.4, 0.7, -1.9); group.add(tlL);
-            const tlR = new THREE.Mesh(tlGeo, tailLightMat); tlR.position.set(1.4, 0.7, -1.9); group.add(tlR);
-            const hlGeo = new THREE.BoxGeometry(0.6, 0.1, 0.2);
-            const hlL = new THREE.Mesh(hlGeo, headLightMat); hlL.position.set(-1.0, 0.5, 2.0); group.add(hlL);
-            const hlR = new THREE.Mesh(hlGeo, headLightMat); hlR.position.set(1.0, 0.5, 2.0); group.add(hlR);
-
-            // Wheels
-            const wheelGeo = new THREE.BoxGeometry(0.9, 0.8, 0.8);
-            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.9 });
-
-            const flWheel = new THREE.Mesh(wheelGeo, wheelMat); flWheel.position.set(-1.25, 0.4, 1.4); flWheel.userData = { paintable: false }; group.add(flWheel);
-            const frWheel = new THREE.Mesh(wheelGeo, wheelMat); frWheel.position.set(1.25, 0.4, 1.4); frWheel.userData = { paintable: false }; group.add(frWheel);
-            const rlWheel = new THREE.Mesh(wheelGeo, wheelMat); rlWheel.position.set(-1.35, 0.45, -1.2); rlWheel.userData = { paintable: false }; group.add(rlWheel);
-            const rrWheel = new THREE.Mesh(wheelGeo, wheelMat); rrWheel.position.set(1.35, 0.45, -1.2); rrWheel.userData = { paintable: false }; group.add(rrWheel);
-
-            if (addLights) {
-                createHeadlights(group, 1.0, 0.5, 2.0, 10.0);
-            }
-            return group;
+        // Check for modal interactions to prevent pass-through
+        if (settingsModal.classList.contains('active') || vehicleModalOpen || pedestrianModalOpen || shareModal.classList.contains('active')) {
+            continue; // Skip game logic touches if modals are open
         }
 
-        /**
-         * Build a "Hypercar 2.0" style vehicle mesh.
-         * @param {boolean} [addLights=true] 
-         * @param {number|null} [bodyColor] 
-         * @param {number|null} [spoilerColor] 
-         * @returns {THREE.Group}
-         */
-        function buildHypercar2Mesh(addLights = true, bodyColor = null, spoilerColor = null, windshieldColor = null) {
-            const group = new THREE.Group();
-            const currentBodyColor = bodyColor ? bodyColor : vehicleColors.hypercar2.body;
-            const currentSpoilerColor = spoilerColor ? spoilerColor : vehicleColors.hypercar2.spoiler;
-            const currentWindshieldColor = windshieldColor ? windshieldColor : vehicleColors.hypercar2.windshield;
-
-            const bodyMat = new THREE.MeshStandardMaterial({ color: currentBodyColor, roughness: 0.1, metalness: 0.8 });
-            const techMat = new THREE.MeshStandardMaterial({ color: currentSpoilerColor, roughness: 0.3, metalness: 0.7 });
-            const glassMat = new THREE.MeshStandardMaterial({
-                color: currentWindshieldColor,
-                roughness: 0.05,
-                metalness: 0.9,
-                transparent: true,
-                opacity: 0.6
-            });
-
-            const lightIntensity = isNightMode ? 6.0 : 0.8;
-            const glowMat = new THREE.MeshStandardMaterial({
-                color: 0x00ffff,
-                emissive: 0x00ffff,
-                emissiveIntensity: lightIntensity
-            });
-            const headLightMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: lightIntensity });
-            const engineMat = new THREE.MeshStandardMaterial({ color: 0x444444, metalness: 1.0, roughness: 0.2 });
-
-            // Main Chassis - Sleeker, lower
-            const chassisGeo = new THREE.BoxGeometry(2.2, 0.4, 4.8);
-            const chassis = new THREE.Mesh(chassisGeo, bodyMat);
-            chassis.position.y = 0.4;
-            chassis.userData.partGroup = 'body';
-            group.add(chassis);
-
-            // Center spine / Shark fin
-            const spineGeo = new THREE.BoxGeometry(0.1, 0.6, 2.5);
-            const spine = new THREE.Mesh(spineGeo, techMat);
-            spine.position.set(0, 1.0, -0.5);
-            spine.userData.partGroup = 'spoiler';
-            group.add(spine);
-
-            // Modern wrap-around cabin
-            const cabinGeo = new THREE.BoxGeometry(1.6, 0.45, 2.2);
-            const cabin = new THREE.Mesh(cabinGeo, glassMat);
-            cabin.position.set(0, 0.85, 0.3);
-            cabin.userData = { partType: 'glass', partGroup: 'glass' };
-            group.add(cabin);
-
-            // Aggressive wide fenders
-            const fenderGeoFront = new THREE.BoxGeometry(0.9, 0.6, 1.4);
-            const fl = new THREE.Mesh(fenderGeoFront, bodyMat); fl.position.set(-1.25, 0.5, 1.6); fl.userData.partGroup = 'body'; group.add(fl);
-            const fr = new THREE.Mesh(fenderGeoFront, bodyMat); fr.position.set(1.25, 0.5, 1.6); fr.userData.partGroup = 'body'; group.add(fr);
-
-            const fenderGeoRear = new THREE.BoxGeometry(1.0, 0.75, 1.8);
-            const rl = new THREE.Mesh(fenderGeoRear, bodyMat); rl.position.set(-1.3, 0.55, -1.2); rl.userData.partGroup = 'body'; group.add(rl);
-            const rr = new THREE.Mesh(fenderGeoRear, bodyMat); rr.position.set(1.3, 0.55, -1.2); rr.userData.partGroup = 'body'; group.add(rr);
-
-            // Aerodynamic side pods
-            const podGeo = new THREE.BoxGeometry(0.3, 0.3, 2.4);
-            const podL = new THREE.Mesh(podGeo, techMat); podL.position.set(-1.1, 0.3, 0.2); podL.userData.partGroup = 'spoiler'; group.add(podL);
-            const podR = new THREE.Mesh(podGeo, techMat); podR.position.set(1.1, 0.3, 0.2); podR.userData.partGroup = 'spoiler'; group.add(podR);
-
-            // Futuristic Rear Wing (Integrated)
-            const wingGeo = new THREE.BoxGeometry(2.8, 0.08, 0.8);
-            const wing = new THREE.Mesh(wingGeo, techMat);
-            wing.position.set(0, 1.1, -2.1);
-            wing.userData.partGroup = 'spoiler';
-            group.add(wing);
-
-            // Light strip details
-            const stripGeo = new THREE.BoxGeometry(0.05, 0.05, 4.0);
-            const stripL = new THREE.Mesh(stripGeo, glowMat); stripL.position.set(-0.6, 0.6, 0.4); group.add(stripL);
-            const stripR = new THREE.Mesh(stripGeo, glowMat); stripR.position.set(0.6, 0.6, 0.4); group.add(stripR);
-
-            // Rear light bar
-            const barGeo = new THREE.BoxGeometry(2.0, 0.05, 0.1);
-            const bar = new THREE.Mesh(barGeo, new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: lightIntensity * 2 }));
-            bar.position.set(0, 0.6, -2.41);
-            group.add(bar);
-
-            // Headlights (Vertical futuristic strips)
-            const hlGeo = new THREE.BoxGeometry(0.1, 0.4, 0.1);
-            const hlL = new THREE.Mesh(hlGeo, headLightMat); hlL.position.set(-1.0, 0.6, 2.4); group.add(hlL);
-            const hlR = new THREE.Mesh(hlGeo, headLightMat); hlR.position.set(1.0, 0.6, 2.4); group.add(hlR);
-
-            // Engine detail (V12 block look)
-            const engGeo = new THREE.BoxGeometry(0.8, 0.4, 1.2);
-            const engine = new THREE.Mesh(engGeo, engineMat);
-            engine.position.set(0, 0.7, -0.8);
-            group.add(engine);
-
-            // Wheels
-            const wheelGeo = new THREE.BoxGeometry(1.0, 0.9, 0.9);
-            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.9 });
-            const rimMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.2, metalness: 0.8 });
-
-            const wheels = [
-                { x: -1.3, y: 0.45, z: 1.6 },
-                { x: 1.3, y: 0.45, z: 1.6 },
-                { x: -1.4, y: 0.5, z: -1.2 },
-                { x: 1.4, y: 0.5, z: -1.2 }
-            ];
-
-            wheels.forEach(wPos => {
-                const w = new THREE.Mesh(wheelGeo, wheelMat);
-                w.position.set(wPos.x, wPos.y, wPos.z);
-                w.userData = { paintable: false };
-                group.add(w);
-
-                // Rim accent (Changed from glowMat to black rimMat)
-                const rimGeo = new THREE.BoxGeometry(0.05, 0.6, 0.6);
-                const rim = new THREE.Mesh(rimGeo, rimMat);
-                rim.position.set(wPos.x + (wPos.x > 0 ? 0.48 : -0.48), wPos.y, wPos.z);
-                group.add(rim);
-            });
-
-            if (addLights) {
-                createHeadlights(group, 1.0, 0.6, 2.4, 15.0);
-            }
-            return group;
+        const dx = t.clientX - zoneCenter.x;
+        const dy = t.clientY - zoneCenter.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (moveTouchId === null && dist < joystickRadius * 1.5) {
+            moveTouchId = t.identifier;
+            updateJoystick(t.clientX, t.clientY, zoneCenter);
+        } else if (camTouchId === null) {
+            camTouchId = t.identifier;
+            isManualCamera = true;
+            manualCamTimer = 120;
+            camLastPos = { x: t.clientX, y: t.clientY };
         }
+    }
+}
 
-        // --- NPC TRAFFIC SYSTEM ---
-
-        /**
-         * Spawn an NPC traffic car at a specific position.
-         * @param {number} x 
-         * @param {number} y 
-         * @param {number} z 
-         * @param {boolean} isPositiveLane - Direction of travel (based on road raw map)
-         */
-        function spawnTrafficCar(x, y, z, isPositiveLane) {
-            // Random color
-            const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xffaa00, 0xaa00aa, 0xffffff, 0x222222];
-            const col = colors[Math.floor(Math.random() * colors.length)];
-
-            let mesh;
-            if (trafficPool.length > 0) {
-                mesh = trafficPool.pop();
-                mesh.visible = true;
-                // Update color of existing mesh
-                mesh.traverse(child => {
-                    if (child.isMesh && (child.userData.partGroup === 'body' || child.userData.partGroup === 'spoiler')) {
-                        child.material.color.setHex(col);
-                    }
-                });
-            } else {
-                mesh = createVehicle({
-                    type: 'supercar',
-                    color: col,
-                    addLights: true,
-                    scale: 1.6
-                });
-            }
-            mesh.position.set(x, y, z);
-            scene.add(mesh);
-
-            trafficVehicles.push({
-                mesh: mesh,
-                speed: 0.4 + Math.random() * 0.2,
-                laneDir: isPositiveLane ? 1 : -1,
-                velocity: new THREE.Vector3(),
-                pushedVelocity: new THREE.Vector3(),
-                targetRawValue: getRawRoadValue(x, z),
-                color: col
-            });
-        }
-
-        /**
-         * Update loop for all traffic vehicles (movement, rotation, cleanup).
-         * @param {number} time 
-         */
-        function updateTraffic(time) {
-            if (!player) return;
-            const pPos = getActivePosition();
-
-            for (let i = trafficVehicles.length - 1; i >= 0; i--) {
-                const car = trafficVehicles[i];
-                const mesh = car.mesh;
-
-                // 1. Path following movement
-                const tangent = getRoadTangent(mesh.position.x, mesh.position.z);
-                if (car.laneDir < 0) tangent.negate();
-                car.velocity.copy(tangent).multiplyScalar(car.speed);
-
-                // 2. Return-to-path logic (soft correction towards original lane)
-                const scale = 0.005;
-                const currentRaw = getRawRoadValue(mesh.position.x, mesh.position.z);
-                const diff = car.targetRawValue - currentRaw;
-                // Gradient of getRawRoadValue (same math as getRoadTangent)
-                const gradX = scale * Math.cos(mesh.position.x * scale) + 0.25 * scale * Math.cos(mesh.position.x * scale * 0.5 + mesh.position.z * scale * 0.2);
-                const gradZ = -scale * Math.sin(mesh.position.z * scale) + 0.1 * scale * Math.cos(mesh.position.x * scale * 0.5 + mesh.position.z * scale * 0.2);
-
-                // Gently nudge towards the target lane raw value
-                car.velocity.x += gradX * diff * 80.0;
-                car.velocity.z += gradZ * diff * 80.0;
-
-                // 3. Apply physics
-                mesh.position.add(car.velocity);
-                if (car.pushedVelocity) {
-                    mesh.position.add(car.pushedVelocity);
-                    car.pushedVelocity.multiplyScalar(0.92); // Friction for push
-                }
-
-                // 4. Rotate to face total movement
-                const totalMove = new THREE.Vector3().copy(car.velocity).add(car.pushedVelocity || new THREE.Vector3());
-                if (totalMove.lengthSq() > 0.001) {
-                    const angle = Math.atan2(totalMove.x, totalMove.z);
-                    mesh.rotation.y = angle;
-                }
-
-                // 5. Keep on ground / simple bounce
-                const t = time || performance.now();
-                mesh.position.y = PLAYER_BASE_Y + Math.sin(t * 0.02 + i) * 0.03;
-
-                // 6. Culling
-                const dx = mesh.position.x - pPos.x;
-                const dz = mesh.position.z - pPos.z;
-                if (dx * dx + dz * dz > CULL_DIST_SQ * 1.5) {
-                    scene.remove(mesh);
-                    trafficPool.push(mesh);
-                    trafficVehicles.splice(i, 1);
-                }
-            }
-        }
-
-        /**
-         * Create the main player object (container for vehicle).
-         */
-        function createPlayer() {
-            player = new THREE.Group();
-
-            // Find a valid spawn point on the road
-            let spawnX = 0, spawnZ = 0;
-            // Search nearby for a road
-            for (let i = 0; i < 5000; i += 10) {
-                if (getRoadValue(i, 0) < 0.1) { spawnX = i; break; }
-                if (getRoadValue(-i, 0) < 0.1) { spawnX = -i; break; }
-                if (getRoadValue(0, i) < 0.1) { spawnZ = i; break; }
-                if (getRoadValue(0, -i) < 0.1) { spawnZ = -i; break; }
-            }
-
-            player.position.set(spawnX, PLAYER_BASE_Y, spawnZ);
-            initialSpawnX = spawnX;
-            initialSpawnZ = spawnZ;
-            scene.add(player);
-            // Default to hypercar
-            loadCarModel('hypercar');
-            centerCamera(); // Center camera after spawning
-        }
-
-        /**
-         * Load the 3D model for the player's car into the player group.
-         * @param {string} type - 'supercar' or 'hypercar'
-         */
-        function loadCarModel(type) {
-            if (currentCarMesh) {
-                player.remove(currentCarMesh);
-                // Dispose logic for car would go here if we were generating new geoms constantly,
-                // but we are rebuilding small groups. 
-            }
-            carType = type;
-            currentCarMesh = createVehicle({
-                type: type,
-                color: vehicleColors[type],
-                addLights: true,
-                scale: 1.8
-            });
-
-            if (type === 'supercar') {
-                ACCELERATION = 0.1; MAX_SPEED = 3.2;
-            } else if (type === 'hypercar') {
-                ACCELERATION = 0.14; MAX_SPEED = 4.2;
-            }
-            currentCarMesh.traverse((child) => {
-                if (child.isMesh) {
-                    child.castShadow = true;
-                    child.receiveShadow = true;
-                }
-            });
-            player.add(currentCarMesh);
-            updatePlayerLabel();
-        }
-
-        /**
-         * Switch between vehicle models (Supercar/Hypercar) and trigger jump animation.
-         */
-        function toggleCarModel() {
-            let newType;
-            if (carType === 'supercar') newType = 'hypercar';
-            else if (carType === 'hypercar') newType = 'hypercar2';
-            else newType = 'supercar';
-            selectCarType(newType);
-        }
-
-        /**
-         * Handle manual camera movement via mouse.
-         * @param {MouseEvent} e 
-         */
-        function onMouseMoveCam(e) {
-            const dx = e.clientX - camLastPos.x;
-            const dy = e.clientY - camLastPos.y;
+/**
+ * Handle global touch move events (joystick drag).
+ * @param {TouchEvent} e 
+ */
+function onTouchMove(e) {
+    // Allow native input interaction
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.closest('#chat-input-container')) {
+        return;
+    }
+    e.preventDefault();
+    const touches = e.changedTouches;
+    const zoneRect = movementZone.getBoundingClientRect();
+    const zoneCenter = { x: zoneRect.left + zoneRect.width / 2, y: zoneRect.top + zoneRect.height / 2 };
+    for (let i = 0; i < touches.length; i++) {
+        const t = touches[i];
+        if (t.identifier === moveTouchId) {
+            updateJoystick(t.clientX, t.clientY, zoneCenter);
+        } else if (t.identifier === camTouchId) {
+            const dx = t.clientX - camLastPos.x;
+            const dy = t.clientY - camLastPos.y;
             updateCameraAngle(dx, dy);
-            camLastPos = { x: e.clientX, y: e.clientY };
+            camLastPos = { x: t.clientX, y: t.clientY };
+            isManualCamera = true;
+            manualCamTimer = 120;
+        }
+    }
+}
+
+/**
+ * Handle global touch end events.
+ * @param {TouchEvent} e 
+ */
+function onTouchEnd(e) {
+    // Allow native input interaction
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.closest('#chat-input-container')) {
+        return;
+    }
+    e.preventDefault();
+
+    // Check if we are releasing the miniature button
+    if (isHolding || holdTimer) {
+        clearTimeout(holdTimer);
+        if (isHolding) {
+            toggleCarModel();
+            isHolding = false;
+        }
+        // If we were holding, we don't want to process other touch ends potentially?
+        // Actually, we should process others just in case.
+    }
+
+    const touches = e.changedTouches;
+    for (let i = 0; i < touches.length; i++) {
+        if (touches[i].identifier === moveTouchId) {
+            moveTouchId = null;
+            updateMoveInputFromKeys();
+        }
+        if (touches[i].identifier === camTouchId) camTouchId = null;
+    }
+}
+
+/**
+ * Update the virtual joystick UI and input values.
+ * @param {number} clientX 
+ * @param {number} clientY 
+ * @param {{x:number, y:number}} center - Joystick center coordinates
+ */
+function updateJoystick(clientX, clientY, center) {
+    let dx = clientX - center.x;
+    let dy = clientY - center.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    if (distance > joystickRadius) {
+        const ratio = joystickRadius / distance;
+        dx *= ratio;
+        dy *= ratio;
+    }
+    stickKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+    moveInput.x = dx / joystickRadius;
+    moveInput.y = dy / joystickRadius;
+}
+
+/**
+ * Update camera angles based on input delta.
+ * @param {number} dx 
+ * @param {number} dy 
+ */
+function updateCameraAngle(dx, dy) {
+    const sensitivity = 0.005;
+    cameraAngle -= dx * sensitivity;
+    cameraVerticalAngle -= dy * sensitivity;
+    cameraVerticalAngle = Math.max(0.1, Math.min(Math.PI / 2 - 0.1, cameraVerticalAngle));
+}
+
+/**
+ * Reset camera to follow behind the player.
+ */
+function centerCamera() {
+    if (!player) return;
+    cameraAngle = player.rotation.y + Math.PI;
+    cameraVerticalAngle = 0.5;
+    isManualCamera = false;
+    manualCamTimer = 0;
+}
+
+/**
+ * Update the on-screen arrow pointing to the car's heading relative to camera.
+ */
+function updateHeadingIndicator() {
+    if (!player) return;
+    const carRot = player.rotation.y;
+    const camRot = cameraAngle;
+    const diff = carRot - camRot;
+    const screenX = Math.sin(diff);
+    const screenY = -Math.cos(diff);
+    const angleRad = Math.atan2(screenX, screenY);
+    const angleDeg = angleRad * (180 / Math.PI);
+    headingArrow.style.transform = `rotate(${angleDeg}deg)`;
+}
+
+/**
+ * Calculate the shortest distance between two angles (in radians).
+ * @param {number} a 
+ * @param {number} b 
+ * @returns {number} Angle difference
+ */
+function shortestAngleDist(a, b) {
+    let diff = b - a;
+    while (diff > Math.PI) diff -= Math.PI * 2;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+    return diff;
+}
+
+/**
+ * Main physics update loop for player and collisions.
+ */
+function updatePhysics() {
+    if (isGameOver) return;
+
+    if (controlMode === 'pedestrian' && userPedestrian) {
+        // Pedestrian Control Logic
+        const PED_SPEED = 0.25;
+        const turnSpeed = 0.15;
+
+        // Input vector from joystick/keys
+        const dx = moveInput.x;
+        const dy = moveInput.y; // -1 is up (forward) usually in 2D screen coords, but let's check input logic
+        // In updateMoveInputFromKeys: 'w' (up) -> dy = -1. 's' (down) -> dy = 1.
+        // In joystick: up -> dy negative.
+
+        // Movement relative to camera
+        // Camera looks at player.
+        // We want "Up" to be "Away from camera".
+        const camDir = new THREE.Vector3();
+        camera.getWorldDirection(camDir);
+        camDir.y = 0;
+        camDir.normalize();
+
+        const camRight = new THREE.Vector3();
+        camRight.crossVectors(camDir, new THREE.Vector3(0, 1, 0));
+
+        // dy is negative for UP/Forward input.
+        // dx is positive for Right input.
+
+        const moveDir = new THREE.Vector3();
+        moveDir.addScaledVector(camDir, -dy); // -(-1) = +1 (Forward along camera view)
+        moveDir.addScaledVector(camRight, dx);
+
+        if (moveDir.lengthSq() > 0.01) {
+            moveDir.normalize();
+            userPedestrian.position.addScaledVector(moveDir, PED_SPEED);
+
+            // Only rotate to face movement if not moving backwards relative to camera
+            if (dy <= 0.2) {
+                const targetRot = Math.atan2(moveDir.x, moveDir.z);
+                let rotDiff = shortestAngleDist(userPedestrian.rotation, targetRot);
+                userPedestrian.rotation += rotDiff * turnSpeed;
+            }
+
+            // Animation: reverse if backing up
+            const animSpeed = dy > 0.2 ? -0.4 : 0.4;
+            userPedestrian.animPhase += animSpeed;
+            const swing = Math.sin(userPedestrian.animPhase) * 0.6;
+            userPedestrian.mesh.userData.limbs.legL.rotation.x = swing;
+            userPedestrian.mesh.userData.limbs.legR.rotation.x = -swing;
+            userPedestrian.mesh.userData.limbs.armL.rotation.x = -swing;
+            userPedestrian.mesh.userData.limbs.armR.rotation.x = swing;
+        } else {
+            // Idle pose
+            userPedestrian.mesh.userData.limbs.legL.rotation.x = 0;
+            userPedestrian.mesh.userData.limbs.legR.rotation.x = 0;
+            userPedestrian.mesh.userData.limbs.armL.rotation.x = 0;
+            userPedestrian.mesh.userData.limbs.armR.rotation.x = 0;
         }
 
-        /**
-         * Handle global mouse down events (game interactions).
-         * @param {MouseEvent} e 
-         */
-        function onMouseDown(e) {
-            // Check if clicking inside settings modal or any active modal
-            if (settingsModal.classList.contains('active')) {
-                const rect = settingsModal.querySelector('.modal-content').getBoundingClientRect();
-                if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
-                    return; // Ignore clicks inside modal
-                }
-            } else if (vehicleModalOpen || pedestrianModalOpen) {
-                return; // Usually these have their own overlay handling, but safety first
-            }
+        userPedestrian.mesh.position.copy(userPedestrian.position);
+        userPedestrian.mesh.rotation.y = userPedestrian.rotation;
 
-            // Check miniature hold/click
+        // Keep player (car) updating slightly for collisions logic if we wanted, 
+        // but for now just stop it.
+        velocity.set(0, 0, 0);
+        return;
+    }
 
+    // --- Vehicle Control Logic ---
+    // Input smoothing (interpolation) for a more 'weighty' and realistic feel
+    // Digital keyboard inputs become smooth curves, and joystick jitters are filtered.
+    smoothedInputX += (moveInput.x - smoothedInputX) * 0.2;
+    smoothedInputY += (moveInput.y - smoothedInputY) * 0.2;
 
+    const speed = Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
+    let appliedFriction = FRICTION;
 
+    // Lake Physics
+    const onLake = isLake(player.position.x, player.position.z);
+    if (onLake) {
+        appliedFriction = 0.999; // Very low friction
+    }
 
-            if (checkVehicleTap(e.clientX, e.clientY)) {
-                handleVehicleTap();
-                return;
-            }
+    // 1. Steering (Speed-Sensitive)
+    if (Math.abs(smoothedInputX) > 0.001) {
+        const turnFactor = (carType === 'hypercar' || carType === 'hypercar2') ? 0.045 : 0.035;
+        // Reduce steering at high speeds for stability, increase at low speeds for agility
+        const speedTurnMult = Math.max(0.25, 1.0 - (speed / MAX_SPEED) * 0.5);
 
-            if (e.target === timeBtn || e.target === shareBtn) return;
-            const now = Date.now();
-            if (now - lastTapTime < 250) emitWheelSmoke();
-            lastTapTime = now;
-            if (e.clientX < window.innerWidth / 2) {
-            } else {
-                isManualCamera = true;
-                manualCamTimer = 120;
-                camLastPos = { x: e.clientX, y: e.clientY };
-                document.addEventListener('mousemove', onMouseMoveCam);
-                document.addEventListener('mouseup', () => { document.removeEventListener('mousemove', onMouseMoveCam); });
-            }
+        const sensitivityExp = 2.0;
+        const modifiedX = Math.pow(Math.abs(smoothedInputX), sensitivityExp) * Math.sign(smoothedInputX) * 1.1;
+
+        player.rotation.y -= modifiedX * turnFactor * speedTurnMult;
+
+        // Drift smoke effects
+        if (Math.abs(smoothedInputX) > 0.5 && speed > 1.0 && Math.random() < 0.2) emitWheelSmoke();
+    }
+
+    // 2. Forces & Grip (Forward vs Lateral)
+    const rotation = player.rotation.y;
+    const forwardX = Math.sin(rotation);
+    const forwardZ = Math.cos(rotation);
+    const rightX = Math.cos(rotation);
+    const rightZ = -Math.sin(rotation);
+
+    // Project current velocity into local car space
+    let forwardVel = velocity.x * forwardX + velocity.z * forwardZ;
+    let lateralVel = velocity.x * rightX + velocity.z * rightZ;
+
+    // 3. Acceleration & Braking
+    if (Math.abs(smoothedInputY) > 0.01) {
+        const throttle = -smoothedInputY;
+
+        // Detect Braking: Moving forward but input is backward (or vice versa)
+        if ((forwardVel > 0.3 && throttle < -0.05) || (forwardVel < -0.3 && throttle > 0.05)) {
+            appliedFriction = BRAKING_FRICTION;
+            if (Math.random() < 0.15) emitWheelSmoke(); // Tire smoke on hard braking
         }
 
-        /**
-         * Handle global touch start events (joystick, interactions).
-         * @param {TouchEvent} e 
-         */
-        function onTouchStart(e) {
-            // If share modal is open and the touch is inside the modal content,
-            // allow default behavior so clicks/taps work as expected.
-            if (shareModal.classList.contains('active')) {
-                if (e.target === shareModal) {
-                    // Tapping on backdrop closes the modal
-                    closeShareModal();
-                    return;
-                }
-                if (e.target.closest && e.target.closest('#share-modal-content')) {
-                    return;
-                }
-            }
-
-            // Allow native touch/focus for inputs (chat, username fields)
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.closest('#chat-input-container')) {
-                return;
-            }
-
-            e.preventDefault();
-            const touches = e.changedTouches;
-            const zoneRect = movementZone.getBoundingClientRect();
-            const zoneCenter = { x: zoneRect.left + zoneRect.width / 2, y: zoneRect.top + zoneRect.height / 2 };
-            const now = Date.now();
-            if (now - lastTapTime < 250) emitWheelSmoke();
-            lastTapTime = now;
-            for (let i = 0; i < touches.length; i++) {
-                const t = touches[i];
-
-
-                if (checkVehicleTap(t.clientX, t.clientY)) {
-                    handleVehicleTap();
-                    continue;
-                }
-                if (t.target === timeBtn) {
-                    toggleDayNight();
-                    continue;
-                }
-                if (t.target === shareBtn) {
-                    openShareModal();
-                    continue;
-                }
-
-                // Check for modal interactions to prevent pass-through
-                if (settingsModal.classList.contains('active') || vehicleModalOpen || pedestrianModalOpen || shareModal.classList.contains('active')) {
-                    continue; // Skip game logic touches if modals are open
-                }
-
-                const dx = t.clientX - zoneCenter.x;
-                const dy = t.clientY - zoneCenter.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                if (moveTouchId === null && dist < joystickRadius * 1.5) {
-                    moveTouchId = t.identifier;
-                    updateJoystick(t.clientX, t.clientY, zoneCenter);
-                } else if (camTouchId === null) {
-                    camTouchId = t.identifier;
-                    isManualCamera = true;
-                    manualCamTimer = 120;
-                    camLastPos = { x: t.clientX, y: t.clientY };
-                }
-            }
-        }
-
-        /**
-         * Handle global touch move events (joystick drag).
-         * @param {TouchEvent} e 
-         */
-        function onTouchMove(e) {
-            // Allow native input interaction
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.closest('#chat-input-container')) {
-                return;
-            }
-            e.preventDefault();
-            const touches = e.changedTouches;
-            const zoneRect = movementZone.getBoundingClientRect();
-            const zoneCenter = { x: zoneRect.left + zoneRect.width / 2, y: zoneRect.top + zoneRect.height / 2 };
-            for (let i = 0; i < touches.length; i++) {
-                const t = touches[i];
-                if (t.identifier === moveTouchId) {
-                    updateJoystick(t.clientX, t.clientY, zoneCenter);
-                } else if (t.identifier === camTouchId) {
-                    const dx = t.clientX - camLastPos.x;
-                    const dy = t.clientY - camLastPos.y;
-                    updateCameraAngle(dx, dy);
-                    camLastPos = { x: t.clientX, y: t.clientY };
-                    isManualCamera = true;
-                    manualCamTimer = 120;
-                }
-            }
-        }
-
-        /**
-         * Handle global touch end events.
-         * @param {TouchEvent} e 
-         */
-        function onTouchEnd(e) {
-            // Allow native input interaction
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.closest('#chat-input-container')) {
-                return;
-            }
-            e.preventDefault();
-
-            // Check if we are releasing the miniature button
-            if (isHolding || holdTimer) {
-                clearTimeout(holdTimer);
-                if (isHolding) {
-                    toggleCarModel();
-                    isHolding = false;
-                }
-                // If we were holding, we don't want to process other touch ends potentially?
-                // Actually, we should process others just in case.
-            }
-
-            const touches = e.changedTouches;
-            for (let i = 0; i < touches.length; i++) {
-                if (touches[i].identifier === moveTouchId) {
-                    moveTouchId = null;
-                    updateMoveInputFromKeys();
-                }
-                if (touches[i].identifier === camTouchId) camTouchId = null;
-            }
-        }
-
-        /**
-         * Update the virtual joystick UI and input values.
-         * @param {number} clientX 
-         * @param {number} clientY 
-         * @param {{x:number, y:number}} center - Joystick center coordinates
-         */
-        function updateJoystick(clientX, clientY, center) {
-            let dx = clientX - center.x;
-            let dy = clientY - center.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            if (distance > joystickRadius) {
-                const ratio = joystickRadius / distance;
-                dx *= ratio;
-                dy *= ratio;
-            }
-            stickKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
-            moveInput.x = dx / joystickRadius;
-            moveInput.y = dy / joystickRadius;
-        }
-
-        /**
-         * Update camera angles based on input delta.
-         * @param {number} dx 
-         * @param {number} dy 
-         */
-        function updateCameraAngle(dx, dy) {
-            const sensitivity = 0.005;
-            cameraAngle -= dx * sensitivity;
-            cameraVerticalAngle -= dy * sensitivity;
-            cameraVerticalAngle = Math.max(0.1, Math.min(Math.PI / 2 - 0.1, cameraVerticalAngle));
-        }
-
-        /**
-         * Reset camera to follow behind the player.
-         */
-        function centerCamera() {
-            if (!player) return;
-            cameraAngle = player.rotation.y + Math.PI;
-            cameraVerticalAngle = 0.5;
-            isManualCamera = false;
-            manualCamTimer = 0;
-        }
-
-        /**
-         * Update the on-screen arrow pointing to the car's heading relative to camera.
-         */
-        function updateHeadingIndicator() {
-            if (!player) return;
-            const carRot = player.rotation.y;
-            const camRot = cameraAngle;
-            const diff = carRot - camRot;
-            const screenX = Math.sin(diff);
-            const screenY = -Math.cos(diff);
-            const angleRad = Math.atan2(screenX, screenY);
-            const angleDeg = angleRad * (180 / Math.PI);
-            headingArrow.style.transform = `rotate(${angleDeg}deg)`;
-        }
-
-        /**
-         * Calculate the shortest distance between two angles (in radians).
-         * @param {number} a 
-         * @param {number} b 
-         * @returns {number} Angle difference
-         */
-        function shortestAngleDist(a, b) {
-            let diff = b - a;
-            while (diff > Math.PI) diff -= Math.PI * 2;
-            while (diff < -Math.PI) diff += Math.PI * 2;
-            return diff;
-        }
-
-        /**
-         * Main physics update loop for player and collisions.
-         */
-        function updatePhysics() {
-            if (isGameOver) return;
-
-            if (controlMode === 'pedestrian' && userPedestrian) {
-                // Pedestrian Control Logic
-                const PED_SPEED = 0.25;
-                const turnSpeed = 0.15;
-
-                // Input vector from joystick/keys
-                const dx = moveInput.x;
-                const dy = moveInput.y; // -1 is up (forward) usually in 2D screen coords, but let's check input logic
-                // In updateMoveInputFromKeys: 'w' (up) -> dy = -1. 's' (down) -> dy = 1.
-                // In joystick: up -> dy negative.
-
-                // Movement relative to camera
-                // Camera looks at player.
-                // We want "Up" to be "Away from camera".
-                const camDir = new THREE.Vector3();
-                camera.getWorldDirection(camDir);
-                camDir.y = 0;
-                camDir.normalize();
-
-                const camRight = new THREE.Vector3();
-                camRight.crossVectors(camDir, new THREE.Vector3(0, 1, 0));
-
-                // dy is negative for UP/Forward input.
-                // dx is positive for Right input.
-
-                const moveDir = new THREE.Vector3();
-                moveDir.addScaledVector(camDir, -dy); // -(-1) = +1 (Forward along camera view)
-                moveDir.addScaledVector(camRight, dx);
-
-                if (moveDir.lengthSq() > 0.01) {
-                    moveDir.normalize();
-                    userPedestrian.position.addScaledVector(moveDir, PED_SPEED);
-
-                    // Only rotate to face movement if not moving backwards relative to camera
-                    if (dy <= 0.2) {
-                        const targetRot = Math.atan2(moveDir.x, moveDir.z);
-                        let rotDiff = shortestAngleDist(userPedestrian.rotation, targetRot);
-                        userPedestrian.rotation += rotDiff * turnSpeed;
-                    }
-
-                    // Animation: reverse if backing up
-                    const animSpeed = dy > 0.2 ? -0.4 : 0.4;
-                    userPedestrian.animPhase += animSpeed;
-                    const swing = Math.sin(userPedestrian.animPhase) * 0.6;
-                    userPedestrian.mesh.userData.limbs.legL.rotation.x = swing;
-                    userPedestrian.mesh.userData.limbs.legR.rotation.x = -swing;
-                    userPedestrian.mesh.userData.limbs.armL.rotation.x = -swing;
-                    userPedestrian.mesh.userData.limbs.armR.rotation.x = swing;
-                } else {
-                    // Idle pose
-                    userPedestrian.mesh.userData.limbs.legL.rotation.x = 0;
-                    userPedestrian.mesh.userData.limbs.legR.rotation.x = 0;
-                    userPedestrian.mesh.userData.limbs.armL.rotation.x = 0;
-                    userPedestrian.mesh.userData.limbs.armR.rotation.x = 0;
-                }
-
-                userPedestrian.mesh.position.copy(userPedestrian.position);
-                userPedestrian.mesh.rotation.y = userPedestrian.rotation;
-
-                // Keep player (car) updating slightly for collisions logic if we wanted, 
-                // but for now just stop it.
-                velocity.set(0, 0, 0);
-                return;
-            }
-
-            // --- Vehicle Control Logic ---
-            // Input smoothing (interpolation) for a more 'weighty' and realistic feel
-            // Digital keyboard inputs become smooth curves, and joystick jitters are filtered.
-            smoothedInputX += (moveInput.x - smoothedInputX) * 0.2;
-            smoothedInputY += (moveInput.y - smoothedInputY) * 0.2;
-
-            const speed = Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
-            let appliedFriction = FRICTION;
-
-            // Lake Physics
-            const onLake = isLake(player.position.x, player.position.z);
-            if (onLake) {
-                appliedFriction = 0.999; // Very low friction
-            }
-
-            // 1. Steering (Speed-Sensitive)
-            if (Math.abs(smoothedInputX) > 0.001) {
-                const turnFactor = (carType === 'hypercar' || carType === 'hypercar2') ? 0.045 : 0.035;
-                // Reduce steering at high speeds for stability, increase at low speeds for agility
-                const speedTurnMult = Math.max(0.25, 1.0 - (speed / MAX_SPEED) * 0.5);
-
-                const sensitivityExp = 2.0;
-                const modifiedX = Math.pow(Math.abs(smoothedInputX), sensitivityExp) * Math.sign(smoothedInputX) * 1.1;
-
-                player.rotation.y -= modifiedX * turnFactor * speedTurnMult;
-
-                // Drift smoke effects
-                if (Math.abs(smoothedInputX) > 0.5 && speed > 1.0 && Math.random() < 0.2) emitWheelSmoke();
-            }
-
-            // 2. Forces & Grip (Forward vs Lateral)
-            const rotation = player.rotation.y;
-            const forwardX = Math.sin(rotation);
-            const forwardZ = Math.cos(rotation);
-            const rightX = Math.cos(rotation);
-            const rightZ = -Math.sin(rotation);
-
-            // Project current velocity into local car space
-            let forwardVel = velocity.x * forwardX + velocity.z * forwardZ;
-            let lateralVel = velocity.x * rightX + velocity.z * rightZ;
-
-            // 3. Acceleration & Braking
-            if (Math.abs(smoothedInputY) > 0.01) {
-                const throttle = -smoothedInputY;
-
-                // Detect Braking: Moving forward but input is backward (or vice versa)
-                if ((forwardVel > 0.3 && throttle < -0.05) || (forwardVel < -0.3 && throttle > 0.05)) {
-                    appliedFriction = BRAKING_FRICTION;
-                    if (Math.random() < 0.15) emitWheelSmoke(); // Tire smoke on hard braking
-                }
-
-                forwardVel += throttle * ACCELERATION * (onLake ? 0.15 : 1.0);
-            }
-
-            // Apply forward friction
-            forwardVel *= appliedFriction;
-
-            // 4. Lateral Grip & Drifting
-            // We use a continuous function for lateral friction to prevent jerky transitions.
-            let lateralFriction = 0.3; // Default grip
-
-            if (onLake) {
-                lateralFriction = 0.995; // Extremely slippery (high retention of lateral velocity)
-            } else if (Math.abs(smoothedInputX) > 0.6 && (speed > 0.5 || Math.abs(moveInput.y) > 0.1 || Math.abs(smoothedInputX) > 0.7)) {
-                // Ramp from 0.3 up to 0.96 based on how hard we turn
-                const slideFactor = Math.min(1.0, (Math.abs(smoothedInputX) - 0.6) / 0.4);
-                lateralFriction = 0.3 + (0.66 * slideFactor);
-
-                // Active smoke in the specific "9-10" or "2-3" o'clock range (high steering input)
-                // Expanded range and lower speed threshold to ensure it works at 3 o'clock
-                if (Math.abs(smoothedInputX) > 0.75 && Math.random() < 0.4) emitWheelSmoke();
-
-            } else if (appliedFriction === BRAKING_FRICTION && Math.abs(smoothedInputX) > 0.2) {
-                lateralFriction = 0.85; // Moderate slide during braking turn
-            }
-
-            lateralVel *= lateralFriction;
-
-            // 5. Reconstruct World Velocity
-            velocity.x = forwardX * forwardVel + rightX * lateralVel;
-            velocity.z = forwardZ * forwardVel + rightZ * lateralVel;
-            velocity.y -= GRAVITY;
-
-            // Cap Speed
-            const hSpeed = Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
-            if (hSpeed > MAX_SPEED) {
-                const ratio = MAX_SPEED / hSpeed;
-                velocity.x *= ratio;
-                velocity.z *= ratio;
-                forwardVel *= ratio; // Keep local vel in sync for tilt
-            }
-
-            // 6. Visual Tilt (Pitch and Roll)
-            if (currentCarMesh) {
-                // Pitch: based on change in forward velocity (acceleration/braking)
-                const targetPitch = (forwardVel - lastForwardVel) * -0.4;
-                // Roll: based on lateral forces/turning
-                const targetRoll = (lateralVel + (smoothedInputX * speed * 0.1)) * 0.11;
-
-                carPitch += (targetPitch - carPitch) * 0.1;
-                carRoll += (targetRoll - carRoll) * 0.1;
-
-                currentCarMesh.rotation.x = carPitch;
-                currentCarMesh.rotation.z = carRoll;
-            }
-            lastForwardVel = forwardVel;
-
-            player.position.add(velocity);
-
-            if (player.position.y < PLAYER_BASE_Y) {
-                player.position.y = PLAYER_BASE_Y;
-                velocity.y = 0;
-                isAirborne = false;
-            } else {
-                isAirborne = true;
-            }
-
-            // --- Building/Obstacle Collisions (Rectangular Hitbox) ---
-            const pDims = (carType === 'supercar') ? { hw: 1.45, hl: 2.3 } :
-                (carType === 'hypercar') ? { hw: 1.8, hl: 2.2 } :
-                    { hw: 1.9, hl: 2.4 };
-
-            const pRot = player.rotation.y;
-            const cosP = Math.cos(pRot);
-            const sinP = Math.sin(pRot);
-
-            for (const chunk of activeChunks.values()) {
-                if (!chunk.obstacles) continue;
-                for (let i = 0; i < chunk.obstacles.length; i++) {
-                    const obs = chunk.obstacles[i];
-                    if (obs.isFallen) continue;
-
-                    let hit = false;
-                    const dx = obs.x - player.position.x;
-                    const dz = obs.z - player.position.z;
-
-                    if (obs.isLightpost || obs.isTree) {
-                        // Lightpost and Tree are circular, check against Player OBB
-                        const lx = dx * cosP - dz * sinP;
-                        const lz = dx * sinP + dz * cosP;
-                        const r = obs.isTree ? 1.0 : 1.0;
-                        const closestX = Math.max(-pDims.hw, Math.min(lx, pDims.hw));
-                        const closestZ = Math.max(-pDims.hl, Math.min(lz, pDims.hl));
-                        hit = ((lx - closestX) ** 2 + (lz - closestZ) ** 2) < (r * r);
-                    } else if (obs.isBuilding || obs.isBillboard) {
-                        // OBB check for buildings and billboard boards
-                        hit = intersectOBB(
-                            player.position.x, player.position.z, pDims.hw, pDims.hl, pRot,
-                            obs.x, obs.z, obs.width / 2, obs.depth / 2, obs.rotation
-                        );
-
-                        // Extra precision for billboard posts
-                        if (!hit && obs.isBillboard) {
-                            const cosB = Math.cos(obs.rotation);
-                            const sinB = Math.sin(obs.rotation);
-                            const offsets = [3.5, -3.5];
-                            for (let offset of offsets) {
-                                const px = obs.x + cosB * offset;
-                                const pz = obs.z - sinB * offset;
-                                const pdx = px - player.position.x;
-                                const pdz = pz - player.position.z;
-                                const plx = pdx * cosP - pdz * sinP;
-                                const plz = pdx * sinP + pdz * cosP;
-                                const pr = 0.6;
-                                const pcX = Math.max(-pDims.hw, Math.min(plx, pDims.hw));
-                                const pcZ = Math.max(-pDims.hl, Math.min(plz, pDims.hl));
-                                if (((plx - pcX) ** 2 + (plz - pcZ) ** 2) < (pr * pr)) {
-                                    hit = true; break;
-                                }
-                            }
-                        }
-                    }
-
-                    if (hit && player.position.y < obs.height) {
-                        if (obs.isLightpost || obs.isBillboard) {
-                            toppleLightPost(obs, chunk);
-                            continue;
-                        }
-                        if (obs.isTree) {
-                            toppleTree(obs, chunk);
-                            continue;
-                        }
-                        explode(player.position, 0xff4400);
-                        explode(player.position, 0xffee00);
-                        triggerGameOver();
-                        return;
-                    }
-                }
-            }
-
-            // --- Traffic Collisions (Physics-based Pushing) ---
-            for (let i = 0; i < trafficVehicles.length; i++) {
-                const npc = trafficVehicles[i];
-                if (!npc.mesh.visible) continue;
-
-                // NPC rotation logic: usually matches its movement dir, but OBB needs its current mesh rotation
-                const npcRot = npc.mesh.rotation.y;
-                const npcHW = 1.45;
-                const npcHL = 2.3;
-
-                const hit = intersectOBB(
-                    player.position.x, player.position.z, pDims.hw, pDims.hl, pRot,
-                    npc.mesh.position.x, npc.mesh.position.z, npcHW, npcHL, npcRot
-                );
-
-                if (hit) {
-                    const playerSpeed = velocity.length();
-                    const pushDir = new THREE.Vector3().subVectors(npc.mesh.position, player.position);
-                    pushDir.y = 0;
-                    pushDir.normalize();
-
-                    // If player is moving, push the NPC
-                    if (playerSpeed > 0.1) {
-                        npc.pushedVelocity.addScaledVector(pushDir, playerSpeed * 0.8);
-                        // Slight slowdown for player on impact
-                        velocity.multiplyScalar(0.95);
-                        if (playerSpeed > 1.0) explode(npc.mesh.position, npc.color); // Sparks on hard hit
-                    } else {
-                        // If player is stationary or slow, NPC can push the player
-                        // Calculate NPC impact speed relative to player
-                        const npcSpeed = npc.velocity.length() + (npc.pushedVelocity ? npc.pushedVelocity.length() : 0);
-                        velocity.addScaledVector(pushDir, -npcSpeed * 0.5);
-                    }
-
-                    // Separation to prevent sticking
-                    const sep = 0.2;
-                    npc.mesh.position.addScaledVector(pushDir, sep);
-                    player.position.addScaledVector(pushDir, -sep);
-                }
-            }
-        }
-
-        /**
-         * Trigger the Game Over state and UI.
-         */
-        function triggerGameOver() {
-            isGameOver = true;
-            player.visible = false;
-            velocity.set(0, 0, 0);
-
-            if (score > highScore) {
-                highScore = score;
-                localStorage.setItem('highScore', highScore);
-            }
-
-            // Show Game Over Modal
-            const modal = document.getElementById('game-over-modal');
-            const scoreText = document.getElementById('go-top-score');
-            if (modal && scoreText) {
-                scoreText.innerText = "Top Score: " + highScore;
-                modal.classList.add('active');
-            }
-
-            // Hide instructions temporarily if needed
-            const instr = document.querySelector('.instructions');
-            if (instr) instr.style.opacity = 0;
-
-            setTimeout(() => resetGame(), 2000);
-        }
-
-        /**
-         * Reset the game state to start a new run.
-         */
-        function resetGame() {
-            isGameOver = false;
-
-            // Ensure we return to vehicle mode
-            if (controlMode === 'pedestrian') {
-                if (userPedestrian && userPedestrian.mesh) {
-                    scene.remove(userPedestrian.mesh);
-                }
-                userPedestrian = null;
-                controlMode = 'vehicle';
-            }
-
-            player.visible = true;
-            player.position.set(initialSpawnX, PLAYER_BASE_Y, initialSpawnZ);
-            player.rotation.set(0, 0, 0);
-            velocity.set(0, 0, 0);
-            moveInput = { x: 0, y: 0 };
-            score = 0;
-            scoreElement.innerText = "Score: 0";
-            centerCamera();
-
-            // Force chunk update just in case
-            lastChunkUpdatePos.set(99999, 99999, 99999);
-
-            // Hide Game Over Modal
-            const modal = document.getElementById('game-over-modal');
-            if (modal) modal.classList.remove('active');
-
-            // Clear traffic
-            trafficVehicles.forEach(c => {
-                scene.remove(c.mesh);
-                trafficPool.push(c.mesh);
-            });
-            trafficVehicles.length = 0;
-
-            const instr = document.querySelector('.instructions');
-            if (instr) {
-                // Restore instructions
-                instr.innerHTML = isNightMode ? "Night Run<br>Left Stick: Drive" : "Day Run<br>Left Stick: Drive";
-                instr.style.opacity = 1;
-                instr.style.animation = 'none';
-                instr.offsetHeight; // Trigger reflow
-                instr.style.animation = 'fadeOut 5s forwards';
-                instr.style.animationDelay = '2s';
-            }
-        }
-
-        /**
-         * Make a light post topple over when hit.
-         */
-        function toppleLightPost(obs, chunkData) {
-            if (obs.isFallen) return;
-            obs.isFallen = true;
-
-            const hideMatrix = new THREE.Matrix4().makeScale(0, 0, 0);
-
-            if (obs.isLightpost) {
-                // Hide instances in the InstancedMeshes
-                if (chunkData.poleMesh) {
-                    chunkData.poleMesh.setMatrixAt(obs.instanceIndex, hideMatrix);
-                    chunkData.poleMesh.instanceMatrix.needsUpdate = true;
-                }
-                if (chunkData.bulbMesh) {
-                    chunkData.bulbMesh.setMatrixAt(obs.instanceIndex, hideMatrix);
-                    chunkData.bulbMesh.instanceMatrix.needsUpdate = true;
-                }
-                if (chunkData.armMesh) {
-                    chunkData.armMesh.setMatrixAt(obs.instanceIndex, hideMatrix);
-                    chunkData.armMesh.instanceMatrix.needsUpdate = true;
-                }
-                if (chunkData.spotMesh) {
-                    chunkData.spotMesh.setMatrixAt(obs.instanceIndex, hideMatrix);
-                    chunkData.spotMesh.instanceMatrix.needsUpdate = true;
-                }
-
-                // Create a temporary group for the falling pole
-                const group = new THREE.Group();
-                group.position.set(obs.x, 0, obs.z);
-                group.rotation.y = obs.rotY || 0;
-                scene.add(group);
-
-                group.add(new THREE.Mesh(poleGeometry, poleMaterial));
-                group.add(new THREE.Mesh(poleBaseGeometry, poleMaterial));
-                const bulb = new THREE.Mesh(lightBulbGeometry, lightBulbMaterial);
-                bulb.position.set(0, 12.5, 0);
-                group.add(bulb);
-
-                addFallingObject(group, 13);
-            } else if (obs.isBillboard) {
-                if (chunkData.billboardMesh) {
-                    chunkData.billboardMesh.setMatrixAt(obs.instanceIndex, hideMatrix);
-                    chunkData.billboardMesh.instanceMatrix.needsUpdate = true;
-                }
-                if (chunkData.billboardPostMesh) {
-                    chunkData.billboardPostMesh.setMatrixAt(obs.postInstanceIndex, hideMatrix);
-                    chunkData.billboardPostMesh.setMatrixAt(obs.postInstanceIndex + 1, hideMatrix);
-                    chunkData.billboardPostMesh.instanceMatrix.needsUpdate = true;
-                }
-
-                const group = new THREE.Group();
-                group.position.set(obs.x, 0, obs.z);
-                group.rotation.y = obs.rotation || 0;
-                scene.add(group);
-
-                group.add(new THREE.Mesh(billboardGeometry, billboardMaterial));
-
-                const p1 = new THREE.Mesh(billboardPostGeometry, billboardPostMaterial);
-                p1.position.set(-3.5, 0, 0);
-                p1.castShadow = true;
-                group.add(p1);
-
-                const p2 = new THREE.Mesh(billboardPostGeometry, billboardPostMaterial);
-                p2.position.set(3.5, 0, 0);
-                p2.castShadow = true;
-                group.add(p2);
-
-                addFallingObject(group, 11);
-            }
-        }
-
-        /**
-         * Make a tree topple over when hit.
-         */
-        function toppleTree(obs, chunkData) {
-            if (obs.isFallen) return;
-            obs.isFallen = true;
-
-            if (obs.mesh && chunkData.mesh) {
-                // Detach from chunk
-                chunkData.mesh.remove(obs.mesh);
-
-                // Add to scene at world position
-                scene.add(obs.mesh);
-
-                // Chunk group is at (chunkX, 0, chunkZ)
-                // Tree was at local (tx, 0, tz)
-                // World pos is obs.x, obs.z
-                // We need to preserve the rotation which was set relative to chunk
-                // Chunk rotation is (0,0,0) so local rotation is world rotation.
-                obs.mesh.position.set(obs.x, 0, obs.z);
-
-                // Enable updates for animation
-                obs.mesh.matrixAutoUpdate = true;
-                obs.mesh.updateMatrix();
-
-                // Start falling physics
-                addFallingObject(obs.mesh, obs.height);
-            }
-        }
-
-        function addFallingObject(group, height) {
-            // Determine fall direction (pushed by velocity)
-            const fallAxis = new THREE.Vector3(
-                velocity.z,
-                0,
-                -velocity.x
-            ).normalize();
-
-            fallingObjects.push({
-                mesh: group,
-                axis: fallAxis,
-                angle: 0,
-                speed: Math.max(0.02, velocity.length() * 0.15),
-                life: 300 // frames
-            });
-
-            // Impact effect
-            velocity.multiplyScalar(0.7);
-            explode(new THREE.Vector3(group.position.x, 2, group.position.z), 0x888888);
-            score += 1;
-            scoreElement.innerText = "Score: " + score;
-            spawnVoxelScore(group.position);
-        }
-
-        /**
-         * Update the animation of falling light posts.
-         */
-        function updateFallingObjects() {
-            for (let i = fallingObjects.length - 1; i >= 0; i--) {
-                const obj = fallingObjects[i];
-                if (obj.angle < Math.PI / 2 - 0.1) {
-                    obj.angle += obj.speed;
-                    obj.speed *= 0.98; // slowing down the rotation
-                    obj.mesh.rotateOnWorldAxis(obj.axis, obj.speed);
-                } else {
-                    obj.life--;
-                    if (obj.life <= 0) {
-                        scene.remove(obj.mesh);
-                        fallingObjects.splice(i, 1);
-                    }
-                }
-            }
-        }
-
-        /**
-         * Update pedestrian positions and animation state.
-         */
-        function updatePedestrians() {
-            if (isGameOver) return;
-            const time = Date.now() * 0.005;
-            const playerPos = player.position;
-            const SPAWN_RANGE = 250;
-            activeObstacles.length = 0;
-
-            // Reusable loop vars to reduce GC
-            let ped, dx, dz, distSq, phase, swing;
-
-            for (let i = 0; i < allPedestrians.length; i++) {
-                ped = allPedestrians[i];
-                if (!ped.isStationary) {
-                    ped.position.add(ped.velocity);
-                }
-
-                // Wrap around logic
-                if (ped.position.x > playerPos.x + SPAWN_RANGE) ped.position.x -= SPAWN_RANGE * 2;
-                if (ped.position.x < playerPos.x - SPAWN_RANGE) ped.position.x += SPAWN_RANGE * 2;
-                if (ped.position.z > playerPos.z + SPAWN_RANGE) ped.position.z -= SPAWN_RANGE * 2;
-                if (ped.position.z < playerPos.z - SPAWN_RANGE) ped.position.z += SPAWN_RANGE * 2;
-
-                dx = ped.position.x - playerPos.x;
-                dz = ped.position.z - playerPos.z;
-                distSq = dx * dx + dz * dz;
-
-                if (distSq < CULL_DIST_SQ) {
-                    if (!ped.mesh) {
-                        // Get from pool or create new
-                        if (pedestrianPool.length > 0) {
-                            ped.mesh = pedestrianPool.pop();
-                            ped.mesh.visible = true;
-                            // Apply colors to reused mesh
-                            applyPedestrianColors(ped.mesh, ped.colors);
-                        } else {
-                            ped.mesh = buildPedestrianMesh(ped);
-                        }
-                    }
-                    if (!ped.isActive) {
-                        scene.add(ped.mesh);
-                        ped.isActive = true;
-                    }
-                    ped.mesh.position.copy(ped.position);
-                    ped.mesh.rotation.y = ped.rotation;
-
-                    // Simple animation
-                    if (!ped.isStationary) {
-                        phase = time + ped.animPhase;
-                        swing = Math.sin(phase) * 0.6;
-                        ped.mesh.userData.limbs.legL.rotation.x = swing;
-                        ped.mesh.userData.limbs.legR.rotation.x = -swing;
-                        ped.mesh.userData.limbs.armL.rotation.x = -swing;
-                        ped.mesh.userData.limbs.armR.rotation.x = swing;
-                    } else {
-                        ped.mesh.userData.limbs.legL.rotation.x = 0;
-                        ped.mesh.userData.limbs.legR.rotation.x = 0;
-                        ped.mesh.userData.limbs.armL.rotation.x = 0;
-                        ped.mesh.userData.limbs.armR.rotation.x = 0;
-                    }
-
-                    activeObstacles.push(ped);
-                } else {
-                    if (ped.isActive) {
-                        scene.remove(ped.mesh);
-                        ped.isActive = false;
-                        // Return to pool
-                        if (ped.mesh) {
-                            pedestrianPool.push(ped.mesh);
-                            ped.mesh = null;
-                        }
-                    }
-                }
-            }
-        }
-
-        /**
-         * Check and handle collisions between player and active pedestrians.
-         */
-        function checkCollisions() {
-            if (isGameOver) return;
-            const pDims = (carType === 'supercar') ? { hw: 1.45, hl: 2.3 } :
-                (carType === 'hypercar') ? { hw: 1.8, hl: 2.2 } :
-                    { hw: 1.9, hl: 2.4 };
-
-            const pRot = player.rotation.y;
-            const cosP = Math.cos(pRot);
-            const sinP = Math.sin(pRot);
-
-            for (let i = activeObstacles.length - 1; i >= 0; i--) {
-                const pedData = activeObstacles[i];
-                const pedRadius = 0.5; // Humans are small
-
-                // Relative to player
-                const dx = pedData.position.x - player.position.x;
-                const dz = pedData.position.z - player.position.z;
+        forwardVel += throttle * ACCELERATION * (onLake ? 0.15 : 1.0);
+    }
+
+    // Apply forward friction
+    forwardVel *= appliedFriction;
+
+    // 4. Lateral Grip & Drifting
+    // We use a continuous function for lateral friction to prevent jerky transitions.
+    let lateralFriction = 0.3; // Default grip
+
+    if (onLake) {
+        lateralFriction = 0.995; // Extremely slippery (high retention of lateral velocity)
+    } else if (Math.abs(smoothedInputX) > 0.6 && (speed > 0.5 || Math.abs(moveInput.y) > 0.1 || Math.abs(smoothedInputX) > 0.7)) {
+        // Ramp from 0.3 up to 0.96 based on how hard we turn
+        const slideFactor = Math.min(1.0, (Math.abs(smoothedInputX) - 0.6) / 0.4);
+        lateralFriction = 0.3 + (0.66 * slideFactor);
+
+        // Active smoke in the specific "9-10" or "2-3" o'clock range (high steering input)
+        // Expanded range and lower speed threshold to ensure it works at 3 o'clock
+        if (Math.abs(smoothedInputX) > 0.75 && Math.random() < 0.4) emitWheelSmoke();
+
+    } else if (appliedFriction === BRAKING_FRICTION && Math.abs(smoothedInputX) > 0.2) {
+        lateralFriction = 0.85; // Moderate slide during braking turn
+    }
+
+    lateralVel *= lateralFriction;
+
+    // 5. Reconstruct World Velocity
+    velocity.x = forwardX * forwardVel + rightX * lateralVel;
+    velocity.z = forwardZ * forwardVel + rightZ * lateralVel;
+    velocity.y -= GRAVITY;
+
+    // Cap Speed
+    const hSpeed = Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
+    if (hSpeed > MAX_SPEED) {
+        const ratio = MAX_SPEED / hSpeed;
+        velocity.x *= ratio;
+        velocity.z *= ratio;
+        forwardVel *= ratio; // Keep local vel in sync for tilt
+    }
+
+    // 6. Visual Tilt (Pitch and Roll)
+    if (currentCarMesh) {
+        // Pitch: based on change in forward velocity (acceleration/braking)
+        const targetPitch = (forwardVel - lastForwardVel) * -0.4;
+        // Roll: based on lateral forces/turning
+        const targetRoll = (lateralVel + (smoothedInputX * speed * 0.1)) * 0.11;
+
+        carPitch += (targetPitch - carPitch) * 0.1;
+        carRoll += (targetRoll - carRoll) * 0.1;
+
+        currentCarMesh.rotation.x = carPitch;
+        currentCarMesh.rotation.z = carRoll;
+    }
+    lastForwardVel = forwardVel;
+
+    player.position.add(velocity);
+
+    if (player.position.y < PLAYER_BASE_Y) {
+        player.position.y = PLAYER_BASE_Y;
+        velocity.y = 0;
+        isAirborne = false;
+    } else {
+        isAirborne = true;
+    }
+
+    // --- Building/Obstacle Collisions (Rectangular Hitbox) ---
+    const pDims = (carType === 'supercar') ? { hw: 1.45, hl: 2.3 } :
+        (carType === 'hypercar') ? { hw: 1.8, hl: 2.2 } :
+            { hw: 1.9, hl: 2.4 };
+
+    const pRot = player.rotation.y;
+    const cosP = Math.cos(pRot);
+    const sinP = Math.sin(pRot);
+
+    for (const chunk of activeChunks.values()) {
+        if (!chunk.obstacles) continue;
+        for (let i = 0; i < chunk.obstacles.length; i++) {
+            const obs = chunk.obstacles[i];
+            if (obs.isFallen) continue;
+
+            let hit = false;
+            const dx = obs.x - player.position.x;
+            const dz = obs.z - player.position.z;
+
+            if (obs.isLightpost || obs.isTree) {
+                // Lightpost and Tree are circular, check against Player OBB
                 const lx = dx * cosP - dz * sinP;
                 const lz = dx * sinP + dz * cosP;
-
-                // Rect-Circle check
+                const r = obs.isTree ? 1.0 : 1.0;
                 const closestX = Math.max(-pDims.hw, Math.min(lx, pDims.hw));
                 const closestZ = Math.max(-pDims.hl, Math.min(lz, pDims.hl));
-                const hit = ((lx - closestX) ** 2 + (lz - closestZ) ** 2) < (pedRadius * pedRadius);
+                hit = ((lx - closestX) ** 2 + (lz - closestZ) ** 2) < (r * r);
+            } else if (obs.isBuilding || obs.isBillboard) {
+                // OBB check for buildings and billboard boards
+                hit = intersectOBB(
+                    player.position.x, player.position.z, pDims.hw, pDims.hl, pRot,
+                    obs.x, obs.z, obs.width / 2, obs.depth / 2, obs.rotation
+                );
 
-                if (hit) {
-                    explode(pedData.position);
-                    spawnVoxelScore(pedData.position);
-                    pedData.position.x = player.position.x + (Math.random() - 0.5) * 300;
-                    pedData.position.z = player.position.z + (Math.random() - 0.5) * 300;
-                    if (pedData.isActive) {
-                        scene.remove(pedData.mesh);
-                        pedData.isActive = false;
+                // Extra precision for billboard posts
+                if (!hit && obs.isBillboard) {
+                    const cosB = Math.cos(obs.rotation);
+                    const sinB = Math.sin(obs.rotation);
+                    const offsets = [3.5, -3.5];
+                    for (let offset of offsets) {
+                        const px = obs.x + cosB * offset;
+                        const pz = obs.z - sinB * offset;
+                        const pdx = px - player.position.x;
+                        const pdz = pz - player.position.z;
+                        const plx = pdx * cosP - pdz * sinP;
+                        const plz = pdx * sinP + pdz * cosP;
+                        const pr = 0.6;
+                        const pcX = Math.max(-pDims.hw, Math.min(plx, pDims.hw));
+                        const pcZ = Math.max(-pDims.hl, Math.min(plz, pDims.hl));
+                        if (((plx - pcX) ** 2 + (plz - pcZ) ** 2) < (pr * pr)) {
+                            hit = true; break;
+                        }
                     }
-                    score++;
-                    scoreElement.innerText = "Score: " + score;
                 }
             }
-        }
 
-        /**
-         * Spawn smoke particles for drifting wheels.
-         */
-        function emitWheelSmoke() {
-            if (!player) return;
-            let wheelOffsets = [];
-            if (carType === 'supercar') {
-                wheelOffsets = [{ x: -1.2, z: 1.6 }, { x: 1.2, z: 1.6 }, { x: -1.25, z: -1.4 }, { x: 1.25, z: -1.4 }];
-            } else if (carType === 'hypercar') {
-                wheelOffsets = [{ x: -1.32, z: 1.4 }, { x: 1.32, z: 1.4 }, { x: -1.38, z: -1.2 }, { x: 1.38, z: -1.2 }];
+            if (hit && player.position.y < obs.height) {
+                if (obs.isLightpost || obs.isBillboard) {
+                    toppleLightPost(obs, chunk);
+                    continue;
+                }
+                if (obs.isTree) {
+                    toppleTree(obs, chunk);
+                    continue;
+                }
+                explode(player.position, 0xff4400);
+                explode(player.position, 0xffee00);
+                triggerGameOver();
+                return;
+            }
+        }
+    }
+
+    // --- Traffic Collisions (Physics-based Pushing) ---
+    for (let i = 0; i < trafficVehicles.length; i++) {
+        const npc = trafficVehicles[i];
+        if (!npc.mesh.visible) continue;
+
+        // NPC rotation logic: usually matches its movement dir, but OBB needs its current mesh rotation
+        const npcRot = npc.mesh.rotation.y;
+        const npcHW = 1.45;
+        const npcHL = 2.3;
+
+        const hit = intersectOBB(
+            player.position.x, player.position.z, pDims.hw, pDims.hl, pRot,
+            npc.mesh.position.x, npc.mesh.position.z, npcHW, npcHL, npcRot
+        );
+
+        if (hit) {
+            const playerSpeed = velocity.length();
+            const pushDir = new THREE.Vector3().subVectors(npc.mesh.position, player.position);
+            pushDir.y = 0;
+            pushDir.normalize();
+
+            // If player is moving, push the NPC
+            if (playerSpeed > 0.1) {
+                npc.pushedVelocity.addScaledVector(pushDir, playerSpeed * 0.8);
+                // Slight slowdown for player on impact
+                velocity.multiplyScalar(0.95);
+                if (playerSpeed > 1.0) explode(npc.mesh.position, npc.color); // Sparks on hard hit
             } else {
-                // Hypercar 2.0 offsets
-                wheelOffsets = [{ x: -1.35, z: 1.6 }, { x: 1.35, z: 1.6 }, { x: -1.45, z: -1.2 }, { x: 1.45, z: -1.2 }];
+                // If player is stationary or slow, NPC can push the player
+                // Calculate NPC impact speed relative to player
+                const npcSpeed = npc.velocity.length() + (npc.pushedVelocity ? npc.pushedVelocity.length() : 0);
+                velocity.addScaledVector(pushDir, -npcSpeed * 0.5);
             }
-            const carRot = player.rotation.y;
-            const cos = Math.cos(carRot);
-            const sin = Math.sin(carRot);
-            wheelOffsets.forEach(offset => {
-                const rx = offset.x * cos + offset.z * sin;
-                const rz = -offset.x * sin + offset.z * cos;
-                const pos = new THREE.Vector3(player.position.x + rx, player.position.y + 0.2, player.position.z + rz);
-                spawnSmokeParticle(pos); // Reduced to 1 particle per wheel for speed
-            });
+
+            // Separation to prevent sticking
+            const sep = 0.2;
+            npc.mesh.position.addScaledVector(pushDir, sep);
+            player.position.addScaledVector(pushDir, -sep);
+        }
+    }
+}
+
+/**
+ * Trigger the Game Over state and UI.
+ */
+function triggerGameOver() {
+    isGameOver = true;
+    player.visible = false;
+    velocity.set(0, 0, 0);
+
+    if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('highScore', highScore);
+    }
+
+    // Show Game Over Modal
+    const modal = document.getElementById('game-over-modal');
+    const scoreText = document.getElementById('go-top-score');
+    if (modal && scoreText) {
+        scoreText.innerText = "Top Score: " + highScore;
+        modal.classList.add('active');
+    }
+
+    // Hide instructions temporarily if needed
+    const instr = document.querySelector('.instructions');
+    if (instr) instr.style.opacity = 0;
+
+    setTimeout(() => resetGame(), 2000);
+}
+
+/**
+ * Reset the game state to start a new run.
+ */
+function resetGame() {
+    isGameOver = false;
+
+    // Ensure we return to vehicle mode
+    if (controlMode === 'pedestrian') {
+        if (userPedestrian && userPedestrian.mesh) {
+            scene.remove(userPedestrian.mesh);
+        }
+        userPedestrian = null;
+        controlMode = 'vehicle';
+    }
+
+    player.visible = true;
+    player.position.set(initialSpawnX, PLAYER_BASE_Y, initialSpawnZ);
+    player.rotation.set(0, 0, 0);
+    velocity.set(0, 0, 0);
+    moveInput = { x: 0, y: 0 };
+    score = 0;
+    scoreElement.innerText = "Score: 0";
+    centerCamera();
+
+    // Force chunk update just in case
+    lastChunkUpdatePos.set(99999, 99999, 99999);
+
+    // Hide Game Over Modal
+    const modal = document.getElementById('game-over-modal');
+    if (modal) modal.classList.remove('active');
+
+    // Clear traffic
+    trafficVehicles.forEach(c => {
+        scene.remove(c.mesh);
+        trafficPool.push(c.mesh);
+    });
+    trafficVehicles.length = 0;
+
+    const instr = document.querySelector('.instructions');
+    if (instr) {
+        // Restore instructions
+        instr.innerHTML = isNightMode ? "Night Run<br>Left Stick: Drive" : "Day Run<br>Left Stick: Drive";
+        instr.style.opacity = 1;
+        instr.style.animation = 'none';
+        instr.offsetHeight; // Trigger reflow
+        instr.style.animation = 'fadeOut 5s forwards';
+        instr.style.animationDelay = '2s';
+    }
+}
+
+/**
+ * Make a light post topple over when hit.
+ */
+function toppleLightPost(obs, chunkData) {
+    if (obs.isFallen) return;
+    obs.isFallen = true;
+
+    const hideMatrix = new THREE.Matrix4().makeScale(0, 0, 0);
+
+    if (obs.isLightpost) {
+        // Hide instances in the InstancedMeshes
+        if (chunkData.poleMesh) {
+            chunkData.poleMesh.setMatrixAt(obs.instanceIndex, hideMatrix);
+            chunkData.poleMesh.instanceMatrix.needsUpdate = true;
+        }
+        if (chunkData.bulbMesh) {
+            chunkData.bulbMesh.setMatrixAt(obs.instanceIndex, hideMatrix);
+            chunkData.bulbMesh.instanceMatrix.needsUpdate = true;
+        }
+        if (chunkData.armMesh) {
+            chunkData.armMesh.setMatrixAt(obs.instanceIndex, hideMatrix);
+            chunkData.armMesh.instanceMatrix.needsUpdate = true;
+        }
+        if (chunkData.spotMesh) {
+            chunkData.spotMesh.setMatrixAt(obs.instanceIndex, hideMatrix);
+            chunkData.spotMesh.instanceMatrix.needsUpdate = true;
         }
 
-        /**
-         * Get or create a cached material for debris particles.
-         * @param {number} color 
-         * @returns {THREE.MeshBasicMaterial}
-         */
-        function getDebrisMaterial(color) {
-            if (!debrisMaterialCache.has(color)) {
-                debrisMaterialCache.set(color, new THREE.MeshBasicMaterial({ color: color }));
-            }
-            return debrisMaterialCache.get(color);
+        // Create a temporary group for the falling pole
+        const group = new THREE.Group();
+        group.position.set(obs.x, 0, obs.z);
+        group.rotation.y = obs.rotY || 0;
+        scene.add(group);
+
+        group.add(new THREE.Mesh(poleGeometry, poleMaterial));
+        group.add(new THREE.Mesh(poleBaseGeometry, poleMaterial));
+        const bulb = new THREE.Mesh(lightBulbGeometry, lightBulbMaterial);
+        bulb.position.set(0, 12.5, 0);
+        group.add(bulb);
+
+        addFallingObject(group, 13);
+    } else if (obs.isBillboard) {
+        if (chunkData.billboardMesh) {
+            chunkData.billboardMesh.setMatrixAt(obs.instanceIndex, hideMatrix);
+            chunkData.billboardMesh.instanceMatrix.needsUpdate = true;
+        }
+        if (chunkData.billboardPostMesh) {
+            chunkData.billboardPostMesh.setMatrixAt(obs.postInstanceIndex, hideMatrix);
+            chunkData.billboardPostMesh.setMatrixAt(obs.postInstanceIndex + 1, hideMatrix);
+            chunkData.billboardPostMesh.instanceMatrix.needsUpdate = true;
         }
 
-        /**
-         * Retrieve a particle mesh from the object pool if available.
-         * @returns {THREE.Mesh|null}
-         */
-        function getParticleFromPool() {
-            if (particlePool.length > 0) {
-                return particlePool.pop();
+        const group = new THREE.Group();
+        group.position.set(obs.x, 0, obs.z);
+        group.rotation.y = obs.rotation || 0;
+        scene.add(group);
+
+        group.add(new THREE.Mesh(billboardGeometry, billboardMaterial));
+
+        const p1 = new THREE.Mesh(billboardPostGeometry, billboardPostMaterial);
+        p1.position.set(-3.5, 0, 0);
+        p1.castShadow = true;
+        group.add(p1);
+
+        const p2 = new THREE.Mesh(billboardPostGeometry, billboardPostMaterial);
+        p2.position.set(3.5, 0, 0);
+        p2.castShadow = true;
+        group.add(p2);
+
+        addFallingObject(group, 11);
+    }
+}
+
+/**
+ * Make a tree topple over when hit.
+ */
+function toppleTree(obs, chunkData) {
+    if (obs.isFallen) return;
+    obs.isFallen = true;
+
+    if (obs.mesh && chunkData.mesh) {
+        // Detach from chunk
+        chunkData.mesh.remove(obs.mesh);
+
+        // Add to scene at world position
+        scene.add(obs.mesh);
+
+        // Chunk group is at (chunkX, 0, chunkZ)
+        // Tree was at local (tx, 0, tz)
+        // World pos is obs.x, obs.z
+        // We need to preserve the rotation which was set relative to chunk
+        // Chunk rotation is (0,0,0) so local rotation is world rotation.
+        obs.mesh.position.set(obs.x, 0, obs.z);
+
+        // Enable updates for animation
+        obs.mesh.matrixAutoUpdate = true;
+        obs.mesh.updateMatrix();
+
+        // Start falling physics
+        addFallingObject(obs.mesh, obs.height);
+    }
+}
+
+function addFallingObject(group, height) {
+    // Determine fall direction (pushed by velocity)
+    const fallAxis = new THREE.Vector3(
+        velocity.z,
+        0,
+        -velocity.x
+    ).normalize();
+
+    fallingObjects.push({
+        mesh: group,
+        axis: fallAxis,
+        angle: 0,
+        speed: Math.max(0.02, velocity.length() * 0.15),
+        life: 300 // frames
+    });
+
+    // Impact effect
+    velocity.multiplyScalar(0.7);
+    explode(new THREE.Vector3(group.position.x, 2, group.position.z), 0x888888);
+    score += 1;
+    scoreElement.innerText = "Score: " + score;
+    spawnVoxelScore(group.position);
+}
+
+/**
+ * Update the animation of falling light posts.
+ */
+function updateFallingObjects() {
+    for (let i = fallingObjects.length - 1; i >= 0; i--) {
+        const obj = fallingObjects[i];
+        if (obj.angle < Math.PI / 2 - 0.1) {
+            obj.angle += obj.speed;
+            obj.speed *= 0.98; // slowing down the rotation
+            obj.mesh.rotateOnWorldAxis(obj.axis, obj.speed);
+        } else {
+            obj.life--;
+            if (obj.life <= 0) {
+                scene.remove(obj.mesh);
+                fallingObjects.splice(i, 1);
             }
-            return null; // Pool empty, create new or skip
+        }
+    }
+}
+
+/**
+ * Update pedestrian positions and animation state.
+ */
+function updatePedestrians() {
+    if (isGameOver) return;
+    const time = Date.now() * 0.005;
+    const playerPos = player.position;
+    const SPAWN_RANGE = 250;
+    activeObstacles.length = 0;
+
+    // Reusable loop vars to reduce GC
+    let ped, dx, dz, distSq, phase, swing;
+
+    for (let i = 0; i < allPedestrians.length; i++) {
+        ped = allPedestrians[i];
+        if (!ped.isStationary) {
+            ped.position.add(ped.velocity);
         }
 
-        /**
-         * Spawn a smoke particle at the given position.
-         * @param {THREE.Vector3} pos 
-         */
-        function spawnSmokeParticle(pos) {
-            let p = getParticleFromPool();
-            if (!p) {
-                // Create new if pool empty
-                const mat = new THREE.MeshBasicMaterial({ color: 0xdddddd, transparent: true, opacity: 0.4 });
-                p = new THREE.Mesh(smokeBaseGeometry, mat);
+        // Wrap around logic
+        if (ped.position.x > playerPos.x + SPAWN_RANGE) ped.position.x -= SPAWN_RANGE * 2;
+        if (ped.position.x < playerPos.x - SPAWN_RANGE) ped.position.x += SPAWN_RANGE * 2;
+        if (ped.position.z > playerPos.z + SPAWN_RANGE) ped.position.z -= SPAWN_RANGE * 2;
+        if (ped.position.z < playerPos.z - SPAWN_RANGE) ped.position.z += SPAWN_RANGE * 2;
+
+        dx = ped.position.x - playerPos.x;
+        dz = ped.position.z - playerPos.z;
+        distSq = dx * dx + dz * dz;
+
+        if (distSq < CULL_DIST_SQ) {
+            if (!ped.mesh) {
+                // Get from pool or create new
+                if (pedestrianPool.length > 0) {
+                    ped.mesh = pedestrianPool.pop();
+                    ped.mesh.visible = true;
+                    // Apply colors to reused mesh
+                    applyPedestrianColors(ped.mesh, ped.colors);
+                } else {
+                    ped.mesh = buildPedestrianMesh(ped);
+                }
+            }
+            if (!ped.isActive) {
+                scene.add(ped.mesh);
+                ped.isActive = true;
+            }
+            ped.mesh.position.copy(ped.position);
+            ped.mesh.rotation.y = ped.rotation;
+
+            // Simple animation
+            if (!ped.isStationary) {
+                phase = time + ped.animPhase;
+                swing = Math.sin(phase) * 0.6;
+                ped.mesh.userData.limbs.legL.rotation.x = swing;
+                ped.mesh.userData.limbs.legR.rotation.x = -swing;
+                ped.mesh.userData.limbs.armL.rotation.x = -swing;
+                ped.mesh.userData.limbs.armR.rotation.x = swing;
             } else {
-                // Reset existing
-                p.geometry = smokeBaseGeometry;
-                // For smoke we might want a fresh material or reuse one? 
-                // Smoke fades out, so it modifies opacity. Cloning material is safer or handling it carefully.
-                // For simplicity, let's reuse a standard smoke material but we need to reset opacity.
-                // Actually, if we share materials, fading one fades all.
-                // So each smoke particle needs its own material clone or instance.
-                // Check if we can reuse the material. 
-                // We can reuse if it is a dedicated smoke material (indicated by previous usage as smoke).
-                // Debris materials are shared and opaque, so we cannot reuse them for smoke.
-                if (p.userData && p.userData.type === 'smoke' && p.material && p.material.isMeshBasicMaterial) {
-                    p.material.opacity = 0.4;
-                    p.material.color.setHex(0xdddddd);
-                } else {
-                    p.material = new THREE.MeshBasicMaterial({ color: 0xdddddd, transparent: true, opacity: 0.4 });
+                ped.mesh.userData.limbs.legL.rotation.x = 0;
+                ped.mesh.userData.limbs.legR.rotation.x = 0;
+                ped.mesh.userData.limbs.armL.rotation.x = 0;
+                ped.mesh.userData.limbs.armR.rotation.x = 0;
+            }
+
+            activeObstacles.push(ped);
+        } else {
+            if (ped.isActive) {
+                scene.remove(ped.mesh);
+                ped.isActive = false;
+                // Return to pool
+                if (ped.mesh) {
+                    pedestrianPool.push(ped.mesh);
+                    ped.mesh = null;
                 }
             }
+        }
+    }
+}
 
-            p.scale.setScalar(Math.random() * 0.4 + 0.2);
-            p.position.copy(pos);
-            p.position.x += (Math.random() - 0.5) * 0.5;
-            p.position.z += (Math.random() - 0.5) * 0.5;
-            p.rotation.set(0, 0, 0);
+/**
+ * Check and handle collisions between player and active pedestrians.
+ */
+function checkCollisions() {
+    if (isGameOver) return;
+    const pDims = (carType === 'supercar') ? { hw: 1.45, hl: 2.3 } :
+        (carType === 'hypercar') ? { hw: 1.8, hl: 2.2 } :
+            { hw: 1.9, hl: 2.4 };
 
-            p.userData = {
-                type: 'smoke', life: 1.0,
-                velocity: new THREE.Vector3((Math.random() - 0.5) * 0.05, 0.05 + Math.random() * 0.05, (Math.random() - 0.5) * 0.05)
-            };
+    const pRot = player.rotation.y;
+    const cosP = Math.cos(pRot);
+    const sinP = Math.sin(pRot);
 
-            scene.add(p);
-            particles.push(p);
+    for (let i = activeObstacles.length - 1; i >= 0; i--) {
+        const pedData = activeObstacles[i];
+        const pedRadius = 0.5; // Humans are small
+
+        // Relative to player
+        const dx = pedData.position.x - player.position.x;
+        const dz = pedData.position.z - player.position.z;
+        const lx = dx * cosP - dz * sinP;
+        const lz = dx * sinP + dz * cosP;
+
+        // Rect-Circle check
+        const closestX = Math.max(-pDims.hw, Math.min(lx, pDims.hw));
+        const closestZ = Math.max(-pDims.hl, Math.min(lz, pDims.hl));
+        const hit = ((lx - closestX) ** 2 + (lz - closestZ) ** 2) < (pedRadius * pedRadius);
+
+        if (hit) {
+            explode(pedData.position);
+            spawnVoxelScore(pedData.position);
+            pedData.position.x = player.position.x + (Math.random() - 0.5) * 300;
+            pedData.position.z = player.position.z + (Math.random() - 0.5) * 300;
+            if (pedData.isActive) {
+                scene.remove(pedData.mesh);
+                pedData.isActive = false;
+            }
+            score++;
+            scoreElement.innerText = "Score: " + score;
+        }
+    }
+}
+
+/**
+ * Spawn smoke particles for drifting wheels.
+ */
+function emitWheelSmoke() {
+    if (!player) return;
+    let wheelOffsets = [];
+    if (carType === 'supercar') {
+        wheelOffsets = [{ x: -1.2, z: 1.6 }, { x: 1.2, z: 1.6 }, { x: -1.25, z: -1.4 }, { x: 1.25, z: -1.4 }];
+    } else if (carType === 'hypercar') {
+        wheelOffsets = [{ x: -1.32, z: 1.4 }, { x: 1.32, z: 1.4 }, { x: -1.38, z: -1.2 }, { x: 1.38, z: -1.2 }];
+    } else {
+        // Hypercar 2.0 offsets
+        wheelOffsets = [{ x: -1.35, z: 1.6 }, { x: 1.35, z: 1.6 }, { x: -1.45, z: -1.2 }, { x: 1.45, z: -1.2 }];
+    }
+    const carRot = player.rotation.y;
+    const cos = Math.cos(carRot);
+    const sin = Math.sin(carRot);
+    wheelOffsets.forEach(offset => {
+        const rx = offset.x * cos + offset.z * sin;
+        const rz = -offset.x * sin + offset.z * cos;
+        const pos = new THREE.Vector3(player.position.x + rx, player.position.y + 0.2, player.position.z + rz);
+        spawnSmokeParticle(pos); // Reduced to 1 particle per wheel for speed
+    });
+}
+
+/**
+ * Get or create a cached material for debris particles.
+ * @param {number} color 
+ * @returns {THREE.MeshBasicMaterial}
+ */
+function getDebrisMaterial(color) {
+    if (!debrisMaterialCache.has(color)) {
+        debrisMaterialCache.set(color, new THREE.MeshBasicMaterial({ color: color }));
+    }
+    return debrisMaterialCache.get(color);
+}
+
+/**
+ * Retrieve a particle mesh from the object pool if available.
+ * @returns {THREE.Mesh|null}
+ */
+function getParticleFromPool() {
+    if (particlePool.length > 0) {
+        return particlePool.pop();
+    }
+    return null; // Pool empty, create new or skip
+}
+
+/**
+ * Spawn a smoke particle at the given position.
+ * @param {THREE.Vector3} pos 
+ */
+function spawnSmokeParticle(pos) {
+    let p = getParticleFromPool();
+    if (!p) {
+        // Create new if pool empty
+        const mat = new THREE.MeshBasicMaterial({ color: 0xdddddd, transparent: true, opacity: 0.4 });
+        p = new THREE.Mesh(smokeBaseGeometry, mat);
+    } else {
+        // Reset existing
+        p.geometry = smokeBaseGeometry;
+        // For smoke we might want a fresh material or reuse one? 
+        // Smoke fades out, so it modifies opacity. Cloning material is safer or handling it carefully.
+        // For simplicity, let's reuse a standard smoke material but we need to reset opacity.
+        // Actually, if we share materials, fading one fades all.
+        // So each smoke particle needs its own material clone or instance.
+        // Check if we can reuse the material. 
+        // We can reuse if it is a dedicated smoke material (indicated by previous usage as smoke).
+        // Debris materials are shared and opaque, so we cannot reuse them for smoke.
+        if (p.userData && p.userData.type === 'smoke' && p.material && p.material.isMeshBasicMaterial) {
+            p.material.opacity = 0.4;
+            p.material.color.setHex(0xdddddd);
+        } else {
+            p.material = new THREE.MeshBasicMaterial({ color: 0xdddddd, transparent: true, opacity: 0.4 });
+        }
+    }
+
+    p.scale.setScalar(Math.random() * 0.4 + 0.2);
+    p.position.copy(pos);
+    p.position.x += (Math.random() - 0.5) * 0.5;
+    p.position.z += (Math.random() - 0.5) * 0.5;
+    p.rotation.set(0, 0, 0);
+
+    p.userData = {
+        type: 'smoke', life: 1.0,
+        velocity: new THREE.Vector3((Math.random() - 0.5) * 0.05, 0.05 + Math.random() * 0.05, (Math.random() - 0.5) * 0.05)
+    };
+
+    scene.add(p);
+    particles.push(p);
+}
+
+/**
+ * Trigger an explosion effect with debris.
+ * @param {THREE.Vector3} pos 
+ * @param {number} [color=0xFF0000] 
+ */
+function explode(pos, color = 0xFF0000) {
+    const mat = getDebrisMaterial(color);
+    const debrisCount = 3; // Unified for mobile and desktop
+
+    for (let k = 0; k < debrisCount; k++) {
+        let p = getParticleFromPool();
+        if (!p) {
+            p = new THREE.Mesh(debrisGeometry, mat);
+        } else {
+            p.geometry = debrisGeometry;
+            p.material = mat;
         }
 
-        /**
-         * Trigger an explosion effect with debris.
-         * @param {THREE.Vector3} pos 
-         * @param {number} [color=0xFF0000] 
-         */
-        function explode(pos, color = 0xFF0000) {
-            const mat = getDebrisMaterial(color);
-            const debrisCount = 3; // Unified for mobile and desktop
+        p.scale.set(1, 1, 1);
+        p.position.copy(pos);
+        p.position.y += 1.5;
+        p.rotation.set(0, 0, 0);
 
-            for (let k = 0; k < debrisCount; k++) {
-                let p = getParticleFromPool();
-                if (!p) {
-                    p = new THREE.Mesh(debrisGeometry, mat);
-                } else {
-                    p.geometry = debrisGeometry;
-                    p.material = mat;
-                }
+        p.userData = {
+            type: 'debris', life: 1.0,
+            velocity: new THREE.Vector3((Math.random() - 0.5) * 1.0, Math.random() * 1.0 + 0.2, (Math.random() - 0.5) * 1.0)
+        };
+        scene.add(p);
+        particles.push(p);
+    }
+}
 
-                p.scale.set(1, 1, 1);
-                p.position.copy(pos);
-                p.position.y += 1.5;
-                p.rotation.set(0, 0, 0);
+/**
+ * Initialize the snow particle system using a custom shader.
+ */
+function createSnow() {
+    const positions = [];
+    const velocities = [];
 
-                p.userData = {
-                    type: 'debris', life: 1.0,
-                    velocity: new THREE.Vector3((Math.random() - 0.5) * 1.0, Math.random() * 1.0 + 0.2, (Math.random() - 0.5) * 1.0)
-                };
-                scene.add(p);
-                particles.push(p);
-            }
-        }
+    // Spawn locally around (0,0,0)
+    for (let i = 0; i < snowCount; i++) {
+        positions.push(
+            (Math.random() - 0.5) * snowRange,
+            Math.random() * 60 - 20, // Height variation
+            (Math.random() - 0.5) * snowRange
+        );
+        velocities.push(
+            (Math.random() - 0.5) * 2.0, // x drift (increased for shader visual)
+            -Math.random() * 5.0 - 2.0, // y fall speed (needs to be faster in this math model)
+            (Math.random() - 0.5) * 2.0  // z drift
+        );
+    }
 
-        /**
-         * Initialize the snow particle system using a custom shader.
-         */
-        function createSnow() {
-            const positions = [];
-            const velocities = [];
+    snowGeo = new THREE.BufferGeometry();
+    snowGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    snowGeo.setAttribute('velocity', new THREE.Float32BufferAttribute(velocities, 3));
 
-            // Spawn locally around (0,0,0)
-            for (let i = 0; i < snowCount; i++) {
-                positions.push(
-                    (Math.random() - 0.5) * snowRange,
-                    Math.random() * 60 - 20, // Height variation
-                    (Math.random() - 0.5) * snowRange
-                );
-                velocities.push(
-                    (Math.random() - 0.5) * 2.0, // x drift (increased for shader visual)
-                    -Math.random() * 5.0 - 2.0, // y fall speed (needs to be faster in this math model)
-                    (Math.random() - 0.5) * 2.0  // z drift
-                );
-            }
-
-            snowGeo = new THREE.BufferGeometry();
-            snowGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-            snowGeo.setAttribute('velocity', new THREE.Float32BufferAttribute(velocities, 3));
-
-            const snowVertexShader = `
+    const snowVertexShader = `
                 uniform float uTime;
                 uniform vec3 uPlayerPos;
                 uniform vec3 uRange;
@@ -4396,7 +4396,7 @@
                 }
             `;
 
-            const snowFragmentShader = `
+    const snowFragmentShader = `
                 void main() {
                     // Simple circular particle
                     vec2 coord = gl_PointCoord - vec2(0.5);
@@ -4405,801 +4405,798 @@
                 }
             `;
 
-            const snowMat = new THREE.ShaderMaterial({
-                uniforms: {
-                    uTime: { value: 0 },
-                    uPlayerPos: { value: new THREE.Vector3() },
-                    uRange: { value: new THREE.Vector3(snowRange, 80, snowRange) }
-                },
-                vertexShader: snowVertexShader,
-                fragmentShader: snowFragmentShader,
-                transparent: true,
-                depthWrite: false,
-                blending: THREE.AdditiveBlending
-            });
+    const snowMat = new THREE.ShaderMaterial({
+        uniforms: {
+            uTime: { value: 0 },
+            uPlayerPos: { value: new THREE.Vector3() },
+            uRange: { value: new THREE.Vector3(snowRange, 80, snowRange) }
+        },
+        vertexShader: snowVertexShader,
+        fragmentShader: snowFragmentShader,
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
+    });
 
-            snowSystem = new THREE.Points(snowGeo, snowMat);
-            // We do NOT set snowSystem.position anymore, the shader handles world placement.
-            // But Three.js frustum culling relies on bounding sphere.
-            // Since particles can be anywhere around player, we must ensure it's not culled.
-            snowSystem.frustumCulled = false;
+    snowSystem = new THREE.Points(snowGeo, snowMat);
+    // We do NOT set snowSystem.position anymore, the shader handles world placement.
+    // But Three.js frustum culling relies on bounding sphere.
+    // Since particles can be anywhere around player, we must ensure it's not culled.
+    snowSystem.frustumCulled = false;
 
-            scene.add(snowSystem);
+    scene.add(snowSystem);
+}
+
+/**
+ * Update the snow system uniforms (time, player position).
+ */
+function updateSnow() {
+    if (!player || !snowSystem) return;
+
+    // Update Uniforms
+    snowSystem.material.uniforms.uPlayerPos.value.copy(getActivePosition());
+    // Use globalFrame or a time accumulator. 
+    // frameCount resets every second, so use performance.now
+    snowSystem.material.uniforms.uTime.value = performance.now() * 0.001;
+}
+
+/**
+ * Update physics and lifecycle of all active particles (smoke, debris).
+ */
+function updateParticles() {
+    for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.position.add(p.userData.velocity);
+        if (p.userData.type === 'smoke') {
+            p.rotation.x += 0.05; p.rotation.y += 0.05; p.scale.addScalar(0.04); p.userData.life -= 0.025;
+            if (p.material.opacity > 0) p.material.opacity = p.userData.life * 0.4;
+        } else {
+            p.userData.velocity.y -= 0.03; p.rotation.x += 0.1; p.rotation.y += 0.1;
+            if (p.position.y < 0) { p.userData.velocity.y *= -0.5; p.position.y = 0; }
+            p.userData.life -= 0.05; p.scale.setScalar(p.userData.life);
         }
-
-        /**
-         * Update the snow system uniforms (time, player position).
-         */
-        function updateSnow() {
-            if (!player || !snowSystem) return;
-
-            // Update Uniforms
-            snowSystem.material.uniforms.uPlayerPos.value.copy(getActivePosition());
-            // Use globalFrame or a time accumulator. 
-            // frameCount resets every second, so use performance.now
-            snowSystem.material.uniforms.uTime.value = performance.now() * 0.001;
-        }
-
-        /**
-         * Update physics and lifecycle of all active particles (smoke, debris).
-         */
-        function updateParticles() {
-            for (let i = particles.length - 1; i >= 0; i--) {
-                const p = particles[i];
-                p.position.add(p.userData.velocity);
-                if (p.userData.type === 'smoke') {
-                    p.rotation.x += 0.05; p.rotation.y += 0.05; p.scale.addScalar(0.04); p.userData.life -= 0.025;
-                    if (p.material.opacity > 0) p.material.opacity = p.userData.life * 0.4;
-                } else {
-                    p.userData.velocity.y -= 0.03; p.rotation.x += 0.1; p.rotation.y += 0.1;
-                    if (p.position.y < 0) { p.userData.velocity.y *= -0.5; p.position.y = 0; }
-                    p.userData.life -= 0.05; p.scale.setScalar(p.userData.life);
-                }
-                if (p.userData.life <= 0) {
-                    scene.remove(p);
-                    // Do NOT dispose geometry/material here as we recycle or use cached ones
-                    // Reset heavy properties if needed, but mostly just push to pool
-                    particles.splice(i, 1);
-                    if (particlePool.length < 100) { // Limit pool size
-                        particlePool.push(p);
-                    }
-                }
+        if (p.userData.life <= 0) {
+            scene.remove(p);
+            // Do NOT dispose geometry/material here as we recycle or use cached ones
+            // Reset heavy properties if needed, but mostly just push to pool
+            particles.splice(i, 1);
+            if (particlePool.length < 100) { // Limit pool size
+                particlePool.push(p);
             }
         }
+    }
+}
 
-        /**
-         * Spawn floating +1 voxel text for score.
-         * @param {THREE.Vector3} pos 
-         */
-        function spawnVoxelScore(pos) {
-            const group = new THREE.Group();
+/**
+ * Spawn floating +1 voxel text for score.
+ * @param {THREE.Vector3} pos 
+ */
+function spawnVoxelScore(pos) {
+    const group = new THREE.Group();
 
-            // Construct "+1" out of voxels
-            // Offsets for "+"
-            const plusOffsets = [
-                { x: 0, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }, { x: 1, y: 0 }, { x: -1, y: 0 }
-            ];
-            // Offsets for "1" (shifted right by ~3 units)
-            const oneOffsets = [
-                { x: 3, y: 1 }, { x: 3, y: 0 }, { x: 3, y: -1 }, { x: 2.2, y: 0.8 }
-            ];
+    // Construct "+1" out of voxels
+    // Offsets for "+"
+    const plusOffsets = [
+        { x: 0, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }, { x: 1, y: 0 }, { x: -1, y: 0 }
+    ];
+    // Offsets for "1" (shifted right by ~3 units)
+    const oneOffsets = [
+        { x: 3, y: 1 }, { x: 3, y: 0 }, { x: 3, y: -1 }, { x: 2.2, y: 0.8 }
+    ];
 
-            const allOffsets = [...plusOffsets, ...oneOffsets];
+    const allOffsets = [...plusOffsets, ...oneOffsets];
 
-            allOffsets.forEach(off => {
-                const mesh = new THREE.Mesh(voxelScoreGeometry, voxelScoreMaterial);
-                mesh.position.set(off.x * 0.5, off.y * 0.5, 0); // Scale spacing by voxel size
-                group.add(mesh);
-            });
+    allOffsets.forEach(off => {
+        const mesh = new THREE.Mesh(voxelScoreGeometry, voxelScoreMaterial);
+        mesh.position.set(off.x * 0.5, off.y * 0.5, 0); // Scale spacing by voxel size
+        group.add(mesh);
+    });
 
-            group.position.copy(pos);
-            group.position.y += 3.0;
-            // Face camera roughly or just face same as car?
-            // Let's face the camera initially
-            group.lookAt(camera.position);
-            // But we want it upright, lookAt might tilt x/z. 
-            // Simple billboarding Y rotation:
-            const camPos = new THREE.Vector3();
-            camera.getWorldPosition(camPos);
-            const angle = Math.atan2(camPos.x - pos.x, camPos.z - pos.z);
-            group.rotation.set(0, angle, 0);
+    group.position.copy(pos);
+    group.position.y += 3.0;
+    // Face camera roughly or just face same as car?
+    // Let's face the camera initially
+    group.lookAt(camera.position);
+    // But we want it upright, lookAt might tilt x/z. 
+    // Simple billboarding Y rotation:
+    const camPos = new THREE.Vector3();
+    camera.getWorldPosition(camPos);
+    const angle = Math.atan2(camPos.x - pos.x, camPos.z - pos.z);
+    group.rotation.set(0, angle, 0);
 
-            scene.add(group);
+    scene.add(group);
 
-            const dx = pos.x - player.position.x;
-            const dz = pos.z - player.position.z;
-            const length = Math.sqrt(dx * dx + dz * dz) || 1;
+    const dx = pos.x - player.position.x;
+    const dz = pos.z - player.position.z;
+    const length = Math.sqrt(dx * dx + dz * dz) || 1;
 
-            const velocity = new THREE.Vector3(dx / length * 0.3, 0.4, dz / length * 0.3);
+    const velocity = new THREE.Vector3(dx / length * 0.3, 0.4, dz / length * 0.3);
 
-            floatingTexts.push({
-                type: 'voxel',
-                mesh: group,
-                velocity: velocity,
-                life: 1.0
-            });
+    floatingTexts.push({
+        type: 'voxel',
+        mesh: group,
+        velocity: velocity,
+        life: 1.0
+    });
+}
+
+/**
+ * Update physics/animation of floating text elements.
+ */
+function updateFloatingTexts() {
+    for (let i = floatingTexts.length - 1; i >= 0; i--) {
+        const ft = floatingTexts[i];
+        ft.mesh.position.add(ft.velocity);
+        ft.velocity.y -= 0.015; // Gravity
+
+        ft.life -= 0.015;
+
+        // Scale out animation
+        const scale = Math.max(0, ft.life);
+        ft.mesh.scale.setScalar(scale);
+
+        if (ft.life <= 0) {
+            scene.remove(ft.mesh);
+            // Geometries are shared, do not dispose
+            floatingTexts.splice(i, 1);
         }
+    }
+}
 
-        /**
-         * Update physics/animation of floating text elements.
-         */
-        function updateFloatingTexts() {
-            for (let i = floatingTexts.length - 1; i >= 0; i--) {
-                const ft = floatingTexts[i];
-                ft.mesh.position.add(ft.velocity);
-                ft.velocity.y -= 0.015; // Gravity
+/**
+ * Update the main camera position to follow the target (player or pedestrian).
+ */
+function updateCamera() {
+    let targetObj = player;
+    if (controlMode === 'pedestrian' && userPedestrian) {
+        targetObj = userPedestrian; // Use object with .position and .rotation (if we want camera to rotate with ped)
+        // Pedestrian rotation might jitter, maybe keep camera angle independent or smooth follow?
+    }
 
-                ft.life -= 0.015;
-
-                // Scale out animation
-                const scale = Math.max(0, ft.life);
-                ft.mesh.scale.setScalar(scale);
-
-                if (ft.life <= 0) {
-                    scene.remove(ft.mesh);
-                    // Geometries are shared, do not dispose
-                    floatingTexts.splice(i, 1);
-                }
+    if (isManualCamera) {
+        manualCamTimer--;
+        if (manualCamTimer <= 0) isManualCamera = false;
+    } else {
+        if (controlMode === 'vehicle' && velocity.length() > 0.1) {
+            const targetAngle = player.rotation.y + Math.PI;
+            const dist = shortestAngleDist(cameraAngle, targetAngle);
+            cameraAngle += dist * 0.05;
+            const targetPitch = 0.5;
+            cameraVerticalAngle += (targetPitch - cameraVerticalAngle) * 0.02;
+        } else if (controlMode === 'pedestrian' && userPedestrian) {
+            // Only auto-align if NOT moving backwards
+            if (moveInput.y <= 0.2) {
+                const targetAngle = userPedestrian.rotation + Math.PI;
+                const dist = shortestAngleDist(cameraAngle, targetAngle);
+                cameraAngle += dist * 0.1; // Slightly faster follow for pedestrian
             }
+            const targetPitch = 0.4; // Lower pitch for pedestrian
+            cameraVerticalAngle += (targetPitch - cameraVerticalAngle) * 0.02;
         }
+    }
+    const hDist = CAMERA_DIST * Math.cos(cameraVerticalAngle);
+    const vDist = CAMERA_DIST * Math.sin(cameraVerticalAngle);
+    const offsetX = hDist * Math.sin(cameraAngle);
+    const offsetZ = hDist * Math.cos(cameraAngle);
+    const targetPos = new THREE.Vector3(
+        targetObj.position.x + offsetX,
+        targetObj.position.y + vDist,
+        targetObj.position.z + offsetZ
+    );
+    camera.position.lerp(targetPos, 0.1);
+    camera.lookAt(targetObj.position);
+}
 
-        /**
-         * Update the main camera position to follow the target (player or pedestrian).
-         */
-        function updateCamera() {
-            let targetObj = player;
-            if (controlMode === 'pedestrian' && userPedestrian) {
-                targetObj = userPedestrian; // Use object with .position and .rotation (if we want camera to rotate with ped)
-                // Pedestrian rotation might jitter, maybe keep camera angle independent or smooth follow?
-            }
+/**
+ * Calculate and display FPS.
+ */
+function updateFPS() {
+    frameCount++;
+    const now = performance.now();
+    if (now - lastTime >= 1000) {
+        fpsElement.innerText = "FPS: " + frameCount;
+        frameCount = 0;
+        lastTime = now;
+    }
+}
 
-            if (isManualCamera) {
-                manualCamTimer--;
-                if (manualCamTimer <= 0) isManualCamera = false;
-            } else {
-                if (controlMode === 'vehicle' && velocity.length() > 0.1) {
-                    const targetAngle = player.rotation.y + Math.PI;
-                    const dist = shortestAngleDist(cameraAngle, targetAngle);
-                    cameraAngle += dist * 0.05;
-                    const targetPitch = 0.5;
-                    cameraVerticalAngle += (targetPitch - cameraVerticalAngle) * 0.02;
-                } else if (controlMode === 'pedestrian' && userPedestrian) {
-                    // Only auto-align if NOT moving backwards
-                    if (moveInput.y <= 0.2) {
-                        const targetAngle = userPedestrian.rotation + Math.PI;
-                        const dist = shortestAngleDist(cameraAngle, targetAngle);
-                        cameraAngle += dist * 0.1; // Slightly faster follow for pedestrian
-                    }
-                    const targetPitch = 0.4; // Lower pitch for pedestrian
-                    cameraVerticalAngle += (targetPitch - cameraVerticalAngle) * 0.02;
-                }
-            }
-            const hDist = CAMERA_DIST * Math.cos(cameraVerticalAngle);
-            const vDist = CAMERA_DIST * Math.sin(cameraVerticalAngle);
-            const offsetX = hDist * Math.sin(cameraAngle);
-            const offsetZ = hDist * Math.cos(cameraAngle);
-            const targetPos = new THREE.Vector3(
-                targetObj.position.x + offsetX,
-                targetObj.position.y + vDist,
-                targetObj.position.z + offsetZ
-            );
-            camera.position.lerp(targetPos, 0.1);
-            camera.lookAt(targetObj.position);
-        }
+/**
+ * Main animation loop.
+ */
+function animate() {
+    requestAnimationFrame(animate);
+    updateFPS();
+    globalFrame++;
+    const nowTime = performance.now();
 
-        /**
-         * Calculate and display FPS.
-         */
-        function updateFPS() {
-            frameCount++;
-            const now = performance.now();
-            if (now - lastTime >= 1000) {
-                fpsElement.innerText = "FPS: " + frameCount;
-                frameCount = 0;
-                lastTime = now;
-            }
-        }
+    if (player && !vehicleModalOpen && !pedestrianModalOpen) {
+        updatePhysics();
+        if (globalFrame % 15 === 0) updateChunks();
+        // Mobile optimization: skip frames for heavy operations
+        if (globalFrame % PEDESTRIAN_UPDATE_INTERVAL === 0) updatePedestrians();
+        if (globalFrame % COLLISION_CHECK_INTERVAL === 0) checkCollisions();
+        if (globalFrame % PARTICLE_UPDATE_INTERVAL === 0) updateParticles();
+        updateFallingObjects();
+        updateFloatingTexts();
+        updateSnow();
+        updateCamera();
+        updateHeadingIndicator();
+        if (globalFrame % TRAFFIC_UPDATE_INTERVAL === 0) updateTraffic(nowTime); // Pass time
 
-        /**
-         * Main animation loop.
-         */
-        function animate() {
-            requestAnimationFrame(animate);
-            updateFPS();
-            globalFrame++;
-            const nowTime = performance.now();
-
-            if (player && !vehicleModalOpen && !pedestrianModalOpen) {
-                updatePhysics();
-                if (globalFrame % 15 === 0) updateChunks();
-                // Mobile optimization: skip frames for heavy operations
-                if (globalFrame % PEDESTRIAN_UPDATE_INTERVAL === 0) updatePedestrians();
-                if (globalFrame % COLLISION_CHECK_INTERVAL === 0) checkCollisions();
-                if (globalFrame % PARTICLE_UPDATE_INTERVAL === 0) updateParticles();
-                updateFallingObjects();
-                updateFloatingTexts();
-                updateSnow();
-                updateCamera();
-                updateHeadingIndicator();
-                if (globalFrame % TRAFFIC_UPDATE_INTERVAL === 0) updateTraffic(nowTime); // Pass time
-
-                // Multiplayer Updates
-                if (socket && player) {
-                    if (globalFrame % 3 === 0) {
-                        const activePos = getActivePosition();
-                        const activeRot = controlMode === 'pedestrian' && userPedestrian ? userPedestrian.rotation : player.rotation.y;
-
-                        let vehicleData = null;
-                        if (controlMode === 'pedestrian') {
-                            vehicleData = {
-                                x: player.position.x,
-                                y: player.position.y,
-                                z: player.position.z,
-                                rotation: player.rotation.y,
-                                type: carType
-                            };
-                        }
-
-                        socket.emit('playerMovement', {
-                            x: activePos.x,
-                            y: activePos.y,
-                            z: activePos.z,
-                            rotation: activeRot,
-                            vehicleType: carType,
-                            isPedestrian: controlMode === 'pedestrian',
-                            vehicleData: vehicleData
-                        });
-                    }
-                }
-                updateRemotePlayers();
-
+        // Multiplayer Updates
+        if (socket && player) {
+            if (globalFrame % 3 === 0) {
                 const activePos = getActivePosition();
-                if (sunLight && activePos.distanceToSquared(lastLightUpdatePos) > 1600) { // 40^2 = 1600
-                    lastLightUpdatePos.copy(activePos);
-                    sunLight.position.set(activePos.x + 50, 100, activePos.z + 50);
-                    sunLight.target.position.copy(activePos);
-                    sunLight.target.updateMatrixWorld();
-                }
-                if (!isAirborne) {
-                    const speed = Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
-                    if (speed > 0.01) {
-                        const bounceFreq = (carType === 'hypercar' || carType === 'hypercar2') ? 0.03 : 0.015;
-                        const bounceAmp = (carType === 'hypercar' || carType === 'hypercar2') ? 0.02 : 0.05;
-                        player.position.y = PLAYER_BASE_Y + Math.sin(nowTime * bounceFreq) * bounceAmp;
-                    }
-                }
-            }
-            renderer.clear();
-            renderer.render(scene, camera);
-            if (miniatureGroupSuper) miniatureGroupSuper.rotation.y += 0.02;
-            if (miniatureGroupHyper) miniatureGroupHyper.rotation.y += 0.02;
+                const activeRot = controlMode === 'pedestrian' && userPedestrian ? userPedestrian.rotation : player.rotation.y;
 
-            if (settingsModal.classList.contains('active')) {
-                if (settingsMiniatureRendererSuper) settingsMiniatureRendererSuper.render(settingsMiniatureSceneSuper, settingsMiniatureCameraSuper);
-                if (settingsMiniatureRendererHyper) settingsMiniatureRendererHyper.render(settingsMiniatureSceneHyper, settingsMiniatureCameraHyper);
-                if (settingsMiniatureRendererHyper2) settingsMiniatureRendererHyper2.render(settingsMiniatureSceneHyper2, settingsMiniatureCameraHyper2);
-            }
-
-            if (miniatureGroupHyper2) miniatureGroupHyper2.rotation.y += 0.02;
-
-            if (vehicleModalOpen) {
-                // if (modalCarGroup) modalCarGroup.rotation.y += 0.01; // Removed automatic rotation
-                // Render modal scene on top (using separate renderer)
-                modalRenderer.render(modalScene, modalCamera);
-            }
-
-            if (pedestrianModalOpen) {
-                pedModalRenderer.render(pedModalScene, pedModalCamera);
-            }
-        }
-
-        /**
-         * Update movement vector based on currently pressed keys.
-         */
-        function updateMoveInputFromKeys() {
-            if (vehicleModalOpen || pedestrianModalOpen || settingsModal.classList.contains('active') || shareModal.classList.contains('active') || isChatting) return;
-            let dx = 0;
-            let dy = 0;
-            if (keysPressed['w'] || keysPressed['ArrowUp']) dy -= 1;
-            if (keysPressed['s'] || keysPressed['ArrowDown']) dy += 1;
-            if (keysPressed['a'] || keysPressed['ArrowLeft']) dx -= 1;
-            if (keysPressed['d'] || keysPressed['ArrowRight']) dx += 1;
-
-            if (dx !== 0 || dy !== 0) {
-                // Normalize for consistent speed diagonally
-                const len = Math.sqrt(dx * dx + dy * dy);
-                dx /= len;
-                dy /= len;
-            }
-
-            moveInput.x = dx;
-            moveInput.y = dy;
-
-            // Visual feedback on joystick
-            const joyX = dx * joystickRadius;
-            const joyY = dy * joystickRadius;
-            if (stickKnob) stickKnob.style.transform = `translate(calc(-50% + ${joyX}px), calc(-50% + ${joyY}px))`;
-        }
-
-        /**
-         * Handle window resize events to update camera aspect ratios and renderer size.
-         */
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            // uiCamera removed
-            renderer.setSize(window.innerWidth, window.innerHeight);
-
-            if (vehicleModalOpen && modalRenderer) {
-                const width = vehicleModal.clientWidth;
-                const height = vehicleModal.clientHeight;
-                modalRenderer.setSize(width, height, false);
-                modalCamera.aspect = width / height;
-                modalCamera.updateProjectionMatrix();
-            }
-
-            if (pedestrianModalOpen && pedModalRenderer) {
-                const width = pedestrianModal.clientWidth;
-                const height = pedestrianModal.clientHeight;
-                pedModalRenderer.setSize(width, height, false);
-                pedModalCamera.aspect = width / height;
-                pedModalCamera.updateProjectionMatrix();
-            }
-        }
-
-        // --- Multiplayer Functions ---
-        function initSocket() {
-            // Updated to use local LAN IP or custom user IP
-            let serverIP = localStorage.getItem('serverIP');
-
-            // If no IP is set and we are running on port 3000 (likely served by the node server itself),
-            // automatically connect to the same origin.
-            if (!serverIP && window.location.port === '3000') {
-                console.log("Running on game server port, connecting to self.");
-                socket = io();
-
-                // For display purposes only
-                serverIP = window.location.hostname;
-            } else {
-                if (!serverIP) {
-                    serverIP = '172.16.1.218'; // Default fallback
-                }
-
-                let connectionUrl = serverIP;
-                // If it doesn't start with http/https, add http by default.
-                if (!connectionUrl.startsWith('http')) {
-                    connectionUrl = 'http://' + connectionUrl;
-                }
-                // If no port is specified (no colon followed by digits at end), add default :3000 for http
-                if (!/:\d+$/.test(connectionUrl) && !connectionUrl.startsWith('https')) {
-                    connectionUrl += ':3000';
-                }
-
-                // Mixed Content Warning
-                if (location.protocol === 'https:' && connectionUrl.startsWith('http:')) {
-                    console.warn("Mixed Content Warning: Connecting to HTTP server from HTTPS page.");
-                }
-
-                console.log("Attempting to connect to:", connectionUrl);
-                socket = io(connectionUrl);
-            }
-
-
-            socket.on('connect', () => {
-                console.log('Connected to server');
-                // Show Chat
-                const chatContainer = document.getElementById('chat-container');
-                if (chatContainer) chatContainer.style.display = 'flex';
-
-                // Send current vehicle colors and username
-                const username = localStorage.getItem('playerUsername') || "";
-                socket.emit('updatePlayerDetails', {
-                    vehicleColors: vehicleColors,
-                    username: username,
-                    pedestrianColors: defaultPedestrianColors // Send current pedestrian colors
-                });
-            });
-
-            socket.on('connect_error', (err) => {
-                console.error('Connection failed', err);
-
-                // Hide Chat
-                const chatContainer = document.getElementById('chat-container');
-                if (chatContainer) chatContainer.style.display = 'none';
-
-                // Detailed error for user
-                let msg = `Could not connect to ${connectionUrl}.\n`;
-                if (location.protocol === 'https:' && connectionUrl.startsWith('http:')) {
-                    msg += `\nPOSSIBLE CAUSE: You are playing on HTTPS but the server is HTTP. Browsers block this ("Mixed Content").\nTry using ngrok to get an HTTPS url for your server, or play the game via HTTP (if possible).`;
-                } else {
-                    msg += `\nCheck:\n1. Server is running (port 3000)\n2. Correct IP address (Public IP if over internet)\n3. Port Forwarding is set up correctly in your router.\n4. Windows Firewall is allowing Node.js connections.`;
-                }
-
-                // Only alert once to prevent loop
-                if (!window.hasAlertedError) {
-                    alert(msg);
-                    window.hasAlertedError = true;
-                }
-            });
-
-            socket.on('disconnect', () => {
-                // Handle disconnect if needed
-                const chatContainer = document.getElementById('chat-container');
-                if (chatContainer) chatContainer.style.display = 'none';
-            });
-
-            socket.on('currentPlayers', (players) => {
-                Object.keys(players).forEach((id) => {
-                    if (id !== socket.id) {
-                        addOtherPlayer(players[id]);
-                    }
-                });
-            });
-
-            socket.on('newPlayer', (playerInfo) => {
-                addOtherPlayer(playerInfo);
-            });
-
-            socket.on('playerDisconnected', (id) => {
-                removeOtherPlayer(id);
-            });
-
-            socket.on('playerMoved', (playerInfo) => {
-                if (otherPlayers[playerInfo.id]) {
-                    otherPlayers[playerInfo.id].targetPos = {
-                        x: playerInfo.x,
-                        y: playerInfo.y,
-                        z: playerInfo.z,
-                        rotation: playerInfo.rotation
+                let vehicleData = null;
+                if (controlMode === 'pedestrian') {
+                    vehicleData = {
+                        x: player.position.x,
+                        y: player.position.y,
+                        z: player.position.z,
+                        rotation: player.rotation.y,
+                        type: carType
                     };
-
-                    // Handle Mode Change (Vehicle <-> Pedestrian)
-                    const wasPed = otherPlayers[playerInfo.id].isPedestrian;
-                    const isPed = playerInfo.isPedestrian;
-
-                    if (wasPed !== isPed) {
-                        removeOtherPlayer(playerInfo.id);
-                        addOtherPlayer(playerInfo);
-                        return; // addOtherPlayer handles the rest
-                    }
-
-                    // Handle Vehicle Type Change (only if still vehicle)
-                    if (!isPed && playerInfo.vehicleType && otherPlayers[playerInfo.id].vehicleType !== playerInfo.vehicleType) {
-                        // Re-create vehicle
-                        removeOtherPlayer(playerInfo.id);
-                        addOtherPlayer(playerInfo);
-                    }
-                } else {
-                    addOtherPlayer(playerInfo);
                 }
-            });
 
-            socket.on('playerDetailsUpdated', (data) => {
-                if (otherPlayers[data.id]) {
-                    if (data.vehicleColors) {
-                        otherPlayers[data.id].vehicleColors = data.vehicleColors;
-                        // Only update visual if currently a vehicle
-                        if (!otherPlayers[data.id].isPedestrian) {
-                            updateRemotePlayerVisuals(data.id);
-                        }
-                    }
-                    if (data.pedestrianColors) {
-                        otherPlayers[data.id].pedestrianColors = data.pedestrianColors;
-                        // Only update visual if currently a pedestrian
-                        if (otherPlayers[data.id].isPedestrian) {
-                            // Re-apply colors to pedestrian mesh
-                            if (otherPlayers[data.id].mesh) {
-                                // Since pedestrian mesh structure is a group with userData.limbs,
-                                // we can use applyPedestrianColors but we need to pass the group.
-                                // addOtherPlayer stores the group in .mesh.
-                                // However, applyPedestrianColors expects a mesh with userData.limbs.
-                                // buildPedestrianMesh returns the group which has userData.limbs.
-                                applyPedestrianColors(otherPlayers[data.id].mesh, data.pedestrianColors);
-                            }
-                        }
-                    }
-                    if (data.username !== undefined) {
-                        otherPlayers[data.id].username = data.username;
-                        updateRemoteUsername(data.id, data.username);
-                    }
-                }
-            });
+                socket.emit('playerMovement', {
+                    x: activePos.x,
+                    y: activePos.y,
+                    z: activePos.z,
+                    rotation: activeRot,
+                    vehicleType: carType,
+                    isPedestrian: controlMode === 'pedestrian',
+                    vehicleData: vehicleData
+                });
+            }
+        }
+        updateRemotePlayers();
 
-            socket.on('receiveChat', (data) => {
-                addChatMessage(data.username, data.message);
-            });
+        const activePos = getActivePosition();
+        if (sunLight && activePos.distanceToSquared(lastLightUpdatePos) > 1600) { // 40^2 = 1600
+            lastLightUpdatePos.copy(activePos);
+            sunLight.position.set(activePos.x + 50, 100, activePos.z + 50);
+            sunLight.target.position.copy(activePos);
+            sunLight.target.updateMatrixWorld();
+        }
+        if (!isAirborne) {
+            const speed = Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
+            if (speed > 0.01) {
+                const bounceFreq = (carType === 'hypercar' || carType === 'hypercar2') ? 0.03 : 0.015;
+                const bounceAmp = (carType === 'hypercar' || carType === 'hypercar2') ? 0.02 : 0.05;
+                player.position.y = PLAYER_BASE_Y + Math.sin(nowTime * bounceFreq) * bounceAmp;
+            }
+        }
+    }
+    renderer.clear();
+    renderer.render(scene, camera);
+    if (miniatureGroupSuper) miniatureGroupSuper.rotation.y += 0.02;
+    if (miniatureGroupHyper) miniatureGroupHyper.rotation.y += 0.02;
+
+    if (settingsModal.classList.contains('active')) {
+        if (settingsMiniatureRendererSuper) settingsMiniatureRendererSuper.render(settingsMiniatureSceneSuper, settingsMiniatureCameraSuper);
+        if (settingsMiniatureRendererHyper) settingsMiniatureRendererHyper.render(settingsMiniatureSceneHyper, settingsMiniatureCameraHyper);
+        if (settingsMiniatureRendererHyper2) settingsMiniatureRendererHyper2.render(settingsMiniatureSceneHyper2, settingsMiniatureCameraHyper2);
+    }
+
+    if (miniatureGroupHyper2) miniatureGroupHyper2.rotation.y += 0.02;
+
+    if (vehicleModalOpen) {
+        // if (modalCarGroup) modalCarGroup.rotation.y += 0.01; // Removed automatic rotation
+        // Render modal scene on top (using separate renderer)
+        modalRenderer.render(modalScene, modalCamera);
+    }
+
+    if (pedestrianModalOpen) {
+        pedModalRenderer.render(pedModalScene, pedModalCamera);
+    }
+}
+
+/**
+ * Update movement vector based on currently pressed keys.
+ */
+function updateMoveInputFromKeys() {
+    if (vehicleModalOpen || pedestrianModalOpen || settingsModal.classList.contains('active') || shareModal.classList.contains('active') || isChatting) return;
+    let dx = 0;
+    let dy = 0;
+    if (keysPressed['w'] || keysPressed['ArrowUp']) dy -= 1;
+    if (keysPressed['s'] || keysPressed['ArrowDown']) dy += 1;
+    if (keysPressed['a'] || keysPressed['ArrowLeft']) dx -= 1;
+    if (keysPressed['d'] || keysPressed['ArrowRight']) dx += 1;
+
+    if (dx !== 0 || dy !== 0) {
+        // Normalize for consistent speed diagonally
+        const len = Math.sqrt(dx * dx + dy * dy);
+        dx /= len;
+        dy /= len;
+    }
+
+    moveInput.x = dx;
+    moveInput.y = dy;
+
+    // Visual feedback on joystick
+    const joyX = dx * joystickRadius;
+    const joyY = dy * joystickRadius;
+    if (stickKnob) stickKnob.style.transform = `translate(calc(-50% + ${joyX}px), calc(-50% + ${joyY}px))`;
+}
+
+/**
+ * Handle window resize events to update camera aspect ratios and renderer size.
+ */
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    // uiCamera removed
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    if (vehicleModalOpen && modalRenderer) {
+        const width = vehicleModal.clientWidth;
+        const height = vehicleModal.clientHeight;
+        modalRenderer.setSize(width, height, false);
+        modalCamera.aspect = width / height;
+        modalCamera.updateProjectionMatrix();
+    }
+
+    if (pedestrianModalOpen && pedModalRenderer) {
+        const width = pedestrianModal.clientWidth;
+        const height = pedestrianModal.clientHeight;
+        pedModalRenderer.setSize(width, height, false);
+        pedModalCamera.aspect = width / height;
+        pedModalCamera.updateProjectionMatrix();
+    }
+}
+
+// --- Multiplayer Functions ---
+function initSocket() {
+    // Updated to use local LAN IP or custom user IP
+    let serverIP = localStorage.getItem('serverIP');
+
+    // If no IP is set and we are running on port 3000 (likely served by the node server itself),
+    // automatically connect to the same origin.
+    if (!serverIP && window.location.port === '3000') {
+        console.log("Running on game server port, connecting to self.");
+        socket = io();
+
+        // For display purposes only
+        serverIP = window.location.hostname;
+    } else {
+        if (!serverIP) {
+            serverIP = '172.16.1.218'; // Default fallback
         }
 
-        function addOtherPlayer(playerInfo) {
-            if (otherPlayers[playerInfo.id]) return;
+        let connectionUrl = serverIP;
+        // If it doesn't start with http/https, add http by default.
+        if (!connectionUrl.startsWith('http')) {
+            connectionUrl = 'http://' + connectionUrl;
+        }
+        // If no port is specified (no colon followed by digits at end), add default :3000 for http
+        if (!/:\d+$/.test(connectionUrl) && !connectionUrl.startsWith('https')) {
+            connectionUrl += ':3000';
+        }
 
-            let meshGroup;
-            let parkedCarMesh = null;
+        // Mixed Content Warning
+        if (location.protocol === 'https:' && connectionUrl.startsWith('http:')) {
+            console.warn("Mixed Content Warning: Connecting to HTTP server from HTTPS page.");
+        }
 
-            if (playerInfo.isPedestrian) {
-                // PEDESTRIAN SPAWN
-                const colors = playerInfo.pedestrianColors || { shirt: 0x111111, pants: 0x111111, skin: 0xffccaa, robe: 0x000000, hat: 0x555555 };
+        console.log("Attempting to connect to:", connectionUrl);
+        socket = io(connectionUrl);
+    }
 
-                // Construct data object expected by buildPedestrianMesh
-                const pedData = {
-                    isUser: true, // Use user style (with robe/hat if applicable)
-                    colors: colors
-                };
 
-                meshGroup = buildPedestrianMesh(pedData);
+    socket.on('connect', () => {
+        console.log('Connected to server');
+        // Show Chat
+        const chatContainer = document.getElementById('chat-container');
+        if (chatContainer) chatContainer.style.display = 'flex';
 
-                // SPAWN PARKED VEHICLE IF DATA EXISTS
-                if (playerInfo.vehicleData) {
-                    const vData = playerInfo.vehicleData;
-                    const vType = vData.type || 'hypercar';
-                    let vBody = 0xff0000;
-                    let vSpoiler = 0x000000;
-                    let vWindshield = 0x223344;
+        // Send current vehicle colors and username
+        const username = localStorage.getItem('playerUsername') || "";
+        socket.emit('updatePlayerDetails', {
+            vehicleColors: vehicleColors,
+            username: username,
+            pedestrianColors: defaultPedestrianColors // Send current pedestrian colors
+        });
+    });
 
-                    if (playerInfo.vehicleColors && playerInfo.vehicleColors[vType]) {
-                        vBody = playerInfo.vehicleColors[vType].body;
-                        vSpoiler = playerInfo.vehicleColors[vType].spoiler;
-                        vWindshield = playerInfo.vehicleColors[vType].windshield || 0x223344;
-                    }
+    socket.on('connect_error', (err) => {
+        console.error('Connection failed', err);
 
-                    parkedCarMesh = createVehicle({
-                        type: vType,
-                        bodyColor: vBody,
-                        spoilerColor: vSpoiler,
-                        windshieldColor: vWindshield,
-                        addLights: false,
-                        scale: 1.8
-                    });
+        // Hide Chat
+        const chatContainer = document.getElementById('chat-container');
+        if (chatContainer) chatContainer.style.display = 'none';
 
-                    parkedCarMesh.traverse((child) => {
-                        if (child.isMesh) {
-                            child.castShadow = true;
-                            child.receiveShadow = true;
-                        }
-                    });
+        // Detailed error for user
+        let msg = `Could not connect to ${connectionUrl}.\n`;
+        if (location.protocol === 'https:' && connectionUrl.startsWith('http:')) {
+            msg += `\nPOSSIBLE CAUSE: You are playing on HTTPS but the server is HTTP. Browsers block this ("Mixed Content").\nTry using ngrok to get an HTTPS url for your server, or play the game via HTTP (if possible).`;
+        } else {
+            msg += `\nCheck:\n1. Server is running (port 3000)\n2. Correct IP address (Public IP if over internet)\n3. Port Forwarding is set up correctly in your router.\n4. Windows Firewall is allowing Node.js connections.`;
+        }
 
-                    parkedCarMesh.position.set(vData.x, vData.y, vData.z);
-                    parkedCarMesh.rotation.y = vData.rotation;
-                    scene.add(parkedCarMesh);
-                }
+        // Only alert once to prevent loop
+        if (!window.hasAlertedError) {
+            alert(msg);
+            window.hasAlertedError = true;
+        }
+    });
 
-            } else {
-                // VEHICLE SPAWN
-                const type = playerInfo.vehicleType || 'hypercar';
-                let bodyColor = 0xff0000;
-                let spoilerColor = 0x000000;
-                let windshieldColor = 0x223344;
+    socket.on('disconnect', () => {
+        // Handle disconnect if needed
+        const chatContainer = document.getElementById('chat-container');
+        if (chatContainer) chatContainer.style.display = 'none';
+    });
 
-                if (playerInfo.vehicleColors && playerInfo.vehicleColors[type]) {
-                    bodyColor = playerInfo.vehicleColors[type].body;
-                    spoilerColor = playerInfo.vehicleColors[type].spoiler;
-                    windshieldColor = playerInfo.vehicleColors[type].windshield || 0x223344;
-                }
-
-                const otherCar = createVehicle({
-                    type: type,
-                    bodyColor: bodyColor,
-                    spoilerColor: spoilerColor,
-                    windshieldColor: windshieldColor,
-                    addLights: false,
-                    scale: 1.8
-                });
-
-                // Enable shadows
-                otherCar.traverse((child) => {
-                    if (child.isMesh) {
-                        child.castShadow = true;
-                        child.receiveShadow = true;
-                    }
-                });
-
-                meshGroup = new THREE.Group();
-                meshGroup.add(otherCar);
+    socket.on('currentPlayers', (players) => {
+        Object.keys(players).forEach((id) => {
+            if (id !== socket.id) {
+                addOtherPlayer(players[id]);
             }
+        });
+    });
 
-            meshGroup.position.set(playerInfo.x, playerInfo.y, playerInfo.z);
-            meshGroup.rotation.y = playerInfo.rotation;
+    socket.on('newPlayer', (playerInfo) => {
+        addOtherPlayer(playerInfo);
+    });
 
-            otherPlayers[playerInfo.id] = {
-                mesh: meshGroup,
-                parkedCar: parkedCarMesh,
-                targetPos: { x: playerInfo.x, y: playerInfo.y, z: playerInfo.z, rotation: playerInfo.rotation },
-                vehicleType: playerInfo.vehicleType,
-                vehicleColors: playerInfo.vehicleColors,
-                username: playerInfo.username,
-                isPedestrian: playerInfo.isPedestrian,
-                pedestrianColors: playerInfo.pedestrianColors
+    socket.on('playerDisconnected', (id) => {
+        removeOtherPlayer(id);
+    });
+
+    socket.on('playerMoved', (playerInfo) => {
+        if (otherPlayers[playerInfo.id]) {
+            otherPlayers[playerInfo.id].targetPos = {
+                x: playerInfo.x,
+                y: playerInfo.y,
+                z: playerInfo.z,
+                rotation: playerInfo.rotation
             };
 
-            if (playerInfo.username) {
-                updateRemoteUsername(playerInfo.id, playerInfo.username);
+            // Handle Mode Change (Vehicle <-> Pedestrian)
+            const wasPed = otherPlayers[playerInfo.id].isPedestrian;
+            const isPed = playerInfo.isPedestrian;
+
+            if (wasPed !== isPed) {
+                removeOtherPlayer(playerInfo.id);
+                addOtherPlayer(playerInfo);
+                return; // addOtherPlayer handles the rest
             }
 
-            scene.add(meshGroup);
+            // Handle Vehicle Type Change (only if still vehicle)
+            if (!isPed && playerInfo.vehicleType && otherPlayers[playerInfo.id].vehicleType !== playerInfo.vehicleType) {
+                // Re-create vehicle
+                removeOtherPlayer(playerInfo.id);
+                addOtherPlayer(playerInfo);
+            }
+        } else {
+            addOtherPlayer(playerInfo);
         }
+    });
 
-        function removeOtherPlayer(id) {
-            if (otherPlayers[id]) {
-                scene.remove(otherPlayers[id].mesh);
-                if (otherPlayers[id].parkedCar) {
-                    scene.remove(otherPlayers[id].parkedCar);
+    socket.on('playerDetailsUpdated', (data) => {
+        if (otherPlayers[data.id]) {
+            if (data.vehicleColors) {
+                otherPlayers[data.id].vehicleColors = data.vehicleColors;
+                // Only update visual if currently a vehicle
+                if (!otherPlayers[data.id].isPedestrian) {
+                    updateRemotePlayerVisuals(data.id);
                 }
-                delete otherPlayers[id];
             }
-        }
-
-        function updateRemotePlayerVisuals(id) {
-            const p = otherPlayers[id];
-            if (!p || !p.mesh || !p.vehicleColors || !p.vehicleType) return;
-
-            const colors = p.vehicleColors[p.vehicleType];
-            if (!colors) return;
-
-            // p.mesh is the playerGroup wrapper
-            // p.mesh.children[0] is the vehicle model (otherCar)
-            const carMesh = p.mesh.children[0];
-            if (!carMesh) return;
-
-            carMesh.traverse(child => {
-                if (child.isMesh && child.userData.partGroup) {
-                    if (child.userData.partGroup === 'body') {
-                        child.material.color.setHex(colors.body);
-                    } else if (child.userData.partGroup === 'spoiler') {
-                        child.material.color.setHex(colors.spoiler);
-                    } else if (child.userData.partGroup === 'glass') {
-                        if (child.material.color) {
-                            child.material.color.setHex(colors.windshield || 0x223344);
-                        }
+            if (data.pedestrianColors) {
+                otherPlayers[data.id].pedestrianColors = data.pedestrianColors;
+                // Only update visual if currently a pedestrian
+                if (otherPlayers[data.id].isPedestrian) {
+                    // Re-apply colors to pedestrian mesh
+                    if (otherPlayers[data.id].mesh) {
+                        // Since pedestrian mesh structure is a group with userData.limbs,
+                        // we can use applyPedestrianColors but we need to pass the group.
+                        // addOtherPlayer stores the group in .mesh.
+                        // However, applyPedestrianColors expects a mesh with userData.limbs.
+                        // buildPedestrianMesh returns the group which has userData.limbs.
+                        applyPedestrianColors(otherPlayers[data.id].mesh, data.pedestrianColors);
                     }
                 }
-            });
-        }
-
-        function updateRemotePlayers() {
-            Object.keys(otherPlayers).forEach((id) => {
-                const p = otherPlayers[id];
-                if (p.targetPos) {
-                    p.mesh.position.lerp(new THREE.Vector3(p.targetPos.x, p.targetPos.y, p.targetPos.z), 0.2);
-
-                    // Simple rotation interpolation
-                    p.mesh.rotation.y += (p.targetPos.rotation - p.mesh.rotation.y) * 0.2;
-                }
-            });
-        }
-
-        function updateRemoteUsername(id, name) {
-            const p = otherPlayers[id];
-            if (!p || !p.mesh) return;
-
-            // Remove existing label if any
-            const existingLabel = p.mesh.getObjectByName('usernameLabel');
-            if (existingLabel) {
-                p.mesh.remove(existingLabel);
             }
-
-            if (name && name.trim() !== "") {
-                const sprite = createUsernameLabel(name);
-                sprite.name = 'usernameLabel';
-                sprite.position.set(0, 3.5, 0); // Position above the vehicle
-                p.mesh.add(sprite);
+            if (data.username !== undefined) {
+                otherPlayers[data.id].username = data.username;
+                updateRemoteUsername(data.id, data.username);
             }
         }
+    });
 
-        // --- Chat System ---
-        function initChat() {
-            const chatInput = document.getElementById('chat-input');
-            const chatContainer = document.getElementById('chat-input-container');
+    socket.on('receiveChat', (data) => {
+        addChatMessage(data.username, data.message);
+    });
+}
 
-            if (!chatInput) return;
+function addOtherPlayer(playerInfo) {
+    if (otherPlayers[playerInfo.id]) return;
 
-            // Global Key listener to focus chat
-            window.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    const chatContainerDiv = document.getElementById('chat-container');
-                    if (!chatContainerDiv || getComputedStyle(chatContainerDiv).display === 'none') return;
+    let meshGroup;
+    let parkedCarMesh = null;
 
-                    if (document.activeElement === chatInput) {
-                        sendChat();
-                    } else {
-                        // Focus chat
-                        chatInput.focus();
-                        isChatting = true;
-                        if (chatContainer) chatContainer.style.opacity = '1';
-                    }
+    if (playerInfo.isPedestrian) {
+        // PEDESTRIAN SPAWN
+        const colors = playerInfo.pedestrianColors || { shirt: 0x111111, pants: 0x111111, skin: 0xffccaa, robe: 0x000000, hat: 0x555555 };
+
+        // Construct data object expected by buildPedestrianMesh
+        const pedData = {
+            isUser: true, // Use user style (with robe/hat if applicable)
+            colors: colors
+        };
+
+        meshGroup = buildPedestrianMesh(pedData);
+
+        // SPAWN PARKED VEHICLE IF DATA EXISTS
+        if (playerInfo.vehicleData) {
+            const vData = playerInfo.vehicleData;
+            const vType = vData.type || 'hypercar';
+            let vBody = 0xff0000;
+            let vSpoiler = 0x000000;
+            let vWindshield = 0x223344;
+
+            if (playerInfo.vehicleColors && playerInfo.vehicleColors[vType]) {
+                vBody = playerInfo.vehicleColors[vType].body;
+                vSpoiler = playerInfo.vehicleColors[vType].spoiler;
+                vWindshield = playerInfo.vehicleColors[vType].windshield || 0x223344;
+            }
+
+            parkedCarMesh = createVehicle({
+                type: vType,
+                bodyColor: vBody,
+                spoilerColor: vSpoiler,
+                windshieldColor: vWindshield,
+                addLights: false,
+                scale: 1.8
+            });
+
+            parkedCarMesh.traverse((child) => {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
                 }
             });
 
-            // Input listeners
-            chatInput.addEventListener('focus', () => {
+            parkedCarMesh.position.set(vData.x, vData.y, vData.z);
+            parkedCarMesh.rotation.y = vData.rotation;
+            scene.add(parkedCarMesh);
+        }
+
+    } else {
+        // VEHICLE SPAWN
+        const type = playerInfo.vehicleType || 'hypercar';
+        let bodyColor = 0xff0000;
+        let spoilerColor = 0x000000;
+        let windshieldColor = 0x223344;
+
+        if (playerInfo.vehicleColors && playerInfo.vehicleColors[type]) {
+            bodyColor = playerInfo.vehicleColors[type].body;
+            spoilerColor = playerInfo.vehicleColors[type].spoiler;
+            windshieldColor = playerInfo.vehicleColors[type].windshield || 0x223344;
+        }
+
+        const otherCar = createVehicle({
+            type: type,
+            bodyColor: bodyColor,
+            spoilerColor: spoilerColor,
+            windshieldColor: windshieldColor,
+            addLights: false,
+            scale: 1.8
+        });
+
+        // Enable shadows
+        otherCar.traverse((child) => {
+            if (child.isMesh) {
+                child.castShadow = true;
+                child.receiveShadow = true;
+            }
+        });
+
+        meshGroup = new THREE.Group();
+        meshGroup.add(otherCar);
+    }
+
+    meshGroup.position.set(playerInfo.x, playerInfo.y, playerInfo.z);
+    meshGroup.rotation.y = playerInfo.rotation;
+
+    otherPlayers[playerInfo.id] = {
+        mesh: meshGroup,
+        parkedCar: parkedCarMesh,
+        targetPos: { x: playerInfo.x, y: playerInfo.y, z: playerInfo.z, rotation: playerInfo.rotation },
+        vehicleType: playerInfo.vehicleType,
+        vehicleColors: playerInfo.vehicleColors,
+        username: playerInfo.username,
+        isPedestrian: playerInfo.isPedestrian,
+        pedestrianColors: playerInfo.pedestrianColors
+    };
+
+    if (playerInfo.username) {
+        updateRemoteUsername(playerInfo.id, playerInfo.username);
+    }
+
+    scene.add(meshGroup);
+}
+
+function removeOtherPlayer(id) {
+    if (otherPlayers[id]) {
+        scene.remove(otherPlayers[id].mesh);
+        if (otherPlayers[id].parkedCar) {
+            scene.remove(otherPlayers[id].parkedCar);
+        }
+        delete otherPlayers[id];
+    }
+}
+
+function updateRemotePlayerVisuals(id) {
+    const p = otherPlayers[id];
+    if (!p || !p.mesh || !p.vehicleColors || !p.vehicleType) return;
+
+    const colors = p.vehicleColors[p.vehicleType];
+    if (!colors) return;
+
+    // p.mesh is the playerGroup wrapper
+    // p.mesh.children[0] is the vehicle model (otherCar)
+    const carMesh = p.mesh.children[0];
+    if (!carMesh) return;
+
+    carMesh.traverse(child => {
+        if (child.isMesh && child.userData.partGroup) {
+            if (child.userData.partGroup === 'body') {
+                child.material.color.setHex(colors.body);
+            } else if (child.userData.partGroup === 'spoiler') {
+                child.material.color.setHex(colors.spoiler);
+            } else if (child.userData.partGroup === 'glass') {
+                if (child.material.color) {
+                    child.material.color.setHex(colors.windshield || 0x223344);
+                }
+            }
+        }
+    });
+}
+
+function updateRemotePlayers() {
+    Object.keys(otherPlayers).forEach((id) => {
+        const p = otherPlayers[id];
+        if (p.targetPos) {
+            p.mesh.position.lerp(new THREE.Vector3(p.targetPos.x, p.targetPos.y, p.targetPos.z), 0.2);
+
+            // Simple rotation interpolation
+            p.mesh.rotation.y += (p.targetPos.rotation - p.mesh.rotation.y) * 0.2;
+        }
+    });
+}
+
+function updateRemoteUsername(id, name) {
+    const p = otherPlayers[id];
+    if (!p || !p.mesh) return;
+
+    // Remove existing label if any
+    const existingLabel = p.mesh.getObjectByName('usernameLabel');
+    if (existingLabel) {
+        p.mesh.remove(existingLabel);
+    }
+
+    if (name && name.trim() !== "") {
+        const sprite = createUsernameLabel(name);
+        sprite.name = 'usernameLabel';
+        sprite.position.set(0, 3.5, 0); // Position above the vehicle
+        p.mesh.add(sprite);
+    }
+}
+
+// --- Chat System ---
+function initChat() {
+    const chatInput = document.getElementById('chat-input');
+    const chatContainer = document.getElementById('chat-input-container');
+
+    if (!chatInput) return;
+
+    // Global Key listener to focus chat
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            const chatContainerDiv = document.getElementById('chat-container');
+            if (!chatContainerDiv || getComputedStyle(chatContainerDiv).display === 'none') return;
+
+            if (document.activeElement === chatInput) {
+                sendChat();
+            } else {
+                // Focus chat
+                chatInput.focus();
                 isChatting = true;
                 if (chatContainer) chatContainer.style.opacity = '1';
-            });
-
-            chatInput.addEventListener('blur', () => {
-                isChatting = false;
-                if (chatContainer) chatContainer.style.opacity = '0.5';
-            });
-        }
-
-        function sendChat() {
-            const chatInput = document.getElementById('chat-input');
-            const message = chatInput.value.trim();
-            if (message && socket) {
-                socket.emit('sendChat', message);
-                chatInput.value = '';
             }
-            chatInput.blur();
-            isChatting = false;
         }
+    });
 
-        function addChatMessage(username, message) {
-            const chatMessages = document.getElementById('chat-messages');
-            if (!chatMessages) return;
+    // Input listeners
+    chatInput.addEventListener('focus', () => {
+        isChatting = true;
+        if (chatContainer) chatContainer.style.opacity = '1';
+    });
 
-            const msgDiv = document.createElement('div');
-            msgDiv.className = 'chat-message';
-            // Simple XSS protection
-            const safeName = username.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            const safeMsg = message.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    chatInput.addEventListener('blur', () => {
+        isChatting = false;
+        if (chatContainer) chatContainer.style.opacity = '0.5';
+    });
+}
 
-            msgDiv.innerHTML = `<strong>${safeName}:</strong> ${safeMsg}`;
+function sendChat() {
+    const chatInput = document.getElementById('chat-input');
+    const message = chatInput.value.trim();
+    if (message && socket) {
+        socket.emit('sendChat', message);
+        chatInput.value = '';
+    }
+    chatInput.blur();
+    isChatting = false;
+}
 
-            chatMessages.appendChild(msgDiv);
+function addChatMessage(username, message) {
+    const chatMessages = document.getElementById('chat-messages');
+    if (!chatMessages) return;
 
-            // Auto scroll to bottom
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+    const msgDiv = document.createElement('div');
+    msgDiv.className = 'chat-message';
+    // Simple XSS protection
+    const safeName = username.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const safeMsg = message.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-            // Remove after 8 seconds
-            setTimeout(() => {
-                msgDiv.style.opacity = '0';
-                setTimeout(() => {
-                    if (msgDiv.parentNode) msgDiv.parentNode.removeChild(msgDiv);
-                }, 1000); // Wait for fade out
-            }, 8000);
-        }
+    msgDiv.innerHTML = `<strong>${safeName}:</strong> ${safeMsg}`;
 
-        // Initialize Chat
-        initChat();
+    chatMessages.appendChild(msgDiv);
 
+    // Auto scroll to bottom
+    chatMessages.scrollTop = chatMessages.scrollHeight;
 
-    </script>
-    <script>
-        // Load the SDK asynchronously
-        (function (d, s, id) {
-            var js,
-                sjs = d.getElementsByTagName(s)[0];
-            if (d.getElementById(id)) return;
-            js = d.createElement(s);
-            js.id = id;
-            js.src = 'https://sdk.snapkit.com/js/v1/create.js';
-            sjs.parentNode.insertBefore(js, sjs);
+    // Remove after 8 seconds
+    setTimeout(() => {
+        msgDiv.style.opacity = '0';
+        setTimeout(() => {
+            if (msgDiv.parentNode) msgDiv.parentNode.removeChild(msgDiv);
+        }, 1000); // Wait for fade out
+    }, 8000);
+}
 
-            // Add touch event handling for mobile after SDK loads
-            js.onload = function () {
-                setTimeout(function () {
-                    const snapButton = document.querySelector('.snapchat-creative-kit-share');
-                    if (snapButton) {
-                        // Enable touch events for mobile
-                        snapButton.style.touchAction = 'auto';
-                        snapButton.style.webkitTouchCallout = 'default';
+// Initialize Chat
+initChat();
 
-                        // Add explicit touch handler that delegates to click
-                        snapButton.addEventListener('touchstart', function (e) {
-                            e.stopPropagation();
-                        }, { passive: true });
+// Load the SDK asynchronously
+(function (d, s, id) {
+    var js,
+        sjs = d.getElementsByTagName(s)[0];
+    if (d.getElementById(id)) return;
+    js = d.createElement(s);
+    js.id = id;
+    js.src = 'https://sdk.snapkit.com/js/v1/create.js';
+    sjs.parentNode.insertBefore(js, sjs);
 
-                        snapButton.addEventListener('touchend', function (e) {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            // Find and trigger the actual SDK button inside
-                            const sdkButton = snapButton.querySelector('button, a, [role="button"]');
-                            if (sdkButton) {
-                                sdkButton.click();
-                            } else {
-                                snapButton.click();
-                            }
-                        }, { passive: false });
+    // Add touch event handling for mobile after SDK loads
+    js.onload = function () {
+        setTimeout(function () {
+            const snapButton = document.querySelector('.snapchat-creative-kit-share');
+            if (snapButton) {
+                // Enable touch events for mobile
+                snapButton.style.touchAction = 'auto';
+                snapButton.style.webkitTouchCallout = 'default';
+
+                // Add explicit touch handler that delegates to click
+                snapButton.addEventListener('touchstart', function (e) {
+                    e.stopPropagation();
+                }, { passive: true });
+
+                snapButton.addEventListener('touchend', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // Find and trigger the actual SDK button inside
+                    const sdkButton = snapButton.querySelector('button, a, [role="button"]');
+                    if (sdkButton) {
+                        sdkButton.click();
+                    } else {
+                        snapButton.click();
                     }
-                }, 500); // Wait for SDK to inject the button
-            };
-        })(document, 'script', 'snapkit-creative-kit-sdk');
+                }, { passive: false });
+            }
+        }, 500); // Wait for SDK to inject the button
+    };
+})(document, 'script', 'snapkit-creative-kit-sdk');
