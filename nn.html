@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ASCIINet</title>
+    <title>ASCIINet - Data Manager</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -18,7 +18,9 @@
     <style>
         .scrollbar-thin::-webkit-scrollbar { width: 4px; }
         .scrollbar-thin::-webkit-scrollbar-thumb { background: #1e1e26; border-radius: 10px; }
+        .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .pixelated { image-rendering: pixelated; }
     </style>
 </head>
 <body class="bg-[#050507]">
@@ -27,7 +29,7 @@
     <script type="text/babel">
         const { useState, useRef, useEffect } = React;
 
-        // --- Inline Icon Components (Replacing lucide-react dependency) ---
+        // --- Inline Icon Components ---
         const IconBase = ({ children, size = 24, ...props }) => (
             <svg 
                 xmlns="http://www.w3.org/2000/svg" 
@@ -78,19 +80,12 @@
         const Layers = (props) => (
             <IconBase {...props}><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></IconBase>
         );
-
-
-        /**
-         * ASCIINET-8L (ALPHANUMERIC EDITION)
-         * 1. Input Layer (196 units)
-         * 2. Feature Extractor (128 units)
-         * 3. ReLU Activation Stage
-         * 4. Hidden Layer 1 (64 units)
-         * 5. ReLU Activation Stage 
-         * 6. Hidden Layer 2 (32 units)
-         * 7. ReLU Activation Stage
-         * 8. Softmax Classifier (36 units) -> Supports 0-9 and A-Z
-         */
+        const Maximize2 = (props) => (
+            <IconBase {...props}><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" x2="14" y1="3" y2="10"/><line x1="3" x2="10" y1="21" y2="14"/></IconBase>
+        );
+        const X = (props) => (
+            <IconBase {...props}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></IconBase>
+        );
 
         const LABELS = [
           '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
@@ -106,14 +101,16 @@
           const weightInputRef = useRef(null);
           const [isDrawing, setIsDrawing] = useState(false);
           const [dataset, setDataset] = useState([]);
-          const [selectedLabel, setSelectedLabel] = useState(0); // Index in LABELS
+          const [selectedLabel, setSelectedLabel] = useState(0); 
           const [prediction, setPrediction] = useState(null);
           const [probabilities, setProbabilities] = useState(new Array(NUM_CLASSES).fill(0));
           const [activations, setActivations] = useState({ h1: [], h2: [] });
           const [isTraining, setIsTraining] = useState(false);
           const [stats, setStats] = useState({ epoch: 0, accuracy: 0, loss: 0 });
+          const [showDataModal, setShowDataModal] = useState(false);
+          const [selectedId, setSelectedId] = useState(null);
 
-          // Weight Initialization (He Initialization for Deep Nets)
+          // Weight Initialization
           const generateWeights = () => {
             const init = (inDim, outDim) => 
               Array.from({ length: inDim }, () => 
@@ -125,7 +122,6 @@
               b1: new Array(64).fill(0),
               w2: init(64, 32),
               b2: new Array(32).fill(0),
-              // Expanded output layer to 36 units
               w3: init(32, NUM_CLASSES),
               b3: new Array(NUM_CLASSES).fill(0)
             };
@@ -141,7 +137,6 @@
             }
           }, []);
 
-          // --- Persistence Logic ---
           const exportData = (data, filename) => {
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
@@ -177,9 +172,7 @@
             reader.onload = (event) => {
               try {
                 const imported = JSON.parse(event.target.result);
-                // Check for w3 matching current class size or adapt
                 if (imported.w1 && imported.w3) {
-                    // Simple validation could be added here to check w3 dimensions
                     setWeights(imported);
                 }
               } catch (err) {
@@ -189,7 +182,10 @@
             reader.readAsText(file);
           };
 
-          // --- Drawing Logic ---
+          const deleteDataItem = (id) => {
+            setDataset(prev => prev.filter(item => item.id !== id));
+          };
+
           const getCoords = (e) => {
             const rect = canvasRef.current.getBoundingClientRect();
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -261,7 +257,6 @@
             return { pixels, preview: temp.toDataURL() };
           };
 
-          // --- Neural Engine ---
           const forward = (input, w) => {
             const relu = (x) => Math.max(0, x);
             
@@ -331,7 +326,6 @@
 
                 const dL_dout = probs.map((p, i) => p - (i === sample.label ? 1 : 0));
                 
-                // Backprop Output -> H2
                 const dL_dh2 = new Array(32).fill(0);
                 for (let j = 0; j < NUM_CLASSES; j++) {
                   curW.b3[j] -= lr * dL_dout[j];
@@ -342,7 +336,6 @@
                   }
                 }
 
-                // Backprop H2 -> H1
                 const dL_dh1 = new Array(64).fill(0);
                 for (let j = 0; j < 32; j++) {
                   const delta = dL_dh2[j] * (h2[j] > 0 ? 1 : 0);
@@ -354,7 +347,6 @@
                   }
                 }
 
-                // Backprop H1 -> Input
                 for (let j = 0; j < 64; j++) {
                   const delta = dL_dh1[j] * (h1[j] > 0 ? 1 : 0);
                   curW.b1[j] -= lr * delta;
@@ -377,11 +369,9 @@
             <div className="min-h-screen bg-[#050507] text-slate-300 font-sans p-4 md:p-8 selection:bg-blue-500/30">
               <div className="max-w-6xl mx-auto space-y-8">
                 
-                {/* Hidden Inputs for Persistence */}
                 <input type="file" ref={dataInputRef} onChange={handleImportDataset} accept=".json" className="hidden" />
                 <input type="file" ref={weightInputRef} onChange={handleImportWeights} accept=".json" className="hidden" />
 
-                {/* Header */}
                 <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-white/5 pb-8">
                   <div>
                     <div className="flex items-center gap-3 mb-2">
@@ -558,7 +548,14 @@
                       <span className="text-[10px] font-black text-slate-500 uppercase flex items-center gap-2">
                         <ChevronRight size={12}/> Memory_Pool
                       </span>
-                      <div className="flex gap-2">
+                      <div className="flex gap-1">
+                        <button 
+                          onClick={() => setShowDataModal(true)}
+                          className="p-1.5 bg-blue-600/20 text-blue-500 hover:bg-blue-600/30 rounded-md transition-colors mr-2"
+                          title="Manage Dataset"
+                        >
+                          <Maximize2 size={12} />
+                        </button>
                         <button 
                           onClick={() => dataInputRef.current.click()}
                           className="p-1.5 bg-white/5 hover:bg-white/10 rounded-md transition-colors"
@@ -568,7 +565,7 @@
                         </button>
                         <button 
                           onClick={() => exportData(dataset, 'alexnet_training_set.json')}
-                          className="p-1.5 bg-blue-600/20 text-blue-500 hover:bg-blue-600/30 rounded-md transition-colors"
+                          className="p-1.5 bg-white/5 hover:bg-white/10 rounded-md transition-colors"
                           title="Export Dataset"
                         >
                           <Download size={10} />
@@ -576,13 +573,12 @@
                       </div>
                     </div>
                     
-                    <div className="flex-1 overflow-y-auto grid grid-cols-3 gap-2 pr-2 scrollbar-thin mb-6 content-start">
+                    <div className="flex-1 overflow-y-auto grid grid-cols-3 gap-2 pr-2 scrollbar-thin mb-6 content-start" onClick={() => setShowDataModal(true)}>
                       {dataset.map(item => (
-                        <div key={item.id} className="aspect-square bg-black rounded-xl border border-white/5 relative group overflow-hidden">
+                        <div key={item.id} className="aspect-square bg-black rounded-xl border border-white/5 relative group overflow-hidden cursor-pointer hover:border-blue-500/50 transition-colors">
                           <img 
                             src={item.preview} 
-                            className="w-full h-full p-2 opacity-30 group-hover:opacity-100 transition-opacity" 
-                            style={{ imageRendering: 'pixelated' }} 
+                            className="w-full h-full p-2 opacity-30 group-hover:opacity-100 transition-opacity pixelated" 
                             alt={`Label ${LABELS[item.label]}`}
                           />
                           <div className="absolute bottom-1 right-1 text-[8px] font-black bg-blue-600 text-white w-4 h-4 rounded flex items-center justify-center shadow-lg">
@@ -590,6 +586,11 @@
                           </div>
                         </div>
                       ))}
+                      {dataset.length === 0 && (
+                        <div className="col-span-3 h-24 flex items-center justify-center border border-dashed border-white/10 rounded-xl text-[9px] text-slate-600 text-center px-4">
+                           No Data. Draw and click Append.
+                        </div>
+                      )}
                     </div>
 
                     <div className="space-y-3 pt-6 border-t border-white/5 flex flex-col h-1/3">
@@ -627,6 +628,93 @@
                     </button>
                   </div>
                 </div>
+
+                {/* --- Data Manager Modal --- */}
+                {showDataModal && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="w-full max-w-4xl h-[85vh] bg-[#0e0e12] rounded-3xl border border-white/10 flex flex-col overflow-hidden shadow-2xl relative">
+                      
+                      {/* Modal Header */}
+                      <div className="p-6 border-b border-white/5 flex justify-between items-center bg-[#0e0e12] z-10">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-blue-600 rounded-lg">
+                                <FileJson className="text-white w-5 h-5" />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-black text-white italic tracking-tighter">MEMORY_POOL <span className="text-blue-500">MANAGER</span></h2>
+                                <p className="text-[10px] text-slate-500 font-mono uppercase tracking-widest">Review and Prune Training Samples</p>
+                            </div>
+                        </div>
+                        <button onClick={() => setShowDataModal(false)} className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition-colors text-white">
+                            <X size={20}/>
+                        </button>
+                      </div>
+
+                      {/* Modal Content - Grid */}
+                      <div className="flex-1 overflow-y-auto p-8 scrollbar-thin bg-[#050507]/50">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6">
+                          {dataset.map((item, index) => (
+                            <div 
+                                key={item.id} 
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedId(item.id === selectedId ? null : item.id);
+                                }}
+                                className={`group relative bg-black border rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 ${item.id === selectedId ? 'border-blue-500 shadow-[0_0_20px_rgba(37,99,235,0.2)]' : 'border-white/5 hover:border-white/20'}`}
+                            >
+                              
+                              {/* Preview Image */}
+                              <div className="aspect-square relative p-4 bg-[#0e0e12]">
+                                <img src={item.preview} className={`w-full h-full object-cover pixelated transition-opacity ${item.id === selectedId ? 'opacity-100' : 'opacity-60 group-hover:opacity-80'}`} />
+                                
+                                {/* Label Badge - Moved to bottom right */}
+                                <div className="absolute bottom-2 right-2 w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-sm font-black text-white shadow-lg z-10">
+                                   {LABELS[item.label]}
+                                </div>
+
+                                {/* Index Badge */}
+                                <div className="absolute top-2 left-2 text-[9px] font-mono text-slate-600">
+                                    #{index + 1}
+                                </div>
+
+                                {/* Delete Button - Only visible when selected */}
+                                {item.id === selectedId && (
+                                    <button
+                                      onClick={(e) => {
+                                          e.stopPropagation();
+                                          deleteDataItem(item.id);
+                                          if (selectedId === item.id) setSelectedId(null);
+                                      }}
+                                      className="absolute top-2 right-2 w-8 h-8 bg-red-500 hover:bg-red-600 rounded-lg flex items-center justify-center text-white shadow-lg z-20 animate-in fade-in zoom-in duration-200"
+                                    >
+                                      <Trash2 size={16} />
+                                    </button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {dataset.length === 0 && (
+                             <div className="flex flex-col items-center justify-center h-full text-slate-600 space-y-4">
+                                <Layers size={48} className="opacity-20"/>
+                                <p className="font-mono text-sm tracking-widest uppercase">Memory Pool Empty</p>
+                             </div>
+                        )}
+                      </div>
+
+                      {/* Modal Footer */}
+                      <div className="p-4 border-t border-white/5 bg-[#0e0e12] flex justify-between items-center text-xs text-slate-500 font-mono z-10">
+                         <span className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                            TOTAL SAMPLES: <span className="text-white">{dataset.length}</span>
+                         </span>
+                         {/* Removed Delete All Button */}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
               </div>
             </div>
           );
@@ -637,4 +725,5 @@
     </script>
 </body>
 </html>
+
 
