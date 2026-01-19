@@ -490,6 +490,10 @@
                           <p className="text-[8px] uppercase font-bold text-slate-600">Accuracy</p>
                           <p className="text-xs font-mono text-white">{stats.accuracy.toFixed(1)}%</p>
                         </div>
+                        <div className="text-center flex-1 border-r border-white/5">
+                          <p className="text-[8px] uppercase font-bold text-slate-600">Loss</p>
+                          <p className="text-xs font-mono text-white">{stats.loss.toFixed(4)}</p>
+                        </div>
                         <div className="text-center flex-1">
                           <p className="text-[8px] uppercase font-bold text-slate-600">Epoch</p>
                           <p className="text-xs font-mono text-blue-500">{stats.epoch}</p>
@@ -633,3 +637,4 @@
     </script>
 </body>
 </html>
+
