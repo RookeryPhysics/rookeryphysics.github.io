@@ -67,6 +67,11 @@ io.on('connection', (socket) => {
         });
     });
 
+    // Handle player death
+    socket.on('playerDead', () => {
+        socket.broadcast.emit('playerDead', socket.id);
+    });
+
     // Handle disconnect
     socket.on('disconnect', () => {
         console.log('User disconnected:', socket.id);

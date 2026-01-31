@@ -364,6 +364,7 @@
             };
         }
         const otherPlayers = {}; // { socketId: Mesh }
+        let isDead = false;
 
         function createOtherPlayerMesh(color) {
             const geometry = new THREE.BoxGeometry(2, 4, 2);
@@ -538,6 +539,7 @@
          * @returns {void}
          */
         function jump() {
+            if (isDead) return;
             if (isGrounded || jumpCount < 2) {
                 velocityY = jumpStrength;
                 isGrounded = false;
@@ -559,6 +561,7 @@
          * @returns {void}
          */
         function shoot() {
+            if (isDead) return;
             const bullet = new THREE.Mesh(bulletGeometry, bulletMaterial);
 
             // Get muzzle position in world space
@@ -1027,14 +1030,27 @@
                 const targetObjects = [...paintableObjects, ...Object.values(mapBlocks)];
 
                 // Check collision with local player if it's an enemy bullet
-                if (b.userData.isEnemy) {
+                if (b.userData.isEnemy && !isDead) {
                     // Simple distance check first for performance
                     const distToPlayer = b.position.distanceTo(cube.position);
                     if (distToPlayer < 2.0) { // Approximate player radius
+                        isDead = true;
                         document.getElementById('game-over-screen').style.display = 'flex';
-                        // Optionally stop loop or disable controls, but for now just show screen
                         createExplosion(cube.position);
-                        // Hide scene or something? Or just let it be.
+
+                        // Hide local player components
+                        cube.visible = false;
+                        if (gun) gun.visible = false;
+
+                        // Release pointer lock
+                        if (document.pointerLockElement === container) {
+                            document.exitPointerLock();
+                        }
+
+                        // Notify others
+                        if (socket) {
+                            socket.emit('playerDead');
+                        }
                     }
                 }
 
@@ -1103,13 +1119,15 @@
             }
 
             // Game Logic: Move Cube
-            let moveX = input.active ? input.x : 0;
-            let moveY = input.active ? input.y : 0;
+            let moveX = (input.active && !isDead) ? input.x : 0;
+            let moveY = (input.active && !isDead) ? input.y : 0;
 
-            if (keys.w) moveY -= 1;
-            if (keys.s) moveY += 1;
-            if (keys.a) moveX -= 1;
-            if (keys.d) moveX += 1;
+            if (!isDead) {
+                if (keys.w) moveY -= 1;
+                if (keys.s) moveY += 1;
+                if (keys.a) moveX -= 1;
+                if (keys.d) moveX += 1;
+            }
 
             // Normalize vector
             const len = Math.sqrt(moveX * moveX + moveY * moveY);
@@ -1208,7 +1226,7 @@
 
             // --- Multiplayer Broadcast ---
             // Throttle slightly if needed, or check for change
-            if (socket) {
+            if (socket && !isDead) {
                 socket.emit('playerMovement', {
                     x: cube.position.x,
                     y: cube.position.y,
@@ -1371,6 +1389,13 @@
 
                 scene.add(bullet);
                 bullets.push(bullet);
+            });
+
+            socket.on('playerDead', (id) => {
+                if (otherPlayers[id]) {
+                    scene.remove(otherPlayers[id]);
+                    delete otherPlayers[id];
+                }
             });
         }
 
