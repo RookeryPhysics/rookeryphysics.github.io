@@ -356,6 +356,14 @@
         const mapBlockGeometry = new THREE.BoxGeometry(blockSize, blockSize, blockSize);
         const mapBlockMaterial = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.5 });
 
+        const materialCache = {};
+        function getMaterial(color) {
+            if (!materialCache[color]) {
+                materialCache[color] = new THREE.MeshStandardMaterial({ color: color, roughness: 0.5 });
+            }
+            return materialCache[color];
+        }
+
         function autoLoadMap() {
             fetch('map.json')
                 .then(response => {
@@ -367,7 +375,8 @@
 
                     data.blocks.forEach(pos => {
                         const key = `${pos.x},${pos.y},${pos.z}`;
-                        const block = new THREE.Mesh(mapBlockGeometry, mapBlockMaterial);
+                        const color = pos.c ? pos.c : 0x888888;
+                        const block = new THREE.Mesh(mapBlockGeometry, getMaterial(color));
                         block.position.set(pos.x, pos.y, pos.z);
                         block.castShadow = true;
                         block.receiveShadow = true;

@@ -275,6 +275,74 @@
             background: rgba(0, 255, 100, 0.3);
             border-color: rgba(0, 255, 100, 0.5);
         }
+
+        /* Color Picker Modal */
+        #color-modal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(20, 20, 30, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 24px;
+            display: none;
+            /* Hidden by default */
+            flex-direction: column;
+            gap: 16px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            width: 300px;
+        }
+
+        #color-modal h3 {
+            margin: 0;
+            color: white;
+            font-size: 1.2rem;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+        }
+
+        .color-option {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .color-option:hover {
+            transform: scale(1.1);
+            border-color: white;
+        }
+
+        .color-option.selected {
+            border-color: #00ff88;
+            box-shadow: 0 0 10px #00ff88;
+        }
+
+        #close-modal {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.6);
+            padding: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        #close-modal:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
     </style>
 </head>
 
@@ -304,7 +372,16 @@
         <div class="map-controls">
             <button id="save-map-btn" class="map-btn">Save Map</button>
             <button id="load-map-btn" class="map-btn load">Load Map</button>
+            <button id="color-btn" class="map-btn" style="border-color: #aaa;">Color</button>
             <input type="file" id="map-file-input" style="display: none;" accept=".json">
+        </div>
+
+        <div id="color-modal">
+            <h3>Select Material</h3>
+            <div class="color-grid" id="color-grid">
+                <!-- Javascript will populate this -->
+            </div>
+            <button id="close-modal">Close</button>
         </div>
 
         <div id="joystick-zone">
@@ -523,6 +600,7 @@
         let isFlying = false;
         const mapBlocks = {}; // key: "x,y,z", value: Mesh
         const blockSize = 2;
+        let currentBlockColor = 0x888888; // Default color
 
         // Highlight Cube
         const highlightGeo = new THREE.BoxGeometry(blockSize, blockSize, blockSize);
@@ -532,7 +610,15 @@
         scene.add(highlightCube);
 
         const mapBlockGeometry = new THREE.BoxGeometry(blockSize, blockSize, blockSize);
-        const mapBlockMaterial = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.5 });
+        // We will instantiate materials dynamically based on color
+
+        const materialCache = {};
+        function getMaterial(color) {
+            if (!materialCache[color]) {
+                materialCache[color] = new THREE.MeshStandardMaterial({ color: color, roughness: 0.5 });
+            }
+            return materialCache[color];
+        }
 
         function autoLoadMap() {
             fetch('map.json')
@@ -551,7 +637,8 @@
 
                     data.blocks.forEach(pos => {
                         const key = `${pos.x},${pos.y},${pos.z}`;
-                        const block = new THREE.Mesh(mapBlockGeometry, mapBlockMaterial);
+                        const color = pos.c ? pos.c : 0x888888; // Default if no color
+                        const block = new THREE.Mesh(mapBlockGeometry, getMaterial(color));
                         block.position.set(pos.x, pos.y, pos.z);
                         block.castShadow = true;
                         block.receiveShadow = true;
@@ -613,7 +700,7 @@
 
             if (mapBlocks[key]) return;
 
-            const block = new THREE.Mesh(mapBlockGeometry, mapBlockMaterial);
+            const block = new THREE.Mesh(mapBlockGeometry, getMaterial(currentBlockColor));
             block.position.set(x, y, z);
             block.castShadow = true;
             block.receiveShadow = true;
@@ -649,7 +736,8 @@
                 blockPositions.push({
                     x: block.position.x,
                     y: block.position.y,
-                    z: block.position.z
+                    z: block.position.z,
+                    c: block.material.color.getHex()
                 });
             }
 
@@ -693,7 +781,8 @@
                     // Reconstruct blocks
                     data.blocks.forEach(pos => {
                         const key = `${pos.x},${pos.y},${pos.z}`;
-                        const block = new THREE.Mesh(mapBlockGeometry, mapBlockMaterial);
+                        const color = pos.c ? pos.c : 0x888888;
+                        const block = new THREE.Mesh(mapBlockGeometry, getMaterial(color));
                         block.position.set(pos.x, pos.y, pos.z);
                         block.castShadow = true;
                         block.receiveShadow = true;
@@ -716,6 +805,59 @@
         const fileInput = document.getElementById('map-file-input');
         document.getElementById('load-map-btn').addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', loadMap);
+
+        // --- Color Selection Logic ---
+        const colorPalette = [
+            0x888888, // Concrete (Default)
+            0x555555, // Dark Grey
+            0x333333, // Blackish
+            0xffffff, // White
+            0x8B4513, // Wood
+            0xA52A2A, // Brick Red
+            0x2e7d32, // Green
+            0x1E90FF, // Dodger Blue
+            0xFFD700, // Gold
+            0x9370DB, // Purple
+            0xFF69B4, // Pink
+            0xFFA500, // Orange
+            0x00CED1, // Turquoise
+            0xFFF8DC, // Cream
+            0x708090  // Slate
+        ];
+
+        const modal = document.getElementById('color-modal');
+        const colorGrid = document.getElementById('color-grid');
+        const colorBtn = document.getElementById('color-btn');
+        const closeModalBtn = document.getElementById('close-modal');
+
+        // Populate Color Grid
+        colorPalette.forEach(color => {
+            const div = document.createElement('div');
+            div.className = 'color-option';
+            div.style.backgroundColor = '#' + new THREE.Color(color).getHexString();
+            if (color === currentBlockColor) div.classList.add('selected');
+
+            div.addEventListener('click', () => {
+                currentBlockColor = color;
+                // Update selection UI
+                document.querySelectorAll('.color-option').forEach(el => el.classList.remove('selected'));
+                div.classList.add('selected');
+                // Update button indicator
+                colorBtn.style.borderColor = '#' + new THREE.Color(color).getHexString();
+                // Close modal
+                modal.style.display = 'none';
+            });
+
+            colorGrid.appendChild(div);
+        });
+
+        colorBtn.addEventListener('click', () => {
+            modal.style.display = 'flex';
+        });
+
+        closeModalBtn.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
 
         // Paint and Explosion Effects
         const splats = [];
