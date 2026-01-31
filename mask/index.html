@@ -352,7 +352,17 @@
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
         // --- Socket.io Multiplayer Setup ---
-        const socket = io();
+        let socket;
+        if (typeof io !== 'undefined') {
+            socket = io();
+        } else {
+            console.log('Socket.io not found. Running in offline/single-player mode.');
+            socket = {
+                id: 'offline_player',
+                on: () => { },
+                emit: () => { }
+            };
+        }
         const otherPlayers = {}; // { socketId: Mesh }
 
         function createOtherPlayerMesh(color) {
