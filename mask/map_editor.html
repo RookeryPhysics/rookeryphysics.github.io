@@ -50,8 +50,9 @@
             width: 120px;
             height: 120px;
             margin-bottom: 40px;
-            align-self: center;
-            /* Center horizontally */
+            align-self: flex-start;
+            margin-left: 40px;
+            /* Moved to the left */
             background: rgba(255, 255, 255, 0.15);
             border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
@@ -503,7 +504,7 @@
         gunGroup.add(box4);
 
         if (isMobile) {
-            gunGroup.position.set(0.2, -0.5, -1.8); // More left and forward on mobile
+            gunGroup.position.set(0.4, -0.5, -1.5); // Slightly right and back from previous (0.2, -0.5, -1.8)
         } else {
             gunGroup.position.set(0.6, -0.5, -1.2);
         }
@@ -543,13 +544,15 @@
         // Physics State
         let velocityY = 0;
         let isGrounded = true;
+        let jumpCount = 0;
         const gravity = -0.015;
         const jumpStrength = 0.35;
 
         function jump() {
-            if (isGrounded) {
+            if (isGrounded || jumpCount < 2) {
                 velocityY = jumpStrength;
                 isGrounded = false;
+                jumpCount++;
             }
         }
 
@@ -1216,6 +1219,10 @@
             // Update Bullets
             for (let i = bullets.length - 1; i >= 0; i--) {
                 const b = bullets[i];
+
+                // Apply gravity to bullet velocity
+                b.userData.velocity.y += gravity * 0.2 * frameFactor;
+
                 const prevPos = b.position.clone();
                 const step = b.userData.velocity.clone().multiplyScalar(frameFactor);
                 const travelDist = step.length();
@@ -1360,6 +1367,7 @@
                     cube.position.y = floorY + 2;
                     velocityY = 0;
                     isGrounded = true;
+                    jumpCount = 0;
                 } else {
                     // Head collision check
                     if (velocityY > 0 && checkBlockCollision(cube.position)) {
