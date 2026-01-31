@@ -276,72 +276,57 @@
             border-color: rgba(0, 255, 100, 0.5);
         }
 
-        /* Color Picker Modal */
-        #color-modal {
+        /* Color Hotbar */
+        #color-hotbar {
             position: absolute;
-            top: 50%;
+            bottom: 20px;
             left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(20, 20, 30, 0.85);
-            backdrop-filter: blur(16px);
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            padding: 24px;
-            display: none;
-            /* Hidden by default */
-            flex-direction: column;
-            gap: 16px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-            z-index: 2000;
-            width: 300px;
+            pointer-events: auto;
+            z-index: 1000;
         }
 
-        #color-modal h3 {
-            margin: 0;
-            color: white;
-            font-size: 1.2rem;
-            text-align: center;
-            font-weight: 500;
-        }
-
-        .color-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 10px;
-        }
-
-        .color-option {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            cursor: pointer;
+        .hotbar-slot {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
             border: 2px solid transparent;
-            transition: transform 0.2s, border-color 0.2s;
-        }
-
-        .color-option:hover {
-            transform: scale(1.1);
-            border-color: white;
-        }
-
-        .color-option.selected {
-            border-color: #00ff88;
-            box-shadow: 0 0 10px #00ff88;
-        }
-
-        #close-modal {
-            background: transparent;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: rgba(255, 255, 255, 0.6);
-            padding: 8px;
-            border-radius: 8px;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.7rem;
+            font-weight: bold;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
             transition: all 0.2s;
+            position: relative;
         }
 
-        #close-modal:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
+        .hotbar-slot:hover {
+            transform: translateY(-4px);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .hotbar-slot.active {
+            border-color: #00ff88;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.4);
+            transform: translateY(-6px);
+        }
+
+        .hotbar-slot::after {
+            content: attr(data-key);
+            position: absolute;
+            top: -12px;
+            font-size: 0.6rem;
+            opacity: 0.6;
         }
     </style>
 </head>
@@ -372,16 +357,11 @@
         <div class="map-controls">
             <button id="save-map-btn" class="map-btn">Save Map</button>
             <button id="load-map-btn" class="map-btn load">Load Map</button>
-            <button id="color-btn" class="map-btn" style="border-color: #aaa;">Color</button>
             <input type="file" id="map-file-input" style="display: none;" accept=".json">
         </div>
 
-        <div id="color-modal">
-            <h3>Select Material</h3>
-            <div class="color-grid" id="color-grid">
-                <!-- Javascript will populate this -->
-            </div>
-            <button id="close-modal">Close</button>
+        <div id="color-hotbar">
+            <!-- Populated by JS -->
         </div>
 
         <div id="joystick-zone">
@@ -524,6 +504,18 @@
         let viewMode = 'first-person'; // 'third-person' or 'first-person'
         let pitch = 0;
         const mouseSensitivity = 0.002;
+
+        const colorPalette = [
+            0x888888, // Concrete (Default)
+            0x333333, // Blackish
+            0xffffff, // White
+            0xA52A2A, // Brick Red
+            0x2e7d32, // Green
+            0x1E90FF, // Dodger Blue
+            0xFFD700, // Gold
+            0x9370DB, // Purple
+            0xFFA500  // Orange
+        ];
 
         // FPS Tracking
         let lastTime = performance.now();
@@ -806,57 +798,26 @@
         document.getElementById('load-map-btn').addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', loadMap);
 
-        // --- Color Selection Logic ---
-        const colorPalette = [
-            0x888888, // Concrete (Default)
-            0x555555, // Dark Grey
-            0x333333, // Blackish
-            0xffffff, // White
-            0x8B4513, // Wood
-            0xA52A2A, // Brick Red
-            0x2e7d32, // Green
-            0x1E90FF, // Dodger Blue
-            0xFFD700, // Gold
-            0x9370DB, // Purple
-            0xFF69B4, // Pink
-            0xFFA500, // Orange
-            0x00CED1, // Turquoise
-            0xFFF8DC, // Cream
-            0x708090  // Slate
-        ];
+        // --- Color Hotbar Logic ---
+        const hotbar = document.getElementById('color-hotbar');
 
-        const modal = document.getElementById('color-modal');
-        const colorGrid = document.getElementById('color-grid');
-        const colorBtn = document.getElementById('color-btn');
-        const closeModalBtn = document.getElementById('close-modal');
-
-        // Populate Color Grid
-        colorPalette.forEach(color => {
-            const div = document.createElement('div');
-            div.className = 'color-option';
-            div.style.backgroundColor = '#' + new THREE.Color(color).getHexString();
-            if (color === currentBlockColor) div.classList.add('selected');
-
-            div.addEventListener('click', () => {
-                currentBlockColor = color;
-                // Update selection UI
-                document.querySelectorAll('.color-option').forEach(el => el.classList.remove('selected'));
-                div.classList.add('selected');
-                // Update button indicator
-                colorBtn.style.borderColor = '#' + new THREE.Color(color).getHexString();
-                // Close modal
-                modal.style.display = 'none';
+        function selectColor(index) {
+            currentBlockColor = colorPalette[index];
+            document.querySelectorAll('.hotbar-slot').forEach((slot, i) => {
+                if (i === index) slot.classList.add('active');
+                else slot.classList.remove('active');
             });
+        }
 
-            colorGrid.appendChild(div);
-        });
+        colorPalette.forEach((color, i) => {
+            const slot = document.createElement('div');
+            slot.className = 'hotbar-slot';
+            if (color === currentBlockColor) slot.classList.add('active');
+            slot.style.backgroundColor = '#' + new THREE.Color(color).getHexString();
+            slot.setAttribute('data-key', i + 1);
 
-        colorBtn.addEventListener('click', () => {
-            modal.style.display = 'flex';
-        });
-
-        closeModalBtn.addEventListener('click', () => {
-            modal.style.display = 'none';
+            slot.addEventListener('click', () => selectColor(i));
+            hotbar.appendChild(slot);
         });
 
         // Paint and Explosion Effects
@@ -969,6 +930,20 @@
                         velocityY = 0; // Reset gravity velocity
                     }
                     e.preventDefault();
+                    break;
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7':
+                case '8':
+                case '9':
+                    const index = parseInt(e.key) - 1;
+                    if (index < colorPalette.length) {
+                        selectColor(index);
+                    }
                     break;
             }
         });
@@ -1164,11 +1139,11 @@
 
         // Pointer Lock & Mouse Rotation
         container.addEventListener('mousedown', (e) => {
-            // Only lock if not clicking UI buttons, joystick, or map controls/modal
+            // Only lock if not clicking UI buttons, joystick, or map controls/hotbar
             if (e.target.closest('.ui-button') ||
                 e.target.closest('#joystick-zone') ||
                 e.target.closest('.map-btn') ||
-                e.target.closest('#color-modal')) return;
+                e.target.closest('#color-hotbar')) return;
 
             if (document.pointerLockElement === container) {
                 if (isFlying) {
