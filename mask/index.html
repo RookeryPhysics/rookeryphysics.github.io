@@ -372,53 +372,6 @@
             return new THREE.Mesh(geometry, material);
         }
 
-        socket.on('currentPlayers', (players) => {
-            Object.keys(players).forEach((id) => {
-                if (id === socket.id) return;
-                const playerInfo = players[id];
-                const playerMesh = createOtherPlayerMesh(0xff0000); // Red for enemies/others
-                playerMesh.position.set(playerInfo.x, playerInfo.y, playerInfo.z);
-                playerMesh.rotation.y = playerInfo.rotation;
-                scene.add(playerMesh);
-                otherPlayers[id] = playerMesh;
-            });
-        });
-
-        socket.on('newPlayer', (playerInfo) => {
-            const playerMesh = createOtherPlayerMesh(0xff0000);
-            playerMesh.position.set(playerInfo.x, playerInfo.y, playerInfo.z);
-            playerMesh.rotation.y = playerInfo.rotation;
-            scene.add(playerMesh);
-            otherPlayers[playerInfo.id] = playerMesh;
-        });
-
-        socket.on('playerMoved', (playerInfo) => {
-            const playerMesh = otherPlayers[playerInfo.id];
-            if (playerMesh) {
-                playerMesh.position.set(playerInfo.x, playerInfo.y, playerInfo.z);
-                playerMesh.rotation.y = playerInfo.rotation;
-            }
-        });
-
-        socket.on('playerDisconnected', (id) => {
-            if (otherPlayers[id]) {
-                scene.remove(otherPlayers[id]);
-                delete otherPlayers[id];
-            }
-        });
-
-        socket.on('playerShoot', (data) => {
-            // Create bullet at the received position
-            const bullet = new THREE.Mesh(bulletGeometry, bulletMaterial);
-            bullet.position.copy(data.position);
-            bullet.userData.velocity = new THREE.Vector3(data.velocity.x, data.velocity.y, data.velocity.z);
-            bullet.userData.aliveTime = 0;
-            bullet.userData.isEnemy = true; // Mark as enemy bullet
-
-            scene.add(bullet);
-            bullets.push(bullet);
-        });
-
         // --- 1. Three.js Setup ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
@@ -1370,9 +1323,59 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
+        // --- Multiplayer Event Handlers (Registered after initial setup) ---
+        if (socket && typeof io !== 'undefined') {
+            socket.on('currentPlayers', (players) => {
+                Object.keys(players).forEach((id) => {
+                    if (id === socket.id) return;
+                    const playerInfo = players[id];
+                    const playerMesh = createOtherPlayerMesh(0xff0000); // Red for enemies/others
+                    playerMesh.position.set(playerInfo.x, playerInfo.y, playerInfo.z);
+                    playerMesh.rotation.y = playerInfo.rotation;
+                    scene.add(playerMesh);
+                    otherPlayers[id] = playerMesh;
+                });
+            });
+
+            socket.on('newPlayer', (playerInfo) => {
+                const playerMesh = createOtherPlayerMesh(0xff0000);
+                playerMesh.position.set(playerInfo.x, playerInfo.y, playerInfo.z);
+                playerMesh.rotation.y = playerInfo.rotation;
+                scene.add(playerMesh);
+                otherPlayers[playerInfo.id] = playerMesh;
+            });
+
+            socket.on('playerMoved', (playerInfo) => {
+                const playerMesh = otherPlayers[playerInfo.id];
+                if (playerMesh) {
+                    playerMesh.position.set(playerInfo.x, playerInfo.y, playerInfo.z);
+                    playerMesh.rotation.y = playerInfo.rotation;
+                }
+            });
+
+            socket.on('playerDisconnected', (id) => {
+                if (otherPlayers[id]) {
+                    scene.remove(otherPlayers[id]);
+                    delete otherPlayers[id];
+                }
+            });
+
+            socket.on('playerShoot', (data) => {
+                // Ensure bullet geometries are defined (they are defined above in the script)
+                const bullet = new THREE.Mesh(bulletGeometry, bulletMaterial);
+                // Use set instead of copy for plain data objects
+                bullet.position.set(data.position.x, data.position.y, data.position.z);
+                bullet.userData.velocity = new THREE.Vector3(data.velocity.x, data.velocity.y, data.velocity.z);
+                bullet.userData.aliveTime = 0;
+                bullet.userData.isEnemy = true; // Mark as enemy bullet
+
+                scene.add(bullet);
+                bullets.push(bullet);
+            });
+        }
+
         // run game loop
         animate();
-
     </script>
 </body>
 
