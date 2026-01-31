@@ -97,6 +97,16 @@
             font-size: 0.8rem;
             z-index: 100;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #view-toggle {
+            width: 50px;
+            height: 50px;
+            padding: 0;
+            border-radius: 50%;
         }
 
         .ui-button:hover {
@@ -350,7 +360,13 @@
             .
         </div>
 
-        <button id="view-toggle" class="ui-button">Third Person</button>
+        <button id="view-toggle" class="ui-button" title="Toggle View">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+        </button>
 
         <button id="jump-btn" class="ui-button">Jump</button>
         <button id="shoot-btn" class="ui-button">Shoot</button>
@@ -868,7 +884,6 @@
         function toggleView() {
             if (viewMode === 'third-person') {
                 viewMode = 'first-person';
-                if (viewToggleBtn) viewToggleBtn.textContent = 'Third Person';
                 cube.visible = false; // Hide player in FP
                 gun.visible = true; // Show gun in FP
                 // Move camera instantly to first person position
@@ -877,7 +892,6 @@
                 camera.position.copy(targetCameraPosition);
             } else {
                 viewMode = 'third-person';
-                if (viewToggleBtn) viewToggleBtn.textContent = 'First Person';
                 cube.visible = true; // Show player in TP
                 gun.visible = false; // Hide gun in TP
             }
@@ -1474,6 +1488,7 @@
             }
         }
 
+        // Loads the map from map.json and positions each block in the scene
         function autoLoadMap() {
             fetch('map.json')
                 .then(response => {
