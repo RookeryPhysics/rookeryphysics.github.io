@@ -266,6 +266,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
     <script>
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
         // --- 1. Three.js Setup ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
@@ -421,7 +423,6 @@
         const gun = gunGroup; // Maintain reference for visibility toggle
 
         // --- 4. Logic & Controls ---
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
         // Input State
         let input = { x: 0, y: 0, active: false };
