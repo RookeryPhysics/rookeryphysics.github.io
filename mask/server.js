@@ -69,7 +69,23 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
+const os = require('os');
+
+function getLocalIpAddress() {
+    const interfaces = os.networkInterfaces();
+    for (const name of Object.keys(interfaces)) {
+        for (const iface of interfaces[name]) {
+            if (iface.family === 'IPv4' && !iface.internal) {
+                return iface.address;
+            }
+        }
+    }
+    return 'localhost';
+}
+
+server.listen(PORT, '0.0.0.0', () => {
+    const localIp = getLocalIpAddress();
     console.log(`Server running on port ${PORT}`);
-    console.log(`Open http://localhost:${PORT} in your browser to play.`);
+    console.log(`- Local Access:     http://localhost:${PORT}`);
+    console.log(`- On Your Phone:    http://${localIp}:${PORT}`);
 });
