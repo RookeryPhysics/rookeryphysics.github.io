@@ -282,7 +282,7 @@
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            display: flex;
+            display: none;
             gap: 8px;
             padding: 10px;
             background: rgba(0, 0, 0, 0.4);
@@ -926,6 +926,8 @@
                 case 'f':
                     isFlying = !isFlying;
                     highlightCube.visible = isFlying;
+                    const hotbarDiv = document.getElementById('color-hotbar');
+                    if (hotbarDiv) hotbarDiv.style.display = isFlying ? 'flex' : 'none';
                     if (isFlying) {
                         velocityY = 0; // Reset gravity velocity
                     }
