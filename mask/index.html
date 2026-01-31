@@ -803,6 +803,66 @@
             }
         });
 
+        // --- 4.5 Collision Helpers ---
+        function checkBlockCollision(pos) {
+            // Player is 2x4x2. We use a slightly smaller collision box to avoid sticking.
+            const pMinX = pos.x - 0.9;
+            const pMaxX = pos.x + 0.9;
+            const pMinY = pos.y - 1.9;
+            const pMaxY = pos.y + 1.9;
+            const pMinZ = pos.z - 0.9;
+            const pMaxZ = pos.z + 0.9;
+
+            for (const key in mapBlocks) {
+                const b = mapBlocks[key];
+                const bPos = b.position;
+                const bMinX = bPos.x - 2;
+                const bMaxX = bPos.x + 2;
+                const bMinY = bPos.y - 2;
+                const bMaxY = bPos.y + 2;
+                const bMinZ = bPos.z - 2;
+                const bMaxZ = bPos.z + 2;
+
+                if (pMinX < bMaxX && pMaxX > bMinX &&
+                    pMinY < bMaxY && pMaxY > bMinY &&
+                    pMinZ < bMaxZ && pMaxZ > bMinZ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function getFloorY(pos) {
+            let highestY = 0; // Default to plane height
+            const pMinX = pos.x - 0.9;
+            const pMaxX = pos.x + 0.9;
+            const pMinZ = pos.z - 0.9;
+            const pMaxZ = pos.z + 0.9;
+            const pBottomY = pos.y - 2;
+
+            for (const key in mapBlocks) {
+                const b = mapBlocks[key];
+                const bPos = b.position;
+                const bMinX = bPos.x - 2;
+                const bMaxX = bPos.x + 2;
+                const bMaxY = bPos.y + 2; // Top of the block
+                const bMinZ = bPos.z - 2;
+                const bMaxZ = bPos.z + 2;
+
+                // Check if player's footprint overlaps block footprint
+                if (pMinX < bMaxX && pMaxX > bMinX &&
+                    pMinZ < bMaxZ && pMaxZ > bMinZ) {
+                    // Only consider if block is below the player's feet (with step-up leeway)
+                    if (bMaxY <= pBottomY + 0.6) {
+                        if (bMaxY > highestY) {
+                            highestY = bMaxY;
+                        }
+                    }
+                }
+            }
+            return highestY;
+        }
+
         // --- 5. Animation Loop ---
         function animate() {
             requestAnimationFrame(animate);
@@ -871,7 +931,6 @@
             }
 
             // Game Logic: Move Cube
-            // Game Logic: Move Cube
             let moveX = input.active ? input.x : 0;
             let moveY = input.active ? input.y : 0;
 
@@ -880,43 +939,58 @@
             if (keys.a) moveX -= 1;
             if (keys.d) moveX += 1;
 
-            // Normalize vector if combining inputs or holding multiple keys
+            // Normalize vector
             const len = Math.sqrt(moveX * moveX + moveY * moveY);
             if (len > 1) {
                 moveX /= len;
                 moveY /= len;
             }
 
-            // Movement Controls: A/D/Left/Right strafes, W/S/Up/Down moves forward/back
             const moveSpeed = 0.4 * frameFactor;
+            const oldX = cube.position.x;
+            const oldZ = cube.position.z;
 
-            // Strafe Logic (A/D or Joystick X) - Slower than forward speed
+            // Horizontal Movement & Collision
             if (Math.abs(moveX) > 0.01) {
                 const strafeSpeed = moveSpeed * 0.6;
-                // Negate moveX because in this setup (Forward is +Z), local +X is Left. 
-                // So to move Right, we must translate by -moveX.
                 cube.translateX(-moveX * strafeSpeed);
+                if (checkBlockCollision(cube.position)) {
+                    cube.position.x = oldX;
+                    if (checkBlockCollision(cube.position)) cube.position.z = oldZ;
+                }
             }
 
-            // Forward/Backward Logic (W/S or Joystick Y)
+            const postStrafeX = cube.position.x;
+            const postStrafeZ = cube.position.z;
+
             if (Math.abs(moveY) > 0.01) {
-                // moveY is negative for 'Up/Forward', so we use negative to move forward along local Z
                 cube.translateZ(-moveY * moveSpeed);
+                if (checkBlockCollision(cube.position)) {
+                    cube.position.x = postStrafeX;
+                    cube.position.z = postStrafeZ;
+                }
             }
 
-            // Gravity & Vertical Movement
+            // Vertical Movement & Gravity
+            velocityY += gravity * frameFactor;
             cube.position.y += velocityY * frameFactor;
-            if (cube.position.y > 2) { // 2 is the base height (half of box height 4)
-                velocityY += gravity * frameFactor;
-                isGrounded = false;
-            } else {
-                cube.position.y = 2;
+
+            const floorY = getFloorY(cube.position);
+            if (cube.position.y < floorY + 2) {
+                cube.position.y = floorY + 2;
                 velocityY = 0;
                 isGrounded = true;
+            } else {
+                // Head collision check
+                if (velocityY > 0 && checkBlockCollision(cube.position)) {
+                    cube.position.y -= velocityY * frameFactor;
+                    velocityY = 0;
+                }
+                isGrounded = false;
             }
 
             // Boundary Collision (Stay within Fence)
-            const margin = 1; // Half-width of the 2x2 cube
+            const margin = 1;
             const boundary = 200 - (fenceThickness / 2);
             if (cube.position.x > boundary - margin) cube.position.x = boundary - margin;
             if (cube.position.x < -boundary + margin) cube.position.x = -boundary + margin;
