@@ -58,6 +58,15 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Handle shooting
+    socket.on('playerShoot', (shootData) => {
+        socket.broadcast.emit('playerShoot', {
+            id: socket.id,
+            position: shootData.position,
+            velocity: shootData.velocity
+        });
+    });
+
     // Handle disconnect
     socket.on('disconnect', () => {
         console.log('User disconnected:', socket.id);
