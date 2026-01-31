@@ -1432,25 +1432,38 @@
                     const playerMesh = createOtherPlayerMesh(0xff0000); // Red for enemies/others
                     playerMesh.position.set(playerInfo.x, playerInfo.y, playerInfo.z);
                     playerMesh.rotation.y = playerInfo.rotation;
+                    playerMesh.visible = !playerInfo.isDead; // Hide if they are dead
                     scene.add(playerMesh);
                     otherPlayers[id] = playerMesh;
                 });
             });
 
             socket.on('newPlayer', (playerInfo) => {
+                // If player already exists, just update it
+                if (otherPlayers[playerInfo.id]) {
+                    otherPlayers[playerInfo.id].position.set(playerInfo.x, playerInfo.y, playerInfo.z);
+                    otherPlayers[playerInfo.id].rotation.y = playerInfo.rotation;
+                    otherPlayers[playerInfo.id].visible = !playerInfo.isDead;
+                    return;
+                }
                 const playerMesh = createOtherPlayerMesh(0xff0000);
                 playerMesh.position.set(playerInfo.x, playerInfo.y, playerInfo.z);
                 playerMesh.rotation.y = playerInfo.rotation;
+                playerMesh.visible = !playerInfo.isDead;
                 scene.add(playerMesh);
                 otherPlayers[playerInfo.id] = playerMesh;
             });
 
             socket.on('playerMoved', (playerInfo) => {
-                const playerMesh = otherPlayers[playerInfo.id];
-                if (playerMesh) {
-                    playerMesh.position.set(playerInfo.x, playerInfo.y, playerInfo.z);
-                    playerMesh.rotation.y = playerInfo.rotation;
+                let playerMesh = otherPlayers[playerInfo.id];
+                if (!playerMesh) {
+                    playerMesh = createOtherPlayerMesh(0xff0000);
+                    scene.add(playerMesh);
+                    otherPlayers[playerInfo.id] = playerMesh;
                 }
+                playerMesh.position.set(playerInfo.x, playerInfo.y, playerInfo.z);
+                playerMesh.rotation.y = playerInfo.rotation;
+                playerMesh.visible = true; // Always show when moving
             });
 
             socket.on('playerDisconnected', (id) => {
@@ -1475,8 +1488,7 @@
 
             socket.on('playerDead', (id) => {
                 if (otherPlayers[id]) {
-                    scene.remove(otherPlayers[id]);
-                    delete otherPlayers[id];
+                    otherPlayers[id].visible = false;
                 }
             });
         }

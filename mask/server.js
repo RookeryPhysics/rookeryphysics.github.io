@@ -36,7 +36,8 @@ io.on('connection', (socket) => {
         x: 0,
         y: 100, // Start high like the local player
         z: 0,
-        rotation: 0
+        rotation: 0,
+        isDead: false
     };
 
     // Send the current players to the new player
@@ -52,6 +53,7 @@ io.on('connection', (socket) => {
             players[socket.id].y = movementData.y;
             players[socket.id].z = movementData.z;
             players[socket.id].rotation = movementData.rotation;
+            players[socket.id].isDead = false; // Reset death state on movement (respawn)
 
             // Broadcast the movement to all other players
             socket.broadcast.emit('playerMoved', players[socket.id]);
@@ -69,6 +71,9 @@ io.on('connection', (socket) => {
 
     // Handle player death
     socket.on('playerDead', () => {
+        if (players[socket.id]) {
+            players[socket.id].isDead = true;
+        }
         socket.broadcast.emit('playerDead', socket.id);
     });
 
