@@ -639,11 +639,12 @@
             // Movement Controls: A/D/Left/Right strafes, W/S/Up/Down moves forward/back
             const moveSpeed = 0.4 * frameFactor;
 
-            // Strafe Logic (A/D or Joystick X)
+            // Strafe Logic (A/D or Joystick X) - Slower than forward speed
             if (Math.abs(moveX) > 0.01) {
+                const strafeSpeed = moveSpeed * 0.6;
                 // Negate moveX because in this setup (Forward is +Z), local +X is Left. 
                 // So to move Right, we must translate by -moveX.
-                cube.translateX(-moveX * moveSpeed);
+                cube.translateX(-moveX * strafeSpeed);
             }
 
             // Forward/Backward Logic (W/S or Joystick Y)
