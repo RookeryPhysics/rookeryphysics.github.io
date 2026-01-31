@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Three.js Game</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            /* Prevent scrollbars */
+            background-color: #000;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            touch-action: none;
+            /* Disable default touch actions like scrolling */
+        }
+
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            display: block;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            /* Let clicks pass through to canvas if needed, though we catch them on joystick */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        #instructions {
+            margin-top: 20px;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.8);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+            font-size: 1.2rem;
+            pointer-events: none;
+        }
+
+        /* Virtual Joystick / Touchpad Styling */
+        #joystick-zone {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            margin-bottom: 40px;
+            align-self: center;
+            /* Center horizontally */
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            pointer-events: auto;
+            /* Re-enable pointer events for the joystick */
+            touch-action: none;
+            backdrop-filter: blur(4px);
+        }
+
+        #joystick-knob {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            /* Center initially */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            pointer-events: none;
+            /* Let events pass to the zone */
+        }
+
+        /* UI Button Styling */
+        .ui-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: auto;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.8rem;
+            z-index: 100;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .ui-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .ui-button:active {
+            transform: translateY(0);
+        }
+
+        /* Mobile Jump Button */
+        #jump-btn {
+            position: absolute;
+            bottom: 40px;
+            right: 40px;
+            top: auto;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: none;
+            /* Hidden by default, shown on mobile */
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            user-select: none;
+        }
+
+        /* Mobile Shoot Button */
+        #shoot-btn {
+            position: absolute;
+            bottom: 140px;
+            right: 40px;
+            top: auto;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: none;
+            /* Hidden by default, shown on mobile */
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            user-select: none;
+            background: rgba(255, 200, 0, 0.2);
+            border-color: rgba(255, 200, 0, 0.4);
+        }
+
+        #shoot-btn:active {
+            background: rgba(255, 200, 0, 0.4);
+        }
+
+        /* FPS Counter Styling */
+        #fps-counter {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            color: #00ff88;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            font-size: 0.9rem;
+            pointer-events: none;
+            backdrop-filter: blur(10px);
+            z-index: 100;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Responsive tweak for desktop vs mobile */
+        @media (min-width: 768px) {
+            #joystick-zone {
+                margin-bottom: 60px;
+                width: 150px;
+                height: 150px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="canvas-container"></div>
+
+    <div id="ui-layer">
+        <div id="fps-counter">FPS: 0</div>
+
+        <div id="instructions">
+            .
+        </div>
+
+        <button id="view-toggle" class="ui-button">First Person</button>
+
+        <button id="jump-btn" class="ui-button">Jump</button>
+        <button id="shoot-btn" class="ui-button">Shoot</button>
+
+        <div id="joystick-zone">
+            <div id="joystick-knob"></div>
+        </div>
+    </div>
+
+    <!-- Load Three.js from CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        // --- 1. Three.js Setup ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x202025); // Dark grey background
+        scene.fog = new THREE.Fog(0x202025, 10, 50);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 7, -12); // Initial position behind the cube
+        camera.lookAt(0, 1, 0);
+
+        const renderer = new THREE.WebGLRenderer({
+            antialias: true,
+            powerPreference: "high-performance"
+        });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Cap pixel ratio for performance
+        renderer.shadowMap.enabled = true; // Enable shadows
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
+
+        // --- 2. Lighting ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(5, 10, 5);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 1024;
+        dirLight.shadow.mapSize.height = 1024;
+        scene.add(dirLight);
+
+        // --- 3. Objects ---
+
+        // Floor
+        const planeGeometry = new THREE.PlaneGeometry(100, 100);
+        const planeMaterial = new THREE.MeshStandardMaterial({
+            color: 0x444444,
+            roughness: 0.8,
+            metalness: 0.2
+        });
+        const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+        plane.rotation.x = -Math.PI / 2;
+        plane.receiveShadow = true;
+        scene.add(plane);
+
+        // Grid Helper
+        const gridHelper = new THREE.GridHelper(100, 50, 0x666666, 0x333333);
+        scene.add(gridHelper);
+
+        // The Cube (Player)
+        const cubeGeometry = new THREE.BoxGeometry(2, 4, 2);
+        const cubeMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff88 });
+        const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+        cube.position.y = 1; // Sit on top of plane
+        cube.castShadow = true;
+        scene.add(cube);
+
+        // The Gun (1st Person Viewmodel)
+        scene.add(camera); // Add camera to scene to allow children
+        const gunGroup = new THREE.Group(); // Use a group to manage gun parts
+
+        // Main Body
+        const gunGeometry = new THREE.BoxGeometry(0.25, 0.4, 1.2);
+        const gunMaterial = new THREE.MeshStandardMaterial({ color: 0x666666 });
+        const gunBody = new THREE.Mesh(gunGeometry, gunMaterial);
+        gunGroup.add(gunBody);
+
+        // Barrel
+        const barrelGeometry = new THREE.BoxGeometry(0.12, 0.12, 1.0);
+        const barrelMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
+        const barrel = new THREE.Mesh(barrelGeometry, barrelMaterial);
+        barrel.position.set(0, 0.08, -0.8); // Offset forward and slightly up
+        gunBody.add(barrel);
+
+        // Muzzle point (where the bullet comes out)
+        const muzzle = new THREE.Object3D();
+        muzzle.position.set(0, 0, -0.5); // End of the barrel
+        barrel.add(muzzle);
+
+        gunGroup.position.set(0.6, -0.5, -1.2);
+        gunGroup.visible = false; // Initially hidden in 3rd person
+        camera.add(gunGroup);
+        const gun = gunGroup; // Maintain reference for visibility toggle
+
+        // --- 4. Logic & Controls ---
+
+        // Input State
+        let input = { x: 0, y: 0, active: false };
+        let viewMode = 'third-person'; // 'third-person' or 'first-person'
+        let pitch = 0;
+        const mouseSensitivity = 0.002;
+
+        // FPS Tracking
+        let lastTime = performance.now();
+        let frameCount = 0;
+        const fpsElement = document.getElementById('fps-counter');
+        const clock = new THREE.Clock();
+
+        // Keyboard State
+        const keys = { w: false, a: false, s: false, d: false };
+
+        // Physics State
+        let velocityY = 0;
+        let isGrounded = true;
+        const gravity = -0.015;
+        const jumpStrength = 0.35;
+
+        function jump() {
+            if (isGrounded) {
+                velocityY = jumpStrength;
+                isGrounded = false;
+            }
+        }
+
+        // Shooting Mechanism
+        const bullets = [];
+        const bulletGeometry = new THREE.SphereGeometry(0.2, 8, 8);
+        const bulletMaterial = new THREE.MeshStandardMaterial({
+            color: 0xffff00,
+            emissive: 0xffff00,
+            emissiveIntensity: 0.5
+        });
+
+        function shoot() {
+            const bullet = new THREE.Mesh(bulletGeometry, bulletMaterial);
+
+            // Get muzzle position in world space
+            const muzzlePosition = new THREE.Vector3();
+            muzzle.updateMatrixWorld(true);
+            muzzle.getWorldPosition(muzzlePosition);
+            bullet.position.copy(muzzlePosition);
+
+            // Get direction camera is looking
+            const direction = new THREE.Vector3(0, 0, -1);
+            direction.applyQuaternion(camera.quaternion);
+
+            // Velocity vector
+            const speed = 1.5;
+            bullet.userData.velocity = direction.multiplyScalar(speed);
+            bullet.userData.aliveTime = 0;
+
+            scene.add(bullet);
+            bullets.push(bullet);
+        }
+
+        // View Toggle Logic
+        const viewToggleBtn = document.getElementById('view-toggle');
+        function toggleView() {
+            if (viewMode === 'third-person') {
+                viewMode = 'first-person';
+                viewToggleBtn.textContent = 'Third Person';
+                cube.visible = false; // Hide player in FP
+                gun.visible = true; // Show gun in FP
+                // Move camera instantly to first person position
+                const eyeOffset = new THREE.Vector3(0, 1.5, 0.8);
+                const targetCameraPosition = eyeOffset.clone().applyQuaternion(cube.quaternion).add(cube.position);
+                camera.position.copy(targetCameraPosition);
+            } else {
+                viewMode = 'third-person';
+                viewToggleBtn.textContent = 'First Person';
+                cube.visible = true; // Show player in TP
+                gun.visible = false; // Hide gun in TP
+            }
+        }
+        viewToggleBtn.addEventListener('click', toggleView);
+
+        window.addEventListener('keydown', (e) => {
+            switch (e.key.toLowerCase()) {
+                case 'w':
+                case 'arrowup': keys.w = true; e.preventDefault(); break;
+                case 'a':
+                case 'arrowleft': keys.a = true; e.preventDefault(); break;
+                case 's':
+                case 'arrowdown': keys.s = true; e.preventDefault(); break;
+                case 'd':
+                case 'arrowright': keys.d = true; e.preventDefault(); break;
+                case ' ': jump(); e.preventDefault(); break;
+                case 'u': toggleView(); e.preventDefault(); break;
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            switch (e.key.toLowerCase()) {
+                case 'w':
+                case 'arrowup': keys.w = false; break;
+                case 'a':
+                case 'arrowleft': keys.a = false; break;
+                case 's':
+                case 'arrowdown': keys.s = false; break;
+                case 'd':
+                case 'arrowright': keys.d = false; break;
+            }
+        });
+
+        // --- Mobile Detection & Joystick Setup ---
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+        if (!isMobile) {
+            const jz = document.getElementById('joystick-zone');
+            if (jz) jz.remove();
+            const jb = document.getElementById('jump-btn');
+            if (jb) jb.remove();
+            const sb = document.getElementById('shoot-btn');
+            if (sb) sb.remove();
+        } else {
+            const jb = document.getElementById('jump-btn');
+            if (jb) {
+                jb.style.display = 'flex';
+                jb.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    jump();
+                });
+            }
+            const sb = document.getElementById('shoot-btn');
+            if (sb) {
+                sb.style.display = 'flex';
+                sb.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    shoot();
+                });
+            }
+        }
+
+        const joystickZone = document.getElementById('joystick-zone');
+        const joystickKnob = document.getElementById('joystick-knob');
+
+        let movementTouchId = null;
+        let cameraTouchId = null;
+        let lastCameraX = 0;
+        let lastCameraY = 0;
+        const swipeSensitivity = 0.005;
+
+        if (joystickZone && joystickKnob) {
+            const handleJoystickInput = (clientX, clientY, isEnd = false) => {
+                if (isEnd) {
+                    input = { x: 0, y: 0, active: false };
+                    joystickKnob.style.transform = `translate(-50%, -50%)`;
+                    joystickKnob.style.transition = 'transform 0.2s ease-out';
+                    return;
+                }
+
+                const rect = joystickZone.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+
+                let dx = clientX - centerX;
+                let dy = clientY - centerY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const maxRadius = rect.width / 2;
+
+                if (distance > maxRadius) {
+                    const ratio = maxRadius / distance;
+                    dx *= ratio;
+                    dy *= ratio;
+                }
+
+                input.x = dx / maxRadius;
+                input.y = dy / maxRadius;
+                input.active = true;
+
+                joystickKnob.style.transition = 'none';
+                joystickKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+            };
+
+            // Touch event listeners for the whole window to handle multitouch
+            window.addEventListener('touchstart', (e) => {
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    const touch = e.changedTouches[i];
+                    const target = touch.target;
+
+                    // If touch is on joystick
+                    if (joystickZone.contains(target) && movementTouchId === null) {
+                        movementTouchId = touch.identifier;
+                        handleJoystickInput(touch.clientX, touch.clientY);
+                        e.preventDefault();
+                    }
+                    // Otherwise it's camera swipe if not on a button
+                    else if (!target.closest('.ui-button') && cameraTouchId === null) {
+                        cameraTouchId = touch.identifier;
+                        lastCameraX = touch.clientX;
+                        lastCameraY = touch.clientY;
+                    }
+                }
+            }, { passive: false });
+
+            window.addEventListener('touchmove', (e) => {
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    const touch = e.changedTouches[i];
+
+                    if (touch.identifier === movementTouchId) {
+                        handleJoystickInput(touch.clientX, touch.clientY);
+                        e.preventDefault();
+                    }
+                    else if (touch.identifier === cameraTouchId) {
+                        const dx = touch.clientX - lastCameraX;
+                        const dy = touch.clientY - lastCameraY;
+
+                        // Rotate player (Yaw)
+                        cube.rotation.y -= dx * swipeSensitivity;
+                        // Rotate camera (Pitch)
+                        pitch -= dy * swipeSensitivity;
+                        pitch = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, pitch));
+
+                        lastCameraX = touch.clientX;
+                        lastCameraY = touch.clientY;
+                        e.preventDefault();
+                    }
+                }
+            }, { passive: false });
+
+            const onTouchEnd = (e) => {
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    const touch = e.changedTouches[i];
+                    if (touch.identifier === movementTouchId) {
+                        movementTouchId = null;
+                        handleJoystickInput(0, 0, true);
+                    } else if (touch.identifier === cameraTouchId) {
+                        cameraTouchId = null;
+                    }
+                }
+            };
+
+            window.addEventListener('touchend', onTouchEnd);
+            window.addEventListener('touchcancel', onTouchEnd);
+        } else if (isMobile) {
+            // Mobile but no joystick (maybe just camera swipe needed?)
+            window.addEventListener('touchstart', (e) => {
+                if (cameraTouchId === null && !e.target.closest('.ui-button')) {
+                    const touch = e.changedTouches[0];
+                    cameraTouchId = touch.identifier;
+                    lastCameraX = touch.clientX;
+                    lastCameraY = touch.clientY;
+                }
+            }, { passive: false });
+
+            window.addEventListener('touchmove', (e) => {
+                if (cameraTouchId !== null) {
+                    for (let i = 0; i < e.changedTouches.length; i++) {
+                        const touch = e.changedTouches[i];
+                        if (touch.identifier === cameraTouchId) {
+                            const dx = touch.clientX - lastCameraX;
+                            const dy = touch.clientY - lastCameraY;
+                            cube.rotation.y -= dx * swipeSensitivity;
+                            pitch -= dy * swipeSensitivity;
+                            pitch = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, pitch));
+                            lastCameraX = touch.clientX;
+                            lastCameraY = touch.clientY;
+                            e.preventDefault();
+                        }
+                    }
+                }
+            }, { passive: false });
+
+            window.addEventListener('touchend', (e) => {
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    if (e.changedTouches[i].identifier === cameraTouchId) {
+                        cameraTouchId = null;
+                    }
+                }
+            });
+        }
+
+        // Pointer Lock & Mouse Rotation
+        container.addEventListener('mousedown', (e) => {
+            // Only lock if not clicking UI buttons or joystick
+            if (e.target.closest('.ui-button') || e.target.closest('#joystick-zone')) return;
+
+            if (document.pointerLockElement === container) {
+                shoot();
+            } else {
+                container.requestPointerLock();
+            }
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (document.pointerLockElement === container) {
+                // Yaw (Horizontal) - Rotates the Cube
+                cube.rotation.y -= e.movementX * mouseSensitivity;
+
+                // Pitch (Vertical) - Rotates the Look Angle
+                pitch -= e.movementY * mouseSensitivity;
+                // Clamp pitch to avoid flipping over (approx 85 degrees)
+                pitch = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, pitch));
+            }
+        });
+
+        // --- 5. Animation Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const delta = clock.getDelta();
+            const frameFactor = delta * 60; // Normalize to 60fps
+
+            // Update Bullets
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                const b = bullets[i];
+                b.position.add(b.userData.velocity.clone().multiplyScalar(frameFactor));
+                b.userData.aliveTime += delta;
+
+                // Remove bullet after 3 seconds or if too far
+                if (b.userData.aliveTime > 3 || b.position.length() > 200) {
+                    scene.remove(b);
+                    bullets.splice(i, 1);
+                }
+            }
+
+            // FPS Calculation
+            frameCount++;
+            const currentTime = performance.now();
+            if (currentTime - lastTime >= 1000) {
+                fpsElement.textContent = `FPS: ${frameCount}`;
+                frameCount = 0;
+                lastTime = currentTime;
+            }
+
+            // Game Logic: Move Cube
+            // Game Logic: Move Cube
+            let moveX = input.active ? input.x : 0;
+            let moveY = input.active ? input.y : 0;
+
+            if (keys.w) moveY -= 1;
+            if (keys.s) moveY += 1;
+            if (keys.a) moveX -= 1;
+            if (keys.d) moveX += 1;
+
+            // Normalize vector if combining inputs or holding multiple keys
+            const len = Math.sqrt(moveX * moveX + moveY * moveY);
+            if (len > 1) {
+                moveX /= len;
+                moveY /= len;
+            }
+
+            // Movement Controls: A/D/Left/Right strafes, W/S/Up/Down moves forward/back
+            const moveSpeed = 0.4 * frameFactor;
+
+            // Strafe Logic (A/D or Joystick X)
+            if (Math.abs(moveX) > 0.01) {
+                cube.translateX(moveX * moveSpeed);
+            }
+
+            // Forward/Backward Logic (W/S or Joystick Y)
+            if (Math.abs(moveY) > 0.01) {
+                // moveY is negative for 'Up/Forward', so we use negative to move forward along local Z
+                cube.translateZ(-moveY * moveSpeed);
+            }
+
+            // Gravity & Vertical Movement
+            cube.position.y += velocityY * frameFactor;
+            if (cube.position.y > 2) { // 2 is the base height (half of box height 4)
+                velocityY += gravity * frameFactor;
+                isGrounded = false;
+            } else {
+                cube.position.y = 2;
+                velocityY = 0;
+                isGrounded = true;
+            }
+
+            // Camera Follow Logic (Smooth & Rotating)
+            if (viewMode === 'first-person') {
+                // First person: Camera is at cube position
+                const eyeOffset = new THREE.Vector3(0, 1.5, 0.8);
+                const targetCameraPosition = eyeOffset.clone().applyQuaternion(cube.quaternion).add(cube.position);
+                camera.position.copy(targetCameraPosition);
+
+                // Calculate look direction based on cube orientation + vertical pitch
+                const lookForward = new THREE.Vector3(0, Math.sin(pitch), Math.cos(pitch))
+                    .applyQuaternion(cube.quaternion)
+                    .add(targetCameraPosition);
+                camera.lookAt(lookForward);
+            } else {
+                // Third person: Smooth follow from behind, height and distance adjusted by pitch
+                const distance = 12;
+                const height = 6;
+
+                // Offset calculation that includes pitch for vertical camera orbit
+                const cameraOffset = new THREE.Vector3(
+                    0,
+                    height - Math.sin(pitch) * 5,
+                    -distance * Math.cos(pitch)
+                );
+
+                const targetCameraPosition = cameraOffset.clone().applyQuaternion(cube.quaternion).add(cube.position);
+                // Frame-rate independent lerp
+                const lerpFactor = 1 - Math.pow(0.001, delta);
+                camera.position.lerp(targetCameraPosition, lerpFactor);
+
+                // Look at a target in front of the cube based on pitch
+                const lookTarget = new THREE.Vector3(0, Math.sin(pitch) * 5, Math.cos(pitch) * 5)
+                    .applyQuaternion(cube.quaternion)
+                    .add(cube.position);
+                camera.lookAt(lookTarget);
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // run game loop
+        animate();
+
+    </script>
+</body>
+
+</html>
