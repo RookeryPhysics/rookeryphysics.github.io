@@ -340,7 +340,7 @@
 
         <div id="game-over-screen">
             <h1>Game Over</h1>
-            <p>Reload to respawn</p>
+            <p>Press anything to respawn</p>
         </div>
     </div>
 
@@ -1346,6 +1346,42 @@
                 camera.position.copy(targetCameraPosition);
             }
         }
+
+        /**
+         * Respawns the player after death.
+         * @returns {void}
+         */
+        function respawn() {
+            if (!isDead) return;
+            isDead = false;
+            document.getElementById('game-over-screen').style.display = 'none';
+
+            // Reset physics state
+            velocityY = 0;
+            isGrounded = true;
+            jumpCount = 0;
+
+            spawnPlayerRandomly();
+
+            // Reset visibility based on viewMode
+            if (viewMode === 'first-person') {
+                cube.visible = false;
+                if (gun) gun.visible = true;
+            } else {
+                cube.visible = true;
+                if (gun) gun.visible = false;
+            }
+
+            // Re-request pointer lock if possible (requires interaction)
+            if (!isMobile && document.pointerLockElement !== container) {
+                container.requestPointerLock();
+            }
+        }
+
+        // Global respawn input listeners
+        window.addEventListener('keydown', () => { if (isDead) respawn(); });
+        window.addEventListener('mousedown', () => { if (isDead) respawn(); });
+        window.addEventListener('touchstart', () => { if (isDead) respawn(); });
 
         /**
          * Automatically attempts to load a map from 'map.json' on startup.
