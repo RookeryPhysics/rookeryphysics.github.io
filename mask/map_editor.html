@@ -243,6 +243,22 @@
             box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
         }
 
+        /* Mobile Button Crosshair */
+        .btn-crosshair {
+            position: relative;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: scale(1.4);
+            pointer-events: none;
+        }
+
+        .btn-icon-scaled {
+            transform: scale(1.4);
+        }
+
         /* Map Control Buttons Styling */
         .map-controls {
             position: absolute;
@@ -368,8 +384,21 @@
             </svg>
         </button>
 
-        <button id="jump-btn" class="ui-button">Jump</button>
-        <button id="shoot-btn" class="ui-button">Shoot</button>
+        <button id="jump-btn" class="ui-button" title="Jump">
+            <svg class="btn-icon-scaled" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 19V5M5 12l7-7 7 7" />
+            </svg>
+        </button>
+        <button id="shoot-btn" class="ui-button">
+            <div class="btn-crosshair">
+                <div class="ch-line ch-v ch-top"></div>
+                <div class="ch-line ch-v ch-bottom"></div>
+                <div class="ch-line ch-h ch-left"></div>
+                <div class="ch-line ch-h ch-right"></div>
+                <div class="ch-dot"></div>
+            </div>
+        </button>
 
         <div class="map-controls">
             <button id="save-map-btn" class="map-btn">Save Map</button>
