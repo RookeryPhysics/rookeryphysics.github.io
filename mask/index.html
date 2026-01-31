@@ -1071,7 +1071,14 @@
                 }
 
                 if (hitInfo) {
-                    createSplat(hitInfo.point, hitInfo.normal);
+                    // Don't create splats on player geometry
+                    const isOtherPlayer = Object.values(otherPlayers).includes(hitInfo.object);
+                    const isLocalPlayer = (hitInfo.object === cube);
+
+                    if (!isOtherPlayer && !isLocalPlayer) {
+                        createSplat(hitInfo.point, hitInfo.normal);
+                    }
+
                     createExplosion(hitInfo.point);
 
                     scene.remove(b);
