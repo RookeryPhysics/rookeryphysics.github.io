@@ -429,12 +429,17 @@
         muzzle.position.set(0, 0, -0.5); // End of the barrel
         barrel.add(muzzle);
 
-        gunGroup.position.set(0.6, -0.5, -1.2);
+        if (isMobile) {
+            gunGroup.position.set(0.2, -0.5, -1.8); // More left and forward on mobile
+        } else {
+            gunGroup.position.set(0.6, -0.5, -1.2);
+        }
         gunGroup.visible = true; // Initially shown in 1st person
         camera.add(gunGroup);
         const gun = gunGroup; // Maintain reference for visibility toggle
 
         // --- 4. Logic & Controls ---
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
         // Input State
         let input = { x: 0, y: 0, active: false };
@@ -812,7 +817,7 @@
         window.addEventListener('contextmenu', e => e.preventDefault());
 
         // --- Mobile Detection & Joystick Setup ---
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        // (isMobile is defined at the top)
 
         if (!isMobile) {
             const jz = document.getElementById('joystick-zone');
