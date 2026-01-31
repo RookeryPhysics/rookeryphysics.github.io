@@ -310,9 +310,56 @@
 
     <!-- Load Three.js from CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
 
     <script>
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+        // --- Socket.io Multiplayer Setup ---
+        const socket = io();
+        const otherPlayers = {}; // { socketId: Mesh }
+
+        function createOtherPlayerMesh(color) {
+            const geometry = new THREE.BoxGeometry(2, 4, 2);
+            // Use a different color or the one provided
+            const material = new THREE.MeshStandardMaterial({ color: color || 0xff0000 });
+            return new THREE.Mesh(geometry, material);
+        }
+
+        socket.on('currentPlayers', (players) => {
+            Object.keys(players).forEach((id) => {
+                if (id === socket.id) return;
+                const playerInfo = players[id];
+                const playerMesh = createOtherPlayerMesh(0xff0000); // Red for enemies/others
+                playerMesh.position.set(playerInfo.x, playerInfo.y, playerInfo.z);
+                playerMesh.rotation.y = playerInfo.rotation;
+                scene.add(playerMesh);
+                otherPlayers[id] = playerMesh;
+            });
+        });
+
+        socket.on('newPlayer', (playerInfo) => {
+            const playerMesh = createOtherPlayerMesh(0xff0000);
+            playerMesh.position.set(playerInfo.x, playerInfo.y, playerInfo.z);
+            playerMesh.rotation.y = playerInfo.rotation;
+            scene.add(playerMesh);
+            otherPlayers[playerInfo.id] = playerMesh;
+        });
+
+        socket.on('playerMoved', (playerInfo) => {
+            const playerMesh = otherPlayers[playerInfo.id];
+            if (playerMesh) {
+                playerMesh.position.set(playerInfo.x, playerInfo.y, playerInfo.z);
+                playerMesh.rotation.y = playerInfo.rotation;
+            }
+        });
+
+        socket.on('playerDisconnected', (id) => {
+            if (otherPlayers[id]) {
+                scene.remove(otherPlayers[id]);
+                delete otherPlayers[id];
+            }
+        });
 
         // --- 1. Three.js Setup ---
         const container = document.getElementById('canvas-container');
@@ -1127,6 +1174,17 @@
                     .applyQuaternion(cube.quaternion)
                     .add(cube.position);
                 camera.lookAt(lookTarget);
+            }
+
+            // --- Multiplayer Broadcast ---
+            // Throttle slightly if needed, or check for change
+            if (socket) {
+                socket.emit('playerMovement', {
+                    x: cube.position.x,
+                    y: cube.position.y,
+                    z: cube.position.z,
+                    rotation: cube.rotation.y
+                });
             }
 
             renderer.render(scene, camera);
