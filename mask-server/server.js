@@ -12,16 +12,16 @@ const io = new Server(server, {
     }
 });
 
-// Serve static files from the current directory
-app.use(express.static(__dirname));
+// Serve static files from the 'mask' directory (one level up)
+app.use(express.static(path.join(__dirname, '../mask')));
 
-// Specific routes for the game files (optional since express.static covers it, but ensures they are served)
+// Specific routes for the game files
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+    res.sendFile(path.join(__dirname, '../mask/index.html'));
 });
 
 app.get('/map.json', (req, res) => {
-    res.sendFile(path.join(__dirname, 'map.json'));
+    res.sendFile(path.join(__dirname, '../mask/map.json'));
 });
 
 // Game state
