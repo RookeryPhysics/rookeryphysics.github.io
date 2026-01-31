@@ -1027,13 +1027,29 @@
                 raycaster.set(prevPos, dir);
                 raycaster.far = travelDist + 0.1; // Check if we hit anything in this frame's jump
 
-                const targetObjects = [...paintableObjects, ...Object.values(mapBlocks)];
+                const targetObjects = [...paintableObjects, ...Object.values(mapBlocks), ...Object.values(otherPlayers)];
+                const intersects = raycaster.intersectObjects(targetObjects);
 
-                // Check collision with local player if it's an enemy bullet
-                if (b.userData.isEnemy && !isDead) {
-                    // Simple distance check first for performance
-                    const distToPlayer = b.position.distanceTo(cube.position);
-                    if (distToPlayer < 2.0) { // Approximate player radius
+                let hitInfo = null;
+
+                if (intersects.length > 0) {
+                    hitInfo = {
+                        point: intersects[0].point,
+                        normal: intersects[0].face.normal.clone().applyQuaternion(intersects[0].object.quaternion),
+                        object: intersects[0].object
+                    };
+                } else if (b.userData.isEnemy && !isDead) {
+                    // Check collision with local player (bypassing visibility check for first-person mode)
+                    const localHits = [];
+                    cube.raycast(raycaster, localHits);
+                    if (localHits.length > 0) {
+                        hitInfo = {
+                            point: localHits[0].point,
+                            normal: localHits[0].face.normal.clone().applyQuaternion(cube.quaternion),
+                            object: cube
+                        };
+
+                        // Trigger death logic
                         isDead = true;
                         document.getElementById('game-over-screen').style.display = 'flex';
                         createExplosion(cube.position);
@@ -1054,14 +1070,9 @@
                     }
                 }
 
-                const intersects = raycaster.intersectObjects(targetObjects);
-
-                if (intersects.length > 0) {
-                    const hit = intersects[0];
-                    // Get world-space normal
-                    const worldNormal = hit.face.normal.clone().applyQuaternion(hit.object.quaternion);
-                    createSplat(hit.point, worldNormal);
-                    createExplosion(hit.point);
+                if (hitInfo) {
+                    createSplat(hitInfo.point, hitInfo.normal);
+                    createExplosion(hitInfo.point);
 
                     scene.remove(b);
                     bullets.splice(i, 1);
