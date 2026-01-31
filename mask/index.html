@@ -348,6 +348,38 @@
 
         const paintableObjects = [plane, wallN, wallS, wallE, wallW];
 
+        // --- Map Loading Logic ---
+        const mapBlocks = {}; // key: "x,y,z", value: Mesh
+        const blockSize = 4;
+        const mapBlockGeometry = new THREE.BoxGeometry(blockSize, blockSize, blockSize);
+        const mapBlockMaterial = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.5 });
+
+        function autoLoadMap() {
+            fetch('map.json')
+                .then(response => {
+                    if (!response.ok) throw new Error('No map.json found');
+                    return response.json();
+                })
+                .then(data => {
+                    if (!data.blocks || !Array.isArray(data.blocks)) return;
+
+                    data.blocks.forEach(pos => {
+                        const key = `${pos.x},${pos.y},${pos.z}`;
+                        const block = new THREE.Mesh(mapBlockGeometry, mapBlockMaterial);
+                        block.position.set(pos.x, pos.y, pos.z);
+                        block.castShadow = true;
+                        block.receiveShadow = true;
+                        scene.add(block);
+                        mapBlocks[key] = block;
+                    });
+                    console.log(`Auto-loaded ${data.blocks.length} blocks from map.json`);
+                })
+                .catch(err => {
+                    console.log('Skipping auto-map load:', err.message);
+                });
+        }
+        autoLoadMap();
+
         // The Cube (Player)
         const cubeGeometry = new THREE.BoxGeometry(2, 4, 2);
         const cubeMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff88 });
@@ -438,7 +470,8 @@
             // Find what the crosshair is actually pointing at in the world
             raycaster.far = 2000;
             raycaster.set(camera.position, cameraDir);
-            const intersects = raycaster.intersectObjects(paintableObjects);
+            const targetObjects = [...paintableObjects, ...Object.values(mapBlocks)];
+            const intersects = raycaster.intersectObjects(targetObjects);
 
             let targetPoint;
             if (intersects.length > 0) {
@@ -789,7 +822,8 @@
                 raycaster.set(prevPos, dir);
                 raycaster.far = travelDist + 0.1; // Check if we hit anything in this frame's jump
 
-                const intersects = raycaster.intersectObjects(paintableObjects);
+                const targetObjects = [...paintableObjects, ...Object.values(mapBlocks)];
+                const intersects = raycaster.intersectObjects(targetObjects);
 
                 if (intersects.length > 0) {
                     const hit = intersects[0];

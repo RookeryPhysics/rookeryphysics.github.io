@@ -220,16 +220,48 @@
             left: 0;
         }
 
-        .ch-right {
-            right: 0;
+        /* Map Control Buttons Styling */
+        .map-controls {
+            position: absolute;
+            top: 80px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: auto;
+            z-index: 100;
         }
 
-        .ch-dot {
-            width: 2px;
-            height: 2px;
-            background: white;
-            border-radius: 50%;
-            box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+        .map-btn {
+            padding: 10px 20px;
+            background: rgba(0, 150, 255, 0.2);
+            border: 2px solid rgba(0, 150, 255, 0.4);
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.7rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .map-btn:hover {
+            background: rgba(0, 150, 255, 0.4);
+            border-color: rgba(0, 150, 255, 0.6);
+            transform: scale(1.05);
+        }
+
+        .map-btn.load {
+            background: rgba(0, 255, 100, 0.1);
+            border-color: rgba(0, 255, 100, 0.3);
+        }
+
+        .map-btn.load:hover {
+            background: rgba(0, 255, 100, 0.3);
+            border-color: rgba(0, 255, 100, 0.5);
         }
     </style>
 </head>
@@ -256,6 +288,12 @@
 
         <button id="jump-btn" class="ui-button">Jump</button>
         <button id="shoot-btn" class="ui-button">Shoot</button>
+
+        <div class="map-controls">
+            <button id="save-map-btn" class="map-btn">Save Map</button>
+            <button id="load-map-btn" class="map-btn load">Load Map</button>
+            <input type="file" id="map-file-input" style="display: none;" accept=".json">
+        </div>
 
         <div id="joystick-zone">
             <div id="joystick-knob"></div>
@@ -551,6 +589,82 @@
                 }
             }
         }
+
+        // --- Save / Load Logic ---
+        function saveMap() {
+            const blockPositions = [];
+            for (const key in mapBlocks) {
+                const block = mapBlocks[key];
+                blockPositions.push({
+                    x: block.position.x,
+                    y: block.position.y,
+                    z: block.position.z
+                });
+            }
+
+            const mapData = {
+                blocks: blockPositions
+            };
+
+            const json = JSON.stringify(mapData, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'map_export.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function loadMap(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (!data.blocks || !Array.isArray(data.blocks)) {
+                        alert('Invalid map file format');
+                        return;
+                    }
+
+                    // Clear existing blocks
+                    for (const key in mapBlocks) {
+                        scene.remove(mapBlocks[key]);
+                    }
+                    // Reset mapBlocks object
+                    for (const key in mapBlocks) delete mapBlocks[key];
+
+                    // Reconstruct blocks
+                    data.blocks.forEach(pos => {
+                        const key = `${pos.x},${pos.y},${pos.z}`;
+                        const block = new THREE.Mesh(mapBlockGeometry, mapBlockMaterial);
+                        block.position.set(pos.x, pos.y, pos.z);
+                        block.castShadow = true;
+                        block.receiveShadow = true;
+                        scene.add(block);
+                        mapBlocks[key] = block;
+                    });
+
+                    console.log(`Loaded ${data.blocks.length} blocks`);
+                } catch (err) {
+                    console.error('Error loading map:', err);
+                    alert('Error parsing map file');
+                }
+            };
+            reader.readAsText(file);
+            // Reset input so the same file can be loaded again if needed
+            event.target.value = '';
+        }
+
+        document.getElementById('save-map-btn').addEventListener('click', saveMap);
+        const fileInput = document.getElementById('map-file-input');
+        document.getElementById('load-map-btn').addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', loadMap);
 
         // Paint and Explosion Effects
         const splats = [];
