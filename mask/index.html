@@ -414,7 +414,7 @@
         }
 
         function createSplat(pos, normal) {
-            const size = 0.5 + Math.random() * 1.5;
+            const size = 0.4; // Consistent small size
             const splatGeom = new THREE.CircleGeometry(size, 8);
             const splatMat = new THREE.MeshStandardMaterial({
                 color: 0xffff00,
