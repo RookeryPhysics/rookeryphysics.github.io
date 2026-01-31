@@ -252,7 +252,7 @@
             .
         </div>
 
-        <button id="view-toggle" class="ui-button">First Person</button>
+        <button id="view-toggle" class="ui-button">Third Person</button>
 
         <button id="jump-btn" class="ui-button">Jump</button>
         <button id="shoot-btn" class="ui-button">Shoot</button>
@@ -350,7 +350,7 @@
 
         // --- Map Loading Logic ---
         const mapBlocks = {}; // key: "x,y,z", value: Mesh
-        const blockSize = 4;
+        const blockSize = 2;
         const mapBlockGeometry = new THREE.BoxGeometry(blockSize, blockSize, blockSize);
         const mapBlockMaterial = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.5 });
 
@@ -386,6 +386,7 @@
         const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
         cube.position.y = 1; // Sit on top of plane
         cube.castShadow = true;
+        cube.visible = false; // Initially hidden in 1st person
         scene.add(cube);
 
         // The Gun (1st Person Viewmodel)
@@ -411,7 +412,7 @@
         barrel.add(muzzle);
 
         gunGroup.position.set(0.6, -0.5, -1.2);
-        gunGroup.visible = false; // Initially hidden in 3rd person
+        gunGroup.visible = true; // Initially shown in 1st person
         camera.add(gunGroup);
         const gun = gunGroup; // Maintain reference for visibility toggle
 
@@ -419,7 +420,7 @@
 
         // Input State
         let input = { x: 0, y: 0, active: false };
-        let viewMode = 'third-person'; // 'third-person' or 'first-person'
+        let viewMode = 'first-person'; // 'third-person' or 'first-person'
         let pitch = 0;
         const mouseSensitivity = 0.002;
 
@@ -816,12 +817,12 @@
             for (const key in mapBlocks) {
                 const b = mapBlocks[key];
                 const bPos = b.position;
-                const bMinX = bPos.x - 2;
-                const bMaxX = bPos.x + 2;
-                const bMinY = bPos.y - 2;
-                const bMaxY = bPos.y + 2;
-                const bMinZ = bPos.z - 2;
-                const bMaxZ = bPos.z + 2;
+                const bMinX = bPos.x - blockSize / 2;
+                const bMaxX = bPos.x + blockSize / 2;
+                const bMinY = bPos.y - blockSize / 2;
+                const bMaxY = bPos.y + blockSize / 2;
+                const bMinZ = bPos.z - blockSize / 2;
+                const bMaxZ = bPos.z + blockSize / 2;
 
                 if (pMinX < bMaxX && pMaxX > bMinX &&
                     pMinY < bMaxY && pMaxY > bMinY &&
@@ -843,11 +844,11 @@
             for (const key in mapBlocks) {
                 const b = mapBlocks[key];
                 const bPos = b.position;
-                const bMinX = bPos.x - 2;
-                const bMaxX = bPos.x + 2;
-                const bMaxY = bPos.y + 2; // Top of the block
-                const bMinZ = bPos.z - 2;
-                const bMaxZ = bPos.z + 2;
+                const bMinX = bPos.x - blockSize / 2;
+                const bMaxX = bPos.x + blockSize / 2;
+                const bMaxY = bPos.y + blockSize / 2; // Top of the block
+                const bMinZ = bPos.z - blockSize / 2;
+                const bMaxZ = bPos.z + blockSize / 2;
 
                 // Check if player's footprint overlaps block footprint
                 if (pMinX < bMaxX && pMaxX > bMinX &&
