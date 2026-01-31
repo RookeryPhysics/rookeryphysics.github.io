@@ -1164,8 +1164,11 @@
 
         // Pointer Lock & Mouse Rotation
         container.addEventListener('mousedown', (e) => {
-            // Only lock if not clicking UI buttons or joystick
-            if (e.target.closest('.ui-button') || e.target.closest('#joystick-zone')) return;
+            // Only lock if not clicking UI buttons, joystick, or map controls/modal
+            if (e.target.closest('.ui-button') ||
+                e.target.closest('#joystick-zone') ||
+                e.target.closest('.map-btn') ||
+                e.target.closest('#color-modal')) return;
 
             if (document.pointerLockElement === container) {
                 if (isFlying) {
