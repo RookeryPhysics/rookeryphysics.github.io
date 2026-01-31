@@ -641,7 +641,9 @@
 
             // Strafe Logic (A/D or Joystick X)
             if (Math.abs(moveX) > 0.01) {
-                cube.translateX(moveX * moveSpeed);
+                // Negate moveX because in this setup (Forward is +Z), local +X is Left. 
+                // So to move Right, we must translate by -moveX.
+                cube.translateX(-moveX * moveSpeed);
             }
 
             // Forward/Backward Logic (W/S or Joystick Y)
