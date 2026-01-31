@@ -534,6 +534,38 @@
         const mapBlockGeometry = new THREE.BoxGeometry(blockSize, blockSize, blockSize);
         const mapBlockMaterial = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.5 });
 
+        function autoLoadMap() {
+            fetch('map.json')
+                .then(response => {
+                    if (!response.ok) throw new Error('No map.json found');
+                    return response.json();
+                })
+                .then(data => {
+                    if (!data.blocks || !Array.isArray(data.blocks)) return;
+
+                    // Clear existing blocks just in case
+                    for (const key in mapBlocks) {
+                        scene.remove(mapBlocks[key]);
+                        delete mapBlocks[key];
+                    }
+
+                    data.blocks.forEach(pos => {
+                        const key = `${pos.x},${pos.y},${pos.z}`;
+                        const block = new THREE.Mesh(mapBlockGeometry, mapBlockMaterial);
+                        block.position.set(pos.x, pos.y, pos.z);
+                        block.castShadow = true;
+                        block.receiveShadow = true;
+                        scene.add(block);
+                        mapBlocks[key] = block;
+                    });
+                    console.log(`Auto-loaded ${data.blocks.length} blocks from map.json`);
+                })
+                .catch(err => {
+                    console.log('Skipping auto-map load:', err.message);
+                });
+        }
+        autoLoadMap();
+
         function updateHighlight() {
             if (!isFlying) {
                 highlightCube.visible = false;
