@@ -284,6 +284,8 @@
         wallW.position.set(-200, fenceHeight / 2, 0);
         scene.add(wallW);
 
+        const paintableObjects = [plane, wallN, wallS, wallE, wallW];
+
         // The Cube (Player)
         const cubeGeometry = new THREE.BoxGeometry(2, 4, 2);
         const cubeMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff88 });
@@ -379,6 +381,71 @@
             scene.add(bullet);
             bullets.push(bullet);
         }
+
+        // Paint and Explosion Effects
+        const splats = [];
+        const particles = [];
+
+        function createExplosion(pos) {
+            const particleCount = 12;
+            for (let i = 0; i < particleCount; i++) {
+                const size = 0.05 + Math.random() * 0.15;
+                const partGeom = new THREE.BoxGeometry(size, size, size);
+                const partMat = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true });
+                const p = new THREE.Mesh(partGeom, partMat);
+                p.position.copy(pos);
+
+                // Random velocity
+                const velocity = new THREE.Vector3(
+                    (Math.random() - 0.5) * 0.4,
+                    (Math.random() - 0.5) * 0.4,
+                    (Math.random() - 0.5) * 0.4
+                );
+
+                p.userData = {
+                    velocity: velocity,
+                    life: 1.0, // 0 to 1
+                    decay: 0.02 + Math.random() * 0.03
+                };
+
+                scene.add(p);
+                particles.push(p);
+            }
+        }
+
+        function createSplat(pos, normal) {
+            const size = 0.5 + Math.random() * 1.5;
+            const splatGeom = new THREE.CircleGeometry(size, 8);
+            const splatMat = new THREE.MeshStandardMaterial({
+                color: 0xffff00,
+                transparent: true,
+                opacity: 0.9,
+                roughness: 0.8,
+                metalness: 0
+            });
+            const splat = new THREE.Mesh(splatGeom, splatMat);
+
+            // Move slightly away from surface to avoid z-fighting
+            const offset = normal.clone().multiplyScalar(0.01);
+            splat.position.copy(pos).add(offset);
+
+            // Orient splat to surface normal
+            // Default circle is in XY plane facing +Z. 
+            // We want it to face the 'normal' vector.
+            const target = pos.clone().add(normal);
+            splat.lookAt(target);
+
+            scene.add(splat);
+            splats.push(splat);
+
+            // Limit number of splats to keep performance high
+            if (splats.length > 200) {
+                const old = splats.shift();
+                scene.remove(old);
+            }
+        }
+
+        const raycaster = new THREE.Raycaster();
 
         // View Toggle Logic
         const viewToggleBtn = document.getElementById('view-toggle');
@@ -634,13 +701,50 @@
             // Update Bullets
             for (let i = bullets.length - 1; i >= 0; i--) {
                 const b = bullets[i];
-                b.position.add(b.userData.velocity.clone().multiplyScalar(frameFactor));
-                b.userData.aliveTime += delta;
+                const prevPos = b.position.clone();
+                const step = b.userData.velocity.clone().multiplyScalar(frameFactor);
+                const travelDist = step.length();
 
-                // Remove bullet if it leaves the 400x400 plane boundaries or after 10s
-                if (Math.abs(b.position.x) > 200 || Math.abs(b.position.z) > 200 || b.userData.aliveTime > 10) {
+                // Direction for raycasting
+                const dir = step.clone().normalize();
+                raycaster.set(prevPos, dir);
+                raycaster.far = travelDist + 0.1; // Check if we hit anything in this frame's jump
+
+                const intersects = raycaster.intersectObjects(paintableObjects);
+
+                if (intersects.length > 0) {
+                    const hit = intersects[0];
+                    // Get world-space normal
+                    const worldNormal = hit.face.normal.clone().applyQuaternion(hit.object.quaternion);
+                    createSplat(hit.point, worldNormal);
+                    createExplosion(hit.point);
+
                     scene.remove(b);
                     bullets.splice(i, 1);
+                    continue;
+                }
+
+                b.position.add(step);
+                b.userData.aliveTime += delta;
+
+                // Remove bullet if it leaves the world or after 10s
+                if (Math.abs(b.position.x) > 300 || Math.abs(b.position.z) > 300 || b.userData.aliveTime > 10) {
+                    scene.remove(b);
+                    bullets.splice(i, 1);
+                }
+            }
+
+            // Update Particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.position.add(p.userData.velocity.clone().multiplyScalar(frameFactor));
+                p.userData.life -= p.userData.decay * frameFactor;
+                p.scale.setScalar(p.userData.life);
+                p.material.opacity = p.userData.life;
+
+                if (p.userData.life <= 0) {
+                    scene.remove(p);
+                    particles.splice(i, 1);
                 }
             }
 
