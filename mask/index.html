@@ -562,6 +562,7 @@
             // We want it to face the 'normal' vector.
             const target = pos.clone().add(normal);
             splat.lookAt(target);
+            splat.userData.aliveTime = 0;
 
             scene.add(splat);
             splats.push(splat);
@@ -934,6 +935,23 @@
                 if (p.userData.life <= 0) {
                     scene.remove(p);
                     particles.splice(i, 1);
+                }
+            }
+
+            // Update Splats
+            for (let i = splats.length - 1; i >= 0; i--) {
+                const s = splats[i];
+                s.userData.aliveTime += delta;
+
+                // Start fading after 12 seconds, totally gone by 15 seconds
+                if (s.userData.aliveTime > 12) {
+                    const progress = (s.userData.aliveTime - 12) / 3;
+                    s.material.opacity = Math.max(0, 0.9 * (1 - progress));
+                }
+
+                if (s.userData.aliveTime >= 15) {
+                    scene.remove(s);
+                    splats.splice(i, 1);
                 }
             }
 
