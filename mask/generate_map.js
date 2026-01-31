@@ -29,15 +29,15 @@ try {
     // We want the offset to be such that when we apply it, we still land on the grid (odd integers).
     // So (b.x - pivotX) should be an even number (or 0).
     // This implies pivotX must be an odd integer.
-    
+
     // Let's pick the block with min Y and approximate center X/Z as the pivot anchor.
     // Or just pick (minX + maxX) / 2 and round to nearest odd integer?
     // Let's just use the first block at minY as a reference, or something simple.
     // Actually, simply finding the geometric center and snapping to the nearest odd integer is safer for rotation.
-    
+
     const centerX = Math.floor((minX + maxX) / 2);
     const centerZ = Math.floor((minZ + maxZ) / 2);
-    
+
     // Ensure pivot is an odd integer (assuming grid is 1, 3, 5...)
     const pivotX = (centerX % 2 === 0) ? centerX + 1 : centerX;
     const pivotZ = (centerZ % 2 === 0) ? centerZ + 1 : centerZ;
@@ -48,6 +48,14 @@ try {
     const mapBlocks = [];
     const usedPositions = new Set();
 
+    /**
+     * Adds a unique block to the map data.
+     * @param {number} x - World X position.
+     * @param {number} y - World Y position.
+     * @param {number} z - World Z position.
+     * @param {number} c - Hex color code.
+     * @returns {void}
+     */
     function addBlock(x, y, z, c) {
         const key = `${x},${y},${z}`;
         if (!usedPositions.has(key)) {
@@ -73,7 +81,7 @@ try {
             // Generate random even coordinate offset
             // Range: -mapRange to mapRange
             // Math.random() * (2 * mapRange) - mapRange
-            
+
             const rawX = Math.floor(Math.random() * (mapRange * 2)) - mapRange;
             const rawZ = Math.floor(Math.random() * (mapRange * 2)) - mapRange;
 

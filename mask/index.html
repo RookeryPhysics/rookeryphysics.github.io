@@ -475,6 +475,10 @@
         const gravity = -0.015;
         const jumpStrength = 0.35;
 
+        /**
+         * Makes the player jump if grounded or if they have a double jump available.
+         * @returns {void}
+         */
         function jump() {
             if (isGrounded || jumpCount < 2) {
                 velocityY = jumpStrength;
@@ -492,6 +496,10 @@
             emissiveIntensity: 0.5
         });
 
+        /**
+         * Shoots a paintball from the muzzle towards the crosshair target.
+         * @returns {void}
+         */
         function shoot() {
             const bullet = new THREE.Mesh(bulletGeometry, bulletMaterial);
 
@@ -536,6 +544,11 @@
         const splats = [];
         const particles = [];
 
+        /**
+         * Creates an explosion effect with particles at the specified position.
+         * @param {THREE.Vector3} pos - The world position where the explosion occurs.
+         * @returns {void}
+         */
         function createExplosion(pos) {
             const particleCount = 12;
             for (let i = 0; i < particleCount; i++) {
@@ -563,6 +576,12 @@
             }
         }
 
+        /**
+         * Creates a paint splat on a surface.
+         * @param {THREE.Vector3} pos - The position of the collision.
+         * @param {THREE.Vector3} normal - The surface normal at the collision point.
+         * @returns {void}
+         */
         function createSplat(pos, normal) {
             const size = 0.4; // Consistent small size
             const splatGeom = new THREE.CircleGeometry(size, 8);
@@ -600,6 +619,10 @@
 
         // View Toggle Logic
         const viewToggleBtn = document.getElementById('view-toggle');
+        /**
+         * Toggles between first-person and third-person view modes.
+         * @returns {void}
+         */
         function toggleView() {
             if (viewMode === 'third-person') {
                 viewMode = 'first-person';
@@ -841,6 +864,11 @@
         });
 
         // --- 4.5 Collision Helpers ---
+        /**
+         * Checks if the player's current bounding box collides with any map blocks.
+         * @param {THREE.Vector3} pos - The position to check for collisions.
+         * @returns {boolean} True if there is a collision, false otherwise.
+         */
         function checkBlockCollision(pos) {
             // Player is 2x4x2. We use a slightly smaller collision box to avoid sticking.
             const pMinX = pos.x - 0.9;
@@ -869,6 +897,11 @@
             return false;
         }
 
+        /**
+         * Determines the Y-coordinate of the floor (including blocks) at a given position.
+         * @param {THREE.Vector3} pos - The position to check the floor height for.
+         * @returns {number} The Y-coordinate of the highest surface below the player.
+         */
         function getFloorY(pos) {
             let highestY = 0; // Default to plane height
             const pMinX = pos.x - 0.9;
@@ -901,6 +934,10 @@
         }
 
         // --- 5. Animation Loop ---
+        /**
+         * The main animation loop that updates physics, effects, and renders the scene.
+         * @returns {void}
+         */
         function animate() {
             requestAnimationFrame(animate);
 
@@ -1102,6 +1139,11 @@
         const mapBlockMaterial = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.5 });
 
         const materialCache = {};
+        /**
+         * Retrieves or creates a MeshStandardMaterial for a specific color.
+         * @param {number} color - The hex color code.
+         * @returns {THREE.MeshStandardMaterial} The material for the given color.
+         */
         function getMaterial(color) {
             if (!materialCache[color]) {
                 materialCache[color] = new THREE.MeshStandardMaterial({ color: color, roughness: 0.5 });
@@ -1109,6 +1151,10 @@
             return materialCache[color];
         }
 
+        /**
+         * Spawns the player at a random valid location on the map.
+         * @returns {void}
+         */
         function spawnPlayerRandomly() {
             const boundary = 190; // Stay away from walls
             let valid = false;
@@ -1149,6 +1195,10 @@
             }
         }
 
+        /**
+         * Automatically attempts to load a map from 'map.json' on startup.
+         * @returns {void}
+         */
         function autoLoadMap() {
             fetch('map.json')
                 .then(response => {
