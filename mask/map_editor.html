@@ -398,7 +398,7 @@
         const clock = new THREE.Clock();
 
         // Keyboard State
-        const keys = { w: false, a: false, s: false, d: false };
+        const keys = { w: false, a: false, s: false, d: false, space: false, shift: false };
 
         // Physics State
         let velocityY = 0;
@@ -438,7 +438,8 @@
             // Find what the crosshair is actually pointing at in the world
             raycaster.far = 2000;
             raycaster.set(camera.position, cameraDir);
-            const intersects = raycaster.intersectObjects(paintableObjects);
+            const targetObjects = [...paintableObjects, ...Object.values(mapBlocks)];
+            const intersects = raycaster.intersectObjects(targetObjects);
 
             let targetPoint;
             if (intersects.length > 0) {
@@ -459,6 +460,96 @@
 
             scene.add(bullet);
             bullets.push(bullet);
+        }
+
+        // --- Map Editor Logic ---
+        let isFlying = false;
+        const mapBlocks = {}; // key: "x,y,z", value: Mesh
+        const blockSize = 4;
+
+        // Highlight Cube
+        const highlightGeo = new THREE.BoxGeometry(blockSize, blockSize, blockSize);
+        const highlightMat = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true, transparent: true, opacity: 0.5 });
+        const highlightCube = new THREE.Mesh(highlightGeo, highlightMat);
+        highlightCube.visible = false;
+        scene.add(highlightCube);
+
+        const mapBlockGeometry = new THREE.BoxGeometry(blockSize, blockSize, blockSize);
+        const mapBlockMaterial = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.5 });
+
+        function updateHighlight() {
+            if (!isFlying) {
+                highlightCube.visible = false;
+                return;
+            }
+
+            // Raycast from camera center
+            raycaster.far = 2000;
+            raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+            // Intersect walls, floor, and existing blocks
+            const targetObjects = [...paintableObjects, ...Object.values(mapBlocks)];
+            const intersects = raycaster.intersectObjects(targetObjects);
+
+            if (intersects.length > 0) {
+                const hit = intersects[0];
+                const hitPoint = hit.point;
+                // Transform local normal to world space
+                const normal = hit.face.normal.clone().applyQuaternion(hit.object.quaternion).normalize();
+
+                // Move slightly along normal
+                const targetPos = hitPoint.clone().add(normal.multiplyScalar(blockSize * 0.5));
+
+                // Snap to grid
+                const gx = Math.floor(targetPos.x / blockSize) * blockSize + blockSize / 2;
+                // Ensure we don't snap below the plane (y=0)
+                let gy = Math.floor(targetPos.y / blockSize) * blockSize + blockSize / 2;
+                if (gy < blockSize / 2) gy = blockSize / 2;
+
+                const gz = Math.floor(targetPos.z / blockSize) * blockSize + blockSize / 2;
+
+                highlightCube.position.set(gx, gy, gz);
+                highlightCube.visible = true;
+            } else {
+                highlightCube.visible = false;
+            }
+        }
+
+        function placeBlock() {
+            if (!highlightCube.visible) return;
+
+            const x = highlightCube.position.x;
+            const y = highlightCube.position.y;
+            const z = highlightCube.position.z;
+            const key = `${x},${y},${z}`;
+
+            if (mapBlocks[key]) return;
+
+            const block = new THREE.Mesh(mapBlockGeometry, mapBlockMaterial);
+            block.position.set(x, y, z);
+            block.castShadow = true;
+            block.receiveShadow = true;
+            scene.add(block);
+            mapBlocks[key] = block;
+        }
+
+        function removeBlock() {
+            raycaster.far = 2000;
+            raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+            const targetObjects = Object.values(mapBlocks);
+            const intersects = raycaster.intersectObjects(targetObjects);
+
+            if (intersects.length > 0) {
+                const hitBlock = intersects[0].object;
+                const x = hitBlock.position.x;
+                const y = hitBlock.position.y;
+                const z = hitBlock.position.z;
+                const key = `${x},${y},${z}`;
+
+                if (mapBlocks[key]) {
+                    scene.remove(mapBlocks[key]);
+                    delete mapBlocks[key];
+                }
+            }
         }
 
         // Paint and Explosion Effects
@@ -557,8 +648,21 @@
                 case 'arrowdown': keys.s = true; e.preventDefault(); break;
                 case 'd':
                 case 'arrowright': keys.d = true; e.preventDefault(); break;
-                case ' ': jump(); e.preventDefault(); break;
+                case ' ':
+                    keys.space = true;
+                    if (!isFlying) jump();
+                    e.preventDefault();
+                    break;
+                case 'shift': keys.shift = true; e.preventDefault(); break;
                 case 'u': toggleView(); e.preventDefault(); break;
+                case 'f':
+                    isFlying = !isFlying;
+                    highlightCube.visible = isFlying;
+                    if (isFlying) {
+                        velocityY = 0; // Reset gravity velocity
+                    }
+                    e.preventDefault();
+                    break;
             }
         });
 
@@ -572,8 +676,13 @@
                 case 'arrowdown': keys.s = false; break;
                 case 'd':
                 case 'arrowright': keys.d = false; break;
+                case ' ': keys.space = false; break;
+                case 'shift': keys.shift = false; break;
             }
         });
+
+        // Prevent context menu
+        window.addEventListener('contextmenu', e => e.preventDefault());
 
         // --- Mobile Detection & Joystick Setup ---
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -752,7 +861,12 @@
             if (e.target.closest('.ui-button') || e.target.closest('#joystick-zone')) return;
 
             if (document.pointerLockElement === container) {
-                shoot();
+                if (isFlying) {
+                    if (e.button === 0) placeBlock(); // Left click
+                    if (e.button === 2) removeBlock(); // Right click
+                } else {
+                    if (e.button === 0) shoot();
+                }
             } else {
                 container.requestPointerLock();
             }
@@ -789,7 +903,8 @@
                 raycaster.set(prevPos, dir);
                 raycaster.far = travelDist + 0.1; // Check if we hit anything in this frame's jump
 
-                const intersects = raycaster.intersectObjects(paintableObjects);
+                const allTargets = [...paintableObjects, ...Object.values(mapBlocks)];
+                const intersects = raycaster.intersectObjects(allTargets);
 
                 if (intersects.length > 0) {
                     const hit = intersects[0];
@@ -837,7 +952,8 @@
             }
 
             // Game Logic: Move Cube
-            // Game Logic: Move Cube
+            updateHighlight();
+
             let moveX = input.active ? input.x : 0;
             let moveY = input.active ? input.y : 0;
 
@@ -846,48 +962,62 @@
             if (keys.a) moveX -= 1;
             if (keys.d) moveX += 1;
 
-            // Normalize vector if combining inputs or holding multiple keys
+            // Normalize vector
             const len = Math.sqrt(moveX * moveX + moveY * moveY);
             if (len > 1) {
                 moveX /= len;
                 moveY /= len;
             }
 
-            // Movement Controls: A/D/Left/Right strafes, W/S/Up/Down moves forward/back
-            const moveSpeed = 0.4 * frameFactor;
+            const moveSpeed = (isFlying ? 1.0 : 0.4) * frameFactor;
 
-            // Strafe Logic (A/D or Joystick X) - Slower than forward speed
-            if (Math.abs(moveX) > 0.01) {
-                const strafeSpeed = moveSpeed * 0.6;
-                // Negate moveX because in this setup (Forward is +Z), local +X is Left. 
-                // So to move Right, we must translate by -moveX.
-                cube.translateX(-moveX * strafeSpeed);
-            }
+            if (isFlying) {
+                // Flight Mode
+                const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+                const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
 
-            // Forward/Backward Logic (W/S or Joystick Y)
-            if (Math.abs(moveY) > 0.01) {
-                // moveY is negative for 'Up/Forward', so we use negative to move forward along local Z
-                cube.translateZ(-moveY * moveSpeed);
-            }
+                if (Math.abs(moveY) > 0.01) {
+                    cube.position.add(forward.multiplyScalar(-moveY * moveSpeed));
+                }
+                if (Math.abs(moveX) > 0.01) {
+                    cube.position.add(right.multiplyScalar(moveX * moveSpeed));
+                }
+                if (keys.space) cube.position.y += moveSpeed;
+                if (keys.shift) cube.position.y -= moveSpeed;
 
-            // Gravity & Vertical Movement
-            cube.position.y += velocityY * frameFactor;
-            if (cube.position.y > 2) { // 2 is the base height (half of box height 4)
-                velocityY += gravity * frameFactor;
-                isGrounded = false;
-            } else {
-                cube.position.y = 2;
                 velocityY = 0;
-                isGrounded = true;
-            }
+            } else {
+                // Normal Gravity/Physics Mode
+                // Strafe Logic
+                if (Math.abs(moveX) > 0.01) {
+                    const strafeSpeed = moveSpeed * 0.6;
+                    cube.translateX(-moveX * strafeSpeed);
+                }
 
-            // Boundary Collision (Stay within Fence)
-            const margin = 1; // Half-width of the 2x2 cube
-            const boundary = 200 - (fenceThickness / 2);
-            if (cube.position.x > boundary - margin) cube.position.x = boundary - margin;
-            if (cube.position.x < -boundary + margin) cube.position.x = -boundary + margin;
-            if (cube.position.z > boundary - margin) cube.position.z = boundary - margin;
-            if (cube.position.z < -boundary + margin) cube.position.z = -boundary + margin;
+                // Forward/Backward Logic
+                if (Math.abs(moveY) > 0.01) {
+                    cube.translateZ(-moveY * moveSpeed);
+                }
+
+                // Gravity & Vertical Movement
+                cube.position.y += velocityY * frameFactor;
+                if (cube.position.y > 2) {
+                    velocityY += gravity * frameFactor;
+                    isGrounded = false;
+                } else {
+                    cube.position.y = 2;
+                    velocityY = 0;
+                    isGrounded = true;
+                }
+
+                // Boundary Collision
+                const margin = 1;
+                const boundary = 200 - (fenceThickness / 2);
+                if (cube.position.x > boundary - margin) cube.position.x = boundary - margin;
+                if (cube.position.x < -boundary + margin) cube.position.x = -boundary + margin;
+                if (cube.position.z > boundary - margin) cube.position.z = boundary - margin;
+                if (cube.position.z < -boundary + margin) cube.position.z = -boundary + margin;
+            }
 
             // Camera Follow Logic (Smooth & Rotating)
             if (viewMode === 'first-person') {
