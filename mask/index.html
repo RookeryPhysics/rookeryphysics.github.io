@@ -441,123 +441,60 @@
         function createGunModel() {
             const gunGroup = new THREE.Group();
 
-            // Materials
-            const primaryMat = new THREE.MeshStandardMaterial({ color: "#1a1a1a", roughness: 0.3, metalness: 0.8 }); // Dark metal
-            const accentMat = new THREE.MeshStandardMaterial({ color: "#333333", roughness: 0.2, metalness: 0.9 }); // Light metal
-            const glowMat = new THREE.MeshStandardMaterial({
-                color: "#1e90ff",
-                emissive: "#00bfff",
-                emissiveIntensity: 2,
-                transparent: true,
-                opacity: 0.8
-            }); // Neon blue glow
-            const lensMat = new THREE.MeshStandardMaterial({ color: "#00ffff", transparent: true, opacity: 0.4 }); // Holographic lens
+            // Gun Body
+            const box0Geo = new THREE.BoxGeometry(0.21, 0.2, 1.2);
+            const box0Mat = new THREE.MeshStandardMaterial({ color: "#69e2ce" });
+            const box0 = new THREE.Mesh(box0Geo, box0Mat);
+            box0.position.set(0, 0.1, 0);
+            gunGroup.add(box0);
 
-            // 1. Main Rail / Receiver
-            const railGeo = new THREE.BoxGeometry(0.2, 0.25, 1.4);
-            const rail = new THREE.Mesh(railGeo, primaryMat);
-            rail.position.set(0, 0, -0.2);
-            gunGroup.add(rail);
+            // Barrel
+            const box1Geo = new THREE.BoxGeometry(0.12, 0.12, 1);
+            const box1Mat = new THREE.MeshStandardMaterial({ color: "#333333" });
+            const box1 = new THREE.Mesh(box1Geo, box1Mat);
+            box1.position.set(0, 0.08, -0.8);
+            gunGroup.add(box1);
 
-            // 2. Upper Accessory Rail
-            const topRailGeo = new THREE.BoxGeometry(0.08, 0.05, 1.2);
-            const topRail = new THREE.Mesh(topRailGeo, accentMat);
-            topRail.position.set(0, 0.15, -0.2);
-            gunGroup.add(topRail);
+            // Muzzle Point
+            const muzzle2 = new THREE.Object3D();
+            muzzle2.position.set(0, 0.08, -1.3);
+            gunGroup.add(muzzle2);
 
-            // 3. Lower Housing / Shield
-            const lowerHousingGeo = new THREE.BoxGeometry(0.24, 0.15, 0.8);
-            const lowerHousing = new THREE.Mesh(lowerHousingGeo, primaryMat);
-            lowerHousing.position.set(0, -0.15, -0.1);
-            gunGroup.add(lowerHousing);
+            // Stock/Rear
+            const box3Geo = new THREE.BoxGeometry(0.28, 0.35, 0.2);
+            const box3Mat = new THREE.MeshStandardMaterial({ color: "#1f1f1f" });
+            const box3 = new THREE.Mesh(box3Geo, box3Mat);
+            box3.position.set(0, 0.04, 0.525);
+            gunGroup.add(box3);
 
-            // 4. Barrel - Dual Rail Design
-            const barrelRailGeo = new THREE.BoxGeometry(0.04, 0.04, 1.2);
-            const barrelL = new THREE.Mesh(barrelRailGeo, accentMat);
-            barrelL.position.set(0.06, 0.05, -1.2);
-            gunGroup.add(barrelL);
-            const barrelR = new THREE.Mesh(barrelRailGeo, accentMat);
-            barrelR.position.set(-0.06, 0.05, -1.2);
-            gunGroup.add(barrelR);
+            // Grip
+            const box4Geo = new THREE.BoxGeometry(0.2, 0.4, 0.15);
+            const box4Mat = new THREE.MeshStandardMaterial({ color: "#262626" });
+            const box4 = new THREE.Mesh(box4Geo, box4Mat);
+            box4.position.set(0, -0.1, -0.3);
+            gunGroup.add(box4);
 
-            // 5. Energy Core - Glowing part between barrel rails
-            const coreGeo = new THREE.CylinderGeometry(0.03, 0.03, 1, 8);
-            const core = new THREE.Mesh(coreGeo, glowMat);
-            core.rotation.x = Math.PI / 2;
-            core.position.set(0, 0.05, -1.1);
-            gunGroup.add(core);
+            // Mid Acc
+            const box5Geo = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+            const box5Mat = new THREE.MeshStandardMaterial({ color: "#575757" });
+            const box5 = new THREE.Mesh(box5Geo, box5Mat);
+            gunGroup.add(box5);
 
-            // 6. Handle / Grip - Ergonomic angle
-            const gripGroup = new THREE.Group();
-            const gripGeo = new THREE.BoxGeometry(0.18, 0.6, 0.2);
-            const grip = new THREE.Mesh(gripGeo, primaryMat);
-            grip.rotation.x = -0.3;
-            gripGroup.add(grip);
-            gripGroup.position.set(0, -0.4, 0.3);
-            gunGroup.add(gripGroup);
+            // Muzzle Tip
+            const box6Geo = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+            const box6Mat = new THREE.MeshStandardMaterial({ color: "#ff0000" });
+            const box6 = new THREE.Mesh(box6Geo, box6Mat);
+            box6.position.set(0, 0.08, -1.3);
+            gunGroup.add(box6);
 
-            // 7. Magazine / Energy Cell
-            const magGeo = new THREE.BoxGeometry(0.16, 0.45, 0.25);
-            const mag = new THREE.Mesh(magGeo, accentMat);
-            mag.position.set(0, -0.4, -0.1);
-            mag.rotation.x = 0.1;
-            gunGroup.add(mag);
+            // Sight
+            const box7Geo = new THREE.BoxGeometry(0.14, 0.05, 0.3);
+            const box7Mat = new THREE.MeshStandardMaterial({ color: "#1c1c1c" });
+            const box7 = new THREE.Mesh(box7Geo, box7Mat);
+            box7.position.set(0, 0.28, -0.15);
+            gunGroup.add(box7);
 
-            // Energy stripes on magazine
-            const stripeGeo = new THREE.BoxGeometry(0.18, 0.02, 0.27);
-            for (let i = 0; i < 3; i++) {
-                const stripe = new THREE.Mesh(stripeGeo, glowMat);
-                stripe.position.set(0, -0.3 - (i * 0.1), -0.1);
-                stripe.rotation.x = 0.1;
-                gunGroup.add(stripe);
-            }
-
-            // 8. Muzzle / Emitter Point (Point remains for firing logic)
-            const muzzleGroup = new THREE.Group();
-            muzzleGroup.position.set(0, 0.05, -1.8);
-            gunGroup.add(muzzleGroup);
-            gunGroup.userData.muzzle = muzzleGroup;
-
-            // 9. Sights - Floating Red Dot Sight
-            const sightBlackMat = new THREE.MeshStandardMaterial({ color: "#050505", roughness: 0.2, metalness: 0.9 });
-            const redDotMat = new THREE.MeshStandardMaterial({
-                color: "#ff0000",
-                emissive: "#ff0000",
-                emissiveIntensity: 5
-            });
-
-            const sightHeight = 0.32; // Floating just slightly above
-
-            // Sight Body / Base
-            const sightBaseGeo = new THREE.BoxGeometry(0.15, 0.06, 0.3);
-            const sightBase = new THREE.Mesh(sightBaseGeo, sightBlackMat);
-            sightBase.position.set(0, sightHeight, 0);
-            gunGroup.add(sightBase);
-
-            // Protective Hood / Frame
-            const hoodGeo = new THREE.BoxGeometry(0.18, 0.18, 0.05);
-            const hood = new THREE.Mesh(hoodGeo, sightBlackMat);
-            hood.position.set(0, sightHeight + 0.1, 0.05);
-            gunGroup.add(hood);
-
-            // The actual Red Dot
-            const dotGeo = new THREE.BoxGeometry(0.02, 0.02, 0.02);
-            const dot = new THREE.Mesh(dotGeo, redDotMat);
-            dot.position.set(0, sightHeight + 0.1, 0.05);
-            gunGroup.add(dot);
-
-            // 10. Stock / Shoulder Rest
-            const stockGeo = new THREE.BoxGeometry(0.15, 0.3, 0.6);
-            const stock = new THREE.Mesh(stockGeo, primaryMat);
-            stock.position.set(0, -0.1, 0.8);
-            // Angle the stock
-            const stockSlopeGeo = new THREE.BoxGeometry(0.15, 0.1, 0.6);
-            const stockSlope = new THREE.Mesh(stockSlopeGeo, primaryMat);
-            stockSlope.position.set(0, 0.1, 0.8);
-            stockSlope.rotation.x = 0.2;
-            gunGroup.add(stock);
-            gunGroup.add(stockSlope);
-
+            gunGroup.userData.muzzle = muzzle2;
             return gunGroup;
         }
 
