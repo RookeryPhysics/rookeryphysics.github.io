@@ -340,7 +340,7 @@
 
         <div id="game-over-screen">
             <h1>Game Over</h1>
-            <p>Press anything to respawn</p>
+            <p id="respawn-timer-text">Respawn in: 5 seconds</p>
         </div>
     </div>
 
@@ -379,6 +379,8 @@
         }
         const otherPlayers = {}; // { socketId: Mesh }
         let isDead = false;
+        let canRespawn = false;
+        let respawnTimeRemaining = 5;
 
         /**
          * Creates a mask group to be placed on a player's face.
@@ -1177,8 +1179,24 @@
 
                         // Trigger death logic
                         isDead = true;
+                        canRespawn = false;
+                        respawnTimeRemaining = 5;
+                        const timerText = document.getElementById('respawn-timer-text');
+                        timerText.textContent = `Respawn in: ${respawnTimeRemaining} seconds`;
                         document.getElementById('game-over-screen').style.display = 'flex';
                         createExplosion(cube.position);
+
+                        // Start countdown
+                        const countdownInterval = setInterval(() => {
+                            respawnTimeRemaining--;
+                            if (respawnTimeRemaining > 0) {
+                                timerText.textContent = `Respawn in: ${respawnTimeRemaining} seconds`;
+                            } else {
+                                timerText.textContent = "Press anything to respawn";
+                                canRespawn = true;
+                                clearInterval(countdownInterval);
+                            }
+                        }, 1000);
 
                         // Hide local player components
                         cube.visible = false;
@@ -1456,7 +1474,7 @@
          * @returns {void}
          */
         function respawn() {
-            if (!isDead) return;
+            if (!isDead || !canRespawn) return;
             isDead = false;
             document.getElementById('game-over-screen').style.display = 'none';
 
