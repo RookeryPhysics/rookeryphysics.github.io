@@ -840,6 +840,7 @@
                     Math.random() * 0.1,
                     Math.random() * 0.1
                 );
+                droppedMask.userData.itemId = `mask_${playerMesh.uuid}_${Date.now()}`;
                 droppedItems.push(droppedMask);
             }
 
@@ -865,6 +866,7 @@
                     Math.random() * 0.1,
                     Math.random() * 0.1
                 );
+                droppedGun.userData.itemId = `gun_${playerMesh.uuid}_${Date.now()}`;
                 droppedItems.push(droppedGun);
             }
         }
@@ -1350,6 +1352,9 @@
                 if (!isDead) {
                     const distToPlayer = item.position.distanceTo(cube.position);
                     if (distToPlayer < 2.5) {
+                        if (socket) {
+                            socket.emit('itemPickup', item.userData.itemId);
+                        }
                         scene.remove(item);
                         droppedItems.splice(i, 1);
                     }
@@ -1706,6 +1711,15 @@
                 if (otherPlayers[id]) {
                     dropEquipment(otherPlayers[id]);
                     otherPlayers[id].visible = false;
+                }
+            });
+
+            socket.on('itemPickup', (itemId) => {
+                for (let i = droppedItems.length - 1; i >= 0; i--) {
+                    if (droppedItems[i].userData.itemId === itemId) {
+                        scene.remove(droppedItems[i]);
+                        droppedItems.splice(i, 1);
+                    }
                 }
             });
         }

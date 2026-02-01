@@ -78,6 +78,11 @@ io.on('connection', (socket) => {
         socket.broadcast.emit('playerDead', socket.id);
     });
 
+    // Handle item pickup
+    socket.on('itemPickup', (itemId) => {
+        socket.broadcast.emit('itemPickup', itemId);
+    });
+
     // Handle disconnect
     socket.on('disconnect', () => {
         console.log('User disconnected:', socket.id);
