@@ -677,8 +677,8 @@
         const bullets = [];
         const bulletGeometry = new THREE.SphereGeometry(0.15, 8, 8);
         const bulletMaterial = new THREE.MeshStandardMaterial({
-            color: "#00bfff",
-            emissive: "#1e90ff",
+            color: "#ffff00",
+            emissive: "#ffff00",
             emissiveIntensity: 2
         });
 
@@ -747,7 +747,7 @@
             for (let i = 0; i < particleCount; i++) {
                 const size = 0.05 + Math.random() * 0.15;
                 const partGeom = new THREE.BoxGeometry(size, size, size);
-                const partMat = new THREE.MeshBasicMaterial({ color: "#00ffff", transparent: true });
+                const partMat = new THREE.MeshBasicMaterial({ color: "#ffff00", transparent: true });
                 const p = new THREE.Mesh(partGeom, partMat);
                 p.position.copy(pos);
 
@@ -779,7 +779,7 @@
             const size = 0.4; // Consistent small size
             const splatGeom = new THREE.CircleGeometry(size, 8);
             const splatMat = new THREE.MeshStandardMaterial({
-                color: "#00ffff",
+                color: "#ffff00",
                 transparent: true,
                 opacity: 0.9,
                 roughness: 0.8,
