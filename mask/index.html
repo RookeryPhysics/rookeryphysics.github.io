@@ -487,6 +487,43 @@
         scene.add(plane);
         const gridHelper = new THREE.GridHelper(400, 200, 0x666666, 0x333333);
         scene.add(gridHelper);
+
+        // --- Add Clouds ---
+        const cloudsGroup = new THREE.Group();
+        scene.add(cloudsGroup);
+        const cloudMaterial = new THREE.MeshLambertMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.8
+        });
+        const cloudGeometry = new THREE.BoxGeometry(1, 1, 1);
+        function createCloud() {
+            const cloud = new THREE.Group();
+            const numBlocks = 2 + Math.floor(Math.random() * 3);
+            for (let i = 0; i < numBlocks; i++) {
+                const block = new THREE.Mesh(cloudGeometry, cloudMaterial);
+                block.position.set(
+                    Math.random() * 2 - 1,
+                    Math.random() * 0.5,
+                    Math.random() * 1 - 0.5
+                );
+                block.scale.set(
+                    5 + Math.random() * 10,
+                    2 + Math.random() * 2,
+                    5 + Math.random() * 5
+                );
+                cloud.add(block);
+            }
+            cloud.position.set(
+                (Math.random() - 0.5) * 1000,
+                50 + Math.random() * 30,
+                (Math.random() - 0.5) * 1000
+            );
+            cloud.userData.speed = 0.02 + Math.random() * 0.05;
+            cloudsGroup.add(cloud);
+        }
+        for (let i = 0; i < 30; i++) createCloud();
+
         const fenceMaterial = new THREE.MeshStandardMaterial({
             color: 0xcccccc,
             metalness: 0.8,
@@ -951,6 +988,13 @@
             requestAnimationFrame(animate);
             const delta = clock.getDelta();
             const frameFactor = delta * 60;
+
+            // Update clouds
+            cloudsGroup.children.forEach(cloud => {
+                cloud.position.x += cloud.userData.speed * frameFactor;
+                if (cloud.position.x > 500) cloud.position.x = -500;
+            });
+
             for (let i = bullets.length - 1; i >= 0; i--) {
                 const b = bullets[i];
                 b.userData.velocity.y += gravity * 0.2 * frameFactor;
