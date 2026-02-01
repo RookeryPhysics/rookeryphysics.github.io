@@ -1121,7 +1121,12 @@
                         createSplat(hitInfo.point, hitInfo.normal);
                     }
 
-                    createExplosion(hitInfo.point);
+                    // Only display particle effects if the impact is within 25 grid units (50 world units) of the player
+                    const distToPlayer = hitInfo.point.distanceTo(cube.position);
+                    const particleDistanceLimit = 25 * blockSize;
+                    if (distToPlayer <= particleDistanceLimit) {
+                        createExplosion(hitInfo.point);
+                    }
 
                     scene.remove(b);
                     bullets.splice(i, 1);
