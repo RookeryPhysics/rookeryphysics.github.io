@@ -227,8 +227,8 @@
                 id: 'body',
                 name: 'Gun Body',
                 type: 'Box',
-                params: { width: 0.25, height: 0.4, depth: 1.2 },
-                position: { x: 0, y: 0, z: 0 },
+                params: { width: 0.25, height: 0.2, depth: 1.2 },
+                position: { x: 0, y: 0.1, z: 0 },
                 rotation: { x: 0, y: 0, z: 0 },
                 color: '#666666'
             },
@@ -242,10 +242,64 @@
                 color: '#333333'
             },
             {
-                id: 'muzzle',
-                name: 'Muzzle',
+                id: 'muzzle_point',
+                name: 'Muzzle Point',
                 type: 'Muzzle',
                 params: {},
+                position: { x: 0, y: 0.08, z: -1.3 },
+                rotation: { x: 0, y: 0, z: 0 },
+                color: '#ff0000'
+            },
+            {
+                id: 'part_3',
+                name: 'Stock/Rear',
+                type: 'Box',
+                params: { width: 0.28, height: 0.35, depth: 0.2 },
+                position: { x: 0, y: 0.04, z: 0.525 },
+                rotation: { x: 0, y: 0, z: 0 },
+                color: '#1f1f1f'
+            },
+            {
+                id: 'part_4',
+                name: 'Grip',
+                type: 'Box',
+                params: { width: 0.2, height: 0.4, depth: 0.15 },
+                position: { x: 0, y: -0.1, z: -0.3 },
+                rotation: { x: 0, y: 0, z: 0 },
+                color: '#262626'
+            },
+            {
+                id: 'part_5',
+                name: 'Sight Left',
+                type: 'Box',
+                params: { width: 0.05, height: 0.15, depth: 0.2 },
+                position: { x: 0.07, y: 0.2, z: -0.35 },
+                rotation: { x: 0, y: 0, z: 0 },
+                color: '#888888'
+            },
+            {
+                id: 'part_6',
+                name: 'Sight Right',
+                type: 'Box',
+                params: { width: 0.05, height: 0.15, depth: 0.2 },
+                position: { x: -0.07, y: 0.2, z: -0.35 },
+                rotation: { x: 0, y: 0, z: 0 },
+                color: '#888888'
+            },
+            {
+                id: 'part_7',
+                name: 'Mid Acc',
+                type: 'Box',
+                params: { width: 0.2, height: 0.2, depth: 0.2 },
+                position: { x: 0, y: 0, z: 0 },
+                rotation: { x: 0, y: 0, z: 0 },
+                color: '#888888'
+            },
+            {
+                id: 'part_8',
+                name: 'Muzzle Tip',
+                type: 'Box',
+                params: { width: 0.1, height: 0.1, depth: 0.1 },
                 position: { x: 0, y: 0.08, z: -1.3 },
                 rotation: { x: 0, y: 0, z: 0 },
                 color: '#ff0000'
