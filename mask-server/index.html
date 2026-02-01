@@ -511,9 +511,9 @@
             const mask = createPlayerMask();
             mesh.add(mask);
 
-            // Add gun to other players
             const gunGroup = createGunModel();
-            gunGroup.position.set(0.6, 0.5, 1.2); // Position on the side of the body moved forward
+            gunGroup.position.set(0.6, 0.5, 1.4); // Position on the side of the body moved forward
+            gunGroup.rotation.y = Math.PI; // Rotate 180 degrees so barrel faces forward
             mesh.add(gunGroup);
             mesh.userData.gun = gunGroup; // Store for pitch updates
 
@@ -1537,7 +1537,7 @@
                     playerMesh.position.set(playerInfo.x, playerInfo.y, playerInfo.z);
                     playerMesh.rotation.y = playerInfo.rotation;
                     if (playerMesh.userData.gun && playerInfo.pitch !== undefined) {
-                        playerMesh.userData.gun.rotation.x = playerInfo.pitch;
+                        playerMesh.userData.gun.rotation.x = -playerInfo.pitch; // Inverted due to 180 degree Y rotation
                     }
                     playerMesh.visible = !playerInfo.isDead; // Hide if they are dead
                     scene.add(playerMesh);
@@ -1557,7 +1557,7 @@
                 playerMesh.position.set(playerInfo.x, playerInfo.y, playerInfo.z);
                 playerMesh.rotation.y = playerInfo.rotation;
                 if (playerMesh.userData.gun && playerInfo.pitch !== undefined) {
-                    playerMesh.userData.gun.rotation.x = playerInfo.pitch;
+                    playerMesh.userData.gun.rotation.x = -playerInfo.pitch; // Inverted due to 180 degree Y rotation
                 }
                 playerMesh.visible = !playerInfo.isDead;
                 scene.add(playerMesh);
@@ -1574,7 +1574,7 @@
                 playerMesh.position.set(playerInfo.x, playerInfo.y, playerInfo.z);
                 playerMesh.rotation.y = playerInfo.rotation;
                 if (playerMesh.userData.gun && playerInfo.pitch !== undefined) {
-                    playerMesh.userData.gun.rotation.x = playerInfo.pitch;
+                    playerMesh.userData.gun.rotation.x = -playerInfo.pitch; // Inverted due to 180 degree Y rotation
                 }
                 playerMesh.visible = true; // Always show when moving
             });
