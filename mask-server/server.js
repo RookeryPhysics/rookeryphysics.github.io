@@ -53,6 +53,7 @@ io.on('connection', (socket) => {
             players[socket.id].y = movementData.y;
             players[socket.id].z = movementData.z;
             players[socket.id].rotation = movementData.rotation;
+            players[socket.id].pitch = movementData.pitch;
             players[socket.id].isDead = false; // Reset death state on movement (respawn)
 
             // Broadcast the movement to all other players
