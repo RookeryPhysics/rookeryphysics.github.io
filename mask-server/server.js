@@ -71,11 +71,11 @@ io.on('connection', (socket) => {
     });
 
     // Handle player death
-    socket.on('playerDead', () => {
+    socket.on('playerDead', (droppedIds) => {
         if (players[socket.id]) {
             players[socket.id].isDead = true;
         }
-        socket.broadcast.emit('playerDead', socket.id);
+        socket.broadcast.emit('playerDead', { id: socket.id, droppedIds });
     });
 
     // Handle item pickup

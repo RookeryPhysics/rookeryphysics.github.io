@@ -814,9 +814,16 @@
         /**
          * Drops the player's equipment (mask and gun) into the world.
          * @param {THREE.Object3D} playerMesh - The mesh of the player who died.
+         * @param {Object} [forcedIds] - Optional pre-determined IDs for the items.
+         * @returns {Object} The IDs of the dropped items.
          */
-        function dropEquipment(playerMesh) {
-            if (!playerMesh) return;
+        function dropEquipment(playerMesh, forcedIds = null) {
+            if (!playerMesh) return null;
+
+            const ids = {
+                mask: (forcedIds && forcedIds.mask) ? forcedIds.mask : `mask_${playerMesh.uuid}_${Date.now()}`,
+                gun: (forcedIds && forcedIds.gun) ? forcedIds.gun : `gun_${playerMesh.uuid}_${Date.now()}`
+            };
 
             // Drop Mask
             if (playerMesh.userData.mask) {
@@ -840,7 +847,7 @@
                     Math.random() * 0.1,
                     Math.random() * 0.1
                 );
-                droppedMask.userData.itemId = `mask_${playerMesh.uuid}_${Date.now()}`;
+                droppedMask.userData.itemId = ids.mask;
                 droppedItems.push(droppedMask);
             }
 
@@ -866,9 +873,11 @@
                     Math.random() * 0.1,
                     Math.random() * 0.1
                 );
-                droppedGun.userData.itemId = `gun_${playerMesh.uuid}_${Date.now()}`;
+                droppedGun.userData.itemId = ids.gun;
                 droppedItems.push(droppedGun);
             }
+
+            return ids;
         }
 
         const raycaster = new THREE.Raycaster();
@@ -1242,7 +1251,7 @@
                         isDead = true;
                         document.getElementById('game-over-screen').style.display = 'flex';
                         createExplosion(cube.position);
-                        dropEquipment(cube);
+                        const droppedIds = dropEquipment(cube);
 
                         // Hide local player components
                         cube.visible = false;
@@ -1255,7 +1264,7 @@
 
                         // Notify others
                         if (socket) {
-                            socket.emit('playerDead');
+                            socket.emit('playerDead', droppedIds);
                         }
                     }
                 }
@@ -1707,9 +1716,10 @@
                 bullets.push(bullet);
             });
 
-            socket.on('playerDead', (id) => {
+            socket.on('playerDead', (data) => {
+                const id = data.id || data; // Handle old format if necessary
                 if (otherPlayers[id]) {
-                    dropEquipment(otherPlayers[id]);
+                    dropEquipment(otherPlayers[id], data.droppedIds);
                     otherPlayers[id].visible = false;
                 }
             });
