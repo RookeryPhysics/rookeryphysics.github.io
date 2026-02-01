@@ -380,11 +380,67 @@
         const otherPlayers = {}; // { socketId: Mesh }
         let isDead = false;
 
+        /**
+         * Creates a mask group to be placed on a player's face.
+         * @returns {THREE.Group} The mask group.
+         */
+        function createPlayerMask() {
+            const maskGroup = new THREE.Group();
+
+            // mask_face
+            const box0Geo = new THREE.BoxGeometry(0.2, 0.2, 0.03);
+            const box0Mat = new THREE.MeshStandardMaterial({ color: "#471500" });
+            const box0 = new THREE.Mesh(box0Geo, box0Mat);
+            maskGroup.add(box0);
+
+            // nose
+            const cylinder1Geo = new THREE.CylinderGeometry(0.01, 0.05, 0.125, 14);
+            const cylinder1Mat = new THREE.MeshStandardMaterial({ color: "#888888" });
+            const cylinder1 = new THREE.Mesh(cylinder1Geo, cylinder1Mat);
+            maskGroup.add(cylinder1);
+
+            // eye
+            const cylinder2Geo = new THREE.CylinderGeometry(0.05, 0.05, 0.05, 6);
+            const cylinder2Mat = new THREE.MeshStandardMaterial({ color: "#ff0000" });
+            const cylinder2 = new THREE.Mesh(cylinder2Geo, cylinder2Mat);
+            cylinder2.position.set(0.05, 0.04, 0);
+            cylinder2.rotation.set(1.57, 0, 0);
+            maskGroup.add(cylinder2);
+
+            // eye2
+            const cylinder3Geo = new THREE.CylinderGeometry(0.05, 0.05, 0.05, 6);
+            const cylinder3Mat = new THREE.MeshStandardMaterial({ color: "#ff0000" });
+            const cylinder3 = new THREE.Mesh(cylinder3Geo, cylinder3Mat);
+            cylinder3.position.set(-0.05, 0.04, 0);
+            cylinder3.rotation.set(1.57, 0, 0);
+            maskGroup.add(cylinder3);
+
+            // New Box
+            const box4Geo = new THREE.BoxGeometry(0.025, 0.01, 0.05);
+            const box4Mat = new THREE.MeshStandardMaterial({ color: "#000000" });
+            const box4 = new THREE.Mesh(box4Geo, box4Mat);
+            box4.position.set(0, -0.03, -0.04);
+            box4.rotation.set(0, 1.59, 0);
+            maskGroup.add(box4);
+
+            // Scale up the mask to fit the player better
+            maskGroup.scale.set(6, 6, 6);
+            maskGroup.position.set(0, 1.5, 1.05);
+
+            return maskGroup;
+        }
+
         function createOtherPlayerMesh(color) {
             const geometry = new THREE.BoxGeometry(2, 4, 2);
             // Use a different color or the one provided
             const material = new THREE.MeshStandardMaterial({ color: color || 0xff0000 });
-            return new THREE.Mesh(geometry, material);
+            const mesh = new THREE.Mesh(geometry, material);
+
+            // Add mask to other players
+            const mask = createPlayerMask();
+            mesh.add(mask);
+
+            return mesh;
         }
 
         // --- 1. Three.js Setup ---
@@ -478,6 +534,10 @@
         cube.castShadow = true;
         cube.visible = false; // Initially hidden in 1st person
         scene.add(cube);
+
+        // Add mask to local player
+        const playerMask = createPlayerMask();
+        cube.add(playerMask);
 
         // The Gun (1st Person Viewmodel)
         scene.add(camera); // Add camera to scene to allow children
