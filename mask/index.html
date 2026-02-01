@@ -512,52 +512,35 @@
                 gunGroup.add(stripe);
             }
 
-            // 8. Muzzle / Emitter Ring
+            // 8. Muzzle / Emitter Point (Point remains for firing logic)
             const muzzleGroup = new THREE.Group();
-            const ringGeo = new THREE.TorusGeometry(0.08, 0.02, 8, 24);
-            const ring = new THREE.Mesh(ringGeo, glowMat);
-            ring.position.set(0, 0, 0);
-            muzzleGroup.add(ring);
-
             muzzleGroup.position.set(0, 0.05, -1.8);
             gunGroup.add(muzzleGroup);
             gunGroup.userData.muzzle = muzzleGroup;
 
-            // 9. Sights - Traditional Iron Sights
-            const sightMat = primaryMat;
+            // 9. Sights - Futuristic Floating Sights
+            const floatSightMat = new THREE.MeshStandardMaterial({ color: "#000000", roughness: 0.1, metalness: 1.0 });
 
-            // Rear Sight Base
-            const rearSightBaseGeo = new THREE.BoxGeometry(0.1, 0.05, 0.1);
-            const rearSightBase = new THREE.Mesh(rearSightBaseGeo, sightMat);
-            rearSightBase.position.set(0, 0.2, 0.3); // Back of the rail
-            gunGroup.add(rearSightBase);
+            // Main Floating Optic
+            const opticGeo = new THREE.BoxGeometry(0.14, 0.14, 0.45);
+            const optic = new THREE.Mesh(opticGeo, floatSightMat);
+            optic.position.set(0, 0.48, -0.1); // Positioned to float above the rail
+            gunGroup.add(optic);
 
-            // Rear Sight Tower with notch
-            const rearSightTowerGeo = new THREE.BoxGeometry(0.08, 0.15, 0.02);
-            const rearSightTower = new THREE.Mesh(rearSightTowerGeo, sightMat);
-            rearSightTower.position.set(0, 0.3, 0.3);
-            gunGroup.add(rearSightTower);
+            // Side hovering panels
+            const panelGeo = new THREE.BoxGeometry(0.02, 0.1, 0.3);
+            const panelL = new THREE.Mesh(panelGeo, floatSightMat);
+            panelL.position.set(0.1, 0.48, -0.1);
+            gunGroup.add(panelL);
+            const panelR = new THREE.Mesh(panelGeo, floatSightMat);
+            panelR.position.set(-0.1, 0.48, -0.1);
+            gunGroup.add(panelR);
 
-            // Rear notch (using two small blocks for the U-shape)
-            const notchSideGeo = new THREE.BoxGeometry(0.03, 0.05, 0.02);
-            const notchL = new THREE.Mesh(notchSideGeo, sightMat);
-            notchL.position.set(0.025, 0.35, 0.3);
-            gunGroup.add(notchL);
-            const notchR = new THREE.Mesh(notchSideGeo, sightMat);
-            notchR.position.set(-0.025, 0.35, 0.3);
-            gunGroup.add(notchR);
-
-            // Front Sight Base
-            const frontSightBaseGeo = new THREE.BoxGeometry(0.1, 0.05, 0.1);
-            const frontSightBase = new THREE.Mesh(frontSightBaseGeo, sightMat);
-            frontSightBase.position.set(0, 0.2, -0.7); // Front of the rail
-            gunGroup.add(frontSightBase);
-
-            // Front Sight Post
-            const frontSightPostGeo = new THREE.BoxGeometry(0.02, 0.2, 0.02);
-            const frontSightPost = new THREE.Mesh(frontSightPostGeo, sightMat);
-            frontSightPost.position.set(0, 0.3, -0.7);
-            gunGroup.add(frontSightPost);
+            // Forward floating reference point
+            const refGeo = new THREE.BoxGeometry(0.04, 0.12, 0.04);
+            const refPoint = new THREE.Mesh(refGeo, floatSightMat);
+            refPoint.position.set(0, 0.48, -0.8);
+            gunGroup.add(refPoint);
 
             // 10. Stock / Shoulder Rest
             const stockGeo = new THREE.BoxGeometry(0.15, 0.3, 0.6);
