@@ -513,7 +513,7 @@
 
             // Add gun to other players
             const gunGroup = createGunModel();
-            gunGroup.position.set(0.6, 0.5, 0.5); // Position on the side of the body
+            gunGroup.position.set(0.6, 0.5, 1.2); // Position on the side of the body moved forward
             mesh.add(gunGroup);
             mesh.userData.gun = gunGroup; // Store for pitch updates
 
@@ -618,7 +618,7 @@
 
         // Add gun to local player mesh (for others to see in 3rd person/multiplayer)
         const meshGun = createGunModel();
-        meshGun.position.set(0.6, 0.5, 0.5);
+        meshGun.position.set(0.6, 0.5, 1.2);
         cube.add(meshGun);
         cube.userData.gun = meshGun;
 
