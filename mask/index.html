@@ -516,6 +516,7 @@
             gunGroup.rotation.y = Math.PI; // Rotate 180 degrees so barrel faces forward
             mesh.add(gunGroup);
             mesh.userData.gun = gunGroup; // Store for pitch updates
+            mesh.userData.mask = mask;
 
             return mesh;
         }
@@ -601,6 +602,7 @@
         scene.add(wallW);
 
         const paintableObjects = [plane, wallN, wallS, wallE, wallW];
+        const droppedItems = [];
 
 
         // The Cube (Player)
@@ -621,6 +623,7 @@
         meshGun.position.set(0.6, 0.5, 1.2);
         cube.add(meshGun);
         cube.userData.gun = meshGun;
+        cube.userData.mask = playerMask;
 
         // The Gun (1st Person Viewmodel)
         scene.add(camera); // Add camera to scene to allow children
@@ -805,6 +808,64 @@
             if (splats.length > 200) {
                 const old = splats.shift();
                 scene.remove(old);
+            }
+        }
+
+        /**
+         * Drops the player's equipment (mask and gun) into the world.
+         * @param {THREE.Object3D} playerMesh - The mesh of the player who died.
+         */
+        function dropEquipment(playerMesh) {
+            if (!playerMesh) return;
+
+            // Drop Mask
+            if (playerMesh.userData.mask) {
+                const maskWorldPos = new THREE.Vector3();
+                const maskWorldQuat = new THREE.Quaternion();
+                playerMesh.userData.mask.getWorldPosition(maskWorldPos);
+                playerMesh.userData.mask.getWorldQuaternion(maskWorldQuat);
+
+                const droppedMask = playerMesh.userData.mask.clone();
+                scene.add(droppedMask);
+                droppedMask.position.copy(maskWorldPos);
+                droppedMask.quaternion.copy(maskWorldQuat);
+
+                droppedMask.userData.velocity = new THREE.Vector3(
+                    (Math.random() - 0.5) * 0.2,
+                    0.3,
+                    (Math.random() - 0.5) * 0.2
+                );
+                droppedMask.userData.angularVelocity = new THREE.Vector3(
+                    Math.random() * 0.1,
+                    Math.random() * 0.1,
+                    Math.random() * 0.1
+                );
+                droppedItems.push(droppedMask);
+            }
+
+            // Drop Gun
+            if (playerMesh.userData.gun) {
+                const gunWorldPos = new THREE.Vector3();
+                const gunWorldQuat = new THREE.Quaternion();
+                playerMesh.userData.gun.getWorldPosition(gunWorldPos);
+                playerMesh.userData.gun.getWorldQuaternion(gunWorldQuat);
+
+                const droppedGun = playerMesh.userData.gun.clone();
+                scene.add(droppedGun);
+                droppedGun.position.copy(gunWorldPos);
+                droppedGun.quaternion.copy(gunWorldQuat);
+
+                droppedGun.userData.velocity = new THREE.Vector3(
+                    (Math.random() - 0.5) * 0.2,
+                    0.3,
+                    (Math.random() - 0.5) * 0.2
+                );
+                droppedGun.userData.angularVelocity = new THREE.Vector3(
+                    Math.random() * 0.1,
+                    Math.random() * 0.1,
+                    Math.random() * 0.1
+                );
+                droppedItems.push(droppedGun);
             }
         }
 
@@ -1179,6 +1240,7 @@
                         isDead = true;
                         document.getElementById('game-over-screen').style.display = 'flex';
                         createExplosion(cube.position);
+                        dropEquipment(cube);
 
                         // Hide local player components
                         cube.visible = false;
@@ -1255,6 +1317,42 @@
                 if (s.userData.aliveTime >= 15) {
                     scene.remove(s);
                     splats.splice(i, 1);
+                }
+            }
+
+            // Update Dropped Items
+            for (let i = droppedItems.length - 1; i >= 0; i--) {
+                const item = droppedItems[i];
+                const floorY = getFloorY(item.position);
+                const itemMinY = floorY + 0.1;
+
+                if (item.position.y > itemMinY || item.userData.velocity.y > 0) {
+                    item.userData.velocity.y += gravity * 0.5 * frameFactor;
+                    item.position.add(item.userData.velocity.clone().multiplyScalar(frameFactor));
+
+                    item.rotation.x += item.userData.angularVelocity.x * frameFactor;
+                    item.rotation.y += item.userData.angularVelocity.y * frameFactor;
+                    item.rotation.z += item.userData.angularVelocity.z * frameFactor;
+
+                    // Bounce/Stop at floor
+                    if (item.position.y < itemMinY) {
+                        item.position.y = itemMinY;
+                        item.userData.velocity.set(0, 0, 0);
+                        item.userData.angularVelocity.multiplyScalar(0.5);
+                    }
+                } else {
+                    item.position.y = itemMinY;
+                    item.userData.velocity.set(0, 0, 0);
+                    item.userData.angularVelocity.set(0, 0, 0);
+                }
+
+                // Interaction: Vanish when local player walks on it
+                if (!isDead) {
+                    const distToPlayer = item.position.distanceTo(cube.position);
+                    if (distToPlayer < 2.5) {
+                        scene.remove(item);
+                        droppedItems.splice(i, 1);
+                    }
                 }
             }
 
@@ -1606,6 +1704,7 @@
 
             socket.on('playerDead', (id) => {
                 if (otherPlayers[id]) {
+                    dropEquipment(otherPlayers[id]);
                     otherPlayers[id].visible = false;
                 }
             });
