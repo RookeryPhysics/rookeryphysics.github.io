@@ -340,7 +340,7 @@
 
         <div id="game-over-screen">
             <h1>Game Over</h1>
-            <p id="respawn-timer-text">Respawn in: 5 seconds</p>
+            <p>Press anything to respawn</p>
         </div>
     </div>
 
@@ -379,8 +379,6 @@
         }
         const otherPlayers = {}; // { socketId: Mesh }
         let isDead = false;
-        let canRespawn = false;
-        let respawnTimeRemaining = 5;
 
         /**
          * Creates a mask group to be placed on a player's face.
@@ -436,12 +434,16 @@
          * Creates a gun group model.
          * @returns {THREE.Group} The gun model group.
          */
+        /**
+         * Creates a futuristic gun group model.
+         * @returns {THREE.Group} The gun model group.
+         */
         function createGunModel() {
             const gunGroup = new THREE.Group();
 
             // Gun Body
-            const box0Geo = new THREE.BoxGeometry(0.25, 0.2, 1.2);
-            const box0Mat = new THREE.MeshStandardMaterial({ color: "#666666" });
+            const box0Geo = new THREE.BoxGeometry(0.21, 0.2, 1.2);
+            const box0Mat = new THREE.MeshStandardMaterial({ color: "#69e2ce" });
             const box0 = new THREE.Mesh(box0Geo, box0Mat);
             box0.position.set(0, 0.1, 0);
             gunGroup.add(box0);
@@ -453,53 +455,46 @@
             box1.position.set(0, 0.08, -0.8);
             gunGroup.add(box1);
 
-            // Muzzle
-            const muzzle = new THREE.Object3D();
-            muzzle.position.set(0, 0.08, -1.3);
-            gunGroup.add(muzzle);
-            gunGroup.userData.muzzle = muzzle; // Store for easy access
+            // Muzzle Point
+            const muzzle2 = new THREE.Object3D();
+            muzzle2.position.set(0, 0.08, -1.3);
+            gunGroup.add(muzzle2);
 
-            // New Box
+            // Stock/Rear
             const box3Geo = new THREE.BoxGeometry(0.28, 0.35, 0.2);
             const box3Mat = new THREE.MeshStandardMaterial({ color: "#1f1f1f" });
             const box3 = new THREE.Mesh(box3Geo, box3Mat);
             box3.position.set(0, 0.04, 0.525);
             gunGroup.add(box3);
 
-            // New Box
+            // Grip
             const box4Geo = new THREE.BoxGeometry(0.2, 0.4, 0.15);
             const box4Mat = new THREE.MeshStandardMaterial({ color: "#262626" });
             const box4 = new THREE.Mesh(box4Geo, box4Mat);
             box4.position.set(0, -0.1, -0.3);
             gunGroup.add(box4);
 
-            // New Box
-            const box5Geo = new THREE.BoxGeometry(0.05, 0.15, 0.2);
-            const box5Mat = new THREE.MeshStandardMaterial({ color: "#888888" });
+            // Mid Acc
+            const box5Geo = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+            const box5Mat = new THREE.MeshStandardMaterial({ color: "#575757" });
             const box5 = new THREE.Mesh(box5Geo, box5Mat);
-            box5.position.set(0.07, 0.2, -0.35);
             gunGroup.add(box5);
 
-            // New Box
-            const box6Geo = new THREE.BoxGeometry(0.05, 0.15, 0.2);
-            const box6Mat = new THREE.MeshStandardMaterial({ color: "#888888" });
+            // Muzzle Tip
+            const box6Geo = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+            const box6Mat = new THREE.MeshStandardMaterial({ color: "#ff0000" });
             const box6 = new THREE.Mesh(box6Geo, box6Mat);
-            box6.position.set(-0.07, 0.2, -0.35);
+            box6.position.set(0, 0.08, -1.3);
             gunGroup.add(box6);
 
-            // New Box
-            const box7Geo = new THREE.BoxGeometry(0.2, 0.2, 0.2);
-            const box7Mat = new THREE.MeshStandardMaterial({ color: "#888888" });
+            // Sight
+            const box7Geo = new THREE.BoxGeometry(0.14, 0.05, 0.3);
+            const box7Mat = new THREE.MeshStandardMaterial({ color: "#1c1c1c" });
             const box7 = new THREE.Mesh(box7Geo, box7Mat);
+            box7.position.set(0, 0.28, -0.15);
             gunGroup.add(box7);
 
-            // New Box
-            const box8Geo = new THREE.BoxGeometry(0.1, 0.1, 0.1);
-            const box8Mat = new THREE.MeshStandardMaterial({ color: "#ff0000" });
-            const box8 = new THREE.Mesh(box8Geo, box8Mat);
-            box8.position.set(0, 0.08, -1.3);
-            gunGroup.add(box8);
-
+            gunGroup.userData.muzzle = muzzle2;
             return gunGroup;
         }
 
@@ -518,11 +513,12 @@
             gunGroup.rotation.y = Math.PI; // Rotate 180 degrees so barrel faces forward
             mesh.add(gunGroup);
             mesh.userData.gun = gunGroup; // Store for pitch updates
+            mesh.userData.mask = mask;
 
             return mesh;
         }
 
-        // Three.js setup
+        // --- 1. Three.js Setup ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87CEEB); // Sky blue background
@@ -603,6 +599,7 @@
         scene.add(wallW);
 
         const paintableObjects = [plane, wallN, wallS, wallE, wallW];
+        const droppedItems = [];
 
 
         // The Cube (Player)
@@ -623,6 +620,7 @@
         meshGun.position.set(0.6, 0.5, 1.2);
         cube.add(meshGun);
         cube.userData.gun = meshGun;
+        cube.userData.mask = playerMask;
 
         // The Gun (1st Person Viewmodel)
         scene.add(camera); // Add camera to scene to allow children
@@ -677,11 +675,11 @@
 
         // Shooting Mechanism
         const bullets = [];
-        const bulletGeometry = new THREE.SphereGeometry(0.2, 8, 8);
+        const bulletGeometry = new THREE.SphereGeometry(0.15, 8, 8);
         const bulletMaterial = new THREE.MeshStandardMaterial({
-            color: 0xffff00,
-            emissive: 0xffff00,
-            emissiveIntensity: 0.5
+            color: "#00bfff",
+            emissive: "#1e90ff",
+            emissiveIntensity: 2
         });
 
         /**
@@ -749,7 +747,7 @@
             for (let i = 0; i < particleCount; i++) {
                 const size = 0.05 + Math.random() * 0.15;
                 const partGeom = new THREE.BoxGeometry(size, size, size);
-                const partMat = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true });
+                const partMat = new THREE.MeshBasicMaterial({ color: "#00ffff", transparent: true });
                 const p = new THREE.Mesh(partGeom, partMat);
                 p.position.copy(pos);
 
@@ -781,7 +779,7 @@
             const size = 0.4; // Consistent small size
             const splatGeom = new THREE.CircleGeometry(size, 8);
             const splatMat = new THREE.MeshStandardMaterial({
-                color: 0xffff00,
+                color: "#00ffff",
                 transparent: true,
                 opacity: 0.9,
                 roughness: 0.8,
@@ -808,6 +806,75 @@
                 const old = splats.shift();
                 scene.remove(old);
             }
+        }
+
+        /**
+         * Drops the player's equipment (mask and gun) into the world.
+         * @param {THREE.Object3D} playerMesh - The mesh of the player who died.
+         * @param {Object} [forcedIds] - Optional pre-determined IDs for the items.
+         * @returns {Object} The IDs of the dropped items.
+         */
+        function dropEquipment(playerMesh, forcedIds = null) {
+            if (!playerMesh) return null;
+
+            const ids = {
+                mask: (forcedIds && forcedIds.mask) ? forcedIds.mask : `mask_${playerMesh.uuid}_${Date.now()}`,
+                gun: (forcedIds && forcedIds.gun) ? forcedIds.gun : `gun_${playerMesh.uuid}_${Date.now()}`
+            };
+
+            // Drop Mask
+            if (playerMesh.userData.mask) {
+                const maskWorldPos = new THREE.Vector3();
+                const maskWorldQuat = new THREE.Quaternion();
+                playerMesh.userData.mask.getWorldPosition(maskWorldPos);
+                playerMesh.userData.mask.getWorldQuaternion(maskWorldQuat);
+
+                const droppedMask = playerMesh.userData.mask.clone();
+                scene.add(droppedMask);
+                droppedMask.position.copy(maskWorldPos);
+                droppedMask.quaternion.copy(maskWorldQuat);
+
+                droppedMask.userData.velocity = new THREE.Vector3(
+                    (Math.random() - 0.5) * 0.2,
+                    0.3,
+                    (Math.random() - 0.5) * 0.2
+                );
+                droppedMask.userData.angularVelocity = new THREE.Vector3(
+                    Math.random() * 0.1,
+                    Math.random() * 0.1,
+                    Math.random() * 0.1
+                );
+                droppedMask.userData.itemId = ids.mask;
+                droppedItems.push(droppedMask);
+            }
+
+            // Drop Gun
+            if (playerMesh.userData.gun) {
+                const gunWorldPos = new THREE.Vector3();
+                const gunWorldQuat = new THREE.Quaternion();
+                playerMesh.userData.gun.getWorldPosition(gunWorldPos);
+                playerMesh.userData.gun.getWorldQuaternion(gunWorldQuat);
+
+                const droppedGun = playerMesh.userData.gun.clone();
+                scene.add(droppedGun);
+                droppedGun.position.copy(gunWorldPos);
+                droppedGun.quaternion.copy(gunWorldQuat);
+
+                droppedGun.userData.velocity = new THREE.Vector3(
+                    (Math.random() - 0.5) * 0.2,
+                    0.3,
+                    (Math.random() - 0.5) * 0.2
+                );
+                droppedGun.userData.angularVelocity = new THREE.Vector3(
+                    Math.random() * 0.1,
+                    Math.random() * 0.1,
+                    Math.random() * 0.1
+                );
+                droppedGun.userData.itemId = ids.gun;
+                droppedItems.push(droppedGun);
+            }
+
+            return ids;
         }
 
         const raycaster = new THREE.Raycaster();
@@ -1179,24 +1246,9 @@
 
                         // Trigger death logic
                         isDead = true;
-                        canRespawn = false;
-                        respawnTimeRemaining = 5;
-                        const timerText = document.getElementById('respawn-timer-text');
-                        timerText.textContent = `Respawn in: ${respawnTimeRemaining} seconds`;
                         document.getElementById('game-over-screen').style.display = 'flex';
                         createExplosion(cube.position);
-
-                        // Start countdown
-                        const countdownInterval = setInterval(() => {
-                            respawnTimeRemaining--;
-                            if (respawnTimeRemaining > 0) {
-                                timerText.textContent = `Respawn in: ${respawnTimeRemaining} seconds`;
-                            } else {
-                                timerText.textContent = "Press anything to respawn";
-                                canRespawn = true;
-                                clearInterval(countdownInterval);
-                            }
-                        }, 1000);
+                        const droppedIds = dropEquipment(cube);
 
                         // Hide local player components
                         cube.visible = false;
@@ -1209,7 +1261,7 @@
 
                         // Notify others
                         if (socket) {
-                            socket.emit('playerDead');
+                            socket.emit('playerDead', droppedIds);
                         }
                     }
                 }
@@ -1223,7 +1275,12 @@
                         createSplat(hitInfo.point, hitInfo.normal);
                     }
 
-                    createExplosion(hitInfo.point);
+                    // Only display particle effects if the impact is within 25 grid units (50 world units) of the player
+                    const distToPlayer = hitInfo.point.distanceTo(cube.position);
+                    const particleDistanceLimit = 25 * blockSize;
+                    if (distToPlayer <= particleDistanceLimit) {
+                        createExplosion(hitInfo.point);
+                    }
 
                     scene.remove(b);
                     bullets.splice(i, 1);
@@ -1268,6 +1325,45 @@
                 if (s.userData.aliveTime >= 15) {
                     scene.remove(s);
                     splats.splice(i, 1);
+                }
+            }
+
+            // Update Dropped Items
+            for (let i = droppedItems.length - 1; i >= 0; i--) {
+                const item = droppedItems[i];
+                const floorY = getFloorY(item.position);
+                const itemMinY = floorY + 0.1;
+
+                if (item.position.y > itemMinY || item.userData.velocity.y > 0) {
+                    item.userData.velocity.y += gravity * 0.5 * frameFactor;
+                    item.position.add(item.userData.velocity.clone().multiplyScalar(frameFactor));
+
+                    item.rotation.x += item.userData.angularVelocity.x * frameFactor;
+                    item.rotation.y += item.userData.angularVelocity.y * frameFactor;
+                    item.rotation.z += item.userData.angularVelocity.z * frameFactor;
+
+                    // Bounce/Stop at floor
+                    if (item.position.y < itemMinY) {
+                        item.position.y = itemMinY;
+                        item.userData.velocity.set(0, 0, 0);
+                        item.userData.angularVelocity.multiplyScalar(0.5);
+                    }
+                } else {
+                    item.position.y = itemMinY;
+                    item.userData.velocity.set(0, 0, 0);
+                    item.userData.angularVelocity.set(0, 0, 0);
+                }
+
+                // Interaction: Vanish when local player walks on it
+                if (!isDead) {
+                    const distToPlayer = item.position.distanceTo(cube.position);
+                    if (distToPlayer < 2.5) {
+                        if (socket) {
+                            socket.emit('itemPickup', item.userData.itemId);
+                        }
+                        scene.remove(item);
+                        droppedItems.splice(i, 1);
+                    }
                 }
             }
 
@@ -1474,7 +1570,7 @@
          * @returns {void}
          */
         function respawn() {
-            if (!isDead || !canRespawn) return;
+            if (!isDead) return;
             isDead = false;
             document.getElementById('game-over-screen').style.display = 'none';
 
@@ -1617,9 +1713,20 @@
                 bullets.push(bullet);
             });
 
-            socket.on('playerDead', (id) => {
+            socket.on('playerDead', (data) => {
+                const id = data.id || data; // Handle old format if necessary
                 if (otherPlayers[id]) {
+                    dropEquipment(otherPlayers[id], data.droppedIds);
                     otherPlayers[id].visible = false;
+                }
+            });
+
+            socket.on('itemPickup', (itemId) => {
+                for (let i = droppedItems.length - 1; i >= 0; i--) {
+                    if (droppedItems[i].userData.itemId === itemId) {
+                        scene.remove(droppedItems[i]);
+                        droppedItems.splice(i, 1);
+                    }
                 }
             });
         }
