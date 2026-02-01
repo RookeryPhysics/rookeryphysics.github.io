@@ -518,29 +518,33 @@
             gunGroup.add(muzzleGroup);
             gunGroup.userData.muzzle = muzzleGroup;
 
-            // 9. Sights - Futuristic Floating Sights
-            const floatSightMat = new THREE.MeshStandardMaterial({ color: "#000000", roughness: 0.1, metalness: 1.0 });
+            // 9. Sights - Floating Red Dot Sight
+            const sightBlackMat = new THREE.MeshStandardMaterial({ color: "#050505", roughness: 0.2, metalness: 0.9 });
+            const redDotMat = new THREE.MeshStandardMaterial({
+                color: "#ff0000",
+                emissive: "#ff0000",
+                emissiveIntensity: 5
+            });
 
-            // Main Floating Optic
-            const opticGeo = new THREE.BoxGeometry(0.14, 0.14, 0.45);
-            const optic = new THREE.Mesh(opticGeo, floatSightMat);
-            optic.position.set(0, 0.48, -0.1); // Positioned to float above the rail
-            gunGroup.add(optic);
+            const sightHeight = 0.32; // Floating just slightly above
 
-            // Side hovering panels
-            const panelGeo = new THREE.BoxGeometry(0.02, 0.1, 0.3);
-            const panelL = new THREE.Mesh(panelGeo, floatSightMat);
-            panelL.position.set(0.1, 0.48, -0.1);
-            gunGroup.add(panelL);
-            const panelR = new THREE.Mesh(panelGeo, floatSightMat);
-            panelR.position.set(-0.1, 0.48, -0.1);
-            gunGroup.add(panelR);
+            // Sight Body / Base
+            const sightBaseGeo = new THREE.BoxGeometry(0.15, 0.06, 0.3);
+            const sightBase = new THREE.Mesh(sightBaseGeo, sightBlackMat);
+            sightBase.position.set(0, sightHeight, 0);
+            gunGroup.add(sightBase);
 
-            // Forward floating reference point
-            const refGeo = new THREE.BoxGeometry(0.04, 0.12, 0.04);
-            const refPoint = new THREE.Mesh(refGeo, floatSightMat);
-            refPoint.position.set(0, 0.48, -0.8);
-            gunGroup.add(refPoint);
+            // Protective Hood / Frame
+            const hoodGeo = new THREE.BoxGeometry(0.18, 0.18, 0.05);
+            const hood = new THREE.Mesh(hoodGeo, sightBlackMat);
+            hood.position.set(0, sightHeight + 0.1, 0.05);
+            gunGroup.add(hood);
+
+            // The actual Red Dot
+            const dotGeo = new THREE.BoxGeometry(0.02, 0.02, 0.02);
+            const dot = new THREE.Mesh(dotGeo, redDotMat);
+            dot.position.set(0, sightHeight + 0.1, 0.05);
+            gunGroup.add(dot);
 
             // 10. Stock / Shoulder Rest
             const stockGeo = new THREE.BoxGeometry(0.15, 0.3, 0.6);
