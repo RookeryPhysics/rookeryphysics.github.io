@@ -1384,8 +1384,8 @@
                 b.position.add(step);
                 b.userData.aliveTime += delta;
 
-                // Remove bullet if it leaves the world or after 10s
-                if (Math.abs(b.position.x) > 300 || Math.abs(b.position.z) > 300 || b.userData.aliveTime > 10) {
+                // Remove bullet if it leaves the world (end of plane at 200) or after 10s
+                if (Math.abs(b.position.x) > 200 || Math.abs(b.position.z) > 200 || b.userData.aliveTime > 10) {
                     scene.remove(b);
                     bullets.splice(i, 1);
                 }
