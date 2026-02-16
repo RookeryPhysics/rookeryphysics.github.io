@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,323 +12,417 @@
     <script src="https://unpkg.com/function-plot/dist/function-plot.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js"></script>
     <style>
-        body { background-color: #f8f9fa; padding-top: 20px; }
-        @media (min-width: 768px) {
-            body { padding-top: 50px; }
+        body {
+            background-color: #f8f9fa;
+            padding-top: 20px;
         }
-        #plot { width: 100%; height: 350px; background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+
         @media (min-width: 768px) {
-            #plot { height: 500px; }
+            body {
+                padding-top: 50px;
+            }
         }
-        .card { border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .result-box { font-size: 1.2rem; font-weight: bold; color: #0d6efd; }
+
+        #plot {
+            width: 100%;
+            height: 350px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
         @media (min-width: 768px) {
-            .result-box { font-size: 1.5rem; }
+            #plot {
+                height: 500px;
+            }
         }
-        #math-preview { font-size: 1rem; min-height: 2.5em; display: flex; align-items: center; justify-content: center; background: #fff; border-radius: 4px; border: 1px solid #dee2e6; margin-top: 10px; overflow-x: auto; padding: 5px; }
+
+        .card {
+            border: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .result-box {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #0d6efd;
+        }
+
         @media (min-width: 768px) {
-            #math-preview { font-size: 1.2rem; }
+            .result-box {
+                font-size: 1.5rem;
+            }
         }
-        .btn-remove { border-top-left-radius: 0; border-bottom-left-radius: 0; }
-        .function-input-group .form-control { border-top-right-radius: 0; border-bottom-right-radius: 0; }
-        .function-input-group label { font-weight: 500; }
+
+        #math-preview {
+            font-size: 1rem;
+            min-height: 2.5em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fff;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+            margin-top: 10px;
+            overflow-x: auto;
+            padding: 5px;
+        }
+
+        @media (min-width: 768px) {
+            #math-preview {
+                font-size: 1.2rem;
+            }
+        }
+
+        .btn-remove {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+        }
+
+        .function-input-group .form-control {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+
+        .function-input-group label {
+            font-weight: 500;
+        }
     </style>
 </head>
+
 <body>
 
-<div class="container-fluid px-3 px-sm-4">
-    <div class="row justify-content-center">
-        <div class="col-md-10 col-lg-8">
-            <div class="card p-3 p-md-4 mb-3 mb-md-4">
-                <h2 class="text-center mb-3 mb-md-4" style="font-size: 1.5rem;">Integral Solver & Visualizer</h2>
-                <form id="integral-form" onsubmit="return false;">
-                    <div id="functions-container" class="row g-3">
-                        <div class="col-12 col-md-6 function-input-group">
-                            <label class="form-label">Function 1 (f(x))</label>
-                            <input type="text" class="form-control formula-input" value="x^2" placeholder="e.g., x^2" autocomplete="off" required>
-                        </div>
-                        <div class="col-12 col-md-6 function-input-group">
-                            <label class="form-label">Function 2 (g(x))</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control formula-input" value="x" placeholder="e.g., x" autocomplete="off">
-                                <button class="btn btn-outline-danger btn-remove" type="button">&times;</button>
+    <div class="container-fluid px-3 px-sm-4">
+        <div class="row justify-content-center">
+            <div class="col-md-10 col-lg-8">
+                <div class="card p-3 p-md-4 mb-3 mb-md-4">
+                    <h2 class="text-center mb-3 mb-md-4" style="font-size: 1.5rem;">Integral Solver & Visualizer</h2>
+                    <form id="integral-form" onsubmit="return false;">
+                        <div id="functions-container" class="row g-3">
+                            <div class="col-12 col-md-6 function-input-group">
+                                <label class="form-label">Function 1 (f(x))</label>
+                                <input type="text" class="form-control formula-input" value="x^2"
+                                    placeholder="e.g., x^2" autocomplete="off" required>
                             </div>
                         </div>
-                    </div>
-                    <div class="mt-3">
-                        <button type="button" class="btn btn-outline-secondary btn-sm" id="add-function">+ Add Function</button>
-                    </div>
-                    <div class="row g-3 mt-1">
-                        <div class="col-12">
-                            <div id="math-preview"></div>
+                        <div class="mt-3 d-flex gap-2">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="add-function">+ Add
+                                Function</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="subtract-function">−
+                                Subtract Function</button>
                         </div>
-                        <div class="col-6 col-md-3">
-                            <label for="lower" class="form-label">Lower Limit (a)</label>
-                            <input type="text" class="form-control" id="lower" value="0" inputmode="decimal" required>
+                        <div class="row g-3 mt-1">
+                            <div class="col-12">
+                                <div id="math-preview"></div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label for="lower" class="form-label">Lower Limit (a)</label>
+                                <input type="text" class="form-control" id="lower" value="0" inputmode="decimal"
+                                    required>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label for="upper" class="form-label">Upper Limit (b)</label>
+                                <input type="text" class="form-control" id="upper" value="2" inputmode="decimal"
+                                    required>
+                            </div>
                         </div>
-                        <div class="col-6 col-md-3">
-                            <label for="upper" class="form-label">Upper Limit (b)</label>
-                            <input type="text" class="form-control" id="upper" value="2" inputmode="decimal" required>
-                        </div>
-                    </div>
-                </form>
-            </div>
-
-            <div class="card p-3 p-md-4">
-                <div class="text-center mb-2 mb-md-3">
-                    <span class="text-muted small">Result:</span>
-                    <div id="result" class="result-box mt-1">Result ≈ ...</div>
+                    </form>
                 </div>
-                <div id="plot"></div>
+
+                <div class="card p-3 p-md-4">
+                    <div class="text-center mb-2 mb-md-3">
+                        <span class="text-muted small">Result:</span>
+                        <div id="result" class="result-box mt-1">Result ≈ ...</div>
+                    </div>
+                    <div id="plot"></div>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<script>
-    function numericalIntegration(funcs, a, b, n = 10000) {
-        if (n % 2 !== 0) n++;
-        const h = (b - a) / n;
-        const diff = (x) => {
-            if (funcs.length === 0) return 0;
-            if (funcs.length === 1) return funcs[0](x);
-            return funcs[0](x) - funcs[1](x);
-        };
-        const absDiff = (x) => {
-            if (funcs.length === 0) return 0;
-            if (funcs.length === 1) return Math.abs(funcs[0](x));
-            return Math.abs(funcs[0](x) - funcs[1](x));
-        };
+    <script>
+        let currentOp = '-';
 
-        let sumInt = diff(a) + diff(b);
-        let sumArea = absDiff(a) + absDiff(b);
-        
-        for (let i = 1; i < n; i++) {
-            const x = a + i * h;
-            const coef = (i % 2 === 0) ? 2 : 4;
-            sumInt += coef * diff(x);
-            sumArea += coef * absDiff(x);
-        }
-        return { integral: (h / 3) * sumInt, area: (h / 3) * sumArea };
-    }
+        function numericalIntegration(funcs, a, b, n = 10000) {
+            if (n % 2 !== 0) n++;
+            const h = (b - a) / n;
+            const diff = (x) => {
+                if (funcs.length === 0) return 0;
+                if (funcs.length === 1) return funcs[0](x);
+                return currentOp === '+' ? funcs[0](x) + funcs[1](x) : funcs[0](x) - funcs[1](x);
+            };
+            const absDiff = (x) => {
+                if (funcs.length === 0) return 0;
+                if (funcs.length === 1) return Math.abs(funcs[0](x));
+                return Math.abs(currentOp === '+' ? funcs[0](x) + funcs[1](x) : funcs[0](x) - funcs[1](x));
+            };
 
-    function convertShortcuts(input) {
-        const val = input.value;
-        const cursorPos = input.selectionStart;
-        const regex = /(^|[^a-zA-Z0-9])abs(?!\()/g;
-        const newVal = val.replace(regex, '$1abs()');
-        if (val !== newVal) {
-            input.value = newVal;
-            const offset = newVal.length - val.length;
-            const newPos = cursorPos + offset - 1; 
-            input.setSelectionRange(newPos, newPos);
-        }
-    }
+            let sumInt = diff(a) + diff(b);
+            let sumArea = absDiff(a) + absDiff(b);
 
-    function convertPi(input) {
-        const val = input.value;
-        if (!val) return;
-        const cursorPos = input.selectionStart;
-        const newVal = val.replace(/pi/gi, 'π');
-        if (val !== newVal) {
-            input.value = newVal;
-            const diff = val.length - newVal.length;
-            input.setSelectionRange(cursorPos - diff, cursorPos - diff);
-        }
-    }
-
-    function updatePreview() {
-        const inputs = document.querySelectorAll('.formula-input');
-        const lowerInput = document.getElementById('lower').value;
-        const upperInput = document.getElementById('upper').value;
-        const previewElement = document.getElementById('math-preview');
-        
-        try {
-            const prep = (s) => (s || "").replace(/π/g, 'pi');
-            let lowerLatex = "?", upperLatex = "?";
-            try { lowerLatex = lowerInput ? math.parse(prep(lowerInput)).toTex() : "?"; } catch(e){}
-            try { upperLatex = upperInput ? math.parse(prep(upperInput)).toTex() : "?"; } catch(e){}
-
-            let expressionLatex = "";
-            if (inputs.length === 1) {
-                expressionLatex = math.parse(prep(inputs[0].value) || "0").toTex();
-            } else if (inputs.length >= 2) {
-                const tex1 = math.parse(prep(inputs[0].value) || "0").toTex();
-                const tex2 = math.parse(prep(inputs[1].value) || "0").toTex();
-                expressionLatex = `(${tex1}) - (${tex2})`;
+            for (let i = 1; i < n; i++) {
+                const x = a + i * h;
+                const coef = (i % 2 === 0) ? 2 : 4;
+                sumInt += coef * diff(x);
+                sumArea += coef * absDiff(x);
             }
-
-            const integralLatex = `\\int_{${lowerLatex}}^{${upperLatex}} ${expressionLatex} \\, dx`;
-            katex.render(integralLatex, previewElement, { throwOnError: false });
-        } catch (err) {
-            previewElement.innerHTML = `<small class="text-danger">${err.message}</small>`;
+            return { integral: (h / 3) * sumInt, area: (h / 3) * sumArea };
         }
-    }
 
-    function updatePlot() {
-        const inputs = document.querySelectorAll('.formula-input');
-        const lowerInput = document.getElementById('lower').value;
-        const upperInput = document.getElementById('upper').value;
-
-        try {
-            const prep = (s) => (s || "").replace(/π/g, 'pi');
-            const a = math.evaluate(prep(lowerInput) || "0");
-            const b = math.evaluate(prep(upperInput) || "0");
-
-            const funcs = Array.from(inputs).map(input => {
-                const val = prep(input.value) || "0";
-                const node = math.parse(val);
-                const code = node.compile();
-                return (xVal) => code.evaluate({ x: xVal, e: math.e, pi: math.pi });
-            });
-
-            const { integral, area } = numericalIntegration(funcs, a, b);
-            document.getElementById('result').innerHTML = `Result ≈ ${integral.toFixed(6)}`;
-
-            document.getElementById('plot').innerHTML = '';
-            const margin = Math.abs(b - a) * 0.5 || 2;
-            const xDomain = [Math.min(a, b) - margin, Math.max(a, b) + margin];
-
-            const plotData = Array.from(inputs).map((input, idx) => {
-                const colors = ['#0d6efd', '#dc3545', '#198754', '#ffc107', '#0dcaf0'];
-                return {
-                    fn: prep(input.value).replace(/pi/g, 'PI').replace(/\be\b/g, 'exp(1)') || "0",
-                    color: colors[idx % colors.length],
-                    graphType: 'polyline'
-                };
-            });
-
-            // Shading between first two
-            if (funcs.length >= 2) {
-                const points = [];
-                const samples = 100;
-                const start = Math.min(a, b);
-                const end = Math.max(a, b);
-                const step = (end - start) / samples;
-                for (let i = 0; i <= samples; i++) {
-                    const x = start + i * step;
-                    points.push([x, funcs[0](x)]);
-                }
-                for (let i = samples; i >= 0; i--) {
-                    const x = start + i * step;
-                    points.push([x, funcs[1](x)]);
-                }
-                points.push(points[0]);
-                plotData.push({
-                    points: points,
-                    fnType: 'points',
-                    graphType: 'polyline',
-                    closed: true,
-                    color: 'rgba(0, 0, 0, 0.4)'
-                });
-            } else if (funcs.length === 1) {
-                // Shade to x-axis
-                plotData.push({
-                    fn: prep(inputs[0].value).replace(/pi/g, 'PI').replace(/\be\b/g, 'exp(1)') || "0",
-                    range: [a, b],
-                    closed: true,
-                    color: 'rgba(13, 110, 253, 0.4)',
-                    graphType: 'polyline'
-                });
+        function convertShortcuts(input) {
+            const val = input.value;
+            const cursorPos = input.selectionStart;
+            const regex = /(^|[^a-zA-Z0-9])abs(?!\()/g;
+            const newVal = val.replace(regex, '$1abs()');
+            if (val !== newVal) {
+                input.value = newVal;
+                const offset = newVal.length - val.length;
+                const newPos = cursorPos + offset - 1;
+                input.setSelectionRange(newPos, newPos);
             }
-
-            functionPlot({
-                target: '#plot',
-                width: document.getElementById('plot').offsetWidth,
-                height: document.getElementById('plot').offsetHeight,
-                grid: true,
-                xAxis: { domain: xDomain },
-                data: plotData
-            });
-        } catch (err) {}
-    }
-
-    function updateLabels() {
-        const groups = document.querySelectorAll('.function-input-group');
-        groups.forEach((group, idx) => {
-            const label = group.querySelector('.form-label');
-            const num = idx + 1;
-            if (num === 1) label.innerText = `Function 1 (f(x))`;
-            else if (num === 2) label.innerText = `Function 2 (g(x))`;
-            else label.innerText = `Function ${num}`;
-        });
-
-        const addBtn = document.getElementById('add-function');
-        if (groups.length >= 2) {
-            addBtn.style.display = 'none';
-        } else {
-            addBtn.style.display = 'inline-block';
         }
-    }
 
-    function addFunctionInput() {
-        const container = document.getElementById('functions-container');
-        const div = document.createElement('div');
-        div.className = 'col-12 col-md-6 function-input-group';
-        div.innerHTML = `
+        function convertPi(input) {
+            const val = input.value;
+            if (!val) return;
+            const cursorPos = input.selectionStart;
+            const newVal = val.replace(/pi/gi, 'π');
+            if (val !== newVal) {
+                input.value = newVal;
+                const diff = val.length - newVal.length;
+                input.setSelectionRange(cursorPos - diff, cursorPos - diff);
+            }
+        }
+
+        function updatePreview() {
+            const inputs = document.querySelectorAll('.formula-input');
+            const lowerInput = document.getElementById('lower').value;
+            const upperInput = document.getElementById('upper').value;
+            const previewElement = document.getElementById('math-preview');
+
+            try {
+                const prep = (s) => (s || "").replace(/π/g, 'pi');
+                let lowerLatex = "?", upperLatex = "?";
+                try { lowerLatex = lowerInput ? math.parse(prep(lowerInput)).toTex() : "?"; } catch (e) { }
+                try { upperLatex = upperInput ? math.parse(prep(upperInput)).toTex() : "?"; } catch (e) { }
+
+                let expressionLatex = "";
+                if (inputs.length === 1) {
+                    expressionLatex = math.parse(prep(inputs[0].value) || "0").toTex();
+                } else if (inputs.length >= 2) {
+                    const tex1 = math.parse(prep(inputs[0].value) || "0").toTex();
+                    const tex2 = math.parse(prep(inputs[1].value) || "0").toTex();
+                    expressionLatex = `(${tex1}) ${currentOp} (${tex2})`;
+                }
+
+                const integralLatex = `\\int_{${lowerLatex}}^{${upperLatex}} ${expressionLatex} \\, dx`;
+                katex.render(integralLatex, previewElement, { throwOnError: false });
+            } catch (err) {
+                previewElement.innerHTML = `<small class="text-danger">${err.message}</small>`;
+            }
+        }
+
+        function updatePlot() {
+            const inputs = document.querySelectorAll('.formula-input');
+            const lowerInput = document.getElementById('lower').value;
+            const upperInput = document.getElementById('upper').value;
+
+            try {
+                const prep = (s) => (s || "").replace(/π/g, 'pi');
+                const a = math.evaluate(prep(lowerInput) || "0");
+                const b = math.evaluate(prep(upperInput) || "0");
+
+                const funcs = Array.from(inputs).map(input => {
+                    const val = prep(input.value) || "0";
+                    const node = math.parse(val);
+                    const code = node.compile();
+                    return (xVal) => code.evaluate({ x: xVal, e: math.e, pi: math.pi });
+                });
+
+                const { integral, area } = numericalIntegration(funcs, a, b);
+                document.getElementById('result').innerHTML = `Result ≈ ${integral.toFixed(6)}`;
+
+                document.getElementById('plot').innerHTML = '';
+                const margin = Math.abs(b - a) * 0.5 || 2;
+                const xDomain = [Math.min(a, b) - margin, Math.max(a, b) + margin];
+
+                const plotData = Array.from(inputs).map((input, idx) => {
+                    const colors = ['#0d6efd', '#dc3545', '#198754', '#ffc107', '#0dcaf0'];
+                    return {
+                        fn: prep(input.value).replace(/pi/g, 'PI').replace(/\be\b/g, 'exp(1)') || "0",
+                        color: colors[idx % colors.length],
+                        graphType: 'polyline'
+                    };
+                });
+
+                // Shading logic
+                if (funcs.length >= 2) {
+                    const points = [];
+                    const samples = 200; // Increased samples for smoother shading
+                    const start = Math.min(a, b);
+                    const end = Math.max(a, b);
+                    const step = (end - start) / samples;
+
+                    if (currentOp === '+') {
+                        // For addition, shade from x-axis to (f1 + f2)
+                        for (let i = 0; i <= samples; i++) {
+                            const x = start + i * step;
+                            points.push([x, funcs[0](x) + funcs[1](x)]);
+                        }
+                        for (let i = samples; i >= 0; i--) {
+                            const x = start + i * step;
+                            points.push([x, 0]);
+                        }
+                    } else {
+                        // For subtraction, shade between f1 and f2
+                        for (let i = 0; i <= samples; i++) {
+                            const x = start + i * step;
+                            points.push([x, funcs[0](x)]);
+                        }
+                        for (let i = samples; i >= 0; i--) {
+                            const x = start + i * step;
+                            points.push([x, funcs[1](x)]);
+                        }
+                    }
+
+                    points.push(points[0]);
+                    plotData.push({
+                        points: points,
+                        fnType: 'points',
+                        graphType: 'polyline',
+                        closed: true,
+                        color: 'rgba(0, 0, 0, 0.25)'
+                    });
+
+                    // Add a line for the combined function result when adding
+                    if (currentOp === '+') {
+                        plotData.push({
+                            fn: `(${prep(inputs[0].value)}) + (${prep(inputs[1].value)})`.replace(/pi/g, 'PI').replace(/\be\b/g, 'exp(1)'),
+                            color: '#6c757d',
+                            graphType: 'polyline',
+                            attr: { 'stroke-dasharray': '5,5' }
+                        });
+                    }
+                } else if (funcs.length === 1) {
+                    // Shade to x-axis
+                    plotData.push({
+                        fn: prep(inputs[0].value).replace(/pi/g, 'PI').replace(/\be\b/g, 'exp(1)') || "0",
+                        range: [a, b],
+                        closed: true,
+                        color: 'rgba(13, 110, 253, 0.4)',
+                        graphType: 'polyline'
+                    });
+                }
+
+                functionPlot({
+                    target: '#plot',
+                    width: document.getElementById('plot').offsetWidth,
+                    height: document.getElementById('plot').offsetHeight,
+                    grid: true,
+                    xAxis: { domain: xDomain },
+                    data: plotData
+                });
+            } catch (err) { }
+        }
+
+        function updateLabels() {
+            const groups = document.querySelectorAll('.function-input-group');
+            groups.forEach((group, idx) => {
+                const label = group.querySelector('.form-label');
+                const num = idx + 1;
+                if (num === 1) label.innerText = `Function 1 (f(x))`;
+                else if (num === 2) label.innerText = `Function 2 (g(x))`;
+                else label.innerText = `Function ${num}`;
+            });
+
+            const addBtn = document.getElementById('add-function');
+            const subBtn = document.getElementById('subtract-function');
+            if (groups.length >= 2) {
+                addBtn.style.display = 'none';
+                subBtn.style.display = 'none';
+            } else {
+                addBtn.style.display = 'inline-block';
+                subBtn.style.display = 'inline-block';
+            }
+        }
+
+        function addFunctionInput() {
+            const container = document.getElementById('functions-container');
+            const groups = document.querySelectorAll('.function-input-group');
+            const isSecond = groups.length === 1;
+
+            const div = document.createElement('div');
+            div.className = 'col-12 col-md-6 function-input-group';
+            div.innerHTML = `
             <label class="form-label"></label>
             <div class="input-group">
-                <input type="text" class="form-control formula-input" placeholder="e.g., sin(x)" autocomplete="off">
+                <input type="text" class="form-control formula-input" placeholder="e.g., sin(x)" autocomplete="off" ${isSecond ? 'value="x"' : ''}>
                 <button class="btn btn-outline-danger btn-remove" type="button">&times;</button>
             </div>
         `;
-        container.appendChild(div);
-        updateLabels();
-        
-        const input = div.querySelector('input');
-        attachInputListeners(input);
-        
-        div.querySelector('.btn-remove').addEventListener('click', () => {
-            div.remove();
+            container.appendChild(div);
+            updateLabels();
+
+            const input = div.querySelector('input');
+            attachInputListeners(input);
+
+            div.querySelector('.btn-remove').addEventListener('click', () => {
+                div.remove();
+                updateLabels();
+                updatePreview();
+                updatePlot();
+            });
+
+            // Update plot and preview immediately after adding
+            updatePreview();
+            updatePlot();
+        }
+
+        function attachInputListeners(el) {
+            el.addEventListener('input', (e) => {
+                convertShortcuts(e.target);
+                convertPi(e.target);
+                updatePreview();
+                updatePlot();
+            });
+        }
+
+        document.getElementById('add-function').addEventListener('click', () => {
+            currentOp = '+';
+            addFunctionInput();
+        });
+        document.getElementById('subtract-function').addEventListener('click', () => {
+            currentOp = '-';
+            addFunctionInput();
+        });
+
+        ['lower', 'upper'].forEach(id => {
+            document.getElementById(id).addEventListener('input', () => {
+                updatePreview();
+                updatePlot();
+            });
+        });
+
+        document.querySelectorAll('.formula-input').forEach(attachInputListeners);
+        document.querySelectorAll('.btn-remove').forEach(btn => {
+            btn.addEventListener('click', () => {
+                btn.closest('.function-input-group').remove();
+                updateLabels();
+                updatePreview();
+                updatePlot();
+            });
+        });
+
+        window.onload = () => {
             updateLabels();
             updatePreview();
             updatePlot();
-        });
-    }
+        };
+        window.onresize = updatePlot;
 
-    function attachInputListeners(el) {
-        el.addEventListener('input', (e) => {
-            convertShortcuts(e.target);
-            convertPi(e.target);
-            updatePreview();
-            updatePlot();
-        });
-    }
 
-    document.getElementById('add-function').addEventListener('click', addFunctionInput);
-
-    ['lower', 'upper'].forEach(id => {
-        document.getElementById(id).addEventListener('input', () => {
-            updatePreview();
-            updatePlot();
-        });
-    });
-
-    document.querySelectorAll('.formula-input').forEach(attachInputListeners);
-    document.querySelectorAll('.btn-remove').forEach(btn => {
-        btn.addEventListener('click', () => {
-            btn.closest('.function-input-group').remove();
-            updateLabels();
-            updatePreview();
-            updatePlot();
-        });
-    });
-
-    window.onload = () => {
-        updateLabels();
-        updatePreview();
-        updatePlot();
-    };
-    window.onresize = updatePlot;
-
-    // Initial setup
-    window.onload = () => {
-        updateLabels();
-        updatePreview();
-        updatePlot();
-    };
-    window.onresize = updatePlot;
-</script>
+    </script>
 
 </body>
+
 </html>
