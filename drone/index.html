@@ -1711,7 +1711,10 @@
             moonLight.target.position.copy(drone.position);
 
             /* ── Camera orbits behind drone based on yaw ── */
-            cameraYaw = cameraYaw + (droneYaw - cameraYaw) * 0.05; // smooth follow
+            // Wrap the yaw difference into [-π, π] so the camera always takes the short path
+            let yawDelta = droneYaw - cameraYaw;
+            yawDelta = yawDelta - Math.PI * 2 * Math.round(yawDelta / (Math.PI * 2));
+            cameraYaw = cameraYaw + yawDelta * 0.08; // smooth follow
 
             const camTargetX = drone.position.x - Math.sin(cameraYaw) * camDist;
             const camTargetZ = drone.position.z - Math.cos(cameraYaw) * camDist;
@@ -1724,6 +1727,7 @@
             controls.target.x = THREE.MathUtils.lerp(controls.target.x, drone.position.x, 0.08);
             controls.target.z = THREE.MathUtils.lerp(controls.target.z, drone.position.z, 0.08);
             controls.target.y = THREE.MathUtils.lerp(controls.target.y, drone.position.y, 0.08);
+            controls.update();
 
             // Use stick inputs (local frame) for tilt, not world-space velocity
             const targetPitch = -smoothInput.y * 0.18;
