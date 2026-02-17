@@ -1222,7 +1222,7 @@
         }
 
         function createExplosion(position) {
-            const particleCount = 80;
+            const particleCount = 40;
             const geo = new THREE.BufferGeometry();
             const positions = new Float32Array(particleCount * 3);
             const velocities = [];
@@ -1282,7 +1282,7 @@
             scene.add(flash);
 
             // Shockwave ring
-            const ringGeo = new THREE.RingGeometry(0.1, 0.3, 32);
+            const ringGeo = new THREE.RingGeometry(0.1, 0.3, 16);
             const ringMat = new THREE.MeshBasicMaterial({
                 color: 0xff8800,
                 transparent: true,
@@ -1298,7 +1298,7 @@
             scene.add(ring);
 
             // Smoke cloud (secondary particles)
-            const smokeCount = 30;
+            const smokeCount = 15;
             const smokeGeo = new THREE.BufferGeometry();
             const smokePos = new Float32Array(smokeCount * 3);
             const smokeVels = [];
@@ -1553,7 +1553,7 @@
 
         const clock = new THREE.Clock();
         let lastTime = 0;
-        const droneSpeed = 0.15;
+        const droneSpeed = 0.28;
         const yawSpeed = 0.04;      // radians per frame at full deflection
         const altSpeed = 0.08;      // units per frame at full deflection
         const smoothInput = new THREE.Vector2();   // right stick smoothed
@@ -1587,10 +1587,10 @@
             const combinedLeftX = clamp(inputLeft.x + kb.leftX);
             const combinedLeftY = clamp(inputLeft.y + kb.leftY);
 
-            smoothInput.x = THREE.MathUtils.lerp(smoothInput.x, combinedRightX, 0.1);
-            smoothInput.y = THREE.MathUtils.lerp(smoothInput.y, combinedRightY, 0.1);
-            smoothLeft.x = THREE.MathUtils.lerp(smoothLeft.x, combinedLeftX, 0.1);
-            smoothLeft.y = THREE.MathUtils.lerp(smoothLeft.y, combinedLeftY, 0.1);
+            smoothInput.x = THREE.MathUtils.lerp(smoothInput.x, combinedRightX, 0.06);
+            smoothInput.y = THREE.MathUtils.lerp(smoothInput.y, combinedRightY, 0.06);
+            smoothLeft.x = THREE.MathUtils.lerp(smoothLeft.x, combinedLeftX, 0.08);
+            smoothLeft.y = THREE.MathUtils.lerp(smoothLeft.y, combinedLeftY, 0.08);
 
             /* ── Left stick: yaw & altitude ── */
             droneYaw -= smoothLeft.x * yawSpeed;            // left → positive yaw
@@ -1603,8 +1603,8 @@
             // forward/back from stick Y, strafe from stick X – glide to a stop
             const targetVelX = (-smoothInput.x * cosY - smoothInput.y * sinY) * droneSpeed;
             const targetVelZ = (smoothInput.x * sinY - smoothInput.y * cosY) * droneSpeed;
-            currentVelocity.x = THREE.MathUtils.lerp(currentVelocity.x, targetVelX, 0.06);
-            currentVelocity.z = THREE.MathUtils.lerp(currentVelocity.z, targetVelZ, 0.06);
+            currentVelocity.x = THREE.MathUtils.lerp(currentVelocity.x, targetVelX, 0.02);
+            currentVelocity.z = THREE.MathUtils.lerp(currentVelocity.z, targetVelZ, 0.02);
 
             drone.position.x += currentVelocity.x;
             drone.position.z += currentVelocity.z;
@@ -1632,8 +1632,8 @@
             controls.target.y = THREE.MathUtils.lerp(controls.target.y, drone.position.y, 0.08);
 
             // Use stick inputs (local frame) for tilt, not world-space velocity
-            const targetPitch = -smoothInput.y * 0.35;
-            const targetRoll = smoothInput.x * 0.35;
+            const targetPitch = -smoothInput.y * 0.18;
+            const targetRoll = smoothInput.x * 0.18;
 
             const totalSpeed = smoothInput.length() + Math.abs(smoothLeft.x);
             const speedFactor = 1.0 - Math.min(totalSpeed, 1.0) * 0.8;
@@ -1644,9 +1644,13 @@
 
             drone.position.y = baseHeight + Math.sin(t * 1.5) * 0.08 * speedFactor + Math.sin(t * 3.7) * 0.02;
 
-            drone.rotation.x = idlePitch + targetPitch;
-            drone.rotation.z = idleRoll + targetRoll;
-            drone.rotation.y = droneYaw + idleYaw;
+            // Smoothly lerp rotation for fluid motion
+            const goalPitch = idlePitch + targetPitch;
+            const goalRoll = idleRoll + targetRoll;
+            const goalYaw = droneYaw + idleYaw;
+            drone.rotation.x = THREE.MathUtils.lerp(drone.rotation.x, goalPitch, 0.08);
+            drone.rotation.z = THREE.MathUtils.lerp(drone.rotation.z, goalRoll, 0.08);
+            drone.rotation.y = THREE.MathUtils.lerp(drone.rotation.y, goalYaw, 0.1);
 
             const propSpeed = 0.7 + smoothInput.length() * 0.5;
             droneData.props.forEach((prop, i) => {
