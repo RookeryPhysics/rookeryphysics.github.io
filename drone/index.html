@@ -264,6 +264,202 @@
             lastCameraManualTime = clock.getElapsedTime();
         });
 
+        /* ── Procedural Texture Generation ── */
+        function generateCanvasTexture(width, height, drawFn) {
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            drawFn(ctx, width, height);
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.wrapS = THREE.RepeatWrapping;
+            tex.wrapT = THREE.RepeatWrapping;
+            return tex;
+        }
+
+        // Carbon fiber weave pattern
+        const carbonFiberTex = generateCanvasTexture(128, 128, (ctx, w, h) => {
+            ctx.fillStyle = '#111111';
+            ctx.fillRect(0, 0, w, h);
+            for (let y = 0; y < h; y += 4) {
+                for (let x = 0; x < w; x += 4) {
+                    const diag = ((x + y) % 8 < 4) ? 0.12 : 0.08;
+                    const noise = Math.random() * 0.03;
+                    const v = Math.floor((diag + noise) * 255);
+                    ctx.fillStyle = `rgb(${v},${v},${v})`;
+                    ctx.fillRect(x, y, 4, 4);
+                }
+            }
+            // Add subtle cross-hatch highlights
+            ctx.strokeStyle = 'rgba(60,60,60,0.3)';
+            ctx.lineWidth = 0.5;
+            for (let i = -w; i < w * 2; i += 6) {
+                ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i + h, h); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i - h, h); ctx.stroke();
+            }
+        });
+        carbonFiberTex.repeat.set(4, 4);
+
+        // Camo pattern texture
+        const camoTex = generateCanvasTexture(256, 256, (ctx, w, h) => {
+            ctx.fillStyle = '#4a5a2a';
+            ctx.fillRect(0, 0, w, h);
+            const colors = ['#3a4a1a', '#6b7a3a', '#2d3a1a', '#5a6a2a', '#8a7a5a'];
+            for (let i = 0; i < 40; i++) {
+                ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
+                ctx.beginPath();
+                const cx = Math.random() * w, cy = Math.random() * h;
+                const rx = 15 + Math.random() * 50, ry = 10 + Math.random() * 40;
+                ctx.ellipse(cx, cy, rx, ry, Math.random() * Math.PI, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            // Noise overlay
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    if (Math.random() < 0.15) {
+                        const v = Math.random() > 0.5 ? 255 : 0;
+                        ctx.fillStyle = `rgba(${v},${v},${v},0.04)`;
+                        ctx.fillRect(x, y, 1, 1);
+                    }
+                }
+            }
+        });
+
+        // Wood grain texture for ammo crate
+        const woodTex = generateCanvasTexture(256, 256, (ctx, w, h) => {
+            ctx.fillStyle = '#5a4a30';
+            ctx.fillRect(0, 0, w, h);
+            for (let y = 0; y < h; y++) {
+                const wave = Math.sin(y * 0.15) * 5 + Math.sin(y * 0.4) * 2;
+                const brightness = 60 + Math.sin(y * 0.08 + wave * 0.1) * 20 + Math.random() * 8;
+                ctx.strokeStyle = `rgb(${brightness + 20},${brightness + 5},${brightness - 15})`;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(w, y);
+                ctx.stroke();
+            }
+            // Knots
+            for (let k = 0; k < 3; k++) {
+                const kx = Math.random() * w, ky = Math.random() * h;
+                const grad = ctx.createRadialGradient(kx, ky, 0, kx, ky, 8 + Math.random() * 8);
+                grad.addColorStop(0, 'rgba(40,30,15,0.8)');
+                grad.addColorStop(1, 'rgba(40,30,15,0)');
+                ctx.fillStyle = grad;
+                ctx.fillRect(kx - 15, ky - 15, 30, 30);
+            }
+        });
+
+        // Worn metal texture
+        const wornMetalTex = generateCanvasTexture(128, 128, (ctx, w, h) => {
+            ctx.fillStyle = '#555555';
+            ctx.fillRect(0, 0, w, h);
+            // Brushed metal lines
+            for (let y = 0; y < h; y++) {
+                const v = 80 + Math.random() * 20;
+                ctx.strokeStyle = `rgba(${v},${v},${v},0.3)`;
+                ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+            }
+            // Scratches
+            ctx.strokeStyle = 'rgba(180,180,180,0.15)';
+            ctx.lineWidth = 0.5;
+            for (let s = 0; s < 20; s++) {
+                ctx.beginPath();
+                ctx.moveTo(Math.random() * w, Math.random() * h);
+                ctx.lineTo(Math.random() * w, Math.random() * h);
+                ctx.stroke();
+            }
+            // Rust spots
+            for (let r = 0; r < 8; r++) {
+                const rx = Math.random() * w, ry = Math.random() * h;
+                const grad = ctx.createRadialGradient(rx, ry, 0, rx, ry, 4 + Math.random() * 6);
+                grad.addColorStop(0, 'rgba(120,60,20,0.5)');
+                grad.addColorStop(1, 'rgba(120,60,20,0)');
+                ctx.fillStyle = grad;
+                ctx.fillRect(rx - 10, ry - 10, 20, 20);
+            }
+        });
+        wornMetalTex.repeat.set(2, 2);
+
+        // Dirt/ground texture with stones
+        const dirtTex = generateCanvasTexture(256, 256, (ctx, w, h) => {
+            ctx.fillStyle = '#5d4037';
+            ctx.fillRect(0, 0, w, h);
+            // Noise variation
+            for (let y = 0; y < h; y += 2) {
+                for (let x = 0; x < w; x += 2) {
+                    const v = 70 + Math.random() * 30;
+                    ctx.fillStyle = `rgb(${v + 10},${v - 10},${v - 20})`;
+                    ctx.fillRect(x, y, 2, 2);
+                }
+            }
+            // Small stones
+            for (let s = 0; s < 30; s++) {
+                const sx = Math.random() * w, sy = Math.random() * h;
+                const sr = 2 + Math.random() * 4;
+                const sv = 90 + Math.random() * 50;
+                ctx.fillStyle = `rgb(${sv},${sv - 10},${sv - 15})`;
+                ctx.beginPath();
+                ctx.ellipse(sx, sy, sr, sr * 0.7, Math.random() * Math.PI, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        });
+        dirtTex.repeat.set(3, 3);
+
+        // Green grass top texture
+        const grassTopTex = generateCanvasTexture(256, 256, (ctx, w, h) => {
+            ctx.fillStyle = '#3A7D2A';
+            ctx.fillRect(0, 0, w, h);
+            for (let y = 0; y < h; y += 2) {
+                for (let x = 0; x < w; x += 2) {
+                    const g = 90 + Math.random() * 60;
+                    const r = 40 + Math.random() * 30;
+                    const b = 20 + Math.random() * 25;
+                    ctx.fillStyle = `rgb(${r},${g},${b})`;
+                    ctx.fillRect(x, y, 2, 2);
+                }
+            }
+            // Dark patches (moss-like)
+            for (let p = 0; p < 12; p++) {
+                const px = Math.random() * w, py = Math.random() * h;
+                const grad = ctx.createRadialGradient(px, py, 0, px, py, 10 + Math.random() * 15);
+                grad.addColorStop(0, 'rgba(20,60,10,0.4)');
+                grad.addColorStop(1, 'rgba(20,60,10,0)');
+                ctx.fillStyle = grad;
+                ctx.fillRect(px - 20, py - 20, 40, 40);
+            }
+        });
+        grassTopTex.repeat.set(3, 3);
+
+        // Bedrock texture
+        const bedrockTex = generateCanvasTexture(256, 256, (ctx, w, h) => {
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillRect(0, 0, w, h);
+            // Layered rock look
+            for (let y = 0; y < h; y++) {
+                const v = 20 + Math.sin(y * 0.3) * 8 + Math.random() * 10;
+                ctx.strokeStyle = `rgb(${v},${v},${v + 3})`;
+                ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+            }
+            // Cracks
+            ctx.strokeStyle = 'rgba(10,10,10,0.6)';
+            ctx.lineWidth = 1.5;
+            for (let c = 0; c < 8; c++) {
+                ctx.beginPath();
+                let cx = Math.random() * w, cy = Math.random() * h;
+                ctx.moveTo(cx, cy);
+                for (let seg = 0; seg < 5; seg++) {
+                    cx += (Math.random() - 0.5) * 40;
+                    cy += (Math.random() - 0.5) * 40;
+                    ctx.lineTo(cx, cy);
+                }
+                ctx.stroke();
+            }
+        });
+        bedrockTex.repeat.set(5, 5);
+
         const pmremGenerator = new THREE.PMREMGenerator(renderer);
         const envScene = new THREE.Scene();
         envScene.background = new THREE.Color(0x87CEEB);
@@ -348,6 +544,105 @@
         sunMesh.lookAt(0, 0, 0);
         scene.add(sunMesh);
 
+        // Sun glow halo (soft outer disc)
+        const sunGlowGeo = new THREE.CircleGeometry(25, 32);
+        const sunGlowMat = new THREE.ShaderMaterial({
+            transparent: true, depthWrite: false,
+            blending: THREE.AdditiveBlending,
+            side: THREE.DoubleSide,
+            uniforms: {},
+            vertexShader: `
+                varying vec2 vUv;
+                void main() {
+                    vUv = uv;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                varying vec2 vUv;
+                void main() {
+                    float d = distance(vUv, vec2(0.5));
+                    float glow = 1.0 - smoothstep(0.0, 0.5, d);
+                    glow = pow(glow, 3.0);
+                    gl_FragColor = vec4(1.0, 0.95, 0.7, glow * 0.35);
+                }
+            `,
+        });
+        const sunGlow = new THREE.Mesh(sunGlowGeo, sunGlowMat);
+        sunGlow.position.copy(sunMesh.position);
+        sunGlow.lookAt(0, 0, 0);
+        scene.add(sunGlow);
+
+        /* ── Volumetric Clouds ── */
+        const cloudGroup = new THREE.Group();
+        scene.add(cloudGroup);
+
+        function createCloud(x, y, z, scale) {
+            const cloud = new THREE.Group();
+            const cloudMat = new THREE.MeshStandardMaterial({
+                color: 0xffffff, roughness: 1.0, metalness: 0.0,
+                transparent: true, opacity: 0.85,
+                emissive: 0xffeedd, emissiveIntensity: 0.15,
+            });
+            const puffCount = 5 + Math.floor(Math.random() * 6);
+            for (let i = 0; i < puffCount; i++) {
+                const puffScale = (0.5 + Math.random() * 0.8) * scale;
+                const puffGeo = new THREE.SphereGeometry(puffScale, 7, 5);
+                const puff = new THREE.Mesh(puffGeo, cloudMat);
+                puff.position.set(
+                    (Math.random() - 0.5) * scale * 3,
+                    (Math.random() - 0.3) * scale * 0.8,
+                    (Math.random() - 0.5) * scale * 2
+                );
+                puff.scale.y *= 0.5 + Math.random() * 0.3;
+                cloud.add(puff);
+            }
+            cloud.position.set(x, y, z);
+            cloud.userData.driftSpeed = 0.3 + Math.random() * 0.5;
+            cloud.userData.driftDir = Math.random() > 0.5 ? 1 : -1;
+            return cloud;
+        }
+
+        // Spawn several clouds at different heights and positions
+        const cloudPositions = [
+            { x: -80, y: 55, z: -120, s: 8 },
+            { x: 40, y: 60, z: -180, s: 10 },
+            { x: 120, y: 50, z: -100, s: 7 },
+            { x: -150, y: 65, z: -60, s: 12 },
+            { x: 60, y: 70, z: -200, s: 9 },
+            { x: -40, y: 52, z: -150, s: 6 },
+            { x: 180, y: 58, z: -140, s: 11 },
+            { x: -100, y: 62, z: -190, s: 8 },
+            { x: 0, y: 55, z: -80, s: 5 },
+            { x: 100, y: 68, z: -50, s: 7 },
+        ];
+        cloudPositions.forEach(cp => {
+            const c = createCloud(cp.x, cp.y, cp.z, cp.s);
+            cloudGroup.add(c);
+        });
+
+        /* ── Atmospheric Dust Particles ── */
+        const dustCount = isMobile ? 150 : 400;
+        const dustGeo = new THREE.BufferGeometry();
+        const dustPositions = new Float32Array(dustCount * 3);
+        const dustSizes = new Float32Array(dustCount);
+        for (let i = 0; i < dustCount; i++) {
+            dustPositions[i * 3] = (Math.random() - 0.5) * 200;
+            dustPositions[i * 3 + 1] = Math.random() * 30;
+            dustPositions[i * 3 + 2] = (Math.random() - 0.5) * 200;
+            dustSizes[i] = 0.03 + Math.random() * 0.08;
+        }
+        dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPositions, 3));
+        dustGeo.setAttribute('size', new THREE.BufferAttribute(dustSizes, 1));
+        const dustMat = new THREE.PointsMaterial({
+            color: 0xeeddcc, size: 0.08,
+            transparent: true, opacity: 0.35,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending,
+        });
+        const dustParticles = new THREE.Points(dustGeo, dustMat);
+        scene.add(dustParticles);
+
         // Invisible plane for raycasting and physics baseline
         const physicsPlane = new THREE.Mesh(new THREE.PlaneGeometry(500, 500), new THREE.MeshBasicMaterial({ visible: false }));
         physicsPlane.rotation.x = -Math.PI / 2;
@@ -364,8 +659,8 @@
         const grassMap = new Map(); // voxel index key -> array of grass instance indices
 
         const voxelGeo = new THREE.BoxGeometry(VOXEL_SIZE, VOXEL_SIZE, VOXEL_SIZE);
-        const greenMat = new THREE.MeshStandardMaterial({ color: 0x3A7D2A, roughness: 0.8, metalness: 0.1 });
-        const dirtMat = new THREE.MeshStandardMaterial({ color: 0x5d4037, roughness: 0.9, metalness: 0.1 });
+        const greenMat = new THREE.MeshStandardMaterial({ color: 0x3A7D2A, roughness: 0.8, metalness: 0.1, map: grassTopTex });
+        const dirtMat = new THREE.MeshStandardMaterial({ color: 0x5d4037, roughness: 0.9, metalness: 0.1, map: dirtTex });
 
         // 0: Green (y=0), 1: Dirt (y=-2), 2: Deep Dirt (y=-4)
         const voxelMeshes = [];
@@ -430,9 +725,9 @@
         }
         initVoxelLayers();
 
-        // Surrounding ground planes with procedural color variation
+        // Surrounding ground planes with procedural color variation and texture
         const groundShaderMat = new THREE.MeshStandardMaterial({
-            color: 0x3A7D2A, roughness: 0.85, metalness: 0.05,
+            color: 0x3A7D2A, roughness: 0.85, metalness: 0.05, map: grassTopTex,
         });
         groundShaderMat.onBeforeCompile = (shader) => {
             shader.vertexShader = `
@@ -447,11 +742,19 @@
                 ${shader.fragmentShader}
             `.replace('#include <color_fragment>', `
                 #include <color_fragment>
+                // Multi-octave hash noise for natural ground variation
                 float n1 = fract(sin(dot(floor(vWorldP.xz * 0.3), vec2(12.9898, 78.233))) * 43758.5453);
                 float n2 = fract(sin(dot(floor(vWorldP.xz * 1.1), vec2(39.346, 11.135))) * 23421.631);
-                float patch = mix(0.85, 1.15, n1) * mix(0.9, 1.1, n2);
+                float n3 = fract(sin(dot(floor(vWorldP.xz * 3.7), vec2(73.156, 29.783))) * 19823.142);
+                float n4 = fract(sin(dot(floor(vWorldP.xz * 0.07), vec2(51.321, 87.456))) * 65413.213);
+                float patch = mix(0.8, 1.2, n1) * mix(0.85, 1.15, n2);
                 diffuseColor.rgb *= patch;
-                diffuseColor.rgb += vec3(-0.01, 0.02, -0.01) * n2;
+                diffuseColor.rgb += vec3(-0.02, 0.04, -0.02) * n2;
+                // Patchy dry/yellow areas
+                float dryPatch = smoothstep(0.6, 0.8, n4);
+                diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(1.3, 1.15, 0.7), dryPatch * 0.25);
+                // Micro detail from fine noise
+                diffuseColor.rgb *= 0.95 + n3 * 0.1;
             `);
         };
 
@@ -486,10 +789,28 @@
         // Bedrock (Indestructible layer at bottom)
         const bedrockGeo = new THREE.PlaneGeometry(GRID_RES * VOXEL_SIZE, GRID_RES * VOXEL_SIZE);
         const bedrockMat = new THREE.MeshStandardMaterial({
-            color: 0x222222,
+            color: 0x2a2a2a,
             roughness: 0.9,
-            metalness: 0.1
+            metalness: 0.15,
+            map: bedrockTex,
         });
+        bedrockMat.onBeforeCompile = (shader) => {
+            shader.vertexShader = `
+                varying vec3 vWorldPBR;
+                ${shader.vertexShader}
+            `.replace('#include <begin_vertex>', `
+                #include <begin_vertex>
+                vWorldPBR = (modelMatrix * vec4(position, 1.0)).xyz;
+            `);
+            shader.fragmentShader = `
+                varying vec3 vWorldPBR;
+                ${shader.fragmentShader}
+            `.replace('#include <color_fragment>', `
+                #include <color_fragment>
+                float rn = fract(sin(dot(floor(vWorldPBR.xz * 0.5), vec2(17.891, 43.672))) * 31754.219);
+                diffuseColor.rgb *= 0.85 + rn * 0.3;
+            `);
+        };
         const bedrock = new THREE.Mesh(bedrockGeo, bedrockMat);
         bedrock.rotation.x = -Math.PI / 2;
         bedrock.position.y = -6.0;
@@ -700,6 +1021,7 @@
             roughness: 0.35,
             metalness: 0.9,
             envMapIntensity: 1.5,
+            map: wornMetalTex,
         });
 
         const chainLinkMat = new THREE.MeshStandardMaterial({
@@ -833,6 +1155,7 @@
                 roughness: 0.4,
                 metalness: 0.5,
                 envMapIntensity: 1.0,
+                map: carbonFiberTex,
             });
 
             const matDuctPlastic = new THREE.MeshStandardMaterial({
@@ -1447,33 +1770,72 @@
         function createAmmoCrate() {
             const group = new THREE.Group();
 
-            // Box (4x larger)
+            // Box (4x larger) with wood texture
+            const crateMat = new THREE.MeshStandardMaterial({ color: 0x3d4c3d, roughness: 0.8, map: woodTex });
             const box = new THREE.Mesh(
                 new THREE.BoxGeometry(10.0, 4.8, 6.0),
-                new THREE.MeshStandardMaterial({ color: 0x3d4c3d, roughness: 0.8 })
+                crateMat
             );
             box.position.y = 2.4;
             box.castShadow = true;
             box.receiveShadow = true;
             group.add(box);
 
-            // Lid
+            // Lid with wood texture
             const lid = new THREE.Mesh(
                 new THREE.BoxGeometry(10.4, 0.8, 6.4),
-                new THREE.MeshStandardMaterial({ color: 0x2f3a2f, roughness: 0.9 })
+                new THREE.MeshStandardMaterial({ color: 0x2f3a2f, roughness: 0.9, map: woodTex })
             );
             lid.position.y = 5.0;
             lid.castShadow = true;
             lid.receiveShadow = true;
             group.add(lid);
 
-            // Simple markings
+            // Metal corner reinforcements
+            const cornerMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.4, metalness: 0.8 });
+            const cornerGeo = new THREE.BoxGeometry(0.4, 4.8, 0.4);
+            for (let sx = -1; sx <= 1; sx += 2) {
+                for (let sz = -1; sz <= 1; sz += 2) {
+                    const corner = new THREE.Mesh(cornerGeo, cornerMat);
+                    corner.position.set(sx * 4.9, 2.4, sz * 2.9);
+                    group.add(corner);
+                }
+            }
+
+            // Metal bands
+            const bandMat = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.5, metalness: 0.7 });
+            for (let bz = -1; bz <= 1; bz++) {
+                const band = new THREE.Mesh(new THREE.BoxGeometry(10.2, 0.3, 0.15), bandMat);
+                band.position.set(0, 2.4 + bz * 1.5, 3.01);
+                group.add(band);
+                const band2 = band.clone();
+                band2.position.z = -3.01;
+                group.add(band2);
+            }
+
+            // Stenciled markings on top
             const markGeo = new THREE.PlaneGeometry(4.0, 1.6);
             const markMat = new THREE.MeshBasicMaterial({ color: 0xcccc00 });
             const mark = new THREE.Mesh(markGeo, markMat);
             mark.rotation.x = -Math.PI / 2;
             mark.position.y = 5.41;
             group.add(mark);
+
+            // Side markings
+            const sideMark = new THREE.Mesh(
+                new THREE.PlaneGeometry(3.0, 1.2),
+                new THREE.MeshBasicMaterial({ color: 0xaaaa33 })
+            );
+            sideMark.position.set(0, 3.0, 3.01);
+            group.add(sideMark);
+
+            // Warning stripes on edges  
+            const stripeMat = new THREE.MeshBasicMaterial({ color: 0xdd8800 });
+            for (let sx = -1; sx <= 1; sx += 2) {
+                const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.2, 4.6, 6.2), stripeMat);
+                stripe.position.set(sx * 5.1, 2.4, 0);
+                group.add(stripe);
+            }
 
             return group;
         }
@@ -1508,18 +1870,18 @@
                 }
             };
 
-            // --- Materials ---
+            // --- Materials (with textures) ---
             const matOliveDrab = new THREE.MeshStandardMaterial({
-                color: 0x4a5a2a, roughness: 0.8, metalness: 0.2,
+                color: 0x4a5a2a, roughness: 0.8, metalness: 0.2, map: camoTex,
             });
             const matDarkGreen = new THREE.MeshStandardMaterial({
-                color: 0x2d3a1a, roughness: 0.7, metalness: 0.3,
+                color: 0x2d3a1a, roughness: 0.7, metalness: 0.3, map: camoTex,
             });
             const matMetal = new THREE.MeshStandardMaterial({
-                color: 0x555555, roughness: 0.3, metalness: 0.9,
+                color: 0x555555, roughness: 0.3, metalness: 0.9, map: wornMetalTex,
             });
             const matDarkMetal = new THREE.MeshStandardMaterial({
-                color: 0x333333, roughness: 0.4, metalness: 0.8,
+                color: 0x333333, roughness: 0.4, metalness: 0.8, map: wornMetalTex,
             });
             const matRubber = new THREE.MeshStandardMaterial({
                 color: 0x1a1a1a, roughness: 0.95, metalness: 0.0,
@@ -1545,16 +1907,16 @@
                 envMapIntensity: 2.5,
             });
             const matCamoLight = new THREE.MeshStandardMaterial({
-                color: 0x6b7a3a, roughness: 0.85, metalness: 0.15,
+                color: 0x6b7a3a, roughness: 0.85, metalness: 0.15, map: camoTex,
             });
             const matCamoDark = new THREE.MeshStandardMaterial({
-                color: 0x3a4a1a, roughness: 0.85, metalness: 0.15,
+                color: 0x3a4a1a, roughness: 0.85, metalness: 0.15, map: camoTex,
             });
             const matTan = new THREE.MeshStandardMaterial({
                 color: 0x8a7a5a, roughness: 0.85, metalness: 0.15,
             });
             const matExhaust = new THREE.MeshStandardMaterial({
-                color: 0x2a2a2a, roughness: 0.6, metalness: 0.7,
+                color: 0x2a2a2a, roughness: 0.6, metalness: 0.7, map: wornMetalTex,
             });
 
 
@@ -4161,6 +4523,25 @@
                     }
                 }
             }
+
+            /* ── Animate Clouds ── */
+            cloudGroup.children.forEach(cloud => {
+                cloud.position.x += cloud.userData.driftSpeed * cloud.userData.driftDir * dt;
+                if (cloud.position.x > 250) cloud.position.x = -250;
+                if (cloud.position.x < -250) cloud.position.x = 250;
+            });
+
+            /* ── Animate Dust Particles ── */
+            const dustPos = dustParticles.geometry.attributes.position.array;
+            for (let i = 0; i < dustCount; i++) {
+                dustPos[i * 3] += Math.sin(t * 0.3 + i) * 0.02;
+                dustPos[i * 3 + 1] += Math.sin(t * 0.5 + i * 0.7) * 0.005;
+                dustPos[i * 3 + 2] += Math.cos(t * 0.4 + i * 1.3) * 0.02;
+                // Wrap around
+                if (dustPos[i * 3 + 1] > 30) dustPos[i * 3 + 1] = 0;
+                if (dustPos[i * 3 + 1] < 0) dustPos[i * 3 + 1] = 30;
+            }
+            dustParticles.geometry.attributes.position.needsUpdate = true;
 
             renderer.render(scene, camera);
         }
