@@ -231,9 +231,9 @@
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 600);
         camera.position.set(0, 8.0, 16.0);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: !isMobile, powerPreference: 'high-performance', stencil: false });
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance', stencil: false });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.0 : 1.5));
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2.0));
         renderer.shadowMap.enabled = !isMobile;
         if (!isMobile) {
             renderer.shadowMap.type = THREE.PCFShadowMap; // PCF instead of PCFSoft = faster
@@ -531,7 +531,7 @@
         }
 
 
-        const grassCount = isMobile ? 3350 : 10050;
+        const grassCount = 1600;
 
         const grassGeo = new THREE.PlaneGeometry(0.15, 1.6, 1, 4);
         grassGeo.translate(0, 0.8, 0);
