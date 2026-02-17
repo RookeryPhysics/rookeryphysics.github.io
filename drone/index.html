@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cinewhoop Drone – Realistic 3D Model</title>
+    <meta name="description"
+        content="A hyper-realistic Three.js cinewhoop drone model with PBR materials and bloom effects.">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden;
+            background: #050510;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        #info {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.35);
+            letter-spacing: 0.5px;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        #title {
+            position: fixed;
+            top: 28px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.2);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            pointer-events: none;
+            user-select: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="title">Cinewhoop FPV</div>
+    <div id="info">click &amp; drag to orbit · scroll to zoom</div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+
+        // ── Scene ──────────────────────────────────────────────
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0a18);
+        scene.fog = new THREE.FogExp2(0x0a0a18, 0.025);
+
+        // ── Camera ─────────────────────────────────────────────
+        const camera = new THREE.PerspectiveCamera(
+            45, window.innerWidth / window.innerHeight, 0.1, 200
+        );
+        camera.position.set(4.5, 3.5, 5.5);
+
+        // ── Renderer ───────────────────────────────────────────
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.0;
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        document.body.appendChild(renderer.domElement);
+
+        // ── Post-Processing (Bloom for LEDs) ───────────────────
+        const composer = new EffectComposer(renderer);
+        composer.addPass(new RenderPass(scene, camera));
+
+        const bloom = new UnrealBloomPass(
+            new THREE.Vector2(window.innerWidth, window.innerHeight),
+            0.6,   // strength
+            0.4,   // radius
+            0.85   // threshold
+        );
+        composer.addPass(bloom);
+
+        // ── Controls ───────────────────────────────────────────
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.06;
+        controls.minDistance = 2;
+        controls.maxDistance = 20;
+        controls.target.set(0, 0.6, 0);
+        controls.maxPolarAngle = Math.PI * 0.85;
+
+        // ── Environment Map (for reflections) ──────────────────
+        const pmremGenerator = new THREE.PMREMGenerator(renderer);
+        const envScene = new THREE.Scene();
+        envScene.background = new THREE.Color(0x111122);
+
+        // Create gradient environment
+        const envGeo = new THREE.SphereGeometry(50, 32, 32);
+        const envMat = new THREE.ShaderMaterial({
+            side: THREE.BackSide,
+            uniforms: {
+                colorTop: { value: new THREE.Color(0x334466) },
+                colorBottom: { value: new THREE.Color(0x0a0a14) },
+            },
+            vertexShader: `
+                varying vec3 vWorldPos;
+                void main() {
+                    vWorldPos = (modelMatrix * vec4(position, 1.0)).xyz;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform vec3 colorTop;
+                uniform vec3 colorBottom;
+                varying vec3 vWorldPos;
+                void main() {
+                    float t = clamp(normalize(vWorldPos).y * 0.5 + 0.5, 0.0, 1.0);
+                    gl_FragColor = vec4(mix(colorBottom, colorTop, t), 1.0);
+                }
+            `,
+        });
+        envScene.add(new THREE.Mesh(envGeo, envMat));
+
+        // Add bright spots for specular reflections
+        const lightBallGeo = new THREE.SphereGeometry(2, 16, 16);
+        const lightBallMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const lightBall1 = new THREE.Mesh(lightBallGeo, lightBallMat);
+        lightBall1.position.set(20, 30, 15);
+        envScene.add(lightBall1);
+        const lightBall2 = new THREE.Mesh(lightBallGeo.clone(), new THREE.MeshBasicMaterial({ color: 0x8899cc }));
+        lightBall2.position.set(-15, 20, -10);
+        envScene.add(lightBall2);
+
+        const envMap = pmremGenerator.fromScene(envScene, 0.04).texture;
+        scene.environment = envMap;
+
+        // ── Lighting ───────────────────────────────────────────
+        const ambient = new THREE.AmbientLight(0x667799, 0.4);
+        scene.add(ambient);
+
+        const hemi = new THREE.HemisphereLight(0x6688cc, 0x1a1a2e, 0.5);
+        scene.add(hemi);
+
+        // Key light (warm)
+        const keyLight = new THREE.DirectionalLight(0xffeedd, 2.0);
+        keyLight.position.set(5, 8, 4);
+        keyLight.castShadow = true;
+        keyLight.shadow.mapSize.set(2048, 2048);
+        keyLight.shadow.camera.near = 0.5;
+        keyLight.shadow.camera.far = 30;
+        keyLight.shadow.camera.left = -8;
+        keyLight.shadow.camera.right = 8;
+        keyLight.shadow.camera.top = 8;
+        keyLight.shadow.camera.bottom = -8;
+        keyLight.shadow.bias = -0.0004;
+        keyLight.shadow.normalBias = 0.02;
+        scene.add(keyLight);
+
+        // Fill light (cool blue)
+        const fillLight = new THREE.DirectionalLight(0x4488cc, 0.6);
+        fillLight.position.set(-4, 5, -3);
+        scene.add(fillLight);
+
+        // Rim light (backlight highlight)
+        const rimLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        rimLight.position.set(-2, 4, -6);
+        scene.add(rimLight);
+
+        // Under accent
+        const underLight = new THREE.PointLight(0x00ccff, 0.3, 8);
+        underLight.position.set(0, -1, 0);
+        scene.add(underLight);
+
+        // ── Ground Plane ───────────────────────────────────────
+        const planeGeo = new THREE.PlaneGeometry(60, 60);
+        const planeMat = new THREE.MeshStandardMaterial({
+            color: 0x18182a,
+            roughness: 0.92,
+            metalness: 0.05,
+        });
+        const plane = new THREE.Mesh(planeGeo, planeMat);
+        plane.rotation.x = -Math.PI / 2;
+        plane.receiveShadow = true;
+        scene.add(plane);
+
+        // Subtle grid
+        const grid = new THREE.GridHelper(60, 60, 0x252545, 0x1e1e38);
+        grid.position.y = 0.003;
+        grid.material.opacity = 0.4;
+        grid.material.transparent = true;
+        scene.add(grid);
+
+        // ── Helper: Smooth Geometry ────────────────────────────
+        function roundedBox(w, h, d, r, segs) {
+            const shape = new THREE.Shape();
+            const x = -w / 2, y = -h / 2;
+            shape.moveTo(x + r, y);
+            shape.lineTo(x + w - r, y);
+            shape.quadraticCurveTo(x + w, y, x + w, y + r);
+            shape.lineTo(x + w, y + h - r);
+            shape.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            shape.lineTo(x + r, y + h);
+            shape.quadraticCurveTo(x, y + h, x, y + h - r);
+            shape.lineTo(x, y + r);
+            shape.quadraticCurveTo(x, y, x + r, y);
+
+            const extSettings = {
+                depth: d,
+                bevelEnabled: true,
+                bevelThickness: r * 0.5,
+                bevelSize: r * 0.5,
+                bevelSegments: segs || 3,
+            };
+            const geo = new THREE.ExtrudeGeometry(shape, extSettings);
+            geo.center();
+            return geo;
+        }
+
+        // ── Drone Model (Hyper-Realistic Cinewhoop) ────────────
+        function createDrone() {
+            const drone = new THREE.Group();
+
+            // ── Materials (PBR) ──────────────────────────────
+            const matCarbonFiber = new THREE.MeshStandardMaterial({
+                color: 0x0d0d0d,
+                roughness: 0.35,
+                metalness: 0.7,
+                envMapIntensity: 1.5,
+            });
+
+            const matDuctPlastic = new THREE.MeshStandardMaterial({
+                color: 0x1a1a1c,
+                roughness: 0.65,
+                metalness: 0.05,
+                envMapIntensity: 0.6,
+            });
+
+            const matDuctInner = new THREE.MeshStandardMaterial({
+                color: 0x111113,
+                roughness: 0.85,
+                metalness: 0.0,
+                side: THREE.DoubleSide,
+            });
+
+            const matAccentOrange = new THREE.MeshStandardMaterial({
+                color: 0xff4400,
+                roughness: 0.3,
+                metalness: 0.4,
+                emissive: 0xff2200,
+                emissiveIntensity: 0.15,
+                envMapIntensity: 1.2,
+            });
+
+            const matMotorBell = new THREE.MeshStandardMaterial({
+                color: 0x2a2a2e,
+                roughness: 0.15,
+                metalness: 0.95,
+                envMapIntensity: 2.0,
+            });
+
+            const matMotorStator = new THREE.MeshStandardMaterial({
+                color: 0x886622,
+                roughness: 0.5,
+                metalness: 0.6,
+            });
+
+            const matPropBlack = new THREE.MeshStandardMaterial({
+                color: 0x0a0a0a,
+                roughness: 0.45,
+                metalness: 0.3,
+                transparent: true,
+                opacity: 0.85,
+            });
+
+            const matPropOrange = new THREE.MeshStandardMaterial({
+                color: 0xff5500,
+                roughness: 0.4,
+                metalness: 0.3,
+                transparent: true,
+                opacity: 0.85,
+            });
+
+            const matLens = new THREE.MeshStandardMaterial({
+                color: 0x000005,
+                roughness: 0.0,
+                metalness: 1.0,
+                envMapIntensity: 3.0,
+            });
+
+            const matCamBody = new THREE.MeshStandardMaterial({
+                color: 0x222224,
+                roughness: 0.55,
+                metalness: 0.1,
+                envMapIntensity: 0.8,
+            });
+
+            const matBattery = new THREE.MeshStandardMaterial({
+                color: 0x1a1a20,
+                roughness: 0.7,
+                metalness: 0.05,
+            });
+
+            const matBattLabel = new THREE.MeshStandardMaterial({
+                color: 0xffcc00,
+                roughness: 0.5,
+                metalness: 0.3,
+            });
+
+            const matRubber = new THREE.MeshStandardMaterial({
+                color: 0x0a0a0a,
+                roughness: 0.95,
+                metalness: 0.0,
+            });
+
+            const matPCB = new THREE.MeshStandardMaterial({
+                color: 0x1a3322,
+                roughness: 0.8,
+                metalness: 0.1,
+            });
+
+            const matLEDGreen = new THREE.MeshStandardMaterial({
+                color: 0x00ff44,
+                emissive: 0x00ff44,
+                emissiveIntensity: 2.0,
+                roughness: 0.2,
+                metalness: 0.0,
+            });
+
+            const matLEDRed = new THREE.MeshStandardMaterial({
+                color: 0xff0022,
+                emissive: 0xff0022,
+                emissiveIntensity: 2.0,
+                roughness: 0.2,
+                metalness: 0.0,
+            });
+
+            const matLEDBlue = new THREE.MeshStandardMaterial({
+                color: 0x0066ff,
+                emissive: 0x0066ff,
+                emissiveIntensity: 1.5,
+                roughness: 0.2,
+                metalness: 0.0,
+            });
+
+            const matWhitePlastic = new THREE.MeshStandardMaterial({
+                color: 0xeeeeee,
+                roughness: 0.6,
+                metalness: 0.0,
+            });
+
+            const matSilver = new THREE.MeshStandardMaterial({
+                color: 0xaaaaaa,
+                roughness: 0.2,
+                metalness: 0.9,
+                envMapIntensity: 2.0,
+            });
+
+            // ── 1. Main Frame (Unibody Carbon Fiber) ─────────
+            const frameGeo = roundedBox(1.3, 0.12, 1.5, 0.04, 3);
+            const frame = new THREE.Mesh(frameGeo, matCarbonFiber);
+            frame.castShadow = true;
+            drone.add(frame);
+
+            // Frame bottom plate
+            const bottomPlate = new THREE.Mesh(roundedBox(1.2, 0.04, 1.4, 0.03, 2), matCarbonFiber);
+            bottomPlate.position.y = -0.08;
+            bottomPlate.castShadow = true;
+            drone.add(bottomPlate);
+
+            // Frame arms connecting to ducts
+            const armPositions = [
+                { x: 0.55, z: 0.55, angle: Math.PI / 4 },
+                { x: -0.55, z: 0.55, angle: -Math.PI / 4 },
+                { x: 0.55, z: -0.55, angle: -Math.PI / 4 },
+                { x: -0.55, z: -0.55, angle: Math.PI / 4 },
+            ];
+
+            armPositions.forEach(ap => {
+                const armGeo = new THREE.BoxGeometry(0.65, 0.08, 0.2);
+                const arm = new THREE.Mesh(armGeo, matCarbonFiber);
+                arm.position.set(ap.x * 0.6, 0, ap.z * 0.6);
+                arm.rotation.y = ap.angle;
+                arm.castShadow = true;
+                drone.add(arm);
+            });
+
+            // ── 2. Electronics Stack ─────────────────────────
+            // Flight controller + ESC stack
+            const fcBoard = new THREE.Mesh(
+                roundedBox(0.42, 0.04, 0.42, 0.02, 2),
+                matPCB
+            );
+            fcBoard.position.y = 0.1;
+            drone.add(fcBoard);
+
+            // Standoffs (4 x metal posts)
+            for (let sx = -1; sx <= 1; sx += 2) {
+                for (let sz = -1; sz <= 1; sz += 2) {
+                    const standoff = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.015, 0.015, 0.08, 8),
+                        matSilver
+                    );
+                    standoff.position.set(sx * 0.16, 0.08, sz * 0.16);
+                    drone.add(standoff);
+                }
+            }
+
+            // ESC board (below FC)
+            const escBoard = new THREE.Mesh(
+                roundedBox(0.44, 0.03, 0.44, 0.02, 2),
+                matPCB
+            );
+            escBoard.position.y = 0.155;
+            drone.add(escBoard);
+
+            // Capacitor on top
+            const capGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.08, 10);
+            const cap = new THREE.Mesh(capGeo, matCarbonFiber);
+            cap.position.set(0.1, 0.2, 0.05);
+            cap.rotation.z = Math.PI / 2;
+            drone.add(cap);
+
+            // ── 3. Prop Guard Ducts & Motors ─────────────────
+            const ductOuterR = 0.52;
+            const ductInnerR = 0.47;
+            const ductHeight = 0.32;
+            const motorPositions = [
+                { x: 0.82, z: 0.82 }, { x: -0.82, z: 0.82 },
+                { x: 0.82, z: -0.82 }, { x: -0.82, z: -0.82 }
+            ];
+
+            const allProps = [];
+            const allMotorBells = [];
+
+            motorPositions.forEach((pos, i) => {
+                const motorUnit = new THREE.Group();
+                motorUnit.position.set(pos.x, 0, pos.z);
+
+                // ── Duct (outer shell) ───────────────────
+                const ductOuterGeo = new THREE.CylinderGeometry(
+                    ductOuterR, ductOuterR + 0.02, ductHeight, 32, 1, true
+                );
+                const ductOuter = new THREE.Mesh(ductOuterGeo, matDuctPlastic);
+                ductOuter.castShadow = true;
+                motorUnit.add(ductOuter);
+
+                // Duct inner wall
+                const ductInnerGeo = new THREE.CylinderGeometry(
+                    ductInnerR, ductInnerR, ductHeight, 32, 1, true
+                );
+                const ductInner = new THREE.Mesh(ductInnerGeo, matDuctInner);
+                motorUnit.add(ductInner);
+
+                // Duct top lip (chamfered ring)
+                const lipGeo = new THREE.TorusGeometry(
+                    (ductOuterR + ductInnerR) / 2, 0.025, 8, 32
+                );
+                const lip = new THREE.Mesh(lipGeo, matDuctPlastic);
+                lip.rotation.x = Math.PI / 2;
+                lip.position.y = ductHeight / 2;
+                motorUnit.add(lip);
+
+                // Duct bottom lip
+                const lipBot = lip.clone();
+                lipBot.position.y = -ductHeight / 2;
+                motorUnit.add(lipBot);
+
+                // Accent stripe on duct
+                const stripeGeo = new THREE.TorusGeometry(
+                    ductOuterR + 0.005, 0.012, 6, 32
+                );
+                const stripe = new THREE.Mesh(stripeGeo, matAccentOrange);
+                stripe.rotation.x = Math.PI / 2;
+                stripe.position.y = ductHeight / 2 - 0.04;
+                motorUnit.add(stripe);
+
+                // Cross supports inside duct (for motor mount)
+                for (let cs = 0; cs < 4; cs++) {
+                    const supportGeo = new THREE.BoxGeometry(ductInnerR * 0.85, 0.03, 0.025);
+                    const support = new THREE.Mesh(supportGeo, matCarbonFiber);
+                    support.rotation.y = (cs * Math.PI) / 4;
+                    support.position.y = -0.05;
+                    motorUnit.add(support);
+                }
+
+                // ── Brushless Motor ──────────────────────
+                // Motor base (stator visible)
+                const statorGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.12, 16);
+                const stator = new THREE.Mesh(statorGeo, matMotorStator);
+                stator.position.y = -0.04;
+                motorUnit.add(stator);
+
+                // Copper coil detail (windings around stator)
+                for (let w = 0; w < 6; w++) {
+                    const coilGeo = new THREE.TorusGeometry(0.1, 0.012, 4, 6);
+                    const coil = new THREE.Mesh(coilGeo, matMotorStator);
+                    coil.rotation.x = Math.PI / 2;
+                    coil.rotation.z = (w * Math.PI) / 3;
+                    coil.position.y = -0.04;
+                    motorUnit.add(coil);
+                }
+
+                // Motor bell (rotating top cap)
+                const bellGroup = new THREE.Group();
+                bellGroup.position.y = 0.04;
+
+                const bellGeo = new THREE.CylinderGeometry(0.12, 0.11, 0.06, 20);
+                const bell = new THREE.Mesh(bellGeo, matMotorBell);
+                bellGroup.add(bell);
+
+                // Bell top cap detail
+                const bellCapGeo = new THREE.CylinderGeometry(0.06, 0.08, 0.02, 16);
+                const bellCap = new THREE.Mesh(bellCapGeo, matMotorBell);
+                bellCap.position.y = 0.04;
+                bellGroup.add(bellCap);
+
+                // Motor shaft
+                const shaftGeo = new THREE.CylinderGeometry(0.012, 0.012, 0.08, 8);
+                const shaft = new THREE.Mesh(shaftGeo, matSilver);
+                shaft.position.y = 0.06;
+                bellGroup.add(shaft);
+
+                motorUnit.add(bellGroup);
+                allMotorBells.push(bellGroup);
+
+                // ── Propellers (3-blade, airfoil shaped) ─────
+                const propGroup = new THREE.Group();
+                propGroup.position.y = 0.1;
+
+                // Prop hub
+                const hubGeo = new THREE.CylinderGeometry(0.035, 0.035, 0.018, 12);
+                const propMatChoice = (i < 2) ? matPropOrange : matPropBlack;
+                const hub = new THREE.Mesh(hubGeo, propMatChoice);
+                propGroup.add(hub);
+
+                // Nut on top
+                const nutGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.01, 6);
+                const nut = new THREE.Mesh(nutGeo, matSilver);
+                nut.position.y = 0.014;
+                propGroup.add(nut);
+
+                // Blades
+                for (let b = 0; b < 3; b++) {
+                    const bladeGroup = new THREE.Group();
+                    bladeGroup.rotation.y = (b * Math.PI * 2) / 3;
+
+                    // Blade shape with twist using custom geometry
+                    const bladeLen = 0.38;
+                    const bladeW = 0.055;
+                    const bladeShape = new THREE.Shape();
+                    bladeShape.moveTo(0, 0);
+                    bladeShape.quadraticCurveTo(bladeLen * 0.3, bladeW * 0.6, bladeLen * 0.75, bladeW);
+                    bladeShape.quadraticCurveTo(bladeLen * 0.95, bladeW * 0.8, bladeLen, 0);
+                    bladeShape.quadraticCurveTo(bladeLen * 0.7, -bladeW * 0.15, 0, 0);
+
+                    const bladeGeo = new THREE.ExtrudeGeometry(bladeShape, {
+                        depth: 0.008,
+                        bevelEnabled: true,
+                        bevelThickness: 0.002,
+                        bevelSize: 0.002,
+                        bevelSegments: 2,
+                    });
+                    bladeGeo.center();
+
+                    const blade = new THREE.Mesh(bladeGeo, propMatChoice);
+                    blade.rotation.x = 0.12; // slight pitch angle
+                    blade.position.x = bladeLen / 2 + 0.02;
+                    bladeGroup.add(blade);
+
+                    propGroup.add(bladeGroup);
+                }
+
+                motorUnit.add(propGroup);
+                allProps.push(propGroup);
+
+                drone.add(motorUnit);
+            });
+
+            // ── 4. Action Camera (GoPro-style) ──────────────
+            const camMount = new THREE.Group();
+            camMount.position.set(0, 0.22, 0.58);
+            camMount.rotation.x = -0.18;
+
+            // Camera body
+            const camBodyGeo = roundedBox(0.36, 0.26, 0.2, 0.025, 3);
+            const camBody = new THREE.Mesh(camBodyGeo, matCamBody);
+            camBody.castShadow = true;
+            camMount.add(camBody);
+
+            // Lens barrel
+            const lensBarrelGeo = new THREE.CylinderGeometry(0.075, 0.08, 0.06, 20);
+            const lensBarrel = new THREE.Mesh(lensBarrelGeo, matCarbonFiber);
+            lensBarrel.rotation.x = Math.PI / 2;
+            lensBarrel.position.z = 0.13;
+            camMount.add(lensBarrel);
+
+            // Lens glass
+            const lensGlassGeo = new THREE.CircleGeometry(0.065, 24);
+            const lensGlass = new THREE.Mesh(lensGlassGeo, matLens);
+            lensGlass.position.z = 0.165;
+            camMount.add(lensGlass);
+
+            // Outer lens ring
+            const lensRingGeo = new THREE.TorusGeometry(0.072, 0.008, 8, 24);
+            const lensRing = new THREE.Mesh(lensRingGeo, matSilver);
+            lensRing.position.z = 0.16;
+            camMount.add(lensRing);
+
+            // Inner lens ring
+            const innerRingGeo = new THREE.TorusGeometry(0.04, 0.005, 8, 20);
+            const innerRing = new THREE.Mesh(innerRingGeo, matSilver);
+            innerRing.position.z = 0.167;
+            camMount.add(innerRing);
+
+            // Recording LED
+            const recLED = new THREE.Mesh(
+                new THREE.SphereGeometry(0.012, 8, 8),
+                matLEDRed
+            );
+            recLED.position.set(0.14, 0.08, 0.1);
+            camMount.add(recLED);
+
+            // Camera mount brackets
+            for (let side = -1; side <= 1; side += 2) {
+                const bracketGeo = new THREE.BoxGeometry(0.015, 0.12, 0.04);
+                const bracket = new THREE.Mesh(bracketGeo, matSilver);
+                bracket.position.set(side * 0.2, -0.02, 0);
+                camMount.add(bracket);
+            }
+
+            // TPU camera mount dampers
+            for (let side = -1; side <= 1; side += 2) {
+                const damperGeo = new THREE.SphereGeometry(0.025, 8, 8);
+                const damper = new THREE.Mesh(damperGeo, matAccentOrange);
+                damper.position.set(side * 0.2, -0.1, 0);
+                camMount.add(damper);
+            }
+
+            drone.add(camMount);
+
+            // ── 5. Battery (LiPo) ────────────────────────────
+            const batteryGroup = new THREE.Group();
+            batteryGroup.position.set(0, -0.12, -0.1);
+
+            const battGeo = roundedBox(0.58, 0.14, 0.38, 0.02, 2);
+            const battBody = new THREE.Mesh(battGeo, matBattery);
+            battBody.castShadow = true;
+            batteryGroup.add(battBody);
+
+            // Battery label stripe
+            const labelGeo = new THREE.BoxGeometry(0.4, 0.005, 0.2);
+            const label = new THREE.Mesh(labelGeo, matBattLabel);
+            label.position.y = 0.072;
+            batteryGroup.add(label);
+
+            // Battery strap
+            for (let s = -1; s <= 1; s += 2) {
+                const strapGeo = new THREE.BoxGeometry(0.02, 0.18, 0.42);
+                const strap = new THREE.Mesh(strapGeo, matAccentOrange);
+                strap.position.set(s * 0.15, 0, 0);
+                batteryGroup.add(strap);
+            }
+
+            // XT60 connector
+            const xt60 = new THREE.Mesh(
+                new THREE.BoxGeometry(0.06, 0.04, 0.03),
+                matBattLabel
+            );
+            xt60.position.set(0.32, 0, 0);
+            batteryGroup.add(xt60);
+
+            // Balance lead wires
+            for (let w = 0; w < 4; w++) {
+                const wireGeo = new THREE.CylinderGeometry(0.004, 0.004, 0.08, 6);
+                const wireMat = new THREE.MeshStandardMaterial({
+                    color: [0xff0000, 0x000000, 0xff0000, 0x000000][w],
+                    roughness: 0.7,
+                });
+                const wire = new THREE.Mesh(wireGeo, wireMat);
+                wire.position.set(0.3, -0.02, -0.12 + w * 0.03);
+                wire.rotation.z = Math.PI / 2 + 0.3;
+                batteryGroup.add(wire);
+            }
+
+            drone.add(batteryGroup);
+
+            // ── 6. VTX Antenna ───────────────────────────────
+            const antennaGroup = new THREE.Group();
+            antennaGroup.position.set(0.08, 0.2, -0.65);
+
+            // SMA connector
+            const smaGeo = new THREE.CylinderGeometry(0.025, 0.025, 0.04, 10);
+            const sma = new THREE.Mesh(smaGeo, matSilver);
+            antennaGroup.add(sma);
+
+            // Antenna stalk
+            const antennaStalk = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.008, 0.008, 0.35, 8),
+                matWhitePlastic
+            );
+            antennaStalk.position.y = 0.2;
+            antennaStalk.rotation.x = -0.3;
+            antennaGroup.add(antennaStalk);
+
+            // Cloverleaf antenna (mushroom shape)
+            const mushroomGeo = new THREE.SphereGeometry(0.04, 12, 12);
+            const mushroom = new THREE.Mesh(mushroomGeo, matWhitePlastic);
+            mushroom.position.set(0, 0.38, -0.1);
+            antennaGroup.add(mushroom);
+
+            // Antenna wires (cloverleaf pattern)
+            for (let cl = 0; cl < 4; cl++) {
+                const clWire = new THREE.Mesh(
+                    new THREE.TorusGeometry(0.03, 0.003, 6, 8, Math.PI),
+                    matSilver
+                );
+                clWire.rotation.y = (cl * Math.PI) / 2;
+                clWire.position.set(0, 0.38, -0.1);
+                antennaGroup.add(clWire);
+            }
+
+            drone.add(antennaGroup);
+
+            // ── 7. GPS Module antenna (rear) ─────────────────
+            const gpsMount = new THREE.Group();
+            gpsMount.position.set(-0.08, 0.2, -0.55);
+
+            const gpsMast = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.008, 0.008, 0.15, 8),
+                matCarbonFiber
+            );
+            gpsMast.position.y = 0.08;
+            gpsMount.add(gpsMast);
+
+            const gpsDisk = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.05, 0.05, 0.015, 16),
+                matCarbonFiber
+            );
+            gpsDisk.position.y = 0.16;
+            gpsMount.add(gpsDisk);
+
+            drone.add(gpsMount);
+
+            // ── 8. Landing Skids ─────────────────────────────
+            const skidPositions = [
+                { x: 0.35, z: 0.45 }, { x: -0.35, z: 0.45 },
+                { x: 0.35, z: -0.45 }, { x: -0.35, z: -0.45 }
+            ];
+
+            skidPositions.forEach(sp => {
+                const skid = new THREE.Group();
+                skid.position.set(sp.x, -0.18, sp.z);
+
+                // Leg
+                const legGeo = new THREE.CylinderGeometry(0.012, 0.012, 0.1, 8);
+                const leg = new THREE.Mesh(legGeo, matCarbonFiber);
+                skid.add(leg);
+
+                // Rubber foot
+                const footGeo = new THREE.SphereGeometry(0.025, 8, 8);
+                const foot = new THREE.Mesh(footGeo, matRubber);
+                foot.position.y = -0.05;
+                foot.scale.y = 0.5;
+                skid.add(foot);
+
+                drone.add(skid);
+            });
+
+            // ── 9. Status LEDs ───────────────────────────────
+            // Rear green LED
+            const rearLED = new THREE.Mesh(
+                new THREE.SphereGeometry(0.015, 8, 8),
+                matLEDGreen
+            );
+            rearLED.position.set(0, 0.05, -0.76);
+            drone.add(rearLED);
+
+            // Green LED point light
+            const greenGlow = new THREE.PointLight(0x00ff44, 0.3, 1.5);
+            greenGlow.position.copy(rearLED.position);
+            drone.add(greenGlow);
+
+            // Front blue LEDs (left/right of camera)
+            const frontLEDs = [];
+            for (let side = -1; side <= 1; side += 2) {
+                const led = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.012, 8, 8),
+                    matLEDBlue
+                );
+                led.position.set(side * 0.5, -0.02, 0.7);
+                drone.add(led);
+                frontLEDs.push(led);
+
+                const blueGlow = new THREE.PointLight(0x0066ff, 0.15, 1.0);
+                blueGlow.position.copy(led.position);
+                drone.add(blueGlow);
+            }
+
+            // ── 10. Underglow LED strip ──────────────────────
+            const underglowLEDs = [];
+            const underglowLights = [];
+            const numUnderglow = 12;
+            for (let u = 0; u < numUnderglow; u++) {
+                const angle = (u * Math.PI * 2) / numUnderglow;
+                const r = 0.5;
+                const ledMat = new THREE.MeshStandardMaterial({
+                    color: 0x00ccff,
+                    emissive: 0x00ccff,
+                    emissiveIntensity: 1.0,
+                    roughness: 0.2,
+                });
+                const led = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.01, 6, 6),
+                    ledMat
+                );
+                led.position.set(Math.cos(angle) * r, -0.14, Math.sin(angle) * r);
+                drone.add(led);
+                underglowLEDs.push({ mesh: led, mat: ledMat });
+            }
+
+            // Underglow main light
+            const underglowMain = new THREE.PointLight(0x00ccff, 0.4, 3);
+            underglowMain.position.set(0, -0.2, 0);
+            drone.add(underglowMain);
+            underglowLights.push(underglowMain);
+
+            // ── 11. Buzzer (side of frame) ───────────────────
+            const buzzer = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.04, 0.04, 0.02, 12),
+                matCarbonFiber
+            );
+            buzzer.position.set(0.6, 0, 0);
+            buzzer.rotation.z = Math.PI / 2;
+            drone.add(buzzer);
+
+            // ── 12. Receiver antenna wires ───────────────────
+            for (let ra = 0; ra < 2; ra++) {
+                const rxAntennaGeo = new THREE.CylinderGeometry(0.003, 0.003, 0.25, 6);
+                const rxAntenna = new THREE.Mesh(rxAntennaGeo, matCarbonFiber);
+                rxAntenna.position.set(-0.15 + ra * 0.3, 0.12, -0.7);
+                rxAntenna.rotation.x = -0.6 + ra * 0.15;
+                rxAntenna.rotation.z = -0.3 + ra * 0.6;
+                drone.add(rxAntenna);
+            }
+
+            // Scale
+            drone.scale.set(1.6, 1.6, 1.6);
+
+            // Apply shadows to all meshes
+            drone.traverse(child => {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                }
+            });
+
+            return {
+                group: drone,
+                props: allProps,
+                motorBells: allMotorBells,
+                underglowLEDs,
+                underglowLights,
+                recLED,
+                greenGlow,
+                frontLEDs,
+            };
+        }
+
+        const droneData = createDrone();
+        const drone = droneData.group;
+        drone.position.set(0, 0.6, 0);
+        scene.add(drone);
+
+        // ── Animation Loop ─────────────────────────────────────
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const t = clock.getElapsedTime();
+
+            // Drone hover physics
+            drone.position.y = 0.8 + Math.sin(t * 1.5) * 0.08 + Math.sin(t * 3.7) * 0.02;
+            drone.rotation.z = Math.sin(t * 1.2) * 0.03;
+            drone.rotation.x = Math.cos(t * 1.0) * 0.02;
+            drone.rotation.y = Math.sin(t * 0.3) * 0.02;
+
+            // Spin propellers & motor bells
+            droneData.props.forEach((prop, i) => {
+                const dir = (i % 2 === 0) ? 1 : -1;
+                prop.rotation.y += 0.7 * dir;
+            });
+            droneData.motorBells.forEach((bell, i) => {
+                const dir = (i % 2 === 0) ? 1 : -1;
+                bell.rotation.y += 0.7 * dir;
+            });
+
+            // Pulsing underglow
+            const glowIntensity = 0.3 + Math.sin(t * 2) * 0.15;
+            droneData.underglowLEDs.forEach((led, i) => {
+                const phase = t * 3 + (i / droneData.underglowLEDs.length) * Math.PI * 2;
+                led.mat.emissiveIntensity = 0.8 + Math.sin(phase) * 0.5;
+            });
+            droneData.underglowLights.forEach(l => {
+                l.intensity = glowIntensity;
+            });
+
+            // Blinking recording LED
+            if (droneData.recLED) {
+                droneData.recLED.material.emissiveIntensity = Math.sin(t * 4) > 0 ? 3.0 : 0.2;
+            }
+
+            // Pulsing green rear LED
+            droneData.greenGlow.intensity = 0.2 + Math.sin(t * 2.5) * 0.15;
+
+            controls.update();
+            composer.render();
+        }
+        animate();
+
+        // ── Resize ─────────────────────────────────────────────
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+
+</html>
