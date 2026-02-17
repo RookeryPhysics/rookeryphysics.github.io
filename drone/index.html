@@ -1087,8 +1087,8 @@
             const sinY = Math.sin(droneYaw);
             const cosY = Math.cos(droneYaw);
             // forward/back from stick Y, strafe from stick X
-            currentVelocity.x = (smoothInput.x * cosY + smoothInput.y * sinY) * droneSpeed;
-            currentVelocity.z = (-smoothInput.x * sinY + smoothInput.y * cosY) * droneSpeed;
+            currentVelocity.x = (-smoothInput.x * cosY - smoothInput.y * sinY) * droneSpeed;
+            currentVelocity.z = (smoothInput.x * sinY - smoothInput.y * cosY) * droneSpeed;
 
             drone.position.x += currentVelocity.x;
             drone.position.z += currentVelocity.z;
