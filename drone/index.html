@@ -241,12 +241,24 @@
 
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
-        controls.dampingFactor = 0.06;
-        controls.minDistance = 2;
-        controls.maxDistance = 20;
+        controls.dampingFactor = 0.08;
+        controls.minDistance = 4;
+        controls.maxDistance = 35;
         controls.target.set(0, 1.5, 0);
         controls.maxPolarAngle = Math.PI * 0.85;
-        controls.enabled = false;
+        controls.enabled = true;
+
+        let cameraIsManual = false;
+        let lastCameraManualTime = -10; // Start with auto-mode
+        const CAMERA_RESET_DELAY = 4.0; // Seconds of inactivity before reset
+
+        controls.addEventListener('start', () => {
+            cameraIsManual = true;
+        });
+        controls.addEventListener('end', () => {
+            cameraIsManual = false;
+            lastCameraManualTime = clock.getElapsedTime();
+        });
 
         const pmremGenerator = new THREE.PMREMGenerator(renderer);
         const envScene = new THREE.Scene();
@@ -3033,21 +3045,33 @@
             );
             moonLight.target.position.copy(drone.position);
 
-            /* ── Camera fixed to drone rotation ── */
-            const camOffset = new THREE.Vector3(0, camHeight, -camDist);
-            const camWorldPos = camOffset.applyMatrix4(drone.matrixWorld);
-            camera.position.copy(camWorldPos);
+            /* ── Camera fixed or manual pan ── */
+            const timeSinceManual = t - lastCameraManualTime;
+            const isResetting = timeSinceManual > CAMERA_RESET_DELAY && !cameraIsManual;
 
-            // Re-calculate up vector from drone to maintain roll alignment
-            const droneUp = new THREE.Vector3(0, 1, 0).applyQuaternion(drone.quaternion);
-            camera.up.copy(droneUp);
+            if (!isResetting) {
+                // Manual mode (Orbiting)
+                controls.enabled = true;
+                controls.target.lerp(drone.position, 0.1);
+                controls.update();
+                // Smoothly level the horizon in manual mode
+                camera.up.lerp(new THREE.Vector3(0, 1, 0), 0.05);
+            } else {
+                // Return to fixed/locked mode
+                controls.enabled = false;
+                const camOffset = new THREE.Vector3(0, camHeight, -camDist);
+                const targetPos = camOffset.applyMatrix4(drone.matrixWorld);
+                const targetUp = new THREE.Vector3(0, 1, 0).applyQuaternion(drone.quaternion);
+                const lookTarget = new THREE.Vector3(0, 0, 3).applyMatrix4(drone.matrixWorld);
 
-            // Look at a point slightly in front of the drone to get a better perspective
-            const lookTarget = new THREE.Vector3(0, 0, 2).applyMatrix4(drone.matrixWorld);
-            camera.lookAt(lookTarget);
+                // Smoothly lerp position and roll
+                camera.position.lerp(targetPos, 0.07);
+                camera.up.lerp(targetUp, 0.07);
+                camera.lookAt(lookTarget);
 
-            // No longer need OrbitControls update if we are fixed
-            // controls.update(); 
+                // Sync controls internal state to match current jump
+                controls.target.copy(drone.position);
+            }
 
             // Use stick inputs (local frame) for tilt, not world-space velocity
             const targetPitch = -smoothInput.y * 0.18;
