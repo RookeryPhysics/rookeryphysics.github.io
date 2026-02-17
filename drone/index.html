@@ -12,14 +12,14 @@
     <meta property="og:url" content="https://rookeryphysics.github.io/drone">
     <meta property="og:title" content="Cinewhoop Drone Game">
     <meta property="og:description" content="A Three.js cinewhoop drone model with interactive grass physics.">
-    <meta property="og:image" content="https://rookeryphysics.github.io/drone/drone.png">
+    <meta property="og:image" content="https://rookeryphysics.github.io/drone/game.png">
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="https://rookeryphysics.github.io/drone">
     <meta property="twitter:title" content="Cinewhoop Drone Game">
     <meta property="twitter:description" content="A Three.js cinewhoop drone model with interactive grass physics.">
-    <meta property="twitter:image" content="https://rookeryphysics.github.io/drone/drone.png">
+    <meta property="twitter:image" content="https://rookeryphysics.github.io/drone/game.png">
     <style>
         * {
             margin: 0;
@@ -88,10 +88,28 @@
             pointer-events: none;
             transition: opacity 0.5s;
         }
+
+        #fps-counter {
+            position: fixed;
+            top: 12px;
+            left: 12px;
+            color: #0f0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            font-weight: bold;
+            z-index: 200;
+            pointer-events: none;
+            text-shadow: 0 0 4px rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.35);
+            padding: 4px 8px;
+            border-radius: 4px;
+            min-width: 70px;
+        }
     </style>
 </head>
 
 <body>
+    <div id="fps-counter">FPS: --</div>
     <div id="loading">Generating Grass...</div>
 
     <div id="joystick-zone-left" class="joystick-zone">
@@ -114,9 +132,7 @@
     <script type="module">
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
 
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87CEEB);
@@ -125,27 +141,15 @@
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 600);
         camera.position.set(0, 8.0, 16.0);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+        const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
         renderer.toneMappingExposure = 1.0;
         renderer.outputColorSpace = THREE.SRGBColorSpace;
         document.body.appendChild(renderer.domElement);
-
-        const composer = new EffectComposer(renderer);
-        const renderPass = new RenderPass(scene, camera);
-        composer.addPass(renderPass);
-
-        const bloom = new UnrealBloomPass(
-            new THREE.Vector2(window.innerWidth, window.innerHeight),
-            0.2,
-            0.4,
-            0.85
-        );
-        composer.addPass(bloom);
 
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
@@ -154,12 +158,13 @@
         controls.maxDistance = 20;
         controls.target.set(0, 1.5, 0);
         controls.maxPolarAngle = Math.PI * 0.85;
+        controls.enabled = false;
 
         const pmremGenerator = new THREE.PMREMGenerator(renderer);
         const envScene = new THREE.Scene();
         envScene.background = new THREE.Color(0x87CEEB);
 
-        const envGeo = new THREE.SphereGeometry(50, 32, 32);
+        const envGeo = new THREE.SphereGeometry(50, 16, 16);
         const envMat = new THREE.ShaderMaterial({
             side: THREE.BackSide,
             uniforms: {
@@ -196,13 +201,13 @@
         const moonLight = new THREE.DirectionalLight(0xFFF5E0, 1.8);
         moonLight.position.set(-10, 20, -10);
         moonLight.castShadow = true;
-        moonLight.shadow.mapSize.set(4096, 4096);
+        moonLight.shadow.mapSize.set(2048, 2048);
         moonLight.shadow.camera.near = 0.5;
-        moonLight.shadow.camera.far = 200;
-        moonLight.shadow.camera.left = -60;
-        moonLight.shadow.camera.right = 60;
-        moonLight.shadow.camera.top = 60;
-        moonLight.shadow.camera.bottom = -60;
+        moonLight.shadow.camera.far = 100;
+        moonLight.shadow.camera.left = -40;
+        moonLight.shadow.camera.right = 40;
+        moonLight.shadow.camera.top = 40;
+        moonLight.shadow.camera.bottom = -40;
         moonLight.shadow.bias = -0.0001;
         moonLight.shadow.normalBias = 0.02;
         scene.add(moonLight);
@@ -223,9 +228,9 @@
         plane.receiveShadow = true;
         scene.add(plane);
 
-        const grassCount = 40000;
+        const grassCount = 20000;
 
-        const grassGeo = new THREE.PlaneGeometry(0.12, 0.8, 1, 4);
+        const grassGeo = new THREE.PlaneGeometry(0.12, 0.8, 1, 3);
         grassGeo.translate(0, 0.4, 0);
 
         const positions = grassGeo.attributes.position;
@@ -324,14 +329,13 @@
         scene.add(grassMesh);
         document.getElementById('loading').style.opacity = 0;
 
-        /* ── Chain-link baseball fence around the map boundary ── */
-        const FENCE_HALF = 98;          // boundary half-size (drone is clamped here)
-        const fencePostHeight = 6.0;    // tall like a baseball backstop
+        /* ── Chain-link baseball fence (merged geometry for performance) ── */
+        const FENCE_HALF = 98;
+        const fencePostHeight = 6.0;
         const fencePostRadius = 0.06;
-        const fenceSpacing = 5;         // distance between posts
+        const fenceSpacing = 5;
         const topRailRadius = 0.05;
 
-        // Galvanized steel material for posts & top rail
         const fenceMetalMat = new THREE.MeshStandardMaterial({
             color: 0x888888,
             roughness: 0.35,
@@ -339,7 +343,6 @@
             envMapIntensity: 1.5,
         });
 
-        // Chain-link mesh material – semi-transparent with diamond pattern via shader
         const chainLinkMat = new THREE.MeshStandardMaterial({
             color: 0x999999,
             roughness: 0.4,
@@ -362,7 +365,6 @@
                 ${shader.fragmentShader}
             `.replace('#include <color_fragment>', `
                 #include <color_fragment>
-                // Diamond chain-link pattern
                 float scaleU = 12.0;
                 float scaleV = 24.0;
                 vec2 st = vec2(vUvMesh.x * scaleU, vUvMesh.y * scaleV);
@@ -373,74 +375,71 @@
             `);
         };
 
-        const postGeo = new THREE.CylinderGeometry(fencePostRadius, fencePostRadius, fencePostHeight, 8);
-        // Cap on top of each post
-        const postCapGeo = new THREE.SphereGeometry(fencePostRadius * 1.4, 8, 6);
+        // Build fence with merged geometry to minimize draw calls
+        const postGeo = new THREE.CylinderGeometry(fencePostRadius, fencePostRadius, fencePostHeight, 6);
+        const postCapGeo = new THREE.SphereGeometry(fencePostRadius * 1.4, 6, 4);
+        const metalGeos = [];
+        const panelGeos = [];
 
-        function addFenceSide(startX, startZ, dx, dz, totalLen) {
+        function collectFenceSide(startX, startZ, dx, dz, totalLen) {
             const numPosts = Math.floor(totalLen / fenceSpacing) + 1;
             for (let i = 0; i < numPosts; i++) {
                 const px = startX + dx * i * fenceSpacing;
                 const pz = startZ + dz * i * fenceSpacing;
 
-                // Steel post
-                const post = new THREE.Mesh(postGeo, fenceMetalMat);
-                post.position.set(px, fencePostHeight / 2, pz);
-                post.castShadow = true;
-                post.receiveShadow = true;
-                scene.add(post);
+                const pg = postGeo.clone();
+                pg.translate(px, fencePostHeight / 2, pz);
+                metalGeos.push(pg);
 
-                // Rounded cap on post top
-                const cap = new THREE.Mesh(postCapGeo, fenceMetalMat);
-                cap.position.set(px, fencePostHeight + 0.02, pz);
-                scene.add(cap);
+                const cg = postCapGeo.clone();
+                cg.translate(px, fencePostHeight + 0.02, pz);
+                metalGeos.push(cg);
 
-                // Chain-link panel + top rail between posts
                 if (i < numPosts - 1) {
                     const nx = startX + dx * (i + 1) * fenceSpacing;
                     const nz = startZ + dz * (i + 1) * fenceSpacing;
                     const mx = (px + nx) / 2;
                     const mz = (pz + nz) / 2;
 
-                    // Top rail (horizontal pipe)
-                    const railGeo = new THREE.CylinderGeometry(topRailRadius, topRailRadius, fenceSpacing, 8);
-                    const rail = new THREE.Mesh(railGeo, fenceMetalMat);
-                    rail.position.set(mx, fencePostHeight, mz);
+                    const railGeo = new THREE.CylinderGeometry(topRailRadius, topRailRadius, fenceSpacing, 6);
                     if (Math.abs(dx) > 0) {
-                        rail.rotation.z = Math.PI / 2;
+                        railGeo.rotateZ(Math.PI / 2);
                     } else {
-                        rail.rotation.x = Math.PI / 2;
+                        railGeo.rotateX(Math.PI / 2);
                     }
-                    rail.castShadow = true;
-                    scene.add(rail);
+                    railGeo.translate(mx, fencePostHeight, mz);
+                    metalGeos.push(railGeo);
 
-                    // Chain-link mesh panel
                     const panelGeo = new THREE.PlaneGeometry(fenceSpacing, fencePostHeight);
-                    const panel = new THREE.Mesh(panelGeo, chainLinkMat);
-                    panel.position.set(mx, fencePostHeight / 2, mz);
-                    // Rotate panel to face outward
-                    if (Math.abs(dx) > 0) {
-                        // fence runs along X → panel faces Z
-                        // default PlaneGeometry already faces +Z, no Y rotation needed
-                    } else {
-                        // fence runs along Z → panel faces X
-                        panel.rotation.y = Math.PI / 2;
+                    if (Math.abs(dz) > 0) {
+                        panelGeo.rotateY(Math.PI / 2);
                     }
-                    panel.receiveShadow = true;
-                    scene.add(panel);
+                    panelGeo.translate(mx, fencePostHeight / 2, mz);
+                    panelGeos.push(panelGeo);
                 }
             }
         }
 
         const fenceLen = FENCE_HALF * 2;
-        // +Z side (front)
-        addFenceSide(-FENCE_HALF, FENCE_HALF, 1, 0, fenceLen);
-        // -Z side (back)
-        addFenceSide(-FENCE_HALF, -FENCE_HALF, 1, 0, fenceLen);
-        // +X side (right)
-        addFenceSide(FENCE_HALF, -FENCE_HALF, 0, 1, fenceLen);
-        // -X side (left)
-        addFenceSide(-FENCE_HALF, -FENCE_HALF, 0, 1, fenceLen);
+        collectFenceSide(-FENCE_HALF, FENCE_HALF, 1, 0, fenceLen);
+        collectFenceSide(-FENCE_HALF, -FENCE_HALF, 1, 0, fenceLen);
+        collectFenceSide(FENCE_HALF, -FENCE_HALF, 0, 1, fenceLen);
+        collectFenceSide(-FENCE_HALF, -FENCE_HALF, 0, 1, fenceLen);
+
+        const mergedMetalGeo = BufferGeometryUtils.mergeGeometries(metalGeos);
+        const fenceMetalMesh = new THREE.Mesh(mergedMetalGeo, fenceMetalMat);
+        fenceMetalMesh.castShadow = true;
+        fenceMetalMesh.receiveShadow = true;
+        scene.add(fenceMetalMesh);
+
+        const mergedPanelGeo = BufferGeometryUtils.mergeGeometries(panelGeos);
+        const fencePanelMesh = new THREE.Mesh(mergedPanelGeo, chainLinkMat);
+        fencePanelMesh.receiveShadow = true;
+        scene.add(fencePanelMesh);
+
+        // Dispose source geos
+        metalGeos.forEach(g => g.dispose());
+        panelGeos.forEach(g => g.dispose());
 
         function roundedBox(w, h, d, r, segs) {
             const shape = new THREE.Shape();
@@ -677,20 +676,20 @@
                 motorUnit.position.set(pos.x, 0, pos.z);
 
                 const ductOuterGeo = new THREE.CylinderGeometry(
-                    ductOuterR, ductOuterR + 0.02, ductHeight, 32, 1, true
+                    ductOuterR, ductOuterR + 0.02, ductHeight, 20, 1, true
                 );
                 const ductOuter = new THREE.Mesh(ductOuterGeo, matDuctPlastic);
                 ductOuter.castShadow = true;
                 motorUnit.add(ductOuter);
 
                 const ductInnerGeo = new THREE.CylinderGeometry(
-                    ductInnerR, ductInnerR, ductHeight, 32, 1, true
+                    ductInnerR, ductInnerR, ductHeight, 20, 1, true
                 );
                 const ductInner = new THREE.Mesh(ductInnerGeo, matDuctInner);
                 motorUnit.add(ductInner);
 
                 const lipGeo = new THREE.TorusGeometry(
-                    (ductOuterR + ductInnerR) / 2, 0.025, 8, 32
+                    (ductOuterR + ductInnerR) / 2, 0.025, 6, 16
                 );
                 const lip = new THREE.Mesh(lipGeo, matDuctPlastic);
                 lip.rotation.x = Math.PI / 2;
@@ -702,7 +701,7 @@
                 motorUnit.add(lipBot);
 
                 const stripeGeo = new THREE.TorusGeometry(
-                    ductOuterR + 0.005, 0.012, 6, 32
+                    ductOuterR + 0.005, 0.012, 4, 16
                 );
                 const stripe = new THREE.Mesh(stripeGeo, matAccentOrange);
                 stripe.rotation.x = Math.PI / 2;
@@ -717,7 +716,7 @@
                     motorUnit.add(support);
                 }
 
-                const statorGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.12, 16);
+                const statorGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.12, 10);
                 const stator = new THREE.Mesh(statorGeo, matMotorStator);
                 stator.position.y = -0.04;
                 motorUnit.add(stator);
@@ -734,11 +733,11 @@
                 const bellGroup = new THREE.Group();
                 bellGroup.position.y = 0.04;
 
-                const bellGeo = new THREE.CylinderGeometry(0.12, 0.11, 0.06, 20);
+                const bellGeo = new THREE.CylinderGeometry(0.12, 0.11, 0.06, 12);
                 const bell = new THREE.Mesh(bellGeo, matMotorBell);
                 bellGroup.add(bell);
 
-                const bellCapGeo = new THREE.CylinderGeometry(0.06, 0.08, 0.02, 16);
+                const bellCapGeo = new THREE.CylinderGeometry(0.06, 0.08, 0.02, 10);
                 const bellCap = new THREE.Mesh(bellCapGeo, matMotorBell);
                 bellCap.position.y = 0.04;
                 bellGroup.add(bellCap);
@@ -994,7 +993,8 @@
 
             const underglowLEDs = [];
             const underglowLights = [];
-            const numUnderglow = 12;
+            const numUnderglow = 6;
+            const underglowLedGeo = new THREE.SphereGeometry(0.01, 4, 4);
             for (let u = 0; u < numUnderglow; u++) {
                 const angle = (u * Math.PI * 2) / numUnderglow;
                 const r = 0.5;
@@ -1004,10 +1004,7 @@
                     emissiveIntensity: 2.0,
                     roughness: 0.2,
                 });
-                const led = new THREE.Mesh(
-                    new THREE.SphereGeometry(0.01, 6, 6),
-                    ledMat
-                );
+                const led = new THREE.Mesh(underglowLedGeo, ledMat);
                 led.position.set(Math.cos(angle) * r, -0.14, Math.sin(angle) * r);
                 drone.add(led);
                 underglowLEDs.push({ mesh: led, mat: ledMat });
@@ -1595,6 +1592,14 @@
 
         const clock = new THREE.Clock();
         let lastTime = 0;
+
+        /* ── FPS Counter ── */
+        const fpsEl = document.getElementById('fps-counter');
+        let fpsFrames = 0;
+        let fpsAccum = 0;
+
+        /* ── Trail fade list (replaces setInterval) ── */
+        const fadingTrails = [];
         const droneSpeed = 0.28;
         const yawSpeed = 0.04;      // radians per frame at full deflection
         const altSpeed = 0.08;      // units per frame at full deflection
@@ -1612,8 +1617,19 @@
         function animate() {
             requestAnimationFrame(animate);
             const t = clock.getElapsedTime();
-            const dt = Math.min(t - lastTime, 0.05); // capped to avoid huge jumps
+            const dt = Math.min(t - lastTime, 0.05);
             lastTime = t;
+
+            /* ── FPS Counter update ── */
+            fpsFrames++;
+            fpsAccum += dt;
+            if (fpsAccum >= 0.5) {
+                const fps = Math.round(fpsFrames / fpsAccum);
+                fpsEl.textContent = `FPS: ${fps}`;
+                fpsEl.style.color = fps >= 50 ? '#0f0' : fps >= 30 ? '#ff0' : '#f33';
+                fpsFrames = 0;
+                fpsAccum = 0;
+            }
 
             if (grassMat.userData.shader) {
                 grassMat.userData.shader.uniforms.uTime.value = t;
@@ -1807,20 +1823,7 @@
                 if (progress >= 1.0) {
                     scene.remove(m.mesh);
                     if (m.trail) {
-                        // Fade trail out gradually
-                        const trail = m.trail;
-                        const fadeDuration = 1.5;
-                        let fadeElapsed = 0;
-                        const fadeInterval = setInterval(() => {
-                            fadeElapsed += 0.05;
-                            trail.material.opacity = Math.max(0, 0.5 * (1 - fadeElapsed / fadeDuration));
-                            if (fadeElapsed >= fadeDuration) {
-                                scene.remove(trail);
-                                trail.geometry.dispose();
-                                trail.material.dispose();
-                                clearInterval(fadeInterval);
-                            }
-                        }, 50);
+                        fadingTrails.push({ trail: m.trail, elapsed: 0, duration: 1.5 });
                     }
                     createExplosion(m.targetPos);
                     activeMissiles.splice(i, 1);
@@ -1889,10 +1892,20 @@
                 }
             }
 
+            /* ── Fade out missile trails ── */
+            for (let i = fadingTrails.length - 1; i >= 0; i--) {
+                const ft = fadingTrails[i];
+                ft.elapsed += dt;
+                ft.trail.material.opacity = Math.max(0, 0.5 * (1 - ft.elapsed / ft.duration));
+                if (ft.elapsed >= ft.duration) {
+                    scene.remove(ft.trail);
+                    ft.trail.geometry.dispose();
+                    ft.trail.material.dispose();
+                    fadingTrails.splice(i, 1);
+                }
+            }
 
-
-            controls.update();
-            composer.render();
+            renderer.render(scene, camera);
         }
         animate();
 
@@ -1900,7 +1913,6 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-            composer.setSize(window.innerWidth, window.innerHeight);
         });
     </script>
 </body>
