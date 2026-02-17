@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cinewhoop Drone – Grass Interaction</title>
+    <title>Cinewhoop Drone Game</title>
     <meta name="description" content="A Three.js cinewhoop drone model with interactive grass physics.">
 
     <!-- Open Graph / Facebook -->
@@ -36,10 +36,9 @@
             display: block;
         }
 
-        #joystick-zone {
+        .joystick-zone {
             position: fixed;
             bottom: 40px;
-            right: 40px;
             width: 120px;
             height: 120px;
             background: rgba(255, 255, 255, 0.05);
@@ -55,12 +54,20 @@
             transition: opacity 0.3s, background 0.3s;
         }
 
-        #joystick-zone:active {
+        .joystick-zone:active {
             background: rgba(255, 255, 255, 0.1);
             border-color: rgba(255, 255, 255, 0.3);
         }
 
-        #joystick-knob {
+        #joystick-zone-right {
+            right: 40px;
+        }
+
+        #joystick-zone-left {
+            left: 40px;
+        }
+
+        .joystick-knob {
             width: 40px;
             height: 40px;
             background: rgba(255, 255, 255, 0.5);
@@ -69,11 +76,9 @@
             box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
         }
 
-        #joystick-hint {
+        .joystick-hint {
             position: absolute;
             bottom: 130px;
-            right: 65px;
-            transform: translateX(50%);
             font-family: 'Segoe UI', system-ui, sans-serif;
             font-size: 11px;
             color: rgba(255, 255, 255, 0.3);
@@ -81,6 +86,16 @@
             text-transform: uppercase;
             letter-spacing: 1px;
             white-space: nowrap;
+        }
+
+        #joystick-hint-right {
+            right: 65px;
+            transform: translateX(50%);
+        }
+
+        #joystick-hint-left {
+            left: 65px;
+            transform: translateX(-50%);
         }
 
         #loading {
@@ -98,9 +113,13 @@
 
 <body>
     <div id="loading">Generating Grass...</div>
-    <div id="joystick-hint">Flight Control</div>
-    <div id="joystick-zone">
-        <div id="joystick-knob"></div>
+    <div id="joystick-hint-left" class="joystick-hint">Yaw / Altitude</div>
+    <div id="joystick-zone-left" class="joystick-zone">
+        <div id="joystick-knob-left" class="joystick-knob"></div>
+    </div>
+    <div id="joystick-hint-right" class="joystick-hint">Flight Control</div>
+    <div id="joystick-zone-right" class="joystick-zone">
+        <div id="joystick-knob-right" class="joystick-knob"></div>
     </div>
 
     <script type="importmap">
@@ -943,73 +962,106 @@
         drone.position.set(0, 1.8, 0);
         scene.add(drone);
 
-        let inputVector = { x: 0, y: 0 };
-        const joyZone = document.getElementById('joystick-zone');
-        const joyKnob = document.getElementById('joystick-knob');
-        const joySize = 120;
-        const knobSize = 40;
-        const maxDist = (joySize - knobSize) / 2;
-        let dragging = false;
-        let startX, startY;
+        /* ── Joystick Helper Factory ── */
+        function createJoystickController(zoneId, knobId) {
+            const zone = document.getElementById(zoneId);
+            const knob = document.getElementById(knobId);
+            const joySize = 120;
+            const knobSize = 40;
+            const maxDist = (joySize - knobSize) / 2;
+            const state = { x: 0, y: 0 };
+            let dragging = false;
+            let startX, startY;
+            let activeTouchId = null;
 
-        const updateJoystick = (dx, dy) => {
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            let constrainedDx = dx;
-            let constrainedDy = dy;
+            const update = (dx, dy) => {
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                let cx = dx, cy = dy;
+                if (dist > maxDist) {
+                    const a = Math.atan2(dy, dx);
+                    cx = Math.cos(a) * maxDist;
+                    cy = Math.sin(a) * maxDist;
+                }
+                knob.style.transform = `translate(${cx}px, ${cy}px)`;
+                state.x = cx / maxDist;
+                state.y = cy / maxDist;
+            };
 
-            if (dist > maxDist) {
-                const angle = Math.atan2(dy, dx);
-                constrainedDx = Math.cos(angle) * maxDist;
-                constrainedDy = Math.sin(angle) * maxDist;
-            }
+            const reset = () => {
+                dragging = false;
+                activeTouchId = null;
+                state.x = 0;
+                state.y = 0;
+                knob.style.transform = `translate(0px, 0px)`;
+            };
 
-            joyKnob.style.transform = `translate(${constrainedDx}px, ${constrainedDy}px)`;
+            /* Mouse events */
+            zone.addEventListener('mousedown', (e) => {
+                dragging = true;
+                const rect = zone.getBoundingClientRect();
+                startX = rect.left + rect.width / 2;
+                startY = rect.top + rect.height / 2;
+                update(e.clientX - startX, e.clientY - startY);
+            });
+            window.addEventListener('mousemove', (e) => {
+                if (!dragging) return;
+                update(e.clientX - startX, e.clientY - startY);
+            });
+            window.addEventListener('mouseup', () => { if (dragging) reset(); });
 
-            inputVector.x = constrainedDx / maxDist;
-            inputVector.y = constrainedDy / maxDist;
-        };
+            /* Touch events – track a specific touch ID so both sticks work independently */
+            zone.addEventListener('touchstart', (e) => {
+                if (activeTouchId !== null) return; // already tracking
+                const touch = e.changedTouches[0];
+                activeTouchId = touch.identifier;
+                dragging = true;
+                const rect = zone.getBoundingClientRect();
+                startX = rect.left + rect.width / 2;
+                startY = rect.top + rect.height / 2;
+                update(touch.clientX - startX, touch.clientY - startY);
+            }, { passive: true });
 
-        const handleStart = (e) => {
-            dragging = true;
-            const rect = joyZone.getBoundingClientRect();
-            const centerX = rect.left + rect.width / 2;
-            const centerY = rect.top + rect.height / 2;
-            startX = centerX;
-            startY = centerY;
+            window.addEventListener('touchmove', (e) => {
+                if (activeTouchId === null) return;
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    if (e.changedTouches[i].identifier === activeTouchId) {
+                        const t = e.changedTouches[i];
+                        update(t.clientX - startX, t.clientY - startY);
+                        break;
+                    }
+                }
+            }, { passive: true });
 
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            updateJoystick(clientX - startX, clientY - startY);
-        };
+            const touchEnd = (e) => {
+                if (activeTouchId === null) return;
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    if (e.changedTouches[i].identifier === activeTouchId) {
+                        reset();
+                        break;
+                    }
+                }
+            };
+            window.addEventListener('touchend', touchEnd);
+            window.addEventListener('touchcancel', touchEnd);
 
-        const handleMove = (e) => {
-            if (!dragging) return;
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            updateJoystick(clientX - startX, clientY - startY);
-        };
+            return state;
+        }
 
-        const handleEnd = () => {
-            dragging = false;
-            inputVector.x = 0;
-            inputVector.y = 0;
-            joyKnob.style.transform = `translate(0px, 0px)`;
-        };
-
-        joyZone.addEventListener('mousedown', handleStart);
-        window.addEventListener('mousemove', handleMove);
-        window.addEventListener('mouseup', handleEnd);
-
-        joyZone.addEventListener('touchstart', handleStart, { passive: false });
-        window.addEventListener('touchmove', handleMove, { passive: false });
-        window.addEventListener('touchend', handleEnd);
+        /* Right stick  → forward / backward / strafe */
+        const inputVector = createJoystickController('joystick-zone-right', 'joystick-knob-right');
+        /* Left stick   → yaw (x) & altitude (y) */
+        const inputLeft = createJoystickController('joystick-zone-left', 'joystick-knob-left');
 
         const clock = new THREE.Clock();
         const droneSpeed = 0.15;
-        const smoothInput = new THREE.Vector2();
+        const yawSpeed = 0.04;      // radians per frame at full deflection
+        const altSpeed = 0.08;      // units per frame at full deflection
+        const smoothInput = new THREE.Vector2();   // right stick smoothed
+        const smoothLeft = new THREE.Vector2();   // left stick smoothed
         const currentVelocity = new THREE.Vector3();
 
-        const baseHeight = 1.8;
+        let baseHeight = 1.8;
+        let droneYaw = Math.PI;     // current heading (initial = facing camera)
 
         function animate() {
             requestAnimationFrame(animate);
@@ -1020,11 +1072,23 @@
                 grassMat.userData.shader.uniforms.uDronePos.value.copy(drone.position);
             }
 
+            /* ── Smooth both sticks ── */
             smoothInput.x = THREE.MathUtils.lerp(smoothInput.x, inputVector.x, 0.1);
             smoothInput.y = THREE.MathUtils.lerp(smoothInput.y, inputVector.y, 0.1);
+            smoothLeft.x = THREE.MathUtils.lerp(smoothLeft.x, inputLeft.x, 0.1);
+            smoothLeft.y = THREE.MathUtils.lerp(smoothLeft.y, inputLeft.y, 0.1);
 
-            currentVelocity.x = smoothInput.x * droneSpeed;
-            currentVelocity.z = smoothInput.y * droneSpeed;
+            /* ── Left stick: yaw & altitude ── */
+            droneYaw -= smoothLeft.x * yawSpeed;            // left → positive yaw
+            baseHeight -= smoothLeft.y * altSpeed;           // stick up (negative y) → go up
+            baseHeight = Math.max(0.4, baseHeight);          // clamp above ground
+
+            /* ── Right stick: movement in the drone's local heading ── */
+            const sinY = Math.sin(droneYaw);
+            const cosY = Math.cos(droneYaw);
+            // forward/back from stick Y, strafe from stick X
+            currentVelocity.x = (smoothInput.x * cosY + smoothInput.y * sinY) * droneSpeed;
+            currentVelocity.z = (-smoothInput.x * sinY + smoothInput.y * cosY) * droneSpeed;
 
             drone.position.x += currentVelocity.x;
             drone.position.z += currentVelocity.z;
@@ -1034,10 +1098,17 @@
             controls.target.x += currentVelocity.x;
             controls.target.z += currentVelocity.z;
 
+            /* Altitude – camera & target follow smoothly */
+            const altDelta = (baseHeight - controls.target.y + 1.8 - baseHeight); // keep offset
+            controls.target.y = THREE.MathUtils.lerp(controls.target.y, drone.position.y, 0.08);
+            camera.position.y = THREE.MathUtils.lerp(camera.position.y,
+                drone.position.y + 3.2, 0.06);
+
             const targetPitch = currentVelocity.z * 2.5;
             const targetRoll = currentVelocity.x * 2.5;
 
-            const speedFactor = 1.0 - Math.min(smoothInput.length(), 1.0) * 0.8;
+            const totalSpeed = smoothInput.length() + Math.abs(smoothLeft.x);
+            const speedFactor = 1.0 - Math.min(totalSpeed, 1.0) * 0.8;
 
             const idlePitch = Math.cos(t * 1.0) * 0.02 * speedFactor;
             const idleRoll = Math.sin(t * 1.2) * 0.03 * speedFactor;
@@ -1047,7 +1118,7 @@
 
             drone.rotation.x = idlePitch + targetPitch;
             drone.rotation.z = idleRoll + targetRoll;
-            drone.rotation.y = Math.PI + idleYaw;
+            drone.rotation.y = droneYaw + idleYaw;
 
             const propSpeed = 0.7 + smoothInput.length() * 0.5;
             droneData.props.forEach((prop, i) => {
