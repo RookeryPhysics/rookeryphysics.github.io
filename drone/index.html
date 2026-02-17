@@ -206,6 +206,7 @@
         moonLight.shadow.bias = -0.0001;
         moonLight.shadow.normalBias = 0.02;
         scene.add(moonLight);
+        scene.add(moonLight.target);
 
         const rimLight = new THREE.DirectionalLight(0xFFE8C0, 0.8);
         rimLight.position.set(15, 10, 5);
@@ -1161,6 +1162,46 @@
         drone.rotation.order = 'YXZ';  // Apply yaw first so pitch/roll are in local frame
         scene.add(drone);
 
+        /* ── Ammo Crate ── */
+        function createAmmoCrate() {
+            const group = new THREE.Group();
+
+            // Box (4x larger)
+            const box = new THREE.Mesh(
+                new THREE.BoxGeometry(10.0, 4.8, 6.0),
+                new THREE.MeshStandardMaterial({ color: 0x3d4c3d, roughness: 0.8 })
+            );
+            box.position.y = 2.4;
+            box.castShadow = true;
+            box.receiveShadow = true;
+            group.add(box);
+
+            // Lid
+            const lid = new THREE.Mesh(
+                new THREE.BoxGeometry(10.4, 0.8, 6.4),
+                new THREE.MeshStandardMaterial({ color: 0x2f3a2f, roughness: 0.9 })
+            );
+            lid.position.y = 5.0;
+            lid.castShadow = true;
+            lid.receiveShadow = true;
+            group.add(lid);
+
+            // Simple markings
+            const markGeo = new THREE.PlaneGeometry(4.0, 1.6);
+            const markMat = new THREE.MeshBasicMaterial({ color: 0xcccc00 });
+            const mark = new THREE.Mesh(markGeo, markMat);
+            mark.rotation.x = -Math.PI / 2;
+            mark.position.y = 5.41;
+            group.add(mark);
+
+            return group;
+        }
+
+        const ammoCrate = createAmmoCrate();
+        // Positioned in corner, adjusted for larger size
+        ammoCrate.position.set(80, 0, 80);
+        scene.add(ammoCrate);
+
         /* ── Missile Launch System ── */
         const activeMissiles = [];     // in-flight missiles
         const explosions = [];         // active explosion particle systems
@@ -1336,7 +1377,8 @@
 
         function respawnMissile(slotData) {
             const slot = droneData.missileSlots[slotData.slotIndex];
-            scene.remove(slotData.mesh);
+            // Do not remove old mesh here, as it might be currently flying (activeMissile)
+            // scene.remove(slotData.mesh); 
 
             // Create a fresh missile and re-attach
             const freshGroup = new THREE.Group();
@@ -1387,7 +1429,7 @@
             }
 
             freshGroup.position.set(slot.x, slot.y, slot.z);
-            freshGroup.rotation.x = -Math.PI / 2;
+            // freshGroup.rotation.x = -Math.PI / 2; // REMOVED: Match initial orientation
             freshGroup.scale.set(0.8, 0.8, 0.8);
             drone.add(freshGroup);
 
@@ -1609,12 +1651,48 @@
             drone.position.x += currentVelocity.x;
             drone.position.z += currentVelocity.z;
 
+            /* ── Ammo Crate collision & landing ── */
+            // Crate AABB: centered at (80,0,80), box 10 wide (X), 6 deep (Z), lid top at y=5.4
+            const crateHalfW = 5.2;   // half-width X (with small margin)
+            const crateHalfD = 3.2;   // half-depth Z (with small margin)
+            const crateTopY = 5.4;   // top of the lid
+            const cx = ammoCrate.position.x;
+            const cz = ammoCrate.position.z;
+            const onCrateXZ = (drone.position.x > cx - crateHalfW && drone.position.x < cx + crateHalfW &&
+                drone.position.z > cz - crateHalfD && drone.position.z < cz + crateHalfD);
+
+            // If the drone is above the crate footprint, enforce the crate top as a floor
+            if (onCrateXZ) {
+                const minAboveCrate = crateTopY + 0.4; // small offset so drone sits on lid
+                if (baseHeight < minAboveCrate) {
+                    baseHeight = minAboveCrate;
+                }
+            }
+
+            // Reload missiles when landed on the crate (touching lid surface)
+            const landedOnCrate = onCrateXZ && baseHeight <= crateTopY + 0.5;
+            if (landedOnCrate) {
+                droneData.missiles.forEach(slot => {
+                    if (!slot.attached) {
+                        respawnMissile(slot);
+                    }
+                });
+            }
+
             // Clamp drone inside fence boundary
             const FENCE_LIMIT = FENCE_HALF - 1.5;
             if (drone.position.x > FENCE_LIMIT) { drone.position.x = FENCE_LIMIT; currentVelocity.x = 0; }
             if (drone.position.x < -FENCE_LIMIT) { drone.position.x = -FENCE_LIMIT; currentVelocity.x = 0; }
             if (drone.position.z > FENCE_LIMIT) { drone.position.z = FENCE_LIMIT; currentVelocity.z = 0; }
             if (drone.position.z < -FENCE_LIMIT) { drone.position.z = -FENCE_LIMIT; currentVelocity.z = 0; }
+
+            /* ── Update shadow light to follow drone ── */
+            moonLight.position.set(
+                drone.position.x - 10,
+                drone.position.y + 20,
+                drone.position.z - 10
+            );
+            moonLight.target.position.copy(drone.position);
 
             /* ── Camera orbits behind drone based on yaw ── */
             cameraYaw = cameraYaw + (droneYaw - cameraYaw) * 0.05; // smooth follow
