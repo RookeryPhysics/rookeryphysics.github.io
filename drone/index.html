@@ -316,20 +316,23 @@
         plane.receiveShadow = true;
         scene.add(plane);
 
-        const grassCount = 20000;
+        const grassCount = 10000;
 
-        const grassGeo = new THREE.PlaneGeometry(0.12, 0.8, 1, 3);
-        grassGeo.translate(0, 0.4, 0);
+        const grassGeo = new THREE.PlaneGeometry(0.15, 1.6, 1, 4);
+        grassGeo.translate(0, 0.8, 0);
 
         const positions = grassGeo.attributes.position;
         for (let i = 0; i < positions.count; i++) {
             const y = positions.getY(i);
-            if (y > 0.6) {
+            if (y > 1.2) {
                 const x = positions.getX(i);
-                positions.setX(i, x * 0.1);
+                positions.setX(i, x * 0.05);
+            } else if (y > 0.8) {
+                const x = positions.getX(i);
+                positions.setX(i, x * 0.25);
             } else if (y > 0.4) {
                 const x = positions.getX(i);
-                positions.setX(i, x * 0.5);
+                positions.setX(i, x * 0.6);
             }
         }
         grassGeo.computeVertexNormals();
@@ -372,7 +375,7 @@
                 
                 vec2 pushDir = normalize(worldInstancePos.xz - uDronePos.xz);
                 
-                float heightFactor = smoothstep(0.0, 0.8, position.y);
+                float heightFactor = smoothstep(0.0, 1.6, position.y);
                 
                 float wind = sin(uTime * 1.5 + worldInstancePos.x * 0.5 + worldInstancePos.z * 0.3) * 0.1;
                 
@@ -404,7 +407,7 @@
 
             dummy.rotation.y = Math.random() * Math.PI * 2;
 
-            const scale = 0.8 + Math.random() * 0.5;
+            const scale = 0.9 + Math.random() * 0.7;
             dummy.scale.set(scale, scale, scale);
 
             dummy.rotation.x = (Math.random() - 0.5) * 0.2;
@@ -1322,193 +1325,724 @@
                 color: 0xff2200, emissive: 0xff2200, emissiveIntensity: 0.8,
                 roughness: 0.2,
             });
+            const matAmberLight = new THREE.MeshStandardMaterial({
+                color: 0xff8800, emissive: 0xff6600, emissiveIntensity: 0.6,
+                roughness: 0.2,
+            });
+            const matChrome = new THREE.MeshStandardMaterial({
+                color: 0xdddddd, roughness: 0.1, metalness: 1.0,
+                envMapIntensity: 2.5,
+            });
+            const matCamoLight = new THREE.MeshStandardMaterial({
+                color: 0x6b7a3a, roughness: 0.85, metalness: 0.15,
+            });
+            const matCamoDark = new THREE.MeshStandardMaterial({
+                color: 0x3a4a1a, roughness: 0.85, metalness: 0.15,
+            });
+            const matTan = new THREE.MeshStandardMaterial({
+                color: 0x8a7a5a, roughness: 0.85, metalness: 0.15,
+            });
+            const matExhaust = new THREE.MeshStandardMaterial({
+                color: 0x2a2a2a, roughness: 0.6, metalness: 0.7,
+            });
 
-            // --- Chassis / Frame ---
-            const chassis = new THREE.Mesh(
-                new THREE.BoxGeometry(3.2, 0.4, 8.0),
-                matDarkGreen
-            );
-            chassis.position.y = 1.0;
-            chassis.castShadow = true;
-            chassis.receiveShadow = true;
-            truck.add(chassis);
+            // --- Heavy Steel Chassis / Frame Rails ---
+            const chassisRailGeo = new THREE.BoxGeometry(0.25, 0.35, 8.4);
+            for (let side = -1; side <= 1; side += 2) {
+                const rail = new THREE.Mesh(chassisRailGeo, matDarkMetal);
+                rail.position.set(side * 1.2, 0.68, 0);
+                rail.castShadow = true;
+                rail.receiveShadow = true;
+                truck.add(rail);
+            }
+            // Cross members
+            for (let cz = -3; cz <= 3; cz += 1.5) {
+                const crossMember = new THREE.Mesh(
+                    new THREE.BoxGeometry(2.6, 0.12, 0.2),
+                    matDarkMetal
+                );
+                crossMember.position.set(0, 0.68, cz);
+                truck.add(crossMember);
+            }
 
-            // --- Cab ---
-            const cab = new THREE.Mesh(
-                new THREE.BoxGeometry(3.0, 2.2, 2.8),
+            // --- Cab (more shaped) ---
+            // Lower cab body
+            const cabLower = new THREE.Mesh(
+                new THREE.BoxGeometry(3.0, 1.4, 2.8),
                 matOliveDrab
             );
-            cab.position.set(0, 2.3, 2.4);
-            cab.castShadow = true;
-            cab.receiveShadow = true;
-            truck.add(cab);
+            cabLower.position.set(0, 1.8, 2.4);
+            cabLower.castShadow = true;
+            cabLower.receiveShadow = true;
+            truck.add(cabLower);
+
+            // Upper cab (slightly narrower for realistic shape)
+            const cabUpper = new THREE.Mesh(
+                new THREE.BoxGeometry(2.8, 1.0, 2.6),
+                matOliveDrab
+            );
+            cabUpper.position.set(0, 3.0, 2.4);
+            cabUpper.castShadow = true;
+            cabUpper.receiveShadow = true;
+            truck.add(cabUpper);
 
             // Cab roof
             const cabRoof = new THREE.Mesh(
-                new THREE.BoxGeometry(3.1, 0.15, 3.0),
+                new THREE.BoxGeometry(2.9, 0.12, 2.8),
                 matDarkGreen
             );
-            cabRoof.position.set(0, 3.45, 2.4);
+            cabRoof.position.set(0, 3.56, 2.4);
             cabRoof.castShadow = true;
             truck.add(cabRoof);
 
-            // Windshield
+            // --- Engine Hood (sloped) ---
+            const hoodGeo = new THREE.BoxGeometry(2.8, 0.15, 1.2);
+            const hood = new THREE.Mesh(hoodGeo, matCamoLight);
+            hood.rotation.x = -0.15;
+            hood.position.set(0, 2.0, 3.95);
+            hood.castShadow = true;
+            truck.add(hood);
+
+            // Hood side panels
+            for (let side = -1; side <= 1; side += 2) {
+                const hoodSide = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.08, 0.7, 1.2),
+                    matOliveDrab
+                );
+                hoodSide.position.set(side * 1.36, 1.7, 3.95);
+                hoodSide.castShadow = true;
+                truck.add(hoodSide);
+            }
+
+            // --- Front Grille ---
+            const grilleFrame = new THREE.Mesh(
+                new THREE.BoxGeometry(2.4, 1.0, 0.12),
+                matDarkMetal
+            );
+            grilleFrame.position.set(0, 1.6, 4.56);
+            truck.add(grilleFrame);
+
+            // Grille horizontal slats
+            for (let gs = 0; gs < 6; gs++) {
+                const slat = new THREE.Mesh(
+                    new THREE.BoxGeometry(2.2, 0.04, 0.14),
+                    matChrome
+                );
+                slat.position.set(0, 1.2 + gs * 0.14, 4.57);
+                truck.add(slat);
+            }
+
+            // --- Windshield (angled) ---
             const windshield = new THREE.Mesh(
-                new THREE.PlaneGeometry(2.6, 1.6),
+                new THREE.PlaneGeometry(2.4, 1.4),
                 matGlass
             );
-            windshield.position.set(0, 2.5, 3.81);
+            windshield.rotation.x = -0.12;
+            windshield.position.set(0, 2.9, 3.76);
             truck.add(windshield);
 
-            // Side windows
+            // Windshield frame pillars
+            for (let side = -1; side <= 1; side += 2) {
+                const pillar = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.08, 1.5, 0.08),
+                    matDarkGreen
+                );
+                pillar.position.set(side * 1.25, 2.9, 3.72);
+                truck.add(pillar);
+            }
+
+            // Center windshield divider
+            const wsDivider = new THREE.Mesh(
+                new THREE.BoxGeometry(0.04, 1.4, 0.06),
+                matDarkGreen
+            );
+            wsDivider.position.set(0, 2.9, 3.74);
+            truck.add(wsDivider);
+
+            // --- Side windows ---
             for (let side = -1; side <= 1; side += 2) {
                 const sideWin = new THREE.Mesh(
-                    new THREE.PlaneGeometry(2.0, 1.2),
+                    new THREE.PlaneGeometry(1.8, 0.9),
                     matGlass
                 );
                 sideWin.rotation.y = side * Math.PI / 2;
-                sideWin.position.set(side * 1.51, 2.5, 2.4);
+                sideWin.position.set(side * 1.41, 2.9, 2.4);
                 truck.add(sideWin);
             }
 
-            // Headlights
+            // --- Side Mirrors ---
             for (let side = -1; side <= 1; side += 2) {
-                const hl = new THREE.Mesh(
-                    new THREE.CircleGeometry(0.2, 12),
-                    matHeadlight
+                const mirrorArm = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.5, 0.06, 0.06),
+                    matDarkMetal
                 );
-                hl.position.set(side * 1.1, 1.8, 3.81);
-                truck.add(hl);
+                mirrorArm.position.set(side * 1.7, 2.8, 3.2);
+                truck.add(mirrorArm);
+
+                const mirrorHead = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.08, 0.35, 0.25),
+                    matDarkMetal
+                );
+                mirrorHead.position.set(side * 1.95, 2.75, 3.2);
+                truck.add(mirrorHead);
+
+                const mirrorGlass = new THREE.Mesh(
+                    new THREE.PlaneGeometry(0.28, 0.18),
+                    matGlass
+                );
+                mirrorGlass.rotation.y = side * Math.PI / 2;
+                mirrorGlass.position.set(side * 2.0, 2.75, 3.2);
+                truck.add(mirrorGlass);
             }
 
-            // Bumper
+            // --- Headlights (recessed with bezels) ---
+            for (let side = -1; side <= 1; side += 2) {
+                // Headlight housing
+                const hlHousing = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.25, 0.25, 0.12, 12),
+                    matDarkMetal
+                );
+                hlHousing.rotation.x = Math.PI / 2;
+                hlHousing.position.set(side * 1.0, 1.7, 4.56);
+                truck.add(hlHousing);
+
+                // Headlight lens
+                const hl = new THREE.Mesh(
+                    new THREE.CircleGeometry(0.22, 16),
+                    matHeadlight
+                );
+                hl.position.set(side * 1.0, 1.7, 4.63);
+                truck.add(hl);
+
+                // Chrome bezel ring
+                const hlBezel = new THREE.Mesh(
+                    new THREE.TorusGeometry(0.24, 0.02, 6, 16),
+                    matChrome
+                );
+                hlBezel.position.set(side * 1.0, 1.7, 4.62);
+                truck.add(hlBezel);
+            }
+
+            // --- Turn signal / marker lights ---
+            for (let side = -1; side <= 1; side += 2) {
+                const turnSignal = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.18, 0.08, 0.05),
+                    matAmberLight
+                );
+                turnSignal.position.set(side * 1.3, 1.35, 4.58);
+                truck.add(turnSignal);
+            }
+
+            // --- Front Bumper (heavy duty) ---
             const bumper = new THREE.Mesh(
-                new THREE.BoxGeometry(3.4, 0.35, 0.25),
-                matMetal
+                new THREE.BoxGeometry(3.4, 0.4, 0.3),
+                matChrome
             );
-            bumper.position.set(0, 0.9, 4.05);
+            bumper.position.set(0, 0.95, 4.55);
             bumper.castShadow = true;
             truck.add(bumper);
 
-            // Tail lights
+            // Tow hooks
             for (let side = -1; side <= 1; side += 2) {
-                const tl = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.3, 0.2, 0.05),
-                    matRedLight
+                const towHook = new THREE.Mesh(
+                    new THREE.TorusGeometry(0.1, 0.03, 6, 8, Math.PI),
+                    matDarkMetal
                 );
-                tl.position.set(side * 1.3, 1.3, -3.99);
-                truck.add(tl);
+                towHook.rotation.z = Math.PI / 2;
+                towHook.position.set(side * 1.3, 0.75, 4.6);
+                truck.add(towHook);
             }
 
-            // Rear bumper
+            // --- Tail lights (multi-element) ---
+            for (let side = -1; side <= 1; side += 2) {
+                // Tail light housing
+                const tlHousing = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.4, 0.35, 0.08),
+                    matDarkMetal
+                );
+                tlHousing.position.set(side * 1.3, 1.3, -4.04);
+                truck.add(tlHousing);
+
+                // Red brake light
+                const tl = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.35, 0.15, 0.05),
+                    matRedLight
+                );
+                tl.position.set(side * 1.3, 1.35, -4.09);
+                truck.add(tl);
+
+                // Amber turn signal
+                const tlAmber = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.35, 0.1, 0.05),
+                    matAmberLight
+                );
+                tlAmber.position.set(side * 1.3, 1.2, -4.09);
+                truck.add(tlAmber);
+            }
+
+            // --- Rear bumper ---
             const rearBumper = new THREE.Mesh(
-                new THREE.BoxGeometry(3.4, 0.3, 0.2),
-                matMetal
+                new THREE.BoxGeometry(3.4, 0.35, 0.25),
+                matChrome
             );
-            rearBumper.position.set(0, 0.85, -4.05);
+            rearBumper.position.set(0, 0.85, -4.12);
             truck.add(rearBumper);
 
-            // --- Flatbed ---
+            // --- Flatbed (with reinforced floor) ---
             const flatbed = new THREE.Mesh(
-                new THREE.BoxGeometry(3.0, 0.2, 5.0),
+                new THREE.BoxGeometry(3.0, 0.25, 5.0),
                 matDarkGreen
             );
-            flatbed.position.set(0, 1.3, -1.2);
+            flatbed.position.set(0, 1.25, -1.2);
             flatbed.castShadow = true;
             flatbed.receiveShadow = true;
             truck.add(flatbed);
 
-            // Bed rails
+            // Bed floor planks texture (cross boards)
+            for (let bp = -2; bp <= 2; bp++) {
+                const plank = new THREE.Mesh(
+                    new THREE.BoxGeometry(2.9, 0.02, 0.08),
+                    matCamoDark
+                );
+                plank.position.set(0, 1.39, -1.2 + bp * 1.0);
+                truck.add(plank);
+            }
+
+            // Bed rails with vertical stakes
             for (let side = -1; side <= 1; side += 2) {
+                // Horizontal rail
                 const rail = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.1, 0.6, 5.0),
+                    new THREE.BoxGeometry(0.12, 0.7, 5.0),
                     matMetal
                 );
-                rail.position.set(side * 1.45, 1.7, -1.2);
+                rail.position.set(side * 1.5, 1.75, -1.2);
                 rail.castShadow = true;
                 truck.add(rail);
+
+                // Vertical stakes
+                for (let si = -2; si <= 2; si++) {
+                    const stake = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.06, 0.8, 0.06),
+                        matMetal
+                    );
+                    stake.position.set(side * 1.5, 1.8, -1.2 + si * 1.1);
+                    truck.add(stake);
+                }
             }
+
             // Rear rail
             const rearRail = new THREE.Mesh(
-                new THREE.BoxGeometry(2.8, 0.6, 0.1),
+                new THREE.BoxGeometry(2.9, 0.7, 0.12),
                 matMetal
             );
-            rearRail.position.set(0, 1.7, -3.69);
+            rearRail.position.set(0, 1.75, -3.69);
             truck.add(rearRail);
 
-            // --- Wheels (3 axles: 1 front, 2 rear) ---
-            const wheelR = 0.5;
-            const wheelW = 0.35;
-            const wheelGeo = new THREE.CylinderGeometry(wheelR, wheelR, wheelW, 16);
-            const wheelPositions = [
-                // Front axle
-                { x: 1.6, z: 3.0 }, { x: -1.6, z: 3.0 },
-                // Mid axle
-                { x: 1.6, z: -1.5 }, { x: -1.6, z: -1.5 },
-                // Rear axle
-                { x: 1.6, z: -3.2 }, { x: -1.6, z: -3.2 },
-            ];
-            wheelPositions.forEach(wp => {
-                const wheel = new THREE.Mesh(wheelGeo, matRubber);
-                wheel.rotation.z = Math.PI / 2;
-                wheel.position.set(wp.x, wheelR, wp.z);
-                wheel.castShadow = true;
-                truck.add(wheel);
+            // --- Side Steps ---
+            for (let side = -1; side <= 1; side += 2) {
+                const step = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.35, 0.06, 1.2),
+                    matDarkMetal
+                );
+                step.position.set(side * 1.65, 0.7, 2.4);
+                truck.add(step);
 
-                // Hub cap
-                const hub = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.15, 0.15, wheelW + 0.05, 8),
+                // Step bracket
+                const stepBracket = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.06, 0.35, 0.08),
                     matMetal
                 );
-                hub.rotation.z = Math.PI / 2;
-                hub.position.set(wp.x, wheelR, wp.z);
-                truck.add(hub);
+                stepBracket.position.set(side * 1.65, 0.85, 2.0);
+                truck.add(stepBracket);
+                const stepBracket2 = stepBracket.clone();
+                stepBracket2.position.z = 2.8;
+                truck.add(stepBracket2);
+            }
+
+            // --- Fender arches ---
+            for (let side = -1; side <= 1; side += 2) {
+                // Front fender
+                const frontFender = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.15, 0.5, 1.4),
+                    matOliveDrab
+                );
+                frontFender.position.set(side * 1.65, 1.05, 3.0);
+                frontFender.castShadow = true;
+                truck.add(frontFender);
+
+                // Front fender top
+                const frontFenderTop = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.6, 0.1, 1.4),
+                    matOliveDrab
+                );
+                frontFenderTop.position.set(side * 1.42, 1.35, 3.0);
+                truck.add(frontFenderTop);
+
+                // Rear fenders (dual wheel area)
+                const rearFender = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.15, 0.5, 3.0),
+                    matOliveDrab
+                );
+                rearFender.position.set(side * 1.65, 1.05, -2.2);
+                rearFender.castShadow = true;
+                truck.add(rearFender);
+
+                const rearFenderTop = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.6, 0.1, 3.0),
+                    matOliveDrab
+                );
+                rearFenderTop.position.set(side * 1.42, 1.35, -2.2);
+                truck.add(rearFenderTop);
+            }
+
+            // --- Mud Flaps ---
+            for (let side = -1; side <= 1; side += 2) {
+                // Front mud flap
+                const fMudflap = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.5, 0.35, 0.04),
+                    matRubber
+                );
+                fMudflap.position.set(side * 1.5, 0.4, 2.3);
+                truck.add(fMudflap);
+
+                // Rear mud flap
+                const rMudflap = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.5, 0.35, 0.04),
+                    matRubber
+                );
+                rMudflap.position.set(side * 1.5, 0.4, -3.8);
+                truck.add(rMudflap);
+            }
+
+            // --- Exhaust Stack (vertical pipe on right side) ---
+            const exhaustPipe = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.08, 0.08, 3.5, 8),
+                matExhaust
+            );
+            exhaustPipe.position.set(1.6, 2.8, 1.0);
+            truck.add(exhaustPipe);
+
+            // Exhaust cap
+            const exhaustCap = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.12, 0.08, 0.15, 8),
+                matExhaust
+            );
+            exhaustCap.position.set(1.6, 4.6, 1.0);
+            truck.add(exhaustCap);
+
+            // --- Fuel Tank (left side) ---
+            const fuelTank = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.35, 0.35, 1.6, 10),
+                matDarkMetal
+            );
+            fuelTank.rotation.z = Math.PI / 2;
+            fuelTank.position.set(-1.65, 0.85, 0.5);
+            fuelTank.castShadow = true;
+            truck.add(fuelTank);
+
+            // Fuel tank end caps
+            for (let fEnd = -1; fEnd <= 1; fEnd += 2) {
+                const fuelCap = new THREE.Mesh(
+                    new THREE.CircleGeometry(0.35, 10),
+                    matDarkMetal
+                );
+                fuelCap.rotation.y = fEnd * Math.PI / 2;
+                fuelCap.position.set(-1.65 + fEnd * 0.8, 0.85, 0.5);
+                truck.add(fuelCap);
+            }
+
+            // Fuel filler cap
+            const fillerCap = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.06, 0.06, 0.06, 8),
+                matChrome
+            );
+            fillerCap.position.set(-1.65, 1.2, 0.5);
+            truck.add(fillerCap);
+
+            // Fuel tank straps
+            for (let fs = -1; fs <= 1; fs += 2) {
+                const fuelStrap = new THREE.Mesh(
+                    new THREE.TorusGeometry(0.36, 0.02, 6, 12, Math.PI),
+                    matMetal
+                );
+                fuelStrap.rotation.z = Math.PI / 2;
+                fuelStrap.rotation.y = Math.PI / 2;
+                fuelStrap.position.set(-1.65, 0.85, 0.5 + fs * 0.5);
+                truck.add(fuelStrap);
+            }
+
+            // --- External Toolbox (right side, behind cab) ---
+            const toolbox = new THREE.Mesh(
+                new THREE.BoxGeometry(0.5, 0.5, 0.8),
+                matDarkMetal
+            );
+            toolbox.position.set(1.6, 1.45, 0.6);
+            toolbox.castShadow = true;
+            truck.add(toolbox);
+
+            // Toolbox latch
+            const toolboxLatch = new THREE.Mesh(
+                new THREE.BoxGeometry(0.06, 0.12, 0.06),
+                matChrome
+            );
+            toolboxLatch.position.set(1.86, 1.5, 0.6);
+            truck.add(toolboxLatch);
+
+            // --- Roof Antenna ---
+            const antennaBase = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.04, 0.04, 0.08, 8),
+                matDarkMetal
+            );
+            antennaBase.position.set(0.8, 3.65, 2.0);
+            truck.add(antennaBase);
+
+            const antennaWhip = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.012, 0.008, 1.8, 6),
+                matDarkMetal
+            );
+            antennaWhip.position.set(0.8, 4.55, 2.0);
+            antennaWhip.rotation.z = 0.08;
+            truck.add(antennaWhip);
+
+            // --- Spare Tire (mounted under bed or at rear) ---
+            const spareTire = new THREE.Mesh(
+                new THREE.TorusGeometry(0.45, 0.18, 8, 16),
+                matRubber
+            );
+            spareTire.rotation.x = Math.PI / 2;
+            spareTire.position.set(0, 0.5, -3.5);
+            truck.add(spareTire);
+
+            const spareHub = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.15, 0.15, 0.2, 8),
+                matMetal
+            );
+            spareHub.rotation.x = Math.PI / 2;
+            spareHub.position.set(0, 0.5, -3.5);
+            truck.add(spareHub);
+
+            // --- Camo patches on cab ---
+            const camoPatch1 = new THREE.Mesh(
+                new THREE.PlaneGeometry(0.8, 0.6),
+                matCamoDark
+            );
+            camoPatch1.position.set(0.5, 2.5, 1.0);
+            camoPatch1.rotation.y = Math.PI / 2;
+            truck.add(camoPatch1);
+
+            const camoPatch2 = new THREE.Mesh(
+                new THREE.PlaneGeometry(1.0, 0.5),
+                matTan
+            );
+            camoPatch2.position.set(-0.3, 2.0, 3.82);
+            truck.add(camoPatch2);
+
+            // --- Detailed Wheels (3 axles: 1 front, 2 rear) ---
+            const wheelR = 0.5;
+            const wheelW = 0.35;
+            const wheelPositions = [
+                // Front axle
+                { x: 1.7, z: 3.0 }, { x: -1.7, z: 3.0 },
+                // Mid axle
+                { x: 1.7, z: -1.5 }, { x: -1.7, z: -1.5 },
+                // Rear axle
+                { x: 1.7, z: -3.2 }, { x: -1.7, z: -3.2 },
+            ];
+
+            wheelPositions.forEach(wp => {
+                // Tire (with tread rings)
+                const tireGeo = new THREE.TorusGeometry(wheelR, 0.18, 8, 20);
+                const tire = new THREE.Mesh(tireGeo, matRubber);
+                tire.rotation.y = Math.PI / 2;
+                tire.position.set(wp.x, wheelR, wp.z);
+                tire.castShadow = true;
+                truck.add(tire);
+
+                // Tread grooves
+                for (let tg = 0; tg < 12; tg++) {
+                    const grooveAngle = (tg / 12) * Math.PI * 2;
+                    const grooveGeo = new THREE.BoxGeometry(0.04, 0.02, 0.38);
+                    const groove = new THREE.Mesh(grooveGeo, matRubber);
+                    groove.position.set(
+                        wp.x,
+                        wheelR + Math.sin(grooveAngle) * wheelR,
+                        wp.z + Math.cos(grooveAngle) * wheelR
+                    );
+                    groove.rotation.x = grooveAngle;
+                    truck.add(groove);
+                }
+
+                // Rim / Hub
+                const rimGeo = new THREE.CylinderGeometry(0.32, 0.32, wheelW - 0.05, 12);
+                const rim = new THREE.Mesh(rimGeo, matMetal);
+                rim.rotation.z = Math.PI / 2;
+                rim.position.set(wp.x, wheelR, wp.z);
+                truck.add(rim);
+
+                // Hub center cap
+                const hubCap = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.12, 0.12, wheelW + 0.02, 10),
+                    matChrome
+                );
+                hubCap.rotation.z = Math.PI / 2;
+                hubCap.position.set(wp.x, wheelR, wp.z);
+                truck.add(hubCap);
+
+                // Lug bolts
+                for (let lb = 0; lb < 6; lb++) {
+                    const lugAngle = (lb / 6) * Math.PI * 2;
+                    const lug = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.02, 0.02, 0.06, 6),
+                        matChrome
+                    );
+                    lug.rotation.z = Math.PI / 2;
+                    lug.position.set(
+                        wp.x + (wp.x > 0 ? 0.19 : -0.19),
+                        wheelR + Math.sin(lugAngle) * 0.2,
+                        wp.z + Math.cos(lugAngle) * 0.2
+                    );
+                    truck.add(lug);
+                }
+
+                // Axle shaft visible between wheels
+                if (wp.x > 0) {
+                    const axle = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.06, 0.06, 3.4, 8),
+                        matDarkMetal
+                    );
+                    axle.rotation.z = Math.PI / 2;
+                    axle.position.set(0, wheelR, wp.z);
+                    truck.add(axle);
+                }
             });
 
             // --- Missile Launcher Turret (rotates to track drone) ---
             const turret = new THREE.Group();
             turret.position.set(0, 1.5, -1.2);
 
-            // Turret base ring
+            // Turret base ring (larger, more solid)
             const turretBase = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.9, 1.0, 0.4, 16),
+                new THREE.CylinderGeometry(0.95, 1.05, 0.45, 20),
                 matDarkMetal
             );
             turretBase.castShadow = true;
             turret.add(turretBase);
 
+            // Base rotation ring detail
+            const baseRing = new THREE.Mesh(
+                new THREE.TorusGeometry(1.0, 0.04, 6, 20),
+                matMetal
+            );
+            baseRing.rotation.x = Math.PI / 2;
+            baseRing.position.y = 0.22;
+            turret.add(baseRing);
+
             // Rotating part
             const turretRotator = new THREE.Group();
             turretRotator.position.y = 0.3;
 
-            // Turret housing
-            const turretHousing = new THREE.Mesh(
-                new THREE.BoxGeometry(1.6, 0.8, 2.0),
+            // Turret housing (more shaped - trapezoidal)
+            const turretHousingLower = new THREE.Mesh(
+                new THREE.BoxGeometry(1.8, 0.5, 2.2),
                 matOliveDrab
             );
-            turretHousing.position.y = 0.4;
-            turretHousing.castShadow = true;
-            turretRotator.add(turretHousing);
+            turretHousingLower.position.y = 0.25;
+            turretHousingLower.castShadow = true;
+            turretRotator.add(turretHousingLower);
+
+            const turretHousingUpper = new THREE.Mesh(
+                new THREE.BoxGeometry(1.5, 0.45, 1.8),
+                matCamoLight
+            );
+            turretHousingUpper.position.y = 0.72;
+            turretHousingUpper.castShadow = true;
+            turretRotator.add(turretHousingUpper);
+
+            // Turret access hatch
+            const hatch = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.25, 0.25, 0.06, 12),
+                matDarkMetal
+            );
+            hatch.position.set(-0.4, 0.97, -0.5);
+            turretRotator.add(hatch);
+
+            // Hatch handle
+            const hatchHandle = new THREE.Mesh(
+                new THREE.BoxGeometry(0.18, 0.04, 0.04),
+                matMetal
+            );
+            hatchHandle.position.set(-0.4, 1.02, -0.5);
+            turretRotator.add(hatchHandle);
+
+            // --- Cable Conduits along turret sides ---
+            for (let side = -1; side <= 1; side += 2) {
+                const conduit = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.03, 0.03, 1.8, 6),
+                    matDarkMetal
+                );
+                conduit.rotation.x = Math.PI / 2;
+                conduit.position.set(side * 0.85, 0.4, 0);
+                turretRotator.add(conduit);
+
+                // Conduit clamps
+                for (let cc = -1; cc <= 1; cc++) {
+                    const clamp = new THREE.Mesh(
+                        new THREE.TorusGeometry(0.04, 0.01, 4, 8),
+                        matMetal
+                    );
+                    clamp.position.set(side * 0.85, 0.4, cc * 0.6);
+                    turretRotator.add(clamp);
+                }
+            }
 
             // Elevation arm
             const elevationArm = new THREE.Group();
             elevationArm.position.set(0, 0.9, 0);
 
+            // --- Hydraulic Elevation Cylinders ---
+            for (let side = -1; side <= 1; side += 2) {
+                // Outer cylinder
+                const hydCylinder = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.06, 0.06, 1.2, 8),
+                    matChrome
+                );
+                hydCylinder.rotation.x = Math.PI / 4;
+                hydCylinder.position.set(side * 0.7, -0.2, -0.6);
+                turretRotator.add(hydCylinder);
+
+                // Inner piston rod
+                const hydPiston = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.035, 0.035, 0.8, 8),
+                    matChrome
+                );
+                hydPiston.rotation.x = Math.PI / 4;
+                hydPiston.position.set(side * 0.7, 0.2, -0.2);
+                turretRotator.add(hydPiston);
+
+                // Pivot mount
+                const pivot = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.08, 8, 8),
+                    matDarkMetal
+                );
+                pivot.position.set(side * 0.7, -0.55, -0.95);
+                turretRotator.add(pivot);
+            }
+
             // 4-tube launcher rack (2x2 grid)
             const launcherRack = new THREE.Group();
-            const tubeRadius = 0.2;
-            const tubeLength = 3.5;
+            const tubeRadius = 0.22;
+            const tubeLength = 3.8;
             const tubePositions = [
-                { x: -0.35, y: 0.35 },
-                { x: 0.35, y: 0.35 },
-                { x: -0.35, y: -0.35 },
-                { x: 0.35, y: -0.35 },
+                { x: -0.38, y: 0.38 },
+                { x: 0.38, y: 0.38 },
+                { x: -0.38, y: -0.38 },
+                { x: 0.38, y: -0.38 },
             ];
 
-            tubePositions.forEach(tp => {
-                // Outer tube
+            tubePositions.forEach((tp, ti) => {
+                // Outer tube shell
                 const tube = new THREE.Mesh(
-                    new THREE.CylinderGeometry(tubeRadius, tubeRadius, tubeLength, 10, 1, true),
+                    new THREE.CylinderGeometry(tubeRadius, tubeRadius, tubeLength, 12, 1, true),
                     matDarkGreen
                 );
                 tube.rotation.x = Math.PI / 2;
@@ -1516,9 +2050,18 @@
                 tube.castShadow = true;
                 launcherRack.add(tube);
 
-                // Tube cap ring at front
+                // Inner tube lining (slightly darker)
+                const innerTube = new THREE.Mesh(
+                    new THREE.CylinderGeometry(tubeRadius - 0.02, tubeRadius - 0.02, tubeLength - 0.1, 10, 1, true),
+                    matDarkMetal
+                );
+                innerTube.rotation.x = Math.PI / 2;
+                innerTube.position.set(tp.x, tp.y, tubeLength / 2 - 0.5);
+                launcherRack.add(innerTube);
+
+                // Tube cap ring at front (reinforced)
                 const capRing = new THREE.Mesh(
-                    new THREE.TorusGeometry(tubeRadius, 0.025, 6, 12),
+                    new THREE.TorusGeometry(tubeRadius, 0.03, 8, 14),
                     matMetal
                 );
                 capRing.position.set(tp.x, tp.y, tubeLength - 0.5);
@@ -1526,50 +2069,189 @@
 
                 // Tube cap ring at rear
                 const rearRing = new THREE.Mesh(
-                    new THREE.TorusGeometry(tubeRadius, 0.025, 6, 12),
+                    new THREE.TorusGeometry(tubeRadius, 0.03, 8, 14),
                     matMetal
                 );
                 rearRing.position.set(tp.x, tp.y, -0.5);
                 launcherRack.add(rearRing);
+
+                // Blast deflector lip at rear of tube
+                const blastDeflector = new THREE.Mesh(
+                    new THREE.CylinderGeometry(tubeRadius + 0.05, tubeRadius, 0.15, 12, 1, true),
+                    matDarkMetal
+                );
+                blastDeflector.rotation.x = Math.PI / 2;
+                blastDeflector.position.set(tp.x, tp.y, -0.55);
+                launcherRack.add(blastDeflector);
+
+                // Ammo status indicator on side of each tube
+                const indicatorLight = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.03, 6, 6),
+                    new THREE.MeshStandardMaterial({
+                        color: 0x00ff44, emissive: 0x00ff44,
+                        emissiveIntensity: 2.0, roughness: 0.1,
+                    })
+                );
+                indicatorLight.position.set(
+                    tp.x + (tp.x > 0 ? 0.25 : -0.25),
+                    tp.y,
+                    tubeLength * 0.7
+                );
+                launcherRack.add(indicatorLight);
+
+                // Tube number stencil (small marking)
+                const tubeLabel = new THREE.Mesh(
+                    new THREE.PlaneGeometry(0.1, 0.08),
+                    new THREE.MeshBasicMaterial({ color: 0xcccc88 })
+                );
+                tubeLabel.position.set(tp.x, tp.y - tubeRadius - 0.01, tubeLength * 0.4);
+                tubeLabel.rotation.x = -Math.PI / 2;
+                launcherRack.add(tubeLabel);
             });
 
-            // Cross brace between tubes
-            const braceGeo = new THREE.BoxGeometry(1.2, 0.08, 0.08);
+            // Cross brace between tubes (beefier)
+            const braceGeo = new THREE.BoxGeometry(1.4, 0.1, 0.1);
             const brace1 = new THREE.Mesh(braceGeo, matMetal);
             brace1.position.set(0, 0, 0.5);
             launcherRack.add(brace1);
             const brace2 = new THREE.Mesh(braceGeo.clone(), matMetal);
             brace2.position.set(0, 0, 2.0);
             launcherRack.add(brace2);
+            const brace3 = new THREE.Mesh(braceGeo.clone(), matMetal);
+            brace3.position.set(0, 0, tubeLength - 1.0);
+            launcherRack.add(brace3);
 
-            // Vertical brace
-            const vBraceGeo = new THREE.BoxGeometry(0.08, 1.2, 0.08);
+            // Vertical braces
+            const vBraceGeo = new THREE.BoxGeometry(0.1, 1.4, 0.1);
             const vBrace1 = new THREE.Mesh(vBraceGeo, matMetal);
             vBrace1.position.set(0, 0, 0.5);
             launcherRack.add(vBrace1);
             const vBrace2 = new THREE.Mesh(vBraceGeo.clone(), matMetal);
             vBrace2.position.set(0, 0, 2.0);
             launcherRack.add(vBrace2);
+            const vBrace3 = new THREE.Mesh(vBraceGeo.clone(), matMetal);
+            vBrace3.position.set(0, 0, tubeLength - 1.0);
+            launcherRack.add(vBrace3);
+
+            // Diagonal support struts
+            for (let ds = 0; ds < 2; ds++) {
+                const diagStrut = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.05, 0.05, 2.0),
+                    matMetal
+                );
+                diagStrut.rotation.y = ds === 0 ? 0.3 : -0.3;
+                diagStrut.position.set(ds === 0 ? 0.5 : -0.5, 0, 1.2);
+                launcherRack.add(diagStrut);
+            }
 
             elevationArm.add(launcherRack);
             turretRotator.add(elevationArm);
 
-            // Sight / periscope on top
-            const sight = new THREE.Mesh(
-                new THREE.BoxGeometry(0.2, 0.3, 0.4),
+            // --- Radar Dish (mounted on turret side) ---
+            const radarGroup = new THREE.Group();
+            radarGroup.position.set(0.95, 0.9, -0.3);
+
+            const radarDish = new THREE.Mesh(
+                new THREE.SphereGeometry(0.4, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2),
+                matMetal
+            );
+            radarDish.rotation.x = Math.PI / 2;
+            radarGroup.add(radarDish);
+
+            const radarFeed = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.02, 0.02, 0.3, 6),
                 matDarkMetal
             );
-            sight.position.set(0, 1.3, -0.5);
-            turretRotator.add(sight);
+            radarFeed.position.set(0, 0, 0.2);
+            radarFeed.rotation.x = Math.PI / 2;
+            radarGroup.add(radarFeed);
+
+            const radarFeedHead = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.04, 0.03, 0.08, 6),
+                matDarkMetal
+            );
+            radarFeedHead.position.set(0, 0, 0.35);
+            radarFeedHead.rotation.x = Math.PI / 2;
+            radarGroup.add(radarFeedHead);
+
+            // Radar mount arm
+            const radarArm = new THREE.Mesh(
+                new THREE.BoxGeometry(0.06, 0.5, 0.06),
+                matMetal
+            );
+            radarArm.position.set(0, -0.3, 0);
+            radarGroup.add(radarArm);
+
+            turretRotator.add(radarGroup);
+
+            // --- Multi-Optics Sighting System ---
+            const sightGroup = new THREE.Group();
+            sightGroup.position.set(0, 1.1, -0.5);
+
+            // Main sight housing
+            const sightHousing = new THREE.Mesh(
+                new THREE.BoxGeometry(0.35, 0.35, 0.5),
+                matDarkMetal
+            );
+            sightGroup.add(sightHousing);
+
+            // Primary targeting lens (red)
             const sightLens = new THREE.Mesh(
-                new THREE.CircleGeometry(0.08, 12),
+                new THREE.CircleGeometry(0.1, 14),
                 new THREE.MeshStandardMaterial({
                     color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 2.0,
                     roughness: 0.0,
                 })
             );
-            sightLens.position.set(0, 1.3, -0.2);
-            turretRotator.add(sightLens);
+            sightLens.position.set(0, 0.05, 0.26);
+            sightGroup.add(sightLens);
+
+            // Lens bezel
+            const sightBezel = new THREE.Mesh(
+                new THREE.TorusGeometry(0.11, 0.015, 6, 14),
+                matChrome
+            );
+            sightBezel.position.set(0, 0.05, 0.25);
+            sightGroup.add(sightBezel);
+
+            // Secondary IR sensor (smaller, below main lens)
+            const irSensor = new THREE.Mesh(
+                new THREE.CircleGeometry(0.05, 10),
+                new THREE.MeshStandardMaterial({
+                    color: 0x220000, emissive: 0x440000, emissiveIntensity: 1.0,
+                    roughness: 0.0,
+                })
+            );
+            irSensor.position.set(0, -0.1, 0.26);
+            sightGroup.add(irSensor);
+
+            // IR sensor bezel
+            const irBezel = new THREE.Mesh(
+                new THREE.TorusGeometry(0.055, 0.01, 6, 10),
+                matMetal
+            );
+            irBezel.position.set(0, -0.1, 0.25);
+            sightGroup.add(irBezel);
+
+            // Laser rangefinder (small box on top)
+            const laserRangefinder = new THREE.Mesh(
+                new THREE.BoxGeometry(0.12, 0.08, 0.15),
+                matDarkMetal
+            );
+            laserRangefinder.position.set(0, 0.22, -0.1);
+            sightGroup.add(laserRangefinder);
+
+            const laserAperture = new THREE.Mesh(
+                new THREE.CircleGeometry(0.025, 8),
+                new THREE.MeshStandardMaterial({
+                    color: 0x00ff00, emissive: 0x00ff00, emissiveIntensity: 1.5,
+                    roughness: 0.0,
+                })
+            );
+            laserAperture.position.set(0, 0.22, 0.0);
+            sightGroup.add(laserAperture);
+
+            turretRotator.add(sightGroup);
 
             turret.add(turretRotator);
             truck.add(turret);
@@ -1586,6 +2268,7 @@
                 turretRotator,
                 elevationArm,
                 sightLens,
+                radarGroup,
             };
         }
 
