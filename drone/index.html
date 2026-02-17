@@ -18,7 +18,7 @@
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="https://rookeryphysics.github.io/drone">
     <meta property="twitter:title" content="Cinewhoop Drone Game">
-    <meta property="twitter:description" content="A Three.js cinewhoop drone model with interactive grass physics.">
+    <meta property="twitter:description" content="A Three.js cinewhoop drone model with interactive physics.">
     <meta property="twitter:image" content="https://rookeryphysics.github.io/drone/game.png">
     <style>
         * {
@@ -105,12 +105,100 @@
             border-radius: 4px;
             min-width: 70px;
         }
+
+        #game-over-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 500;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        #game-over-overlay.active {
+            display: flex;
+        }
+
+        #game-over-overlay h1 {
+            color: #ff3300;
+            font-family: 'Courier New', monospace;
+            font-size: 48px;
+            text-shadow: 0 0 30px rgba(255, 50, 0, 0.8);
+            letter-spacing: 4px;
+            animation: pulseText 1.5s ease-in-out infinite;
+        }
+
+        #game-over-overlay p {
+            color: #ccc;
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+        }
+
+        #restart-btn {
+            padding: 14px 40px;
+            font-size: 20px;
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #ff4400, #cc2200);
+            color: white;
+            border: 2px solid #ff6600;
+            border-radius: 8px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        #restart-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(255, 68, 0, 0.6);
+        }
+
+        @keyframes pulseText {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.6;
+            }
+        }
+
+        #warning-text {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ff3300;
+            font-family: 'Courier New', monospace;
+            font-size: 28px;
+            font-weight: bold;
+            z-index: 300;
+            pointer-events: none;
+            text-shadow: 0 0 20px rgba(255, 50, 0, 0.8);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
     </style>
 </head>
 
 <body>
     <div id="fps-counter">FPS: --</div>
+    <div id="warning-text">⚠ INCOMING MISSILE ⚠</div>
     <div id="loading">Generating Grass...</div>
+
+    <div id="game-over-overlay">
+        <h1>SHOT DOWN</h1>
+        <p>Your drone was destroyed by anti-aircraft fire</p>
+        <button id="restart-btn">RESTART</button>
+    </div>
 
     <div id="joystick-zone-left" class="joystick-zone">
         <div id="joystick-knob-left" class="joystick-knob"></div>
@@ -1155,7 +1243,7 @@
 
         const droneData = createDrone();
         const drone = droneData.group;
-        drone.position.set(0, 1.8, 0);
+        drone.position.set(0, 1.8, 30);
         drone.rotation.order = 'YXZ';  // Apply yaw first so pitch/roll are in local frame
         scene.add(drone);
 
@@ -1198,6 +1286,528 @@
         // Positioned in corner, adjusted for larger size
         ammoCrate.position.set(80, 0, 80);
         scene.add(ammoCrate);
+
+        /* ══════════════════════════════════════════════
+           ── Anti-Aircraft Truck with Missile Battery ──
+           ══════════════════════════════════════════════ */
+
+        function createAATruck() {
+            const truck = new THREE.Group();
+
+            // --- Materials ---
+            const matOliveDrab = new THREE.MeshStandardMaterial({
+                color: 0x4a5a2a, roughness: 0.8, metalness: 0.2,
+            });
+            const matDarkGreen = new THREE.MeshStandardMaterial({
+                color: 0x2d3a1a, roughness: 0.7, metalness: 0.3,
+            });
+            const matMetal = new THREE.MeshStandardMaterial({
+                color: 0x555555, roughness: 0.3, metalness: 0.9,
+            });
+            const matDarkMetal = new THREE.MeshStandardMaterial({
+                color: 0x333333, roughness: 0.4, metalness: 0.8,
+            });
+            const matRubber = new THREE.MeshStandardMaterial({
+                color: 0x1a1a1a, roughness: 0.95, metalness: 0.0,
+            });
+            const matGlass = new THREE.MeshStandardMaterial({
+                color: 0x88aacc, roughness: 0.0, metalness: 0.5,
+                transparent: true, opacity: 0.5,
+            });
+            const matHeadlight = new THREE.MeshStandardMaterial({
+                color: 0xffffdd, emissive: 0xffffaa, emissiveIntensity: 1.0,
+                roughness: 0.1, metalness: 0.0,
+            });
+            const matRedLight = new THREE.MeshStandardMaterial({
+                color: 0xff2200, emissive: 0xff2200, emissiveIntensity: 0.8,
+                roughness: 0.2,
+            });
+
+            // --- Chassis / Frame ---
+            const chassis = new THREE.Mesh(
+                new THREE.BoxGeometry(3.2, 0.4, 8.0),
+                matDarkGreen
+            );
+            chassis.position.y = 1.0;
+            chassis.castShadow = true;
+            chassis.receiveShadow = true;
+            truck.add(chassis);
+
+            // --- Cab ---
+            const cab = new THREE.Mesh(
+                new THREE.BoxGeometry(3.0, 2.2, 2.8),
+                matOliveDrab
+            );
+            cab.position.set(0, 2.3, 2.4);
+            cab.castShadow = true;
+            cab.receiveShadow = true;
+            truck.add(cab);
+
+            // Cab roof
+            const cabRoof = new THREE.Mesh(
+                new THREE.BoxGeometry(3.1, 0.15, 3.0),
+                matDarkGreen
+            );
+            cabRoof.position.set(0, 3.45, 2.4);
+            cabRoof.castShadow = true;
+            truck.add(cabRoof);
+
+            // Windshield
+            const windshield = new THREE.Mesh(
+                new THREE.PlaneGeometry(2.6, 1.6),
+                matGlass
+            );
+            windshield.position.set(0, 2.5, 3.81);
+            truck.add(windshield);
+
+            // Side windows
+            for (let side = -1; side <= 1; side += 2) {
+                const sideWin = new THREE.Mesh(
+                    new THREE.PlaneGeometry(2.0, 1.2),
+                    matGlass
+                );
+                sideWin.rotation.y = side * Math.PI / 2;
+                sideWin.position.set(side * 1.51, 2.5, 2.4);
+                truck.add(sideWin);
+            }
+
+            // Headlights
+            for (let side = -1; side <= 1; side += 2) {
+                const hl = new THREE.Mesh(
+                    new THREE.CircleGeometry(0.2, 12),
+                    matHeadlight
+                );
+                hl.position.set(side * 1.1, 1.8, 3.81);
+                truck.add(hl);
+            }
+
+            // Bumper
+            const bumper = new THREE.Mesh(
+                new THREE.BoxGeometry(3.4, 0.35, 0.25),
+                matMetal
+            );
+            bumper.position.set(0, 0.9, 4.05);
+            bumper.castShadow = true;
+            truck.add(bumper);
+
+            // Tail lights
+            for (let side = -1; side <= 1; side += 2) {
+                const tl = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.3, 0.2, 0.05),
+                    matRedLight
+                );
+                tl.position.set(side * 1.3, 1.3, -3.99);
+                truck.add(tl);
+            }
+
+            // Rear bumper
+            const rearBumper = new THREE.Mesh(
+                new THREE.BoxGeometry(3.4, 0.3, 0.2),
+                matMetal
+            );
+            rearBumper.position.set(0, 0.85, -4.05);
+            truck.add(rearBumper);
+
+            // --- Flatbed ---
+            const flatbed = new THREE.Mesh(
+                new THREE.BoxGeometry(3.0, 0.2, 5.0),
+                matDarkGreen
+            );
+            flatbed.position.set(0, 1.3, -1.2);
+            flatbed.castShadow = true;
+            flatbed.receiveShadow = true;
+            truck.add(flatbed);
+
+            // Bed rails
+            for (let side = -1; side <= 1; side += 2) {
+                const rail = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.1, 0.6, 5.0),
+                    matMetal
+                );
+                rail.position.set(side * 1.45, 1.7, -1.2);
+                rail.castShadow = true;
+                truck.add(rail);
+            }
+            // Rear rail
+            const rearRail = new THREE.Mesh(
+                new THREE.BoxGeometry(2.8, 0.6, 0.1),
+                matMetal
+            );
+            rearRail.position.set(0, 1.7, -3.69);
+            truck.add(rearRail);
+
+            // --- Wheels (3 axles: 1 front, 2 rear) ---
+            const wheelR = 0.5;
+            const wheelW = 0.35;
+            const wheelGeo = new THREE.CylinderGeometry(wheelR, wheelR, wheelW, 16);
+            const wheelPositions = [
+                // Front axle
+                { x: 1.6, z: 3.0 }, { x: -1.6, z: 3.0 },
+                // Mid axle
+                { x: 1.6, z: -1.5 }, { x: -1.6, z: -1.5 },
+                // Rear axle
+                { x: 1.6, z: -3.2 }, { x: -1.6, z: -3.2 },
+            ];
+            wheelPositions.forEach(wp => {
+                const wheel = new THREE.Mesh(wheelGeo, matRubber);
+                wheel.rotation.z = Math.PI / 2;
+                wheel.position.set(wp.x, wheelR, wp.z);
+                wheel.castShadow = true;
+                truck.add(wheel);
+
+                // Hub cap
+                const hub = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.15, 0.15, wheelW + 0.05, 8),
+                    matMetal
+                );
+                hub.rotation.z = Math.PI / 2;
+                hub.position.set(wp.x, wheelR, wp.z);
+                truck.add(hub);
+            });
+
+            // --- Missile Launcher Turret (rotates to track drone) ---
+            const turret = new THREE.Group();
+            turret.position.set(0, 1.5, -1.2);
+
+            // Turret base ring
+            const turretBase = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.9, 1.0, 0.4, 16),
+                matDarkMetal
+            );
+            turretBase.castShadow = true;
+            turret.add(turretBase);
+
+            // Rotating part
+            const turretRotator = new THREE.Group();
+            turretRotator.position.y = 0.3;
+
+            // Turret housing
+            const turretHousing = new THREE.Mesh(
+                new THREE.BoxGeometry(1.6, 0.8, 2.0),
+                matOliveDrab
+            );
+            turretHousing.position.y = 0.4;
+            turretHousing.castShadow = true;
+            turretRotator.add(turretHousing);
+
+            // Elevation arm
+            const elevationArm = new THREE.Group();
+            elevationArm.position.set(0, 0.9, 0);
+
+            // 4-tube launcher rack (2x2 grid)
+            const launcherRack = new THREE.Group();
+            const tubeRadius = 0.2;
+            const tubeLength = 3.5;
+            const tubePositions = [
+                { x: -0.35, y: 0.35 },
+                { x: 0.35, y: 0.35 },
+                { x: -0.35, y: -0.35 },
+                { x: 0.35, y: -0.35 },
+            ];
+
+            tubePositions.forEach(tp => {
+                // Outer tube
+                const tube = new THREE.Mesh(
+                    new THREE.CylinderGeometry(tubeRadius, tubeRadius, tubeLength, 10, 1, true),
+                    matDarkGreen
+                );
+                tube.rotation.x = Math.PI / 2;
+                tube.position.set(tp.x, tp.y, tubeLength / 2 - 0.5);
+                tube.castShadow = true;
+                launcherRack.add(tube);
+
+                // Tube cap ring at front
+                const capRing = new THREE.Mesh(
+                    new THREE.TorusGeometry(tubeRadius, 0.025, 6, 12),
+                    matMetal
+                );
+                capRing.position.set(tp.x, tp.y, tubeLength - 0.5);
+                launcherRack.add(capRing);
+
+                // Tube cap ring at rear
+                const rearRing = new THREE.Mesh(
+                    new THREE.TorusGeometry(tubeRadius, 0.025, 6, 12),
+                    matMetal
+                );
+                rearRing.position.set(tp.x, tp.y, -0.5);
+                launcherRack.add(rearRing);
+            });
+
+            // Cross brace between tubes
+            const braceGeo = new THREE.BoxGeometry(1.2, 0.08, 0.08);
+            const brace1 = new THREE.Mesh(braceGeo, matMetal);
+            brace1.position.set(0, 0, 0.5);
+            launcherRack.add(brace1);
+            const brace2 = new THREE.Mesh(braceGeo.clone(), matMetal);
+            brace2.position.set(0, 0, 2.0);
+            launcherRack.add(brace2);
+
+            // Vertical brace
+            const vBraceGeo = new THREE.BoxGeometry(0.08, 1.2, 0.08);
+            const vBrace1 = new THREE.Mesh(vBraceGeo, matMetal);
+            vBrace1.position.set(0, 0, 0.5);
+            launcherRack.add(vBrace1);
+            const vBrace2 = new THREE.Mesh(vBraceGeo.clone(), matMetal);
+            vBrace2.position.set(0, 0, 2.0);
+            launcherRack.add(vBrace2);
+
+            elevationArm.add(launcherRack);
+            turretRotator.add(elevationArm);
+
+            // Sight / periscope on top
+            const sight = new THREE.Mesh(
+                new THREE.BoxGeometry(0.2, 0.3, 0.4),
+                matDarkMetal
+            );
+            sight.position.set(0, 1.3, -0.5);
+            turretRotator.add(sight);
+            const sightLens = new THREE.Mesh(
+                new THREE.CircleGeometry(0.08, 12),
+                new THREE.MeshStandardMaterial({
+                    color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 2.0,
+                    roughness: 0.0,
+                })
+            );
+            sightLens.position.set(0, 1.3, -0.2);
+            turretRotator.add(sightLens);
+
+            turret.add(turretRotator);
+            truck.add(turret);
+
+            truck.traverse(child => {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                }
+            });
+
+            return {
+                group: truck,
+                turretRotator,
+                elevationArm,
+                sightLens,
+            };
+        }
+
+        const aaTruckData = createAATruck();
+        const aaTruck = aaTruckData.group;
+        aaTruck.position.set(0, 0, 0);  // Center of the map
+        aaTruck.scale.set(1.2, 1.2, 1.2);
+        scene.add(aaTruck);
+
+        /* ── Enemy Missile System ── */
+        const enemyMissiles = [];
+        let enemyFireTimer = 0;
+        const ENEMY_FIRE_INTERVAL = 5.0;  // seconds between shots
+        const ENEMY_MISSILE_SPEED = 18.0; // units per second (straight line)
+        const ENEMY_MISSILE_MAX_RANGE = 250;
+        const BLAST_RADIUS = 4.0;  // how close a missile must be to destroy drone
+        const TRUCK_HIT_RADIUS = 8.0; // how close a drone missile must land to damage the truck
+        const TRUCK_MAX_HP = 3;
+        let truckHP = TRUCK_MAX_HP;
+        let truckDestroyed = false;
+        let gameOver = false;
+        let surviveTime = 0; // Keeping variable as it might be used for logic, but removing UI update
+        let currentTubeIndex = 0;  // cycle through the 4 tubes
+
+        const gameOverOverlay = document.getElementById('game-over-overlay');
+        const restartBtn = document.getElementById('restart-btn');
+        const warningText = document.getElementById('warning-text');
+
+        function createEnemyMissile() {
+            const missile = new THREE.Group();
+
+            // Body
+            const bodyGeo = new THREE.CylinderGeometry(0.12, 0.15, 2.0, 10);
+            const bodyMat = new THREE.MeshStandardMaterial({
+                color: 0x556655, roughness: 0.4, metalness: 0.6,
+            });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.rotation.x = Math.PI / 2;
+            missile.add(body);
+
+            // Nose cone
+            const noseGeo = new THREE.ConeGeometry(0.12, 0.5, 10);
+            const noseMat = new THREE.MeshStandardMaterial({
+                color: 0xcc3300, roughness: 0.3, metalness: 0.5,
+                emissive: 0x881100, emissiveIntensity: 0.3,
+            });
+            const nose = new THREE.Mesh(noseGeo, noseMat);
+            nose.rotation.x = -Math.PI / 2;
+            nose.position.z = 1.25;
+            missile.add(nose);
+
+            // Band
+            const bandGeo = new THREE.CylinderGeometry(0.16, 0.16, 0.08, 10);
+            const bandMat = new THREE.MeshStandardMaterial({
+                color: 0xff6600, roughness: 0.3, metalness: 0.4,
+                emissive: 0xff4400, emissiveIntensity: 0.3,
+            });
+            const band = new THREE.Mesh(bandGeo, bandMat);
+            band.rotation.x = Math.PI / 2;
+            band.position.z = 0.7;
+            missile.add(band);
+
+            // Nozzle
+            const nozzleGeo = new THREE.CylinderGeometry(0.1, 0.14, 0.2, 8);
+            const nozzleMat = new THREE.MeshStandardMaterial({
+                color: 0x222222, roughness: 0.2, metalness: 0.9,
+            });
+            const nozzle = new THREE.Mesh(nozzleGeo, nozzleMat);
+            nozzle.rotation.x = Math.PI / 2;
+            nozzle.position.z = -1.1;
+            missile.add(nozzle);
+
+            // Exhaust flame
+            const flameGeo = new THREE.ConeGeometry(0.1, 0.8, 8);
+            const flameMat = new THREE.MeshBasicMaterial({
+                color: 0xff8800, transparent: true, opacity: 0.7,
+                blending: THREE.AdditiveBlending,
+            });
+            const flame = new THREE.Mesh(flameGeo, flameMat);
+            flame.rotation.x = Math.PI / 2;
+            flame.position.z = -1.5;
+            missile.add(flame);
+
+            // Fins
+            for (let f = 0; f < 4; f++) {
+                const finShape = new THREE.Shape();
+                finShape.moveTo(0, 0);
+                finShape.lineTo(0.25, 0);
+                finShape.lineTo(0.12, 0.4);
+                finShape.lineTo(0, 0.4);
+                const finGeo = new THREE.ExtrudeGeometry(finShape, {
+                    depth: 0.015, bevelEnabled: false,
+                });
+                const finMat = new THREE.MeshStandardMaterial({
+                    color: 0x445544, roughness: 0.5, metalness: 0.5,
+                });
+                const fin = new THREE.Mesh(finGeo, finMat);
+                fin.rotation.y = (f * Math.PI) / 2;
+                fin.rotation.x = Math.PI / 2;
+                fin.position.z = -1.0;
+                fin.position.x = -0.0075;
+                fin.position.y = -0.0075;
+                missile.add(fin);
+            }
+
+            missile.traverse(c => { if (c.isMesh) { c.castShadow = true; } });
+            return { group: missile, flame };
+        }
+
+        function fireEnemyMissile() {
+            if (gameOver || truckDestroyed) return;
+
+            // Get the turret world position (origin of launchers)
+            const turretWorldPos = new THREE.Vector3();
+            aaTruckData.turretRotator.getWorldPosition(turretWorldPos);
+
+            // Direction toward drone
+            const targetPos = drone.position.clone();
+            const direction = new THREE.Vector3().subVectors(targetPos, turretWorldPos).normalize();
+
+            // Create the missile
+            const missileData = createEnemyMissile();
+            const missile = missileData.group;
+
+            // Start at turret position offset forward
+            const startPos = turretWorldPos.clone().add(direction.clone().multiplyScalar(3.0));
+            missile.position.copy(startPos);
+            missile.lookAt(targetPos);
+            missile.scale.set(0.8, 0.8, 0.8);
+            scene.add(missile);
+
+            // Smoke trail
+            const trailGeo = new THREE.BufferGeometry();
+            const trailPositions = new Float32Array(500 * 3);
+            trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
+            trailGeo.setDrawRange(0, 0);
+            const trailMat = new THREE.PointsMaterial({
+                color: 0xaaaaaa, size: 0.25,
+                transparent: true, opacity: 0.5, depthWrite: false,
+            });
+            const trail = new THREE.Points(trailGeo, trailMat);
+            scene.add(trail);
+
+            enemyMissiles.push({
+                mesh: missile,
+                flame: missileData.flame,
+                direction: direction.clone(),
+                startPos: startPos.clone(),
+                distanceTraveled: 0,
+                trail, trailIndex: 0,
+            });
+
+            currentTubeIndex = (currentTubeIndex + 1) % 4;
+
+            // Flash warning
+            warningText.style.opacity = '1';
+            setTimeout(() => { warningText.style.opacity = '0'; }, 1500);
+        }
+
+        function gameOverHandler() {
+            if (gameOver) return;
+            gameOver = true;
+            gameOverOverlay.classList.add('active');
+
+            // Create explosion at drone position
+            createExplosion(drone.position.clone());
+            drone.visible = false;
+        }
+
+        function destroyTruck() {
+            truckDestroyed = true;
+            // Big explosion at truck
+            createExplosion(aaTruck.position.clone());
+            createExplosion(aaTruck.position.clone().add(new THREE.Vector3(2, 1, 0)));
+            createExplosion(aaTruck.position.clone().add(new THREE.Vector3(-1, 2, 1)));
+            aaTruck.visible = false;
+
+            // Clean up any remaining enemy missiles
+            for (let i = enemyMissiles.length - 1; i >= 0; i--) {
+                scene.remove(enemyMissiles[i].mesh);
+                fadingTrails.push({ trail: enemyMissiles[i].trail, elapsed: 0, duration: 1.5 });
+            }
+            enemyMissiles.length = 0;
+        }
+
+        function restartGame() {
+            gameOver = false;
+            gameOverOverlay.classList.remove('active');
+            drone.visible = true;
+            drone.position.set(0, 1.8, 30);
+            baseHeight = 1.8;
+            droneYaw = Math.PI;
+            cameraYaw = droneYaw;
+            currentVelocity.set(0, 0, 0);
+            smoothInput.set(0, 0);
+            smoothLeft.set(0, 0);
+            surviveTime = 0;
+            enemyFireTimer = 3.0; // give player 2 secs grace
+
+            // Restore truck
+            truckHP = TRUCK_MAX_HP;
+            truckDestroyed = false;
+            aaTruck.visible = true;
+
+            // Clean up enemy missiles
+            for (let i = enemyMissiles.length - 1; i >= 0; i--) {
+                scene.remove(enemyMissiles[i].mesh);
+                scene.remove(enemyMissiles[i].trail);
+                enemyMissiles[i].trail.geometry.dispose();
+                enemyMissiles[i].trail.material.dispose();
+            }
+            enemyMissiles.length = 0;
+
+            // Reload drone missiles
+            droneData.missiles.forEach(slot => {
+                if (!slot.attached) {
+                    respawnMissile(slot);
+                }
+            });
+        }
+
+        restartBtn.addEventListener('click', restartGame);
 
         /* ── Missile Launch System ── */
         const activeMissiles = [];     // in-flight missiles
@@ -1775,6 +2385,98 @@
 
             droneData.greenGlow.intensity = 0.5 + Math.sin(t * 2.5) * 0.3;
 
+            /* ── Update AA Truck turret tracking ── */
+            if (!gameOver) {
+                const truckWorldPos = new THREE.Vector3();
+                aaTruck.getWorldPosition(truckWorldPos);
+                const toDrone = new THREE.Vector3().subVectors(drone.position, truckWorldPos);
+
+                // Yaw rotation (turretRotator rotates around Y)
+                const targetYaw = Math.atan2(toDrone.x, toDrone.z);
+                // The truck itself might be rotated, so we compute relative to truck
+                const truckYaw = aaTruck.rotation.y;
+                let relYaw = targetYaw - truckYaw;
+                // Wrap to [-PI, PI]
+                relYaw = relYaw - Math.PI * 2 * Math.round(relYaw / (Math.PI * 2));
+                // Smooth rotate
+                let currentYaw = aaTruckData.turretRotator.rotation.y;
+                let yawDiff = relYaw - currentYaw;
+                yawDiff = yawDiff - Math.PI * 2 * Math.round(yawDiff / (Math.PI * 2));
+                aaTruckData.turretRotator.rotation.y += yawDiff * 0.05;
+
+                // Elevation (pitch the launcher arm up/down)
+                const horizDist = Math.sqrt(toDrone.x * toDrone.x + toDrone.z * toDrone.z);
+                const targetPitchAngle = Math.atan2(toDrone.y - 2.5, horizDist);
+                const clampedPitch = Math.max(-0.1, Math.min(Math.PI * 0.4, targetPitchAngle));
+                aaTruckData.elevationArm.rotation.x = THREE.MathUtils.lerp(
+                    aaTruckData.elevationArm.rotation.x, -clampedPitch, 0.05
+                );
+
+                // Sight lens blink
+                aaTruckData.sightLens.material.emissiveIntensity = 1.5 + Math.sin(t * 6) * 1.0;
+
+                // Fire timer
+                enemyFireTimer += dt;
+                surviveTime += dt;
+
+                if (enemyFireTimer >= ENEMY_FIRE_INTERVAL) {
+                    enemyFireTimer = 0;
+                    fireEnemyMissile();
+                }
+            }
+
+            /* ── Update enemy missiles ── */
+            for (let i = enemyMissiles.length - 1; i >= 0; i--) {
+                const em = enemyMissiles[i];
+                const moveAmount = ENEMY_MISSILE_SPEED * dt;
+                em.mesh.position.add(em.direction.clone().multiplyScalar(moveAmount));
+                em.distanceTraveled += moveAmount;
+
+                // Flicker the flame
+                if (em.flame) {
+                    em.flame.material.opacity = 0.5 + Math.random() * 0.5;
+                    em.flame.scale.set(
+                        0.8 + Math.random() * 0.4,
+                        0.8 + Math.random() * 0.6,
+                        0.8 + Math.random() * 0.4
+                    );
+                }
+
+                // Trail
+                if (em.trail && em.trailIndex < 500) {
+                    const tp = em.trail.geometry.attributes.position.array;
+                    const idx = em.trailIndex * 3;
+                    tp[idx] = em.mesh.position.x + (Math.random() - 0.5) * 0.15;
+                    tp[idx + 1] = em.mesh.position.y + (Math.random() - 0.5) * 0.15;
+                    tp[idx + 2] = em.mesh.position.z + (Math.random() - 0.5) * 0.15;
+                    em.trailIndex++;
+                    em.trail.geometry.setDrawRange(0, em.trailIndex);
+                    em.trail.geometry.attributes.position.needsUpdate = true;
+                }
+
+                // Proximity check to drone
+                if (!gameOver) {
+                    const distToDrone = em.mesh.position.distanceTo(drone.position);
+                    if (distToDrone < BLAST_RADIUS) {
+                        // BOOM - drone destroyed!
+                        createExplosion(em.mesh.position.clone());
+                        scene.remove(em.mesh);
+                        fadingTrails.push({ trail: em.trail, elapsed: 0, duration: 1.5 });
+                        enemyMissiles.splice(i, 1);
+                        gameOverHandler();
+                        continue;
+                    }
+                }
+
+                // Ground hit or max range
+                if (em.mesh.position.y <= 0.2 || em.distanceTraveled >= ENEMY_MISSILE_MAX_RANGE) {
+                    createExplosion(em.mesh.position.clone());
+                    scene.remove(em.mesh);
+                    fadingTrails.push({ trail: em.trail, elapsed: 0, duration: 1.5 });
+                    enemyMissiles.splice(i, 1);
+                }
+            }
+
             /* ── Update in-flight missiles ── */
             for (let i = activeMissiles.length - 1; i >= 0; i--) {
                 const m = activeMissiles[i];
@@ -1830,6 +2532,18 @@
                         fadingTrails.push({ trail: m.trail, elapsed: 0, duration: 1.5 });
                     }
                     createExplosion(m.targetPos);
+
+                    // Check if this hit the AA truck
+                    if (!truckDestroyed) {
+                        const distToTruck = m.targetPos.distanceTo(aaTruck.position);
+                        if (distToTruck < TRUCK_HIT_RADIUS) {
+                            truckHP--;
+                            if (truckHP <= 0) {
+                                destroyTruck();
+                            }
+                        }
+                    }
+
                     activeMissiles.splice(i, 1);
                 }
             }
