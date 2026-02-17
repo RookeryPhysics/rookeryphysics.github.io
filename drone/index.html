@@ -76,27 +76,7 @@
             box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
         }
 
-        .joystick-hint {
-            position: absolute;
-            bottom: 130px;
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.3);
-            pointer-events: none;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            white-space: nowrap;
-        }
 
-        #joystick-hint-right {
-            right: 65px;
-            transform: translateX(50%);
-        }
-
-        #joystick-hint-left {
-            left: 65px;
-            transform: translateX(-50%);
-        }
 
         #loading {
             position: fixed;
@@ -113,11 +93,11 @@
 
 <body>
     <div id="loading">Generating Grass...</div>
-    <div id="joystick-hint-left" class="joystick-hint">Yaw / Altitude</div>
+
     <div id="joystick-zone-left" class="joystick-zone">
         <div id="joystick-knob-left" class="joystick-knob"></div>
     </div>
-    <div id="joystick-hint-right" class="joystick-hint">Flight Control</div>
+
     <div id="joystick-zone-right" class="joystick-zone">
         <div id="joystick-knob-right" class="joystick-knob"></div>
     </div>
