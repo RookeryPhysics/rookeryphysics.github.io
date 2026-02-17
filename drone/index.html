@@ -1054,6 +1054,104 @@
                 drone.add(rxAntenna);
             }
 
+            /* ── Missiles attached to drone underside ── */
+            const missiles = [];
+            const missileSlots = [
+                { x: -0.32, y: 0.12, z: 0.1 },
+                { x: 0.32, y: 0.12, z: 0.1 },
+            ];
+
+            function createMissileModel() {
+                const missile = new THREE.Group();
+
+                // Body tube
+                const bodyGeo = new THREE.CylinderGeometry(0.035, 0.04, 0.55, 12);
+                const bodyMat = new THREE.MeshStandardMaterial({
+                    color: 0x556655,
+                    roughness: 0.4,
+                    metalness: 0.6,
+                });
+                const body = new THREE.Mesh(bodyGeo, bodyMat);
+                body.rotation.x = Math.PI / 2;
+                missile.add(body);
+
+                // Nose cone
+                const noseGeo = new THREE.ConeGeometry(0.035, 0.15, 12);
+                const noseMat = new THREE.MeshStandardMaterial({
+                    color: 0xcc3300,
+                    roughness: 0.3,
+                    metalness: 0.5,
+                    emissive: 0x881100,
+                    emissiveIntensity: 0.3,
+                });
+                const nose = new THREE.Mesh(noseGeo, noseMat);
+                nose.rotation.x = -Math.PI / 2;
+                nose.position.z = 0.35;
+                missile.add(nose);
+
+                // Orange accent band
+                const bandGeo = new THREE.CylinderGeometry(0.042, 0.042, 0.03, 12);
+                const bandMat = new THREE.MeshStandardMaterial({
+                    color: 0xff6600,
+                    roughness: 0.3,
+                    metalness: 0.4,
+                    emissive: 0xff4400,
+                    emissiveIntensity: 0.3,
+                });
+                const band = new THREE.Mesh(bandGeo, bandMat);
+                band.rotation.x = Math.PI / 2;
+                band.position.z = 0.22;
+                missile.add(band);
+
+                // Rear nozzle
+                const nozzleGeo = new THREE.CylinderGeometry(0.03, 0.035, 0.06, 10);
+                const nozzleMat = new THREE.MeshStandardMaterial({
+                    color: 0x222222,
+                    roughness: 0.2,
+                    metalness: 0.9,
+                });
+                const nozzle = new THREE.Mesh(nozzleGeo, nozzleMat);
+                nozzle.rotation.x = Math.PI / 2;
+                nozzle.position.z = -0.305;
+                missile.add(nozzle);
+
+                // 4 fins
+                for (let f = 0; f < 4; f++) {
+                    const finShape = new THREE.Shape();
+                    finShape.moveTo(0, 0);
+                    finShape.lineTo(0.08, 0);
+                    finShape.lineTo(0.04, 0.12);
+                    finShape.lineTo(0, 0.12);
+                    const finGeo = new THREE.ExtrudeGeometry(finShape, {
+                        depth: 0.005,
+                        bevelEnabled: false,
+                    });
+                    const finMat = new THREE.MeshStandardMaterial({
+                        color: 0x445544,
+                        roughness: 0.5,
+                        metalness: 0.5,
+                    });
+                    const fin = new THREE.Mesh(finGeo, finMat);
+                    fin.rotation.y = (f * Math.PI) / 2;
+                    fin.rotation.x = Math.PI / 2;
+                    fin.position.z = -0.28;
+                    fin.position.x = -0.0025;
+                    fin.position.y = -0.0025;
+                    missile.add(fin);
+                }
+
+                return missile;
+            }
+
+            missileSlots.forEach((slot, i) => {
+                const m = createMissileModel();
+                m.position.set(slot.x, slot.y, slot.z);
+                // missiles point forward along drone's local Z
+                m.scale.set(0.8, 0.8, 0.8);
+                drone.add(m);
+                missiles.push({ mesh: m, attached: true, slotIndex: i });
+            });
+
             drone.scale.set(1.6, 1.6, 1.6);
 
             drone.traverse(child => {
@@ -1072,6 +1170,8 @@
                 recLED,
                 greenGlow,
                 frontLEDs,
+                missiles,
+                missileSlots,
             };
         }
 
@@ -1080,6 +1180,282 @@
         drone.position.set(0, 1.8, 0);
         drone.rotation.order = 'YXZ';  // Apply yaw first so pitch/roll are in local frame
         scene.add(drone);
+
+        /* ── Missile Launch System ── */
+        const activeMissiles = [];     // in-flight missiles
+        const explosions = [];         // active explosion particle systems
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        let missileReloadTimer = 0;
+
+        function launchMissile(targetPoint) {
+            // Find an attached missile
+            const slot = droneData.missiles.find(m => m.attached);
+            if (!slot) return;
+
+            slot.attached = false;
+
+            // Get the missile's world position before detaching
+            const worldPos = new THREE.Vector3();
+            slot.mesh.getWorldPosition(worldPos);
+            const worldQuat = new THREE.Quaternion();
+            slot.mesh.getWorldQuaternion(worldQuat);
+
+            // Remove from drone, add to scene
+            drone.remove(slot.mesh);
+            slot.mesh.position.copy(worldPos);
+            slot.mesh.quaternion.copy(worldQuat);
+            slot.mesh.scale.set(1.28, 1.28, 1.28); // 0.8 * 1.6 drone scale
+            scene.add(slot.mesh);
+
+            // Direction and flight params
+            const direction = new THREE.Vector3().subVectors(targetPoint, worldPos);
+            const totalDist = direction.length();
+            const flightDuration = Math.min(Math.max(totalDist / 18, 0.4), 3.0);
+
+            activeMissiles.push({
+                mesh: slot.mesh,
+                slotData: slot,
+                startPos: worldPos.clone(),
+                targetPos: targetPoint.clone(),
+                elapsed: 0,
+                duration: flightDuration,
+                arcHeight: Math.max(totalDist * 0.15, 1.0),
+            });
+
+            // Create a smoke trail
+            const trailGeo = new THREE.BufferGeometry();
+            const trailPositions = new Float32Array(300 * 3);
+            trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
+            trailGeo.setDrawRange(0, 0);
+            const trailMat = new THREE.PointsMaterial({
+                color: 0xcccccc,
+                size: 0.15,
+                transparent: true,
+                opacity: 0.5,
+                depthWrite: false,
+            });
+            const trail = new THREE.Points(trailGeo, trailMat);
+            scene.add(trail);
+            activeMissiles[activeMissiles.length - 1].trail = trail;
+            activeMissiles[activeMissiles.length - 1].trailIndex = 0;
+        }
+
+        function createExplosion(position) {
+            const particleCount = 80;
+            const geo = new THREE.BufferGeometry();
+            const positions = new Float32Array(particleCount * 3);
+            const velocities = [];
+            const colors = new Float32Array(particleCount * 3);
+            const sizes = new Float32Array(particleCount);
+
+            const fireColors = [
+                new THREE.Color(0xff4400),
+                new THREE.Color(0xff8800),
+                new THREE.Color(0xffcc00),
+                new THREE.Color(0xff2200),
+                new THREE.Color(0xffaa00),
+            ];
+
+            for (let i = 0; i < particleCount; i++) {
+                positions[i * 3] = position.x;
+                positions[i * 3 + 1] = position.y + 0.1;
+                positions[i * 3 + 2] = position.z;
+
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.random() * Math.PI;
+                const speed = 3 + Math.random() * 8;
+                velocities.push({
+                    x: Math.sin(phi) * Math.cos(theta) * speed,
+                    y: Math.abs(Math.cos(phi)) * speed * 1.2 + 2,
+                    z: Math.sin(phi) * Math.sin(theta) * speed,
+                });
+
+                const c = fireColors[Math.floor(Math.random() * fireColors.length)];
+                colors[i * 3] = c.r;
+                colors[i * 3 + 1] = c.g;
+                colors[i * 3 + 2] = c.b;
+
+                sizes[i] = 0.2 + Math.random() * 0.5;
+            }
+
+            geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            geo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+            const mat = new THREE.PointsMaterial({
+                size: 0.5,
+                vertexColors: true,
+                transparent: true,
+                opacity: 1.0,
+                depthWrite: false,
+                blending: THREE.AdditiveBlending,
+            });
+
+            const particles = new THREE.Points(geo, mat);
+            scene.add(particles);
+
+            // Explosion flash light
+            const flash = new THREE.PointLight(0xff6600, 20, 15);
+            flash.position.copy(position);
+            flash.position.y += 0.5;
+            scene.add(flash);
+
+            // Shockwave ring
+            const ringGeo = new THREE.RingGeometry(0.1, 0.3, 32);
+            const ringMat = new THREE.MeshBasicMaterial({
+                color: 0xff8800,
+                transparent: true,
+                opacity: 0.8,
+                side: THREE.DoubleSide,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false,
+            });
+            const ring = new THREE.Mesh(ringGeo, ringMat);
+            ring.position.copy(position);
+            ring.position.y += 0.05;
+            ring.rotation.x = -Math.PI / 2;
+            scene.add(ring);
+
+            // Smoke cloud (secondary particles)
+            const smokeCount = 30;
+            const smokeGeo = new THREE.BufferGeometry();
+            const smokePos = new Float32Array(smokeCount * 3);
+            const smokeVels = [];
+            for (let i = 0; i < smokeCount; i++) {
+                smokePos[i * 3] = position.x;
+                smokePos[i * 3 + 1] = position.y + 0.3;
+                smokePos[i * 3 + 2] = position.z;
+                const theta = Math.random() * Math.PI * 2;
+                const speed = 1 + Math.random() * 3;
+                smokeVels.push({
+                    x: Math.cos(theta) * speed,
+                    y: 1 + Math.random() * 3,
+                    z: Math.sin(theta) * speed,
+                });
+            }
+            smokeGeo.setAttribute('position', new THREE.BufferAttribute(smokePos, 3));
+            const smokeMat = new THREE.PointsMaterial({
+                color: 0x444444,
+                size: 0.8,
+                transparent: true,
+                opacity: 0.6,
+                depthWrite: false,
+            });
+            const smokeParticles = new THREE.Points(smokeGeo, smokeMat);
+            scene.add(smokeParticles);
+
+            explosions.push({
+                particles, velocities, mat,
+                flash, ring, ringMat,
+                smokeParticles, smokeVels, smokeMat,
+                elapsed: 0,
+                duration: 2.0,
+            });
+        }
+
+        function respawnMissile(slotData) {
+            const slot = droneData.missileSlots[slotData.slotIndex];
+            scene.remove(slotData.mesh);
+
+            // Create a fresh missile and re-attach
+            const freshGroup = new THREE.Group();
+
+            // Re-build missile body pieces
+            const bodyGeo = new THREE.CylinderGeometry(0.035, 0.04, 0.55, 12);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x556655, roughness: 0.4, metalness: 0.6 });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.rotation.x = Math.PI / 2;
+            freshGroup.add(body);
+
+            const noseGeo = new THREE.ConeGeometry(0.035, 0.15, 12);
+            const noseMat = new THREE.MeshStandardMaterial({ color: 0xcc3300, roughness: 0.3, metalness: 0.5, emissive: 0x881100, emissiveIntensity: 0.3 });
+            const nose = new THREE.Mesh(noseGeo, noseMat);
+            nose.rotation.x = -Math.PI / 2;
+            nose.position.z = 0.35;
+            freshGroup.add(nose);
+
+            const bandGeo = new THREE.CylinderGeometry(0.042, 0.042, 0.03, 12);
+            const bandMat = new THREE.MeshStandardMaterial({ color: 0xff6600, roughness: 0.3, metalness: 0.4, emissive: 0xff4400, emissiveIntensity: 0.3 });
+            const band = new THREE.Mesh(bandGeo, bandMat);
+            band.rotation.x = Math.PI / 2;
+            band.position.z = 0.22;
+            freshGroup.add(band);
+
+            const nozzleGeo = new THREE.CylinderGeometry(0.03, 0.035, 0.06, 10);
+            const nozzleMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.2, metalness: 0.9 });
+            const nozzle = new THREE.Mesh(nozzleGeo, nozzleMat);
+            nozzle.rotation.x = Math.PI / 2;
+            nozzle.position.z = -0.305;
+            freshGroup.add(nozzle);
+
+            for (let f = 0; f < 4; f++) {
+                const finShape = new THREE.Shape();
+                finShape.moveTo(0, 0);
+                finShape.lineTo(0.08, 0);
+                finShape.lineTo(0.04, 0.12);
+                finShape.lineTo(0, 0.12);
+                const finGeo = new THREE.ExtrudeGeometry(finShape, { depth: 0.005, bevelEnabled: false });
+                const finMat = new THREE.MeshStandardMaterial({ color: 0x445544, roughness: 0.5, metalness: 0.5 });
+                const fin = new THREE.Mesh(finGeo, finMat);
+                fin.rotation.y = (f * Math.PI) / 2;
+                fin.rotation.x = Math.PI / 2;
+                fin.position.z = -0.28;
+                fin.position.x = -0.0025;
+                fin.position.y = -0.0025;
+                freshGroup.add(fin);
+            }
+
+            freshGroup.position.set(slot.x, slot.y, slot.z);
+            freshGroup.rotation.x = -Math.PI / 2;
+            freshGroup.scale.set(0.8, 0.8, 0.8);
+            drone.add(freshGroup);
+
+            freshGroup.traverse(child => {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                }
+            });
+
+            slotData.mesh = freshGroup;
+            slotData.attached = true;
+        }
+
+        // Click/tap handler — only fires on the ground plane
+        function onPointerDown(event) {
+            // Ignore if clicking joystick zones
+            if (event.target.closest && event.target.closest('.joystick-zone')) return;
+            if (event.target.closest && event.target.closest('.joystick-knob')) return;
+
+            let clientX, clientY;
+            if (event.touches) {
+                clientX = event.touches[0].clientX;
+                clientY = event.touches[0].clientY;
+            } else {
+                clientX = event.clientX;
+                clientY = event.clientY;
+            }
+
+            mouse.x = (clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObject(plane);
+
+            if (intersects.length > 0) {
+                launchMissile(intersects[0].point);
+            }
+        }
+
+        renderer.domElement.addEventListener('mousedown', onPointerDown);
+        renderer.domElement.addEventListener('touchstart', (e) => {
+            // Only fire missile on quick taps, not joystick drags
+            // Check that the touch is not on a joystick
+            const target = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY);
+            if (target && (target.closest('.joystick-zone') || target.closest('.joystick-knob'))) return;
+            onPointerDown(e);
+        }, { passive: true });
 
 
         /* ── Joystick Helper Factory ── */
@@ -1202,6 +1578,7 @@
         }
 
         const clock = new THREE.Clock();
+        let lastTime = 0;
         const droneSpeed = 0.15;
         const yawSpeed = 0.04;      // radians per frame at full deflection
         const altSpeed = 0.08;      // units per frame at full deflection
@@ -1219,6 +1596,8 @@
         function animate() {
             requestAnimationFrame(animate);
             const t = clock.getElapsedTime();
+            const dt = Math.min(t - lastTime, 0.05); // capped to avoid huge jumps
+            lastTime = t;
 
             if (grassMat.userData.shader) {
                 grassMat.userData.shader.uniforms.uTime.value = t;
@@ -1319,6 +1698,140 @@
             }
 
             droneData.greenGlow.intensity = 0.5 + Math.sin(t * 2.5) * 0.3;
+
+            /* ── Update in-flight missiles ── */
+            for (let i = activeMissiles.length - 1; i >= 0; i--) {
+                const m = activeMissiles[i];
+                m.elapsed += dt;
+                const progress = Math.min(m.elapsed / m.duration, 1.0);
+
+                // Smooth ease-in-out arc
+                const eased = progress < 0.5
+                    ? 2 * progress * progress
+                    : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
+                // Lerp XZ position
+                const newX = THREE.MathUtils.lerp(m.startPos.x, m.targetPos.x, eased);
+                const newZ = THREE.MathUtils.lerp(m.startPos.z, m.targetPos.z, eased);
+
+                // Parabolic arc for Y
+                const baseY = THREE.MathUtils.lerp(m.startPos.y, m.targetPos.y, eased);
+                const arcY = m.arcHeight * Math.sin(progress * Math.PI);
+                const newY = baseY + arcY;
+
+                m.mesh.position.set(newX, newY, newZ);
+
+                // Point missile in flight direction
+                if (progress < 0.98) {
+                    const nextProgress = Math.min((m.elapsed + 0.016) / m.duration, 1.0);
+                    const nextEased = nextProgress < 0.5
+                        ? 2 * nextProgress * nextProgress
+                        : 1 - Math.pow(-2 * nextProgress + 2, 2) / 2;
+                    const lookX = THREE.MathUtils.lerp(m.startPos.x, m.targetPos.x, nextEased);
+                    const lookZ = THREE.MathUtils.lerp(m.startPos.z, m.targetPos.z, nextEased);
+                    const lookBaseY = THREE.MathUtils.lerp(m.startPos.y, m.targetPos.y, nextEased);
+                    const lookArcY = m.arcHeight * Math.sin(nextProgress * Math.PI);
+                    const lookY = lookBaseY + lookArcY;
+                    m.mesh.lookAt(lookX, lookY, lookZ);
+                }
+
+                // Smoke trail
+                if (m.trail && m.trailIndex < 300) {
+                    const positions = m.trail.geometry.attributes.position.array;
+                    const idx = m.trailIndex * 3;
+                    positions[idx] = newX + (Math.random() - 0.5) * 0.1;
+                    positions[idx + 1] = newY + (Math.random() - 0.5) * 0.1;
+                    positions[idx + 2] = newZ + (Math.random() - 0.5) * 0.1;
+                    m.trailIndex++;
+                    m.trail.geometry.setDrawRange(0, m.trailIndex);
+                    m.trail.geometry.attributes.position.needsUpdate = true;
+                }
+
+                // Impact!
+                if (progress >= 1.0) {
+                    scene.remove(m.mesh);
+                    if (m.trail) {
+                        // Fade trail out gradually
+                        const trail = m.trail;
+                        const fadeDuration = 1.5;
+                        let fadeElapsed = 0;
+                        const fadeInterval = setInterval(() => {
+                            fadeElapsed += 0.05;
+                            trail.material.opacity = Math.max(0, 0.5 * (1 - fadeElapsed / fadeDuration));
+                            if (fadeElapsed >= fadeDuration) {
+                                scene.remove(trail);
+                                trail.geometry.dispose();
+                                trail.material.dispose();
+                                clearInterval(fadeInterval);
+                            }
+                        }, 50);
+                    }
+                    createExplosion(m.targetPos);
+                    activeMissiles.splice(i, 1);
+                }
+            }
+
+            /* ── Update explosions ── */
+            for (let i = explosions.length - 1; i >= 0; i--) {
+                const e = explosions[i];
+                e.elapsed += dt;
+                const progress = e.elapsed / e.duration;
+
+                // Fire particles
+                const pos = e.particles.geometry.attributes.position.array;
+                for (let p = 0; p < e.velocities.length; p++) {
+                    const v = e.velocities[p];
+                    pos[p * 3] += v.x * dt;
+                    pos[p * 3 + 1] += v.y * dt;
+                    pos[p * 3 + 2] += v.z * dt;
+                    v.y -= 12 * dt; // gravity
+                    v.x *= 0.97;
+                    v.z *= 0.97;
+                    // bounce off ground
+                    if (pos[p * 3 + 1] < 0.05) {
+                        pos[p * 3 + 1] = 0.05;
+                        v.y = Math.abs(v.y) * 0.3;
+                    }
+                }
+                e.particles.geometry.attributes.position.needsUpdate = true;
+                e.mat.opacity = Math.max(0, 1.0 - progress);
+
+                // Flash fades
+                e.flash.intensity = Math.max(0, 20 * (1 - progress * 3));
+
+                // Shockwave ring expands
+                const ringScale = 1 + progress * 15;
+                e.ring.scale.set(ringScale, ringScale, 1);
+                e.ringMat.opacity = Math.max(0, 0.8 * (1 - progress * 1.5));
+
+                // Smoke particles drift up
+                const sPos = e.smokeParticles.geometry.attributes.position.array;
+                for (let s = 0; s < e.smokeVels.length; s++) {
+                    const sv = e.smokeVels[s];
+                    sPos[s * 3] += sv.x * dt * 0.3;
+                    sPos[s * 3 + 1] += sv.y * dt * 0.5;
+                    sPos[s * 3 + 2] += sv.z * dt * 0.3;
+                    sv.x *= 0.98;
+                    sv.z *= 0.98;
+                }
+                e.smokeParticles.geometry.attributes.position.needsUpdate = true;
+                e.smokeMat.opacity = Math.max(0, 0.6 * (1 - progress * 0.8));
+
+                // Cleanup
+                if (e.elapsed >= e.duration) {
+                    scene.remove(e.particles);
+                    scene.remove(e.flash);
+                    scene.remove(e.ring);
+                    scene.remove(e.smokeParticles);
+                    e.particles.geometry.dispose();
+                    e.mat.dispose();
+                    e.ring.geometry.dispose();
+                    e.ringMat.dispose();
+                    e.smokeParticles.geometry.dispose();
+                    e.smokeMat.dispose();
+                    explosions.splice(i, 1);
+                }
+            }
 
 
 
