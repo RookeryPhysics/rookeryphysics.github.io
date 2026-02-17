@@ -1424,19 +1424,7 @@
                 nose.position.z = 0.35;
                 missile.add(nose);
 
-                // Orange accent band
-                const bandGeo = new THREE.CylinderGeometry(0.042, 0.042, 0.03, 12);
-                const bandMat = new THREE.MeshStandardMaterial({
-                    color: 0xff6600,
-                    roughness: 0.3,
-                    metalness: 0.4,
-                    emissive: 0xff4400,
-                    emissiveIntensity: 0.3,
-                });
-                const band = new THREE.Mesh(bandGeo, bandMat);
-                band.rotation.x = Math.PI / 2;
-                band.position.z = 0.22;
-                missile.add(band);
+
 
                 // Rear nozzle
                 const nozzleGeo = new THREE.CylinderGeometry(0.03, 0.035, 0.06, 10);
@@ -2631,16 +2619,7 @@
             nose.position.z = 1.25;
             missile.add(nose);
 
-            // Band
-            const bandGeo = new THREE.CylinderGeometry(0.16, 0.16, 0.08, 10);
-            const bandMat = new THREE.MeshStandardMaterial({
-                color: 0xff6600, roughness: 0.3, metalness: 0.4,
-                emissive: 0xff4400, emissiveIntensity: 0.3,
-            });
-            const band = new THREE.Mesh(bandGeo, bandMat);
-            band.rotation.x = Math.PI / 2;
-            band.position.z = 0.7;
-            missile.add(band);
+
 
             // Nozzle
             const nozzleGeo = new THREE.CylinderGeometry(0.1, 0.14, 0.2, 8);
@@ -2856,7 +2835,7 @@
         const mouse = new THREE.Vector2();
         let missileReloadTimer = 0;
 
-        function launchMissile(targetPoint) {
+        function launchMissile(targetPoint, isDirectHit = false) {
             // Find an attached missile
             const slot = droneData.missiles.find(m => m.attached);
             if (!slot) return;
@@ -2889,6 +2868,7 @@
                 elapsed: 0,
                 duration: flightDuration,
                 arcHeight: Math.max(totalDist * 0.15, 1.0),
+                isDirectHit: isDirectHit,
             });
 
             // Create a smoke trail
@@ -2909,7 +2889,7 @@
             activeMissiles[activeMissiles.length - 1].trailIndex = 0;
         }
 
-        function createExplosion(position) {
+        function createExplosion(position, skipTerrain = false) {
             const particleCount = isMobile ? 20 : 40;
             const geo = new THREE.BufferGeometry();
             const positions = new Float32Array(particleCount * 3);
@@ -3022,87 +3002,90 @@
             });
 
             // ── Voxel Destruction ──
-            const gridRadius = 3; // radius in blocks
-            const centerIx = Math.floor((position.x + 100) / VOXEL_SIZE);
-            const centerIz = Math.floor((position.z + 100) / VOXEL_SIZE);
+            if (!skipTerrain) {
+                const gridRadius = 3; // radius in blocks
+                const centerIx = Math.floor((position.x + 100) / VOXEL_SIZE);
+                const centerIz = Math.floor((position.z + 100) / VOXEL_SIZE);
 
-            if (centerIx >= 0 && centerIx < GRID_RES && centerIz >= 0 && centerIz < GRID_RES) {
-                const dummy = new THREE.Object3D();
-                dummy.scale.set(0.001, 0.001, 0.001); // Near-zero scale (or update matrix)
-                dummy.updateMatrix();
+                if (centerIx >= 0 && centerIx < GRID_RES && centerIz >= 0 && centerIz < GRID_RES) {
+                    const dummy = new THREE.Object3D();
+                    dummy.scale.set(0.001, 0.001, 0.001); // Near-zero scale (or update matrix)
+                    dummy.updateMatrix();
 
-                for (let x = -gridRadius; x <= gridRadius; x++) {
-                    for (let z = -gridRadius; z <= gridRadius; z++) {
-                        const dist = Math.sqrt(x * x + z * z);
-                        if (dist > gridRadius) continue;
+                    for (let x = -gridRadius; x <= gridRadius; x++) {
+                        for (let z = -gridRadius; z <= gridRadius; z++) {
+                            const dist = Math.sqrt(x * x + z * z);
+                            if (dist > gridRadius) continue;
 
-                        const ix = centerIx + x;
-                        const iz = centerIz + z;
+                            const ix = centerIx + x;
+                            const iz = centerIz + z;
 
-                        if (ix >= 0 && ix < GRID_RES && iz >= 0 && iz < GRID_RES) {
-                            const idx = ix * GRID_RES + iz;
+                            if (ix >= 0 && ix < GRID_RES && iz >= 0 && iz < GRID_RES) {
+                                const idx = ix * GRID_RES + iz;
 
-                            // Determine how many layers to destroy
-                            // Closer to center = deeper
-                            let destroyDepth = 0;
-                            if (dist < 1.0) destroyDepth = 3;
-                            else if (dist < 2.0) destroyDepth = 2;
-                            else destroyDepth = 1;
+                                // Determine how many layers to destroy
+                                // Closer to center = deeper
+                                let destroyDepth = 0;
+                                if (dist < 1.0) destroyDepth = 3;
+                                else if (dist < 2.0) destroyDepth = 2;
+                                else destroyDepth = 1;
 
-                            // Layer 0 (Green)
-                            if (destroyDepth >= 1 && voxelState[idx] === 1) {
-                                voxelState[idx] = 0;
-                                voxelMeshes[0].setMatrixAt(idx, dummy.matrix); // Hide
-                                voxelMeshes[0].instanceMatrix.needsUpdate = true;
+                                // Layer 0 (Green)
+                                if (destroyDepth >= 1 && voxelState[idx] === 1) {
+                                    voxelState[idx] = 0;
+                                    voxelMeshes[0].setMatrixAt(idx, dummy.matrix); // Hide
+                                    voxelMeshes[0].instanceMatrix.needsUpdate = true;
 
-                                // Spawn green debris
-                                spawnDebris(new THREE.Vector3(
-                                    (ix - OFFSET) * VOXEL_SIZE + VOXEL_SIZE / 2,
-                                    0,
-                                    (iz - OFFSET) * VOXEL_SIZE + VOXEL_SIZE / 2
-                                ), 0x3A7D2A, 1);
+                                    // Spawn green debris
+                                    spawnDebris(new THREE.Vector3(
+                                        (ix - OFFSET) * VOXEL_SIZE + VOXEL_SIZE / 2,
+                                        0,
+                                        (iz - OFFSET) * VOXEL_SIZE + VOXEL_SIZE / 2
+                                    ), 0x3A7D2A, 1);
 
-                                // Remove grass
-                                if (grassMap.has(idx)) {
-                                    const gIndices = grassMap.get(idx);
-                                    gIndices.forEach(gi => {
-                                        grassMesh.setMatrixAt(gi, dummy.matrix);
-                                    });
-                                    grassMesh.instanceMatrix.needsUpdate = true;
-                                    grassMap.delete(idx);
+                                    // Remove grass
+                                    if (grassMap.has(idx)) {
+                                        const gIndices = grassMap.get(idx);
+                                        gIndices.forEach(gi => {
+                                            grassMesh.setMatrixAt(gi, dummy.matrix);
+                                        });
+                                        grassMesh.instanceMatrix.needsUpdate = true;
+                                        grassMap.delete(idx);
+                                    }
                                 }
-                            }
 
-                            // Layer 1 (Dirt)
-                            if (destroyDepth >= 2 && voxelState[GRID_RES * GRID_RES + idx] === 1) {
-                                voxelState[GRID_RES * GRID_RES + idx] = 0;
-                                voxelMeshes[1].setMatrixAt(idx, dummy.matrix);
-                                voxelMeshes[1].instanceMatrix.needsUpdate = true;
-                                // Spawn brown debris
-                                spawnDebris(new THREE.Vector3(
-                                    (ix - OFFSET) * VOXEL_SIZE + VOXEL_SIZE / 2,
-                                    -VOXEL_SIZE,
-                                    (iz - OFFSET) * VOXEL_SIZE + VOXEL_SIZE / 2
-                                ), 0x5d4037, 1);
-                            }
+                                // Layer 1 (Dirt)
+                                if (destroyDepth >= 2 && voxelState[GRID_RES * GRID_RES + idx] === 1) {
+                                    voxelState[GRID_RES * GRID_RES + idx] = 0;
+                                    voxelMeshes[1].setMatrixAt(idx, dummy.matrix);
+                                    voxelMeshes[1].instanceMatrix.needsUpdate = true;
+                                    // Spawn brown debris
+                                    spawnDebris(new THREE.Vector3(
+                                        (ix - OFFSET) * VOXEL_SIZE + VOXEL_SIZE / 2,
+                                        -VOXEL_SIZE,
+                                        (iz - OFFSET) * VOXEL_SIZE + VOXEL_SIZE / 2
+                                    ), 0x5d4037, 1);
+                                }
 
-                            // Layer 2 (Deep Dirt)
-                            if (destroyDepth >= 3 && voxelState[GRID_RES * GRID_RES * 2 + idx] === 1) {
-                                voxelState[GRID_RES * GRID_RES * 2 + idx] = 0;
-                                voxelMeshes[2].setMatrixAt(idx, dummy.matrix);
-                                voxelMeshes[2].instanceMatrix.needsUpdate = true;
-                                // Debris
-                                spawnDebris(new THREE.Vector3(
-                                    (ix - OFFSET) * VOXEL_SIZE + VOXEL_SIZE / 2,
-                                    -VOXEL_SIZE * 2,
-                                    (iz - OFFSET) * VOXEL_SIZE + VOXEL_SIZE / 2
-                                ), 0x5d4037, 1);
+                                // Layer 2 (Deep Dirt)
+                                if (destroyDepth >= 3 && voxelState[GRID_RES * GRID_RES * 2 + idx] === 1) {
+                                    voxelState[GRID_RES * GRID_RES * 2 + idx] = 0;
+                                    voxelMeshes[2].setMatrixAt(idx, dummy.matrix);
+                                    voxelMeshes[2].instanceMatrix.needsUpdate = true;
+                                    // Debris
+                                    spawnDebris(new THREE.Vector3(
+                                        (ix - OFFSET) * VOXEL_SIZE + VOXEL_SIZE / 2,
+                                        -VOXEL_SIZE * 2,
+                                        (iz - OFFSET) * VOXEL_SIZE + VOXEL_SIZE / 2
+                                    ), 0x5d4037, 1);
+                                }
                             }
                         }
                     }
                 }
             }
         }
+
 
         function respawnMissile(slotData) {
             const slot = droneData.missileSlots[slotData.slotIndex];
@@ -3239,10 +3222,27 @@
                 mouse.y = -(clientY / window.innerHeight) * 2 + 1;
 
                 raycaster.setFromCamera(mouse, camera);
-                const intersects = raycaster.intersectObject(plane);
+
+                const interactables = [plane];
+                trucks.forEach(t => interactables.push(t.group));
+
+                const intersects = raycaster.intersectObjects(interactables, true);
 
                 if (intersects.length > 0) {
-                    launchMissile(intersects[0].point);
+                    const hit = intersects[0];
+                    let isTruck = false;
+
+                    // Check if hit object is part of a truck hierarchy
+                    let obj = hit.object;
+                    while (obj) {
+                        if (trucks.some(t => t.group === obj)) {
+                            isTruck = true;
+                            break;
+                        }
+                        obj = obj.parent;
+                    }
+
+                    launchMissile(hit.point, isTruck);
                 }
             }
         }
@@ -3750,8 +3750,6 @@
                     if (m.trail) {
                         fadingTrails.push({ trail: m.trail, elapsed: 0, duration: 1.5 });
                     }
-                    createExplosion(m.targetPos);
-
                     // Check if this hit an AA truck
                     trucks.forEach(tData => {
                         if (!tData.destroyed) {
@@ -3764,6 +3762,8 @@
                             }
                         }
                     });
+
+                    createExplosion(m.targetPos, m.isDirectHit);
 
                     activeMissiles.splice(i, 1);
                 }
