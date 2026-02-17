@@ -3059,17 +3059,22 @@
             } else {
                 // Return to fixed/locked mode
                 controls.enabled = false;
-                const camOffset = new THREE.Vector3(0, camHeight, -camDist);
-                const targetPos = camOffset.applyMatrix4(drone.matrixWorld);
-                const targetUp = new THREE.Vector3(0, 1, 0).applyQuaternion(drone.quaternion);
-                const lookTarget = new THREE.Vector3(0, 0, 3).applyMatrix4(drone.matrixWorld);
 
-                // Smoothly lerp position and roll
+                // Position based only on yaw (ignore drone's roll/pitch)
+                const camX = drone.position.x - Math.sin(droneYaw) * camDist;
+                const camZ = drone.position.z - Math.cos(droneYaw) * camDist;
+                const targetPos = new THREE.Vector3(camX, drone.position.y + camHeight, camZ);
+
+                const targetUp = new THREE.Vector3(0, 1, 0);
+
+                // Smoothly lerp towards the target position and upright orientation
                 camera.position.lerp(targetPos, 0.07);
-                camera.up.lerp(targetUp, 0.07);
-                camera.lookAt(lookTarget);
+                camera.up.lerp(targetUp, 0.1);
 
-                // Sync controls internal state to match current jump
+                // Look at the drone's center (stable point)
+                camera.lookAt(drone.position.x, drone.position.y + 0.5, drone.position.z);
+
+                // Sync controls internal state
                 controls.target.copy(drone.position);
             }
 
