@@ -29,7 +29,7 @@
 
         body {
             overflow: hidden;
-            background: #020205;
+            background: #87CEEB;
         }
 
         canvas {
@@ -139,11 +139,11 @@
         import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x020205);
-        scene.fog = new THREE.FogExp2(0x020205, 0.03);
+        scene.background = new THREE.Color(0x87CEEB);
+        scene.fog = new THREE.FogExp2(0x9DD5F0, 0.012);
 
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
-        camera.position.set(0, 5.0, 9.0);
+        camera.position.set(0, 8.0, 16.0);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -151,7 +151,7 @@
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 0.9;
+        renderer.toneMappingExposure = 1.4;
         renderer.outputColorSpace = THREE.SRGBColorSpace;
         document.body.appendChild(renderer.domElement);
 
@@ -177,14 +177,14 @@
 
         const pmremGenerator = new THREE.PMREMGenerator(renderer);
         const envScene = new THREE.Scene();
-        envScene.background = new THREE.Color(0x050510);
+        envScene.background = new THREE.Color(0x87CEEB);
 
         const envGeo = new THREE.SphereGeometry(50, 32, 32);
         const envMat = new THREE.ShaderMaterial({
             side: THREE.BackSide,
             uniforms: {
-                colorTop: { value: new THREE.Color(0x112244) },
-                colorBottom: { value: new THREE.Color(0x000000) },
+                colorTop: { value: new THREE.Color(0x4A90D9) },
+                colorBottom: { value: new THREE.Color(0xC8E6FF) },
             },
             vertexShader: `
                 varying vec3 vWorldPos;
@@ -207,13 +207,13 @@
         const envMap = pmremGenerator.fromScene(envScene, 0.04).texture;
         scene.environment = envMap;
 
-        const ambient = new THREE.AmbientLight(0x0a1122, 0.2);
+        const ambient = new THREE.AmbientLight(0xffffff, 0.6);
         scene.add(ambient);
 
-        const hemi = new THREE.HemisphereLight(0x112244, 0x000000, 0.2);
+        const hemi = new THREE.HemisphereLight(0x87CEEB, 0x44aa44, 0.8);
         scene.add(hemi);
 
-        const moonLight = new THREE.DirectionalLight(0xaaccff, 2.5);
+        const moonLight = new THREE.DirectionalLight(0xFFF5E0, 3.0);
         moonLight.position.set(-10, 20, -10);
         moonLight.castShadow = true;
         moonLight.shadow.mapSize.set(4096, 4096);
@@ -227,13 +227,13 @@
         moonLight.shadow.normalBias = 0.02;
         scene.add(moonLight);
 
-        const rimLight = new THREE.DirectionalLight(0x445588, 1.0);
-        rimLight.position.set(15, 5, 5);
+        const rimLight = new THREE.DirectionalLight(0xFFE8C0, 0.8);
+        rimLight.position.set(15, 10, 5);
         scene.add(rimLight);
 
         const planeGeo = new THREE.PlaneGeometry(200, 200);
         const planeMat = new THREE.MeshStandardMaterial({
-            color: 0x050805,
+            color: 0x3A7D2A,
             roughness: 0.8,
             metalness: 0.1,
         });
@@ -261,8 +261,8 @@
         grassGeo.computeVertexNormals();
 
         const grassMat = new THREE.MeshStandardMaterial({
-            color: 0x1a3a1a,
-            emissive: 0x051005,
+            color: 0x4CAF50,
+            emissive: 0x1B5E20,
             roughness: 0.7,
             metalness: 0.1,
             side: THREE.DoubleSide
@@ -1062,6 +1062,9 @@
 
         let baseHeight = 1.8;
         let droneYaw = Math.PI;     // current heading (initial = facing camera)
+        let cameraYaw = droneYaw;   // smoothed camera heading that follows drone yaw
+        const camDist = 14;         // how far behind the drone the camera orbits
+        const camHeight = 6;        // camera height offset above drone
 
         function animate() {
             requestAnimationFrame(animate);
@@ -1093,16 +1096,20 @@
             drone.position.x += currentVelocity.x;
             drone.position.z += currentVelocity.z;
 
-            camera.position.x += currentVelocity.x;
-            camera.position.z += currentVelocity.z;
-            controls.target.x += currentVelocity.x;
-            controls.target.z += currentVelocity.z;
+            /* ── Camera orbits behind drone based on yaw ── */
+            cameraYaw = cameraYaw + (droneYaw - cameraYaw) * 0.05; // smooth follow
 
-            /* Altitude – camera & target follow smoothly */
-            const altDelta = (baseHeight - controls.target.y + 1.8 - baseHeight); // keep offset
+            const camTargetX = drone.position.x - Math.sin(cameraYaw) * camDist;
+            const camTargetZ = drone.position.z - Math.cos(cameraYaw) * camDist;
+            const camTargetY = drone.position.y + camHeight;
+
+            camera.position.x = THREE.MathUtils.lerp(camera.position.x, camTargetX, 0.06);
+            camera.position.z = THREE.MathUtils.lerp(camera.position.z, camTargetZ, 0.06);
+            camera.position.y = THREE.MathUtils.lerp(camera.position.y, camTargetY, 0.06);
+
+            controls.target.x = THREE.MathUtils.lerp(controls.target.x, drone.position.x, 0.08);
+            controls.target.z = THREE.MathUtils.lerp(controls.target.z, drone.position.z, 0.08);
             controls.target.y = THREE.MathUtils.lerp(controls.target.y, drone.position.y, 0.08);
-            camera.position.y = THREE.MathUtils.lerp(camera.position.y,
-                drone.position.y + 3.2, 0.06);
 
             const targetPitch = currentVelocity.z * 2.5;
             const targetRoll = currentVelocity.x * 2.5;
