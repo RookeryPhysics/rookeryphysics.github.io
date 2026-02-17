@@ -531,7 +531,7 @@
         }
 
 
-        const grassCount = isMobile ? 5000 : 15000;
+        const grassCount = isMobile ? 3350 : 10050;
 
         const grassGeo = new THREE.PlaneGeometry(0.15, 1.6, 1, 4);
         grassGeo.translate(0, 0.8, 0);
@@ -1230,24 +1230,7 @@
                 batteryGroup.add(strap);
             }
 
-            const xt60 = new THREE.Mesh(
-                new THREE.BoxGeometry(0.06, 0.04, 0.03),
-                matBattLabel
-            );
-            xt60.position.set(0.32, 0, 0);
-            batteryGroup.add(xt60);
 
-            for (let w = 0; w < 4; w++) {
-                const wireGeo = new THREE.CylinderGeometry(0.004, 0.004, 0.08, 6);
-                const wireMat = new THREE.MeshStandardMaterial({
-                    color: [0xff0000, 0x000000, 0xff0000, 0x000000][w],
-                    roughness: 0.7,
-                });
-                const wire = new THREE.Mesh(wireGeo, wireMat);
-                wire.position.set(0.3, -0.02, -0.12 + w * 0.03);
-                wire.rotation.z = Math.PI / 2 + 0.3;
-                batteryGroup.add(wire);
-            }
 
             drone.add(batteryGroup);
 
@@ -1302,27 +1285,7 @@
 
             drone.add(gpsMount);
 
-            const skidPositions = [
-                { x: 0.35, z: 0.45 }, { x: -0.35, z: 0.45 },
-                { x: 0.35, z: -0.45 }, { x: -0.35, z: -0.45 }
-            ];
 
-            skidPositions.forEach(sp => {
-                const skid = new THREE.Group();
-                skid.position.set(sp.x, -0.18, sp.z);
-
-                const legGeo = new THREE.CylinderGeometry(0.012, 0.012, 0.1, 8);
-                const leg = new THREE.Mesh(legGeo, matCarbonFiber);
-                skid.add(leg);
-
-                const footGeo = new THREE.SphereGeometry(0.025, 8, 8);
-                const foot = new THREE.Mesh(footGeo, matRubber);
-                foot.position.y = -0.05;
-                foot.scale.y = 0.5;
-                skid.add(foot);
-
-                drone.add(skid);
-            });
 
             const rearLED = new THREE.Mesh(
                 new THREE.SphereGeometry(0.015, 8, 8),
@@ -1347,30 +1310,7 @@
                 // Removed blue PointLights — emissive material is sufficient
             }
 
-            const underglowLEDs = [];
-            const underglowLights = [];
-            const numUnderglow = 6;
-            const underglowLedGeo = new THREE.SphereGeometry(0.01, 4, 4);
-            for (let u = 0; u < numUnderglow; u++) {
-                const angle = (u * Math.PI * 2) / numUnderglow;
-                const r = 0.5;
-                const ledMat = new THREE.MeshStandardMaterial({
-                    color: 0x00ccff,
-                    emissive: 0x00ccff,
-                    emissiveIntensity: 2.0,
-                    roughness: 0.2,
-                });
-                const led = new THREE.Mesh(underglowLedGeo, ledMat);
-                led.position.set(Math.cos(angle) * r, -0.14, Math.sin(angle) * r);
-                drone.add(led);
-                underglowLEDs.push({ mesh: led, mat: ledMat });
-            }
 
-            // Removed individual underglow PointLights — single reduced light only
-            const underglowMain = new THREE.PointLight(0x00ccff, 1.0, 5);
-            underglowMain.position.set(0, -0.4, 0);
-            drone.add(underglowMain);
-            underglowLights.push(underglowMain);
 
             const buzzer = new THREE.Mesh(
                 new THREE.CylinderGeometry(0.04, 0.04, 0.02, 12),
@@ -1488,8 +1428,7 @@
                 group: drone,
                 props: allProps,
                 motorBells: allMotorBells,
-                underglowLEDs,
-                underglowLights,
+
                 recLED,
                 greenGlow,
                 frontLEDs,
@@ -1618,24 +1557,7 @@
                 color: 0x2a2a2a, roughness: 0.6, metalness: 0.7,
             });
 
-            // --- Heavy Steel Chassis / Frame Rails ---
-            const chassisRailGeo = new THREE.BoxGeometry(0.25, 0.35, 8.4);
-            for (let side = -1; side <= 1; side += 2) {
-                const rail = new THREE.Mesh(chassisRailGeo, matDarkMetal);
-                rail.position.set(side * 1.2, 0.68, 0);
-                rail.castShadow = true;
-                rail.receiveShadow = true;
-                truck.add(rail);
-            }
-            // Cross members
-            for (let cz = -3; cz <= 3; cz += 1.5) {
-                const crossMember = new THREE.Mesh(
-                    new THREE.BoxGeometry(2.6, 0.12, 0.2),
-                    matDarkMetal
-                );
-                crossMember.position.set(0, 0.68, cz);
-                truck.add(crossMember);
-            }
+
 
             // --- Cab (more shaped) ---
             // Lower cab body
@@ -2076,22 +1998,7 @@
             antennaWhip.rotation.z = 0.08;
             truck.add(antennaWhip);
 
-            // --- Spare Tire (mounted under bed or at rear) ---
-            const spareTire = new THREE.Mesh(
-                new THREE.TorusGeometry(0.45, 0.18, 8, 16),
-                matRubber
-            );
-            spareTire.rotation.x = Math.PI / 2;
-            spareTire.position.set(0, 0.5, -3.5);
-            truck.add(spareTire);
 
-            const spareHub = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.15, 0.15, 0.2, 8),
-                matMetal
-            );
-            spareHub.rotation.x = Math.PI / 2;
-            spareHub.position.set(0, 0.5, -3.5);
-            truck.add(spareHub);
 
             // --- Camo patches on cab ---
             const camoPatch1 = new THREE.Mesh(
@@ -2176,16 +2083,7 @@
                     truck.add(lug);
                 }
 
-                // Axle shaft visible between wheels
-                if (wp.x > 0) {
-                    const axle = new THREE.Mesh(
-                        new THREE.CylinderGeometry(0.06, 0.06, 3.4, 8),
-                        matDarkMetal
-                    );
-                    axle.rotation.z = Math.PI / 2;
-                    axle.position.set(0, wheelR, wp.z);
-                    truck.add(axle);
-                }
+
             });
 
             // --- Missile Launcher Turret (rotates to track drone) ---
@@ -2322,14 +2220,7 @@
                 tube.castShadow = true;
                 launcherRack.add(tube);
 
-                // Inner tube lining (slightly darker)
-                const innerTube = new THREE.Mesh(
-                    new THREE.CylinderGeometry(tubeRadius - 0.02, tubeRadius - 0.02, tubeLength - 0.1, 10, 1, true),
-                    matDarkMetal
-                );
-                innerTube.rotation.x = Math.PI / 2;
-                innerTube.position.set(tp.x, tp.y, tubeLength / 2 - 0.5);
-                launcherRack.add(innerTube);
+
 
                 // Tube cap ring at front (reinforced)
                 const capRing = new THREE.Mesh(
@@ -3561,13 +3452,7 @@
             });
 
             const glowIntensity = 1.5 + Math.sin(t * 2) * 0.5;
-            droneData.underglowLEDs.forEach((led, i) => {
-                const phase = t * 3 + (i / droneData.underglowLEDs.length) * Math.PI * 2;
-                led.mat.emissiveIntensity = 2.0 + Math.sin(phase) * 1.0;
-            });
-            droneData.underglowLights.forEach(l => {
-                l.intensity = glowIntensity;
-            });
+
 
             if (droneData.recLED) {
                 droneData.recLED.material.emissiveIntensity = Math.sin(t * 4) > 0 ? 5.0 : 0.2;
