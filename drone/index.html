@@ -1405,11 +1405,11 @@
         // Click/tap handler — only fires on the ground plane
         function onPointerDown(event) {
             // Ignore if clicking joystick zones
-            if (event.target.closest && event.target.closest('.joystick-zone')) return;
-            if (event.target.closest && event.target.closest('.joystick-knob')) return;
+            const target = event.target;
+            if (target && target.closest && (target.closest('.joystick-zone') || target.closest('.joystick-knob'))) return;
 
             let clientX, clientY;
-            if (event.touches) {
+            if (event.touches && event.touches.length > 0) {
                 clientX = event.touches[0].clientX;
                 clientY = event.touches[0].clientY;
             } else {
@@ -1428,14 +1428,8 @@
             }
         }
 
-        renderer.domElement.addEventListener('mousedown', onPointerDown);
-        renderer.domElement.addEventListener('touchstart', (e) => {
-            // Only fire missile on quick taps, not joystick drags
-            // Check that the touch is not on a joystick
-            const target = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY);
-            if (target && (target.closest('.joystick-zone') || target.closest('.joystick-knob'))) return;
-            onPointerDown(e);
-        }, { passive: true });
+        // Use pointerdown to handle both mouse and touch without double-firing
+        renderer.domElement.addEventListener('pointerdown', onPointerDown);
 
 
         /* ── Joystick Helper Factory ── */
