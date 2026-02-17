@@ -140,9 +140,9 @@
 
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87CEEB);
-        scene.fog = new THREE.FogExp2(0x9DD5F0, 0.012);
+        scene.fog = new THREE.FogExp2(0x9DD5F0, 0.004);
 
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 600);
         camera.position.set(0, 8.0, 16.0);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -151,7 +151,7 @@
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.4;
+        renderer.toneMappingExposure = 1.0;
         renderer.outputColorSpace = THREE.SRGBColorSpace;
         document.body.appendChild(renderer.domElement);
 
@@ -161,9 +161,9 @@
 
         const bloom = new UnrealBloomPass(
             new THREE.Vector2(window.innerWidth, window.innerHeight),
-            0.8,
-            0.3,
-            0.2
+            0.2,
+            0.4,
+            0.85
         );
         composer.addPass(bloom);
 
@@ -213,16 +213,16 @@
         const hemi = new THREE.HemisphereLight(0x87CEEB, 0x44aa44, 0.8);
         scene.add(hemi);
 
-        const moonLight = new THREE.DirectionalLight(0xFFF5E0, 3.0);
+        const moonLight = new THREE.DirectionalLight(0xFFF5E0, 1.8);
         moonLight.position.set(-10, 20, -10);
         moonLight.castShadow = true;
         moonLight.shadow.mapSize.set(4096, 4096);
         moonLight.shadow.camera.near = 0.5;
-        moonLight.shadow.camera.far = 100;
-        moonLight.shadow.camera.left = -20;
-        moonLight.shadow.camera.right = 20;
-        moonLight.shadow.camera.top = 20;
-        moonLight.shadow.camera.bottom = -20;
+        moonLight.shadow.camera.far = 200;
+        moonLight.shadow.camera.left = -60;
+        moonLight.shadow.camera.right = 60;
+        moonLight.shadow.camera.top = 60;
+        moonLight.shadow.camera.bottom = -60;
         moonLight.shadow.bias = -0.0001;
         moonLight.shadow.normalBias = 0.02;
         scene.add(moonLight);
@@ -231,7 +231,7 @@
         rimLight.position.set(15, 10, 5);
         scene.add(rimLight);
 
-        const planeGeo = new THREE.PlaneGeometry(200, 200);
+        const planeGeo = new THREE.PlaneGeometry(500, 500);
         const planeMat = new THREE.MeshStandardMaterial({
             color: 0x3A7D2A,
             roughness: 0.8,
@@ -242,7 +242,7 @@
         plane.receiveShadow = true;
         scene.add(plane);
 
-        const grassCount = 15000;
+        const grassCount = 40000;
 
         const grassGeo = new THREE.PlaneGeometry(0.12, 0.8, 1, 4);
         grassGeo.translate(0, 0.4, 0);
@@ -319,7 +319,7 @@
         grassMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
 
         const dummy = new THREE.Object3D();
-        const spread = 60;
+        const spread = 200;
 
         for (let i = 0; i < grassCount; i++) {
             dummy.position.set(
@@ -342,6 +342,124 @@
 
         scene.add(grassMesh);
         document.getElementById('loading').style.opacity = 0;
+
+        /* ── Chain-link baseball fence around the map boundary ── */
+        const FENCE_HALF = 98;          // boundary half-size (drone is clamped here)
+        const fencePostHeight = 6.0;    // tall like a baseball backstop
+        const fencePostRadius = 0.06;
+        const fenceSpacing = 5;         // distance between posts
+        const topRailRadius = 0.05;
+
+        // Galvanized steel material for posts & top rail
+        const fenceMetalMat = new THREE.MeshStandardMaterial({
+            color: 0x888888,
+            roughness: 0.35,
+            metalness: 0.9,
+            envMapIntensity: 1.5,
+        });
+
+        // Chain-link mesh material – semi-transparent with diamond pattern via shader
+        const chainLinkMat = new THREE.MeshStandardMaterial({
+            color: 0x999999,
+            roughness: 0.4,
+            metalness: 0.85,
+            transparent: true,
+            opacity: 0.45,
+            side: THREE.DoubleSide,
+            depthWrite: false,
+        });
+        chainLinkMat.onBeforeCompile = (shader) => {
+            shader.vertexShader = `
+                varying vec2 vUvMesh;
+                ${shader.vertexShader}
+            `.replace('#include <uv_vertex>', `
+                #include <uv_vertex>
+                vUvMesh = uv;
+            `);
+            shader.fragmentShader = `
+                varying vec2 vUvMesh;
+                ${shader.fragmentShader}
+            `.replace('#include <color_fragment>', `
+                #include <color_fragment>
+                // Diamond chain-link pattern
+                float scaleU = 12.0;
+                float scaleV = 24.0;
+                vec2 st = vec2(vUvMesh.x * scaleU, vUvMesh.y * scaleV);
+                float diamond = abs(fract(st.x) - 0.5) + abs(fract(st.y + st.x * 0.5) - 0.5);
+                float wire = 1.0 - smoothstep(0.06, 0.12, abs(diamond - 0.5));
+                if (wire < 0.1) discard;
+                diffuseColor.a *= wire;
+            `);
+        };
+
+        const postGeo = new THREE.CylinderGeometry(fencePostRadius, fencePostRadius, fencePostHeight, 8);
+        // Cap on top of each post
+        const postCapGeo = new THREE.SphereGeometry(fencePostRadius * 1.4, 8, 6);
+
+        function addFenceSide(startX, startZ, dx, dz, totalLen) {
+            const numPosts = Math.floor(totalLen / fenceSpacing) + 1;
+            for (let i = 0; i < numPosts; i++) {
+                const px = startX + dx * i * fenceSpacing;
+                const pz = startZ + dz * i * fenceSpacing;
+
+                // Steel post
+                const post = new THREE.Mesh(postGeo, fenceMetalMat);
+                post.position.set(px, fencePostHeight / 2, pz);
+                post.castShadow = true;
+                post.receiveShadow = true;
+                scene.add(post);
+
+                // Rounded cap on post top
+                const cap = new THREE.Mesh(postCapGeo, fenceMetalMat);
+                cap.position.set(px, fencePostHeight + 0.02, pz);
+                scene.add(cap);
+
+                // Chain-link panel + top rail between posts
+                if (i < numPosts - 1) {
+                    const nx = startX + dx * (i + 1) * fenceSpacing;
+                    const nz = startZ + dz * (i + 1) * fenceSpacing;
+                    const mx = (px + nx) / 2;
+                    const mz = (pz + nz) / 2;
+
+                    // Top rail (horizontal pipe)
+                    const railGeo = new THREE.CylinderGeometry(topRailRadius, topRailRadius, fenceSpacing, 8);
+                    const rail = new THREE.Mesh(railGeo, fenceMetalMat);
+                    rail.position.set(mx, fencePostHeight, mz);
+                    if (Math.abs(dx) > 0) {
+                        rail.rotation.z = Math.PI / 2;
+                    } else {
+                        rail.rotation.x = Math.PI / 2;
+                    }
+                    rail.castShadow = true;
+                    scene.add(rail);
+
+                    // Chain-link mesh panel
+                    const panelGeo = new THREE.PlaneGeometry(fenceSpacing, fencePostHeight);
+                    const panel = new THREE.Mesh(panelGeo, chainLinkMat);
+                    panel.position.set(mx, fencePostHeight / 2, mz);
+                    // Rotate panel to face outward
+                    if (Math.abs(dx) > 0) {
+                        // fence runs along X → panel faces Z
+                        // default PlaneGeometry already faces +Z, no Y rotation needed
+                    } else {
+                        // fence runs along Z → panel faces X
+                        panel.rotation.y = Math.PI / 2;
+                    }
+                    panel.receiveShadow = true;
+                    scene.add(panel);
+                }
+            }
+        }
+
+        const fenceLen = FENCE_HALF * 2;
+        // +Z side (front)
+        addFenceSide(-FENCE_HALF, FENCE_HALF, 1, 0, fenceLen);
+        // -Z side (back)
+        addFenceSide(-FENCE_HALF, -FENCE_HALF, 1, 0, fenceLen);
+        // +X side (right)
+        addFenceSide(FENCE_HALF, -FENCE_HALF, 0, 1, fenceLen);
+        // -X side (left)
+        addFenceSide(-FENCE_HALF, -FENCE_HALF, 0, 1, fenceLen);
 
         function roundedBox(w, h, d, r, segs) {
             const shape = new THREE.Shape();
@@ -963,6 +1081,7 @@
         drone.rotation.order = 'YXZ';  // Apply yaw first so pitch/roll are in local frame
         scene.add(drone);
 
+
         /* ── Joystick Helper Factory ── */
         function createJoystickController(zoneId, knobId) {
             const zone = document.getElementById(zoneId);
@@ -1096,6 +1215,7 @@
         const camDist = 14;         // how far behind the drone the camera orbits
         const camHeight = 6;        // camera height offset above drone
 
+
         function animate() {
             requestAnimationFrame(animate);
             const t = clock.getElapsedTime();
@@ -1127,12 +1247,21 @@
             /* ── Right stick: movement in the drone's local heading ── */
             const sinY = Math.sin(droneYaw);
             const cosY = Math.cos(droneYaw);
-            // forward/back from stick Y, strafe from stick X
-            currentVelocity.x = (-smoothInput.x * cosY - smoothInput.y * sinY) * droneSpeed;
-            currentVelocity.z = (smoothInput.x * sinY - smoothInput.y * cosY) * droneSpeed;
+            // forward/back from stick Y, strafe from stick X – glide to a stop
+            const targetVelX = (-smoothInput.x * cosY - smoothInput.y * sinY) * droneSpeed;
+            const targetVelZ = (smoothInput.x * sinY - smoothInput.y * cosY) * droneSpeed;
+            currentVelocity.x = THREE.MathUtils.lerp(currentVelocity.x, targetVelX, 0.06);
+            currentVelocity.z = THREE.MathUtils.lerp(currentVelocity.z, targetVelZ, 0.06);
 
             drone.position.x += currentVelocity.x;
             drone.position.z += currentVelocity.z;
+
+            // Clamp drone inside fence boundary
+            const FENCE_LIMIT = FENCE_HALF - 1.5;
+            if (drone.position.x > FENCE_LIMIT) { drone.position.x = FENCE_LIMIT; currentVelocity.x = 0; }
+            if (drone.position.x < -FENCE_LIMIT) { drone.position.x = -FENCE_LIMIT; currentVelocity.x = 0; }
+            if (drone.position.z > FENCE_LIMIT) { drone.position.z = FENCE_LIMIT; currentVelocity.z = 0; }
+            if (drone.position.z < -FENCE_LIMIT) { drone.position.z = -FENCE_LIMIT; currentVelocity.z = 0; }
 
             /* ── Camera orbits behind drone based on yaw ── */
             cameraYaw = cameraYaw + (droneYaw - cameraYaw) * 0.05; // smooth follow
@@ -1190,6 +1319,8 @@
             }
 
             droneData.greenGlow.intensity = 0.5 + Math.sin(t * 2.5) * 0.3;
+
+
 
             controls.update();
             composer.render();
