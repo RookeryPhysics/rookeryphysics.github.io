@@ -1052,6 +1052,35 @@
         /* Left stick   → yaw (x) & altitude (y) */
         const inputLeft = createJoystickController('joystick-zone-left', 'joystick-knob-left');
 
+        /* ── Keyboard input (WASD = left stick, Arrows = right stick) ── */
+        const keys = {};
+        window.addEventListener('keydown', (e) => {
+            keys[e.code] = true;
+            // Prevent arrow keys from scrolling the page
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
+        });
+        window.addEventListener('keyup', (e) => {
+            keys[e.code] = false;
+        });
+
+        function getKeyboardInput() {
+            // WASD → left stick (A/D = yaw X, W/S = altitude Y)
+            let leftX = 0, leftY = 0;
+            if (keys['KeyA']) leftX -= 1;
+            if (keys['KeyD']) leftX += 1;
+            if (keys['KeyW']) leftY -= 1;   // W = up (stick up = negative Y)
+            if (keys['KeyS']) leftY += 1;   // S = down
+
+            // Arrow keys → right stick (Left/Right = strafe X, Up/Down = fwd/back Y)
+            let rightX = 0, rightY = 0;
+            if (keys['ArrowLeft']) rightX -= 1;
+            if (keys['ArrowRight']) rightX += 1;
+            if (keys['ArrowUp']) rightY -= 1;   // forward = stick up = negative Y
+            if (keys['ArrowDown']) rightY += 1;
+
+            return { leftX, leftY, rightX, rightY };
+        }
+
         const clock = new THREE.Clock();
         const droneSpeed = 0.15;
         const yawSpeed = 0.04;      // radians per frame at full deflection
@@ -1075,11 +1104,19 @@
                 grassMat.userData.shader.uniforms.uDronePos.value.copy(drone.position);
             }
 
-            /* ── Smooth both sticks ── */
-            smoothInput.x = THREE.MathUtils.lerp(smoothInput.x, inputVector.x, 0.1);
-            smoothInput.y = THREE.MathUtils.lerp(smoothInput.y, inputVector.y, 0.1);
-            smoothLeft.x = THREE.MathUtils.lerp(smoothLeft.x, inputLeft.x, 0.1);
-            smoothLeft.y = THREE.MathUtils.lerp(smoothLeft.y, inputLeft.y, 0.1);
+            /* ── Blend keyboard + joystick, then smooth ── */
+            const kb = getKeyboardInput();
+            // Clamp combined input to [-1, 1]
+            const clamp = (v) => Math.max(-1, Math.min(1, v));
+            const combinedRightX = clamp(inputVector.x + kb.rightX);
+            const combinedRightY = clamp(inputVector.y + kb.rightY);
+            const combinedLeftX = clamp(inputLeft.x + kb.leftX);
+            const combinedLeftY = clamp(inputLeft.y + kb.leftY);
+
+            smoothInput.x = THREE.MathUtils.lerp(smoothInput.x, combinedRightX, 0.1);
+            smoothInput.y = THREE.MathUtils.lerp(smoothInput.y, combinedRightY, 0.1);
+            smoothLeft.x = THREE.MathUtils.lerp(smoothLeft.x, combinedLeftX, 0.1);
+            smoothLeft.y = THREE.MathUtils.lerp(smoothLeft.y, combinedLeftY, 0.1);
 
             /* ── Left stick: yaw & altitude ── */
             droneYaw -= smoothLeft.x * yawSpeed;            // left → positive yaw
@@ -1111,8 +1148,9 @@
             controls.target.z = THREE.MathUtils.lerp(controls.target.z, drone.position.z, 0.08);
             controls.target.y = THREE.MathUtils.lerp(controls.target.y, drone.position.y, 0.08);
 
-            const targetPitch = currentVelocity.z * 2.5;
-            const targetRoll = currentVelocity.x * 2.5;
+            // Use stick inputs (local frame) for tilt, not world-space velocity
+            const targetPitch = smoothInput.y * 0.35;
+            const targetRoll = -smoothInput.x * 0.35;
 
             const totalSpeed = smoothInput.length() + Math.abs(smoothLeft.x);
             const speedFactor = 1.0 - Math.min(totalSpeed, 1.0) * 0.8;
