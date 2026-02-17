@@ -2272,26 +2272,36 @@
             };
         }
 
-        const aaTruckData = createAATruck();
-        const aaTruck = aaTruckData.group;
-        aaTruck.position.set(0, 0, 0);  // Center of the map
-        aaTruck.scale.set(1.2, 1.2, 1.2);
-        scene.add(aaTruck);
-
-        /* ── Enemy Missile System ── */
-        const enemyMissiles = [];
-        let enemyFireTimer = 0;
+        /* ── Enemy Missile System Constants ── */
         const ENEMY_FIRE_INTERVAL = 5.0;  // seconds between shots
         const ENEMY_MISSILE_SPEED = 18.0; // units per second (straight line)
         const ENEMY_MISSILE_MAX_RANGE = 250;
         const BLAST_RADIUS = 4.0;  // how close a missile must be to destroy drone
         const TRUCK_HIT_RADIUS = 8.0; // how close a drone missile must land to damage the truck
         const TRUCK_MAX_HP = 3;
-        let truckHP = TRUCK_MAX_HP;
-        let truckDestroyed = false;
+
+        const trucks = [];
+
+        function spawnTruck(x, z) {
+            const data = createAATruck();
+            data.group.position.set(x, 0, z);
+            data.group.scale.set(1.2, 1.2, 1.2);
+            data.hp = TRUCK_MAX_HP;
+            data.destroyed = false;
+            data.fireTimer = Math.random() * ENEMY_FIRE_INTERVAL; // Stagger firing
+            data.currentTubeIndex = 0;
+            scene.add(data.group);
+            trucks.push(data);
+            return data;
+        }
+
+        // Initial truck spawn
+        spawnTruck(0, 0);
+
+        /* ── Enemy Missile System State ── */
+        const enemyMissiles = [];
         let gameOver = false;
         let surviveTime = 0; // Keeping variable as it might be used for logic, but removing UI update
-        let currentTubeIndex = 0;  // cycle through the 4 tubes
 
         const gameOverOverlay = document.getElementById('game-over-overlay');
         const restartBtn = document.getElementById('restart-btn');
@@ -2378,12 +2388,12 @@
             return { group: missile, flame };
         }
 
-        function fireEnemyMissile() {
-            if (gameOver || truckDestroyed) return;
+        function fireEnemyMissile(truckData) {
+            if (gameOver || truckData.destroyed) return;
 
             // Get the turret world position (origin of launchers)
             const turretWorldPos = new THREE.Vector3();
-            aaTruckData.turretRotator.getWorldPosition(turretWorldPos);
+            truckData.turretRotator.getWorldPosition(turretWorldPos);
 
             // Direction toward drone
             const targetPos = drone.position.clone();
@@ -2421,7 +2431,7 @@
                 trail, trailIndex: 0,
             });
 
-            currentTubeIndex = (currentTubeIndex + 1) % 4;
+            truckData.currentTubeIndex = (truckData.currentTubeIndex + 1) % 4;
 
             // Flash warning
             warningText.style.opacity = '1';
@@ -2438,20 +2448,32 @@
             drone.visible = false;
         }
 
-        function destroyTruck() {
-            truckDestroyed = true;
+        function destroyTruck(truckData) {
+            truckData.destroyed = true;
             // Big explosion at truck
-            createExplosion(aaTruck.position.clone());
-            createExplosion(aaTruck.position.clone().add(new THREE.Vector3(2, 1, 0)));
-            createExplosion(aaTruck.position.clone().add(new THREE.Vector3(-1, 2, 1)));
-            aaTruck.visible = false;
+            createExplosion(truckData.group.position.clone());
+            createExplosion(truckData.group.position.clone().add(new THREE.Vector3(2, 1, 0)));
+            createExplosion(truckData.group.position.clone().add(new THREE.Vector3(-1, 2, 1)));
+            truckData.group.visible = false;
 
-            // Clean up any remaining enemy missiles
-            for (let i = enemyMissiles.length - 1; i >= 0; i--) {
-                scene.remove(enemyMissiles[i].mesh);
-                fadingTrails.push({ trail: enemyMissiles[i].trail, elapsed: 0, duration: 1.5 });
+            // Spawn 2 more after 10 seconds
+            setTimeout(() => {
+                // Spawn one to the left and one to the right, or somewhere else
+                const spawnDist = 40 + Math.random() * 40;
+                const angle1 = Math.random() * Math.PI * 2;
+                const angle2 = angle1 + Math.PI + (Math.random() - 0.5) * 1.0;
+
+                spawnTruck(Math.cos(angle1) * spawnDist, Math.sin(angle1) * spawnDist);
+                spawnTruck(Math.cos(angle2) * spawnDist, Math.sin(angle2) * spawnDist);
+            }, 10000);
+
+            // Clean up any remaining enemy missiles if NO active trucks remains? 
+            // Or just leave them? Usually they should keep flying.
+            // If all trucks are destroyed, we could clear them, but reinforcements are coming.
+            const anyTrucksLeft = trucks.some(t => !t.destroyed);
+            if (!anyTrucksLeft) {
+                // Option: clear missiles? Or just let them fly to target.
             }
-            enemyMissiles.length = 0;
         }
 
         function restartGame() {
@@ -2466,12 +2488,15 @@
             smoothInput.set(0, 0);
             smoothLeft.set(0, 0);
             surviveTime = 0;
-            enemyFireTimer = 3.0; // give player 2 secs grace
 
             // Restore truck
-            truckHP = TRUCK_MAX_HP;
-            truckDestroyed = false;
-            aaTruck.visible = true;
+            // Clean up existing trucks
+            trucks.forEach(t => {
+                scene.remove(t.group);
+                // Dispose geometries/materials if needed, but for restart simple remove is okay
+            });
+            trucks.length = 0;
+            spawnTruck(0, 0);
 
             // Clean up enemy missiles
             for (let i = enemyMissiles.length - 1; i >= 0; i--) {
@@ -3004,22 +3029,11 @@
             moonLight.target.position.copy(drone.position);
 
             /* ── Camera orbits behind drone based on yaw ── */
-            // Wrap the yaw difference into [-π, π] so the camera always takes the short path
-            let yawDelta = droneYaw - cameraYaw;
-            yawDelta = yawDelta - Math.PI * 2 * Math.round(yawDelta / (Math.PI * 2));
-            cameraYaw = cameraYaw + yawDelta * 0.08; // smooth follow
-
-            const camTargetX = drone.position.x - Math.sin(cameraYaw) * camDist;
-            const camTargetZ = drone.position.z - Math.cos(cameraYaw) * camDist;
-            const camTargetY = drone.position.y + camHeight;
-
-            camera.position.x = THREE.MathUtils.lerp(camera.position.x, camTargetX, 0.06);
-            camera.position.z = THREE.MathUtils.lerp(camera.position.z, camTargetZ, 0.06);
-            camera.position.y = THREE.MathUtils.lerp(camera.position.y, camTargetY, 0.06);
-
-            controls.target.x = THREE.MathUtils.lerp(controls.target.x, drone.position.x, 0.08);
-            controls.target.z = THREE.MathUtils.lerp(controls.target.z, drone.position.z, 0.08);
-            controls.target.y = THREE.MathUtils.lerp(controls.target.y, drone.position.y, 0.08);
+            cameraYaw = droneYaw;
+            camera.position.x = drone.position.x - Math.sin(cameraYaw) * camDist;
+            camera.position.z = drone.position.z - Math.cos(cameraYaw) * camDist;
+            camera.position.y = drone.position.y + camHeight;
+            controls.target.copy(drone.position);
             controls.update();
 
             // Use stick inputs (local frame) for tilt, not world-space velocity
@@ -3070,42 +3084,45 @@
 
             /* ── Update AA Truck turret tracking ── */
             if (!gameOver) {
-                const truckWorldPos = new THREE.Vector3();
-                aaTruck.getWorldPosition(truckWorldPos);
-                const toDrone = new THREE.Vector3().subVectors(drone.position, truckWorldPos);
+                trucks.forEach(tData => {
+                    if (tData.destroyed) return;
 
-                // Yaw rotation (turretRotator rotates around Y)
-                const targetYaw = Math.atan2(toDrone.x, toDrone.z);
-                // The truck itself might be rotated, so we compute relative to truck
-                const truckYaw = aaTruck.rotation.y;
-                let relYaw = targetYaw - truckYaw;
-                // Wrap to [-PI, PI]
-                relYaw = relYaw - Math.PI * 2 * Math.round(relYaw / (Math.PI * 2));
-                // Smooth rotate
-                let currentYaw = aaTruckData.turretRotator.rotation.y;
-                let yawDiff = relYaw - currentYaw;
-                yawDiff = yawDiff - Math.PI * 2 * Math.round(yawDiff / (Math.PI * 2));
-                aaTruckData.turretRotator.rotation.y += yawDiff * 0.05;
+                    const truckObj = tData.group;
+                    const truckWorldPos = new THREE.Vector3();
+                    truckObj.getWorldPosition(truckWorldPos);
+                    const toDrone = new THREE.Vector3().subVectors(drone.position, truckWorldPos);
 
-                // Elevation (pitch the launcher arm up/down)
-                const horizDist = Math.sqrt(toDrone.x * toDrone.x + toDrone.z * toDrone.z);
-                const targetPitchAngle = Math.atan2(toDrone.y - 2.5, horizDist);
-                const clampedPitch = Math.max(-0.1, Math.min(Math.PI * 0.4, targetPitchAngle));
-                aaTruckData.elevationArm.rotation.x = THREE.MathUtils.lerp(
-                    aaTruckData.elevationArm.rotation.x, -clampedPitch, 0.05
-                );
+                    // Yaw rotation (turretRotator rotates around Y)
+                    const targetYaw = Math.atan2(toDrone.x, toDrone.z);
+                    const truckYaw = truckObj.rotation.y;
+                    let relYaw = targetYaw - truckYaw;
+                    relYaw = relYaw - Math.PI * 2 * Math.round(relYaw / (Math.PI * 2));
 
-                // Sight lens blink
-                aaTruckData.sightLens.material.emissiveIntensity = 1.5 + Math.sin(t * 6) * 1.0;
+                    let currentYaw = tData.turretRotator.rotation.y;
+                    let yawDiff = relYaw - currentYaw;
+                    yawDiff = yawDiff - Math.PI * 2 * Math.round(yawDiff / (Math.PI * 2));
+                    tData.turretRotator.rotation.y += yawDiff * 0.05;
 
-                // Fire timer
-                enemyFireTimer += dt;
+                    // Elevation
+                    const horizDist = Math.sqrt(toDrone.x * toDrone.x + toDrone.z * toDrone.z);
+                    const targetPitchAngle = Math.atan2(toDrone.y - 2.5, horizDist);
+                    const clampedPitch = Math.max(-0.1, Math.min(Math.PI * 0.4, targetPitchAngle));
+                    tData.elevationArm.rotation.x = THREE.MathUtils.lerp(
+                        tData.elevationArm.rotation.x, -clampedPitch, 0.05
+                    );
+
+                    // Sight lens blink
+                    tData.sightLens.material.emissiveIntensity = 1.5 + Math.sin(t * 6) * 1.0;
+
+                    // Fire timer
+                    tData.fireTimer += dt;
+                    if (tData.fireTimer >= ENEMY_FIRE_INTERVAL) {
+                        tData.fireTimer = 0;
+                        fireEnemyMissile(tData);
+                    }
+                });
+
                 surviveTime += dt;
-
-                if (enemyFireTimer >= ENEMY_FIRE_INTERVAL) {
-                    enemyFireTimer = 0;
-                    fireEnemyMissile();
-                }
             }
 
             /* ── Update enemy missiles ── */
@@ -3216,16 +3233,18 @@
                     }
                     createExplosion(m.targetPos);
 
-                    // Check if this hit the AA truck
-                    if (!truckDestroyed) {
-                        const distToTruck = m.targetPos.distanceTo(aaTruck.position);
-                        if (distToTruck < TRUCK_HIT_RADIUS) {
-                            truckHP--;
-                            if (truckHP <= 0) {
-                                destroyTruck();
+                    // Check if this hit an AA truck
+                    trucks.forEach(tData => {
+                        if (!tData.destroyed) {
+                            const distToTruck = m.targetPos.distanceTo(tData.group.position);
+                            if (distToTruck < TRUCK_HIT_RADIUS) {
+                                tData.hp--;
+                                if (tData.hp <= 0) {
+                                    destroyTruck(tData);
+                                }
                             }
                         }
-                    }
+                    });
 
                     activeMissiles.splice(i, 1);
                 }
