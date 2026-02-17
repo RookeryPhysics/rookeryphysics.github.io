@@ -3033,13 +3033,21 @@
             );
             moonLight.target.position.copy(drone.position);
 
-            /* ── Camera orbits behind drone based on yaw ── */
-            cameraYaw = droneYaw;
-            camera.position.x = drone.position.x - Math.sin(cameraYaw) * camDist;
-            camera.position.z = drone.position.z - Math.cos(cameraYaw) * camDist;
-            camera.position.y = drone.position.y + camHeight;
-            controls.target.copy(drone.position);
-            controls.update();
+            /* ── Camera fixed to drone rotation ── */
+            const camOffset = new THREE.Vector3(0, camHeight, -camDist);
+            const camWorldPos = camOffset.applyMatrix4(drone.matrixWorld);
+            camera.position.copy(camWorldPos);
+
+            // Re-calculate up vector from drone to maintain roll alignment
+            const droneUp = new THREE.Vector3(0, 1, 0).applyQuaternion(drone.quaternion);
+            camera.up.copy(droneUp);
+
+            // Look at a point slightly in front of the drone to get a better perspective
+            const lookTarget = new THREE.Vector3(0, 0, 2).applyMatrix4(drone.matrixWorld);
+            camera.lookAt(lookTarget);
+
+            // No longer need OrbitControls update if we are fixed
+            // controls.update(); 
 
             // Use stick inputs (local frame) for tilt, not world-space velocity
             const targetPitch = -smoothInput.y * 0.18;
