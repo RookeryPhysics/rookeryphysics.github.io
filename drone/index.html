@@ -222,6 +222,8 @@
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
 
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87CEEB);
         scene.fog = new THREE.FogExp2(0x9DD5F0, 0.004);
@@ -229,11 +231,13 @@
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 600);
         camera.position.set(0, 8.0, 16.0);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
+        const renderer = new THREE.WebGLRenderer({ antialias: !isMobile, powerPreference: 'high-performance' });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.0 : 1.5));
+        renderer.shadowMap.enabled = !isMobile; // Disable shadows on mobile for performance
+        if (!isMobile) {
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        }
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
         renderer.toneMappingExposure = 1.0;
         renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -300,16 +304,18 @@
 
         const moonLight = new THREE.DirectionalLight(0xFFF5E0, 1.8);
         moonLight.position.set(-10, 20, -10);
-        moonLight.castShadow = true;
-        moonLight.shadow.mapSize.set(2048, 2048);
-        moonLight.shadow.camera.near = 0.5;
-        moonLight.shadow.camera.far = 100;
-        moonLight.shadow.camera.left = -40;
-        moonLight.shadow.camera.right = 40;
-        moonLight.shadow.camera.top = 40;
-        moonLight.shadow.camera.bottom = -40;
-        moonLight.shadow.bias = -0.0001;
-        moonLight.shadow.normalBias = 0.02;
+        moonLight.castShadow = !isMobile;
+        if (!isMobile) {
+            moonLight.shadow.mapSize.set(1024, 1024);
+            moonLight.shadow.camera.near = 0.5;
+            moonLight.shadow.camera.far = 100;
+            moonLight.shadow.camera.left = -40;
+            moonLight.shadow.camera.right = 40;
+            moonLight.shadow.camera.top = 40;
+            moonLight.shadow.camera.bottom = -40;
+            moonLight.shadow.bias = -0.0001;
+            moonLight.shadow.normalBias = 0.02;
+        }
         scene.add(moonLight);
         scene.add(moonLight.target);
 
@@ -328,7 +334,7 @@
         plane.receiveShadow = true;
         scene.add(plane);
 
-        const grassCount = 10000;
+        const grassCount = isMobile ? 3000 : 10000;
 
         const grassGeo = new THREE.PlaneGeometry(0.15, 1.6, 1, 4);
         grassGeo.translate(0, 0.8, 0);
@@ -1307,7 +1313,25 @@
            ══════════════════════════════════════════════ */
 
         function createAATruck() {
-            const truck = new THREE.Group();
+            const realTruck = new THREE.Group();
+            const geometryBuckets = new Map();
+
+            const truck = {
+                add: function (obj) {
+                    if (obj.isMesh) {
+                        obj.updateMatrix();
+                        const geo = obj.geometry.clone();
+                        geo.applyMatrix4(obj.matrix);
+
+                        let mat = obj.material;
+                        let list = geometryBuckets.get(mat);
+                        if (!list) { list = []; geometryBuckets.set(mat, list); }
+                        list.push(geo);
+                    } else {
+                        realTruck.add(obj);
+                    }
+                }
+            };
 
             // --- Materials ---
             const matOliveDrab = new THREE.MeshStandardMaterial({
@@ -2268,7 +2292,22 @@
             turret.add(turretRotator);
             truck.add(turret);
 
-            truck.traverse(child => {
+            // Finalize merging of collected geometries
+            geometryBuckets.forEach((geos, mat) => {
+                if (geos.length > 0) {
+                    const merged = BufferGeometryUtils.mergeGeometries(geos);
+
+                    // Dispose original geometries to free memory
+                    geos.forEach(g => g.dispose());
+
+                    const mesh = new THREE.Mesh(merged, mat);
+                    mesh.castShadow = true;
+                    mesh.receiveShadow = true;
+                    realTruck.add(mesh);
+                }
+            });
+
+            realTruck.traverse(child => {
                 if (child.isMesh) {
                     child.castShadow = true;
                     child.receiveShadow = true;
@@ -2276,7 +2315,7 @@
             });
 
             return {
-                group: truck,
+                group: realTruck,
                 turretRotator,
                 elevationArm,
                 sightLens,
@@ -2595,7 +2634,7 @@
         }
 
         function createExplosion(position) {
-            const particleCount = 40;
+            const particleCount = isMobile ? 20 : 40;
             const geo = new THREE.BufferGeometry();
             const positions = new Float32Array(particleCount * 3);
             const velocities = [];
@@ -2671,7 +2710,7 @@
             scene.add(ring);
 
             // Smoke cloud (secondary particles)
-            const smokeCount = 15;
+            const smokeCount = isMobile ? 8 : 15;
             const smokeGeo = new THREE.BufferGeometry();
             const smokePos = new Float32Array(smokeCount * 3);
             const smokeVels = [];
@@ -2777,10 +2816,34 @@
         }
 
         // Click/tap handler — only fires on the ground plane
+        // Input state for tap detection
+        let isPointerDown = false;
+        let pointerStartTime = 0;
+        let pointerStartPos = new THREE.Vector2();
+        let pointerHasMoved = false;
+
         function onPointerDown(event) {
             // Ignore if clicking joystick zones
             const target = event.target;
             if (target && target.closest && (target.closest('.joystick-zone') || target.closest('.joystick-knob'))) return;
+
+            isPointerDown = true;
+            pointerStartTime = performance.now();
+            pointerHasMoved = false;
+
+            let clientX, clientY;
+            if (event.touches && event.touches.length > 0) {
+                clientX = event.touches[0].clientX;
+                clientY = event.touches[0].clientY;
+            } else {
+                clientX = event.clientX;
+                clientY = event.clientY;
+            }
+            pointerStartPos.set(clientX, clientY);
+        }
+
+        function onPointerMove(event) {
+            if (!isPointerDown) return;
 
             let clientX, clientY;
             if (event.touches && event.touches.length > 0) {
@@ -2791,19 +2854,44 @@
                 clientY = event.clientY;
             }
 
-            mouse.x = (clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(clientY / window.innerHeight) * 2 + 1;
-
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObject(plane);
-
-            if (intersects.length > 0) {
-                launchMissile(intersects[0].point);
+            const dist = Math.hypot(clientX - pointerStartPos.x, clientY - pointerStartPos.y);
+            if (dist > 10) { // 10px threshold
+                pointerHasMoved = true;
             }
         }
 
-        // Use pointerdown to handle both mouse and touch without double-firing
+        function onPointerUp(event) {
+            if (!isPointerDown) return;
+            isPointerDown = false;
+
+            const duration = performance.now() - pointerStartTime;
+
+            // If it was a quick tap and didn't move much, fire!
+            if (duration < 300 && !pointerHasMoved) {
+                let clientX, clientY;
+                if (event.changedTouches && event.changedTouches.length > 0) {
+                    clientX = event.changedTouches[0].clientX;
+                    clientY = event.changedTouches[0].clientY;
+                } else {
+                    clientX = event.clientX;
+                    clientY = event.clientY;
+                }
+
+                mouse.x = (clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(clientY / window.innerHeight) * 2 + 1;
+
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObject(plane);
+
+                if (intersects.length > 0) {
+                    launchMissile(intersects[0].point);
+                }
+            }
+        }
+
         renderer.domElement.addEventListener('pointerdown', onPointerDown);
+        renderer.domElement.addEventListener('pointermove', onPointerMove);
+        renderer.domElement.addEventListener('pointerup', onPointerUp);
 
 
         /* ── Joystick Helper Factory ── */
@@ -2949,6 +3037,11 @@
         const camHeight = 6;        // camera height offset above drone
 
 
+        const _truckWorldPos = new THREE.Vector3();
+        const _toDrone = new THREE.Vector3();
+        const _upVec = new THREE.Vector3(0, 1, 0);
+        const _camTargetPos = new THREE.Vector3();
+
         function animate() {
             requestAnimationFrame(animate);
             const t = clock.getElapsedTime();
@@ -3055,7 +3148,7 @@
                 controls.target.lerp(drone.position, 0.1);
                 controls.update();
                 // Smoothly level the horizon in manual mode
-                camera.up.lerp(new THREE.Vector3(0, 1, 0), 0.05);
+                camera.up.lerp(_upVec, 0.05);
             } else {
                 // Return to fixed/locked mode
                 controls.enabled = false;
@@ -3063,13 +3156,11 @@
                 // Position based only on yaw (ignore drone's roll/pitch)
                 const camX = drone.position.x - Math.sin(droneYaw) * camDist;
                 const camZ = drone.position.z - Math.cos(droneYaw) * camDist;
-                const targetPos = new THREE.Vector3(camX, drone.position.y + camHeight, camZ);
-
-                const targetUp = new THREE.Vector3(0, 1, 0);
+                _camTargetPos.set(camX, drone.position.y + camHeight, camZ);
 
                 // Smoothly lerp towards the target position and upright orientation
-                camera.position.lerp(targetPos, 0.07);
-                camera.up.lerp(targetUp, 0.1);
+                camera.position.lerp(_camTargetPos, 0.07);
+                camera.up.lerp(_upVec, 0.1);
 
                 // Look at the drone's center (stable point)
                 camera.lookAt(drone.position.x, drone.position.y + 0.5, drone.position.z);
@@ -3130,12 +3221,11 @@
                     if (tData.destroyed) return;
 
                     const truckObj = tData.group;
-                    const truckWorldPos = new THREE.Vector3();
-                    truckObj.getWorldPosition(truckWorldPos);
-                    const toDrone = new THREE.Vector3().subVectors(drone.position, truckWorldPos);
+                    truckObj.getWorldPosition(_truckWorldPos);
+                    _toDrone.subVectors(drone.position, _truckWorldPos);
 
                     // Yaw rotation (turretRotator rotates around Y)
-                    const targetYaw = Math.atan2(toDrone.x, toDrone.z);
+                    const targetYaw = Math.atan2(_toDrone.x, _toDrone.z);
                     const truckYaw = truckObj.rotation.y;
                     let relYaw = targetYaw - truckYaw;
                     relYaw = relYaw - Math.PI * 2 * Math.round(relYaw / (Math.PI * 2));
@@ -3146,8 +3236,8 @@
                     tData.turretRotator.rotation.y += yawDiff * 0.05;
 
                     // Elevation
-                    const horizDist = Math.sqrt(toDrone.x * toDrone.x + toDrone.z * toDrone.z);
-                    const targetPitchAngle = Math.atan2(toDrone.y - 2.5, horizDist);
+                    const horizDist = Math.sqrt(_toDrone.x * _toDrone.x + _toDrone.z * _toDrone.z);
+                    const targetPitchAngle = Math.atan2(_toDrone.y - 2.5, horizDist);
                     const clampedPitch = Math.max(-0.1, Math.min(Math.PI * 0.4, targetPitchAngle));
                     tData.elevationArm.rotation.x = THREE.MathUtils.lerp(
                         tData.elevationArm.rotation.x, -clampedPitch, 0.05
@@ -3210,6 +3300,18 @@
                     }
                 }
 
+                // Fence check: delete if passed fence for 2 seconds
+                if (!em.passedFenceTime && (Math.abs(em.mesh.position.x) > FENCE_HALF || Math.abs(em.mesh.position.z) > FENCE_HALF)) {
+                    em.passedFenceTime = t;
+                }
+                if (em.passedFenceTime && (t - em.passedFenceTime > 2.0)) {
+                    createExplosion(em.mesh.position.clone());
+                    scene.remove(em.mesh);
+                    fadingTrails.push({ trail: em.trail, elapsed: 0, duration: 1.5 });
+                    enemyMissiles.splice(i, 1);
+                    continue;
+                }
+
                 // Ground hit or max range
                 if (em.mesh.position.y <= 0.2 || em.distanceTraveled >= ENEMY_MISSILE_MAX_RANGE) {
                     createExplosion(em.mesh.position.clone());
@@ -3265,6 +3367,20 @@
                     m.trailIndex++;
                     m.trail.geometry.setDrawRange(0, m.trailIndex);
                     m.trail.geometry.attributes.position.needsUpdate = true;
+                }
+
+                // Fence check: delete if passed fence for 2 seconds
+                if (!m.passedFenceTime && (Math.abs(m.mesh.position.x) > FENCE_HALF || Math.abs(m.mesh.position.z) > FENCE_HALF)) {
+                    m.passedFenceTime = t;
+                }
+                if (m.passedFenceTime && (t - m.passedFenceTime > 2.0)) {
+                    scene.remove(m.mesh);
+                    if (m.trail) {
+                        fadingTrails.push({ trail: m.trail, elapsed: 0, duration: 1.5 });
+                    }
+                    createExplosion(m.mesh.position.clone());
+                    activeMissiles.splice(i, 1);
+                    continue;
                 }
 
                 // Impact!
