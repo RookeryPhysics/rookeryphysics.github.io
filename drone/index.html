@@ -690,7 +690,7 @@
 
         /* ── Chain-link baseball fence (merged geometry for performance) ── */
         const FENCE_HALF = 98;
-        const fencePostHeight = 6.0;
+        const fencePostHeight = 12.0;
         const fencePostRadius = 0.06;
         const fenceSpacing = 5;
         const topRailRadius = 0.05;
@@ -725,7 +725,7 @@
             `.replace('#include <color_fragment>', `
                 #include <color_fragment>
                 float scaleU = 12.0;
-                float scaleV = 24.0;
+                float scaleV = 48.0;
                 vec2 st = vec2(vUvMesh.x * scaleU, vUvMesh.y * scaleV);
                 float diamond = abs(fract(st.x) - 0.5) + abs(fract(st.y + st.x * 0.5) - 0.5);
                 float wire = 1.0 - smoothstep(0.06, 0.12, abs(diamond - 0.5));
@@ -3345,26 +3345,59 @@
             drone.position.x += currentVelocity.x;
             drone.position.z += currentVelocity.z;
 
-            /* ── Ammo Crate collision & landing ── */
-            // Crate AABB: centered at (80,0,80), box 10 wide (X), 6 deep (Z), lid top at y=5.4
-            const crateHalfW = 5.2;   // half-width X (with small margin)
-            const crateHalfD = 3.2;   // half-depth Z (with small margin)
-            const crateTopY = 5.4;   // top of the lid
+            /* ── Ammo Crate Collision & Landing ── */
             const cx = ammoCrate.position.x;
             const cz = ammoCrate.position.z;
-            const onCrateXZ = (drone.position.x > cx - crateHalfW && drone.position.x < cx + crateHalfW &&
-                drone.position.z > cz - crateHalfD && drone.position.z < cz + crateHalfD);
+            const crateTopY = 5.4; // Top of the lid
 
-            // If the drone is above the crate footprint, enforce the crate top as a floor
-            if (onCrateXZ) {
+            // 1. Wall Collision (only if below the lid level)
+            // Physical boundaries for wall collision (box lid dims + drone radius ~0.8)
+            const wallHalfW = 5.2 + 0.8;
+            const wallHalfD = 3.2 + 0.8;
+
+            if (drone.position.y < crateTopY) {
+                const dx = drone.position.x - cx;
+                const dz = drone.position.z - cz;
+                const absDx = Math.abs(dx);
+                const absDz = Math.abs(dz);
+
+                if (absDx < wallHalfW && absDz < wallHalfD) {
+                    // Collision! Resolve along axis of least penetration
+                    const overlapX = wallHalfW - absDx;
+                    const overlapZ = wallHalfD - absDz;
+
+                    if (overlapX < overlapZ) {
+                        // Bounce X
+                        drone.position.x = cx + Math.sign(dx) * wallHalfW;
+                        currentVelocity.x *= -0.5; // Bounce and dampen
+                    } else {
+                        // Bounce Z
+                        drone.position.z = cz + Math.sign(dz) * wallHalfD;
+                        currentVelocity.z *= -0.5; // Bounce and dampen
+                    }
+                }
+            }
+
+            // 2. Landing Logic (Top Surface)
+            // Use tighter bounds for landing so we don't land on air
+            const landHalfW = 5.2;
+            const landHalfD = 3.2;
+
+            const onCrateTopXZ = (
+                drone.position.x > cx - landHalfW && drone.position.x < cx + landHalfW &&
+                drone.position.z > cz - landHalfD && drone.position.z < cz + landHalfD
+            );
+
+            // If over the crate footprint, enforce the crate top as a floor
+            if (onCrateTopXZ) {
                 const minAboveCrate = crateTopY + 0.4; // small offset so drone sits on lid
                 if (baseHeight < minAboveCrate) {
                     baseHeight = minAboveCrate;
                 }
             }
 
-            // Reload missiles when landed on the crate (touching lid surface)
-            const landedOnCrate = onCrateXZ && baseHeight <= crateTopY + 0.5;
+            // Reload missiles when landed on the crate
+            const landedOnCrate = onCrateTopXZ && baseHeight <= crateTopY + 0.6;
             if (landedOnCrate) {
                 droneData.missiles.forEach(slot => {
                     if (!slot.attached) {
@@ -3373,12 +3406,24 @@
                 });
             }
 
-            // Clamp drone inside fence boundary
+            // Clamp drone inside fence boundary with bounce
             const FENCE_LIMIT = FENCE_HALF - 1.5;
-            if (drone.position.x > FENCE_LIMIT) { drone.position.x = FENCE_LIMIT; currentVelocity.x = 0; }
-            if (drone.position.x < -FENCE_LIMIT) { drone.position.x = -FENCE_LIMIT; currentVelocity.x = 0; }
-            if (drone.position.z > FENCE_LIMIT) { drone.position.z = FENCE_LIMIT; currentVelocity.z = 0; }
-            if (drone.position.z < -FENCE_LIMIT) { drone.position.z = -FENCE_LIMIT; currentVelocity.z = 0; }
+            if (drone.position.x > FENCE_LIMIT) {
+                drone.position.x = FENCE_LIMIT;
+                currentVelocity.x *= -0.5;
+            }
+            if (drone.position.x < -FENCE_LIMIT) {
+                drone.position.x = -FENCE_LIMIT;
+                currentVelocity.x *= -0.5;
+            }
+            if (drone.position.z > FENCE_LIMIT) {
+                drone.position.z = FENCE_LIMIT;
+                currentVelocity.z *= -0.5;
+            }
+            if (drone.position.z < -FENCE_LIMIT) {
+                drone.position.z = -FENCE_LIMIT;
+                currentVelocity.z *= -0.5;
+            }
 
             /* ── Update shadow light to follow drone tightly ── */
             moonLight.position.set(
