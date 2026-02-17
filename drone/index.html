@@ -960,6 +960,7 @@
         const droneData = createDrone();
         const drone = droneData.group;
         drone.position.set(0, 1.8, 0);
+        drone.rotation.order = 'YXZ';  // Apply yaw first so pitch/roll are in local frame
         scene.add(drone);
 
         /* ── Joystick Helper Factory ── */
@@ -1149,8 +1150,8 @@
             controls.target.y = THREE.MathUtils.lerp(controls.target.y, drone.position.y, 0.08);
 
             // Use stick inputs (local frame) for tilt, not world-space velocity
-            const targetPitch = smoothInput.y * 0.35;
-            const targetRoll = -smoothInput.x * 0.35;
+            const targetPitch = -smoothInput.y * 0.35;
+            const targetRoll = smoothInput.x * 0.35;
 
             const totalSpeed = smoothInput.length() + Math.abs(smoothLeft.x);
             const speedFactor = 1.0 - Math.min(totalSpeed, 1.0) * 0.8;
