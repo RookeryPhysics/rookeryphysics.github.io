@@ -29,7 +29,7 @@
 
         body {
             overflow: hidden;
-            background: #87CEEB;
+            background: #6EB5E0;
         }
 
         canvas {
@@ -225,21 +225,21 @@
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x87CEEB);
-        scene.fog = new THREE.FogExp2(0x9DD5F0, 0.004);
+        scene.background = new THREE.Color(0x6EB5E0);
+        scene.fog = new THREE.FogExp2(0x8CC8E8, 0.006);
 
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 600);
         camera.position.set(0, 8.0, 16.0);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: !isMobile, powerPreference: 'high-performance' });
+        const renderer = new THREE.WebGLRenderer({ antialias: !isMobile, powerPreference: 'high-performance', stencil: false });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.0 : 1.5));
-        renderer.shadowMap.enabled = !isMobile; // Disable shadows on mobile for performance
+        renderer.shadowMap.enabled = !isMobile;
         if (!isMobile) {
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.shadowMap.type = THREE.PCFShadowMap; // PCF instead of PCFSoft = faster
         }
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.0;
+        renderer.toneMappingExposure = 1.1;
         renderer.outputColorSpace = THREE.SRGBColorSpace;
         document.body.appendChild(renderer.domElement);
 
@@ -272,8 +272,10 @@
         const envMat = new THREE.ShaderMaterial({
             side: THREE.BackSide,
             uniforms: {
-                colorTop: { value: new THREE.Color(0x4A90D9) },
-                colorBottom: { value: new THREE.Color(0xC8E6FF) },
+                colorTop: { value: new THREE.Color(0x2868A8) },
+                colorMid: { value: new THREE.Color(0x6EB5E0) },
+                colorBottom: { value: new THREE.Color(0xD4EEFF) },
+                colorHorizon: { value: new THREE.Color(0xFFF0D0) },
             },
             vertexShader: `
                 varying vec3 vWorldPos;
@@ -284,11 +286,22 @@
             `,
             fragmentShader: `
                 uniform vec3 colorTop;
+                uniform vec3 colorMid;
                 uniform vec3 colorBottom;
+                uniform vec3 colorHorizon;
                 varying vec3 vWorldPos;
                 void main() {
-                    float t = clamp(normalize(vWorldPos).y * 0.5 + 0.5, 0.0, 1.0);
-                    gl_FragColor = vec4(mix(colorBottom, colorTop, t), 1.0);
+                    float y = normalize(vWorldPos).y;
+                    float t = clamp(y * 0.5 + 0.5, 0.0, 1.0);
+                    vec3 col;
+                    if (t < 0.48) {
+                        col = mix(colorBottom, colorHorizon, t / 0.48);
+                    } else if (t < 0.55) {
+                        col = mix(colorHorizon, colorMid, (t - 0.48) / 0.07);
+                    } else {
+                        col = mix(colorMid, colorTop, (t - 0.55) / 0.45);
+                    }
+                    gl_FragColor = vec4(col, 1.0);
                 }
             `,
         });
@@ -296,24 +309,24 @@
         const envMap = pmremGenerator.fromScene(envScene, 0.04).texture;
         scene.environment = envMap;
 
-        const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+        const ambient = new THREE.AmbientLight(0xffffff, 0.5);
         scene.add(ambient);
 
         const hemi = new THREE.HemisphereLight(0x87CEEB, 0x44aa44, 0.8);
         scene.add(hemi);
 
-        const moonLight = new THREE.DirectionalLight(0xFFF5E0, 1.8);
+        const moonLight = new THREE.DirectionalLight(0xFFF5E0, 2.0);
         moonLight.position.set(-10, 20, -10);
         moonLight.castShadow = !isMobile;
         if (!isMobile) {
             moonLight.shadow.mapSize.set(1024, 1024);
-            moonLight.shadow.camera.near = 0.5;
-            moonLight.shadow.camera.far = 100;
-            moonLight.shadow.camera.left = -40;
-            moonLight.shadow.camera.right = 40;
-            moonLight.shadow.camera.top = 40;
-            moonLight.shadow.camera.bottom = -40;
-            moonLight.shadow.bias = -0.0001;
+            moonLight.shadow.camera.near = 1;
+            moonLight.shadow.camera.far = 60;
+            moonLight.shadow.camera.left = -20;
+            moonLight.shadow.camera.right = 20;
+            moonLight.shadow.camera.top = 20;
+            moonLight.shadow.camera.bottom = -20;
+            moonLight.shadow.bias = -0.001;
             moonLight.shadow.normalBias = 0.02;
         }
         scene.add(moonLight);
@@ -323,18 +336,202 @@
         rimLight.position.set(15, 10, 5);
         scene.add(rimLight);
 
-        const planeGeo = new THREE.PlaneGeometry(500, 500);
-        const planeMat = new THREE.MeshStandardMaterial({
-            color: 0x3A7D2A,
-            roughness: 0.8,
-            metalness: 0.1,
+        // Sun disk for visual atmosphere
+        const sunGeo = new THREE.CircleGeometry(8, 24);
+        const sunMat = new THREE.MeshBasicMaterial({
+            color: 0xFFEEBB, transparent: true, opacity: 0.6,
+            blending: THREE.AdditiveBlending, depthWrite: false,
+            side: THREE.DoubleSide,
         });
-        const plane = new THREE.Mesh(planeGeo, planeMat);
-        plane.rotation.x = -Math.PI / 2;
-        plane.receiveShadow = true;
-        scene.add(plane);
+        const sunMesh = new THREE.Mesh(sunGeo, sunMat);
+        sunMesh.position.set(200, 45, -220);
+        sunMesh.lookAt(0, 0, 0);
+        scene.add(sunMesh);
 
-        const grassCount = isMobile ? 3000 : 10000;
+        // Invisible plane for raycasting and physics baseline
+        const physicsPlane = new THREE.Mesh(new THREE.PlaneGeometry(500, 500), new THREE.MeshBasicMaterial({ visible: false }));
+        physicsPlane.rotation.x = -Math.PI / 2;
+        scene.add(physicsPlane);
+        const plane = physicsPlane; // Alias for existing references
+
+        // ── Voxel Terrain System ──
+        const VOXEL_SIZE = 2.0;
+        const GRID_HALF_SIZE = 100; // -100 to 100 world units
+        const GRID_RES = 100; // 100x100 grid (200 units wide / 2 units per block)
+        const OFFSET = 50; // Array offset
+
+        const voxelState = new Uint8Array(GRID_RES * GRID_RES * 3); // 3 layers (0=green, 1=dirt, 2=deep)
+        const grassMap = new Map(); // voxel index key -> array of grass instance indices
+
+        const voxelGeo = new THREE.BoxGeometry(VOXEL_SIZE, VOXEL_SIZE, VOXEL_SIZE);
+        const greenMat = new THREE.MeshStandardMaterial({ color: 0x3A7D2A, roughness: 0.8, metalness: 0.1 });
+        const dirtMat = new THREE.MeshStandardMaterial({ color: 0x5d4037, roughness: 0.9, metalness: 0.1 });
+
+        // 0: Green (y=0), 1: Dirt (y=-2), 2: Deep Dirt (y=-4)
+        const voxelMeshes = [];
+
+        function updateVoxelLayers() {
+            const dummy = new THREE.Object3D();
+            for (let i = 0; i < GRID_RES; i++) {
+                for (let j = 0; j < GRID_RES; j++) {
+                    const x = (i - OFFSET) * VOXEL_SIZE + VOXEL_SIZE * 0.5;
+                    const z = (j - OFFSET) * VOXEL_SIZE + VOXEL_SIZE * 0.5;
+                    const idx = i * GRID_RES + j;
+
+                    // Layer 0
+                    dummy.position.set(x, -VOXEL_SIZE * 0.5, z);
+                    dummy.updateMatrix();
+                    voxelMeshes[0].setMatrixAt(idx, dummy.matrix);
+
+                    // Layer 1
+                    dummy.position.set(x, -VOXEL_SIZE * 1.5, z);
+                    dummy.updateMatrix();
+                    voxelMeshes[1].setMatrixAt(idx, dummy.matrix);
+
+                    // Layer 2
+                    dummy.position.set(x, -VOXEL_SIZE * 2.5, z);
+                    dummy.updateMatrix();
+                    voxelMeshes[2].setMatrixAt(idx, dummy.matrix);
+
+                    // Mark all active
+                    voxelState[idx] = 1;         // Layer 0 active
+                    voxelState[GRID_RES * GRID_RES + idx] = 1; // Layer 1 active
+                    voxelState[GRID_RES * GRID_RES * 2 + idx] = 1; // Layer 2 active
+                }
+            }
+            voxelMeshes.forEach(m => m.instanceMatrix.needsUpdate = true);
+        }
+
+        function initVoxelLayers() {
+            // Layer 0: Green
+            const mesh0 = new THREE.InstancedMesh(voxelGeo, greenMat, GRID_RES * GRID_RES);
+            mesh0.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+            mesh0.receiveShadow = true;
+            mesh0.castShadow = false; // Perf: voxels don't cast shadows
+
+            // Layer 1: Dirt
+            const mesh1 = new THREE.InstancedMesh(voxelGeo, dirtMat, GRID_RES * GRID_RES);
+            mesh1.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+            mesh1.receiveShadow = true;
+            mesh1.castShadow = false;
+
+            // Layer 2: Deep Dirt
+            const mesh2 = new THREE.InstancedMesh(voxelGeo, dirtMat, GRID_RES * GRID_RES);
+            mesh2.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+            mesh2.receiveShadow = true;
+            mesh2.castShadow = false;
+
+            scene.add(mesh0);
+            scene.add(mesh1);
+            scene.add(mesh2);
+            voxelMeshes.push(mesh0, mesh1, mesh2);
+
+            updateVoxelLayers();
+        }
+        initVoxelLayers();
+
+        // Surrounding ground planes with procedural color variation
+        const groundShaderMat = new THREE.MeshStandardMaterial({
+            color: 0x3A7D2A, roughness: 0.85, metalness: 0.05,
+        });
+        groundShaderMat.onBeforeCompile = (shader) => {
+            shader.vertexShader = `
+                varying vec3 vWorldP;
+                ${shader.vertexShader}
+            `.replace('#include <begin_vertex>', `
+                #include <begin_vertex>
+                vWorldP = (modelMatrix * vec4(position, 1.0)).xyz;
+            `);
+            shader.fragmentShader = `
+                varying vec3 vWorldP;
+                ${shader.fragmentShader}
+            `.replace('#include <color_fragment>', `
+                #include <color_fragment>
+                float n1 = fract(sin(dot(floor(vWorldP.xz * 0.3), vec2(12.9898, 78.233))) * 43758.5453);
+                float n2 = fract(sin(dot(floor(vWorldP.xz * 1.1), vec2(39.346, 11.135))) * 23421.631);
+                float patch = mix(0.85, 1.15, n1) * mix(0.9, 1.1, n2);
+                diffuseColor.rgb *= patch;
+                diffuseColor.rgb += vec3(-0.01, 0.02, -0.01) * n2;
+            `);
+        };
+
+        // North z < -100
+        const pNorth = new THREE.Mesh(new THREE.PlaneGeometry(500, 150), groundShaderMat);
+        pNorth.rotation.x = -Math.PI / 2;
+        pNorth.position.set(0, 0, -175);
+        pNorth.receiveShadow = true;
+        scene.add(pNorth);
+
+        // South z > 100
+        const pSouth = new THREE.Mesh(new THREE.PlaneGeometry(500, 150), groundShaderMat);
+        pSouth.rotation.x = -Math.PI / 2;
+        pSouth.position.set(0, 0, 175);
+        pSouth.receiveShadow = true;
+        scene.add(pSouth);
+
+        // West x < -100
+        const pWest = new THREE.Mesh(new THREE.PlaneGeometry(150, 200), groundShaderMat);
+        pWest.rotation.x = -Math.PI / 2;
+        pWest.position.set(-175, 0, 0);
+        pWest.receiveShadow = true;
+        scene.add(pWest);
+
+        // East x > 100
+        const pEast = new THREE.Mesh(new THREE.PlaneGeometry(150, 200), groundShaderMat);
+        pEast.rotation.x = -Math.PI / 2;
+        pEast.position.set(175, 0, 0);
+        pEast.receiveShadow = true;
+        scene.add(pEast);
+
+        // Bedrock (Indestructible layer at bottom)
+        const bedrockGeo = new THREE.PlaneGeometry(GRID_RES * VOXEL_SIZE, GRID_RES * VOXEL_SIZE);
+        const bedrockMat = new THREE.MeshStandardMaterial({
+            color: 0x222222,
+            roughness: 0.9,
+            metalness: 0.1
+        });
+        const bedrock = new THREE.Mesh(bedrockGeo, bedrockMat);
+        bedrock.rotation.x = -Math.PI / 2;
+        bedrock.position.y = -6.0;
+        bedrock.receiveShadow = true;
+        scene.add(bedrock);
+
+        const debrisList = [];
+        const debrisGeo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+
+        function spawnDebris(pos, color, count) {
+            for (let i = 0; i < count; i++) {
+                const mat = new THREE.MeshStandardMaterial({
+                    color: color,
+                    transparent: true,
+                    opacity: 1.0,
+                    roughness: 0.8,
+                    metalness: 0.1
+                });
+                const mesh = new THREE.Mesh(debrisGeo, mat);
+                mesh.position.copy(pos).add(new THREE.Vector3(
+                    (Math.random() - 0.5) * 2,
+                    Math.random() * 2,
+                    (Math.random() - 0.5) * 2
+                ));
+                mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+                const vel = new THREE.Vector3(
+                    (Math.random() - 0.5) * 10,
+                    5 + Math.random() * 10,
+                    (Math.random() - 0.5) * 10
+                );
+                mesh.castShadow = false;
+                scene.add(mesh);
+                debrisList.push({
+                    mesh,
+                    vel,
+                    life: 2.0 + Math.random() * 3.0 // Fade out after 2-5 seconds
+                });
+            }
+        }
+
+
+        const grassCount = isMobile ? 5000 : 15000;
 
         const grassGeo = new THREE.PlaneGeometry(0.15, 1.6, 1, 4);
         grassGeo.translate(0, 0.8, 0);
@@ -372,6 +569,7 @@
             shader.vertexShader = `
                 uniform float uTime;
                 uniform vec3 uDronePos;
+                varying float vGrassHeight;
                 ${shader.vertexShader}
             `;
 
@@ -381,6 +579,7 @@
                 #include <begin_vertex>
                 
                 vec4 worldInstancePos = instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0);
+                vGrassHeight = position.y / 1.6;
                 
                 float dist = distance(worldInstancePos.xz, uDronePos.xz);
                 float radius = 3.0;
@@ -391,13 +590,19 @@
                     bendStrength = (1.0 - dist/radius) * (1.0 - dist/radius);
                 }
                 
-                vec2 pushDir = normalize(worldInstancePos.xz - uDronePos.xz);
+                vec2 dir = worldInstancePos.xz - uDronePos.xz;
+                vec2 pushDir = length(dir) > 0.001 ? normalize(dir) : vec2(0.0);
                 
                 float heightFactor = smoothstep(0.0, 1.6, position.y);
                 
-                float wind = sin(uTime * 1.5 + worldInstancePos.x * 0.5 + worldInstancePos.z * 0.3) * 0.1;
+                // Multi-frequency wind for more natural look
+                float wind1 = sin(uTime * 1.5 + worldInstancePos.x * 0.5 + worldInstancePos.z * 0.3) * 0.08;
+                float wind2 = sin(uTime * 2.8 + worldInstancePos.x * 1.2 - worldInstancePos.z * 0.7) * 0.04;
+                float wind3 = cos(uTime * 0.7 + worldInstancePos.z * 0.2) * 0.03;
+                float wind = wind1 + wind2 + wind3;
                 
                 transformed.x += wind * heightFactor;
+                transformed.z += wind2 * heightFactor * 0.5;
                 
                 float pushForce = 2.5;
                 transformed.x += pushDir.x * bendStrength * pushForce * heightFactor;
@@ -406,12 +611,29 @@
                 transformed.y -= bendStrength * heightFactor * 0.5;
                 `
             );
+
+            // Color variation in fragment shader
+            shader.fragmentShader = `
+                varying float vGrassHeight;
+                ${shader.fragmentShader}
+            `.replace('#include <color_fragment>', `
+                #include <color_fragment>
+                // Darker at base, brighter yellow-green at tips
+                diffuseColor.rgb = mix(
+                    diffuseColor.rgb * 0.6,
+                    diffuseColor.rgb * vec3(1.3, 1.5, 0.8),
+                    vGrassHeight
+                );
+            `);
         };
 
         const grassMesh = new THREE.InstancedMesh(grassGeo, grassMat, grassCount);
-        grassMesh.castShadow = true;
-        grassMesh.receiveShadow = true;
+        grassMesh.castShadow = false; // Perf: grass doesn't cast shadows
+        grassMesh.receiveShadow = false;
         grassMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+
+        const initialGrassMatrices = [];
+        const initialGrassVoxelIndices = [];
 
         const dummy = new THREE.Object3D();
         const spread = 200;
@@ -433,6 +655,34 @@
 
             dummy.updateMatrix();
             grassMesh.setMatrixAt(i, dummy.matrix);
+
+            // Store initial state
+            initialGrassMatrices.push(new THREE.Matrix4().copy(dummy.matrix));
+            let voxelIdx = -1;
+
+            // Register grass to voxel
+            if (Math.abs(dummy.position.x) < 100 && Math.abs(dummy.position.z) < 100) {
+                const ix = Math.floor((dummy.position.x + 100) / VOXEL_SIZE);
+                const iz = Math.floor((dummy.position.z + 100) / VOXEL_SIZE);
+                const idx = ix * GRID_RES + iz;
+                voxelIdx = idx;
+                if (!grassMap.has(idx)) grassMap.set(idx, []);
+                grassMap.get(idx).push(i);
+            }
+            initialGrassVoxelIndices.push(voxelIdx);
+        }
+
+        function resetGrass() {
+            grassMap.clear();
+            for (let i = 0; i < grassCount; i++) {
+                grassMesh.setMatrixAt(i, initialGrassMatrices[i]);
+                const idx = initialGrassVoxelIndices[i];
+                if (idx !== -1) {
+                    if (!grassMap.has(idx)) grassMap.set(idx, []);
+                    grassMap.get(idx).push(i);
+                }
+            }
+            grassMesh.instanceMatrix.needsUpdate = true;
         }
 
         scene.add(grassMesh);
@@ -1081,7 +1331,7 @@
             rearLED.position.set(0, 0.05, -0.76);
             drone.add(rearLED);
 
-            const greenGlow = new THREE.PointLight(0x00ff44, 1.0, 2.5);
+            const greenGlow = new THREE.PointLight(0x00ff44, 0.5, 1.5); // reduced intensity & range
             greenGlow.position.copy(rearLED.position);
             drone.add(greenGlow);
 
@@ -1094,10 +1344,7 @@
                 led.position.set(side * 0.5, -0.02, 0.7);
                 drone.add(led);
                 frontLEDs.push(led);
-
-                const blueGlow = new THREE.PointLight(0x0066ff, 0.5, 1.5);
-                blueGlow.position.copy(led.position);
-                drone.add(blueGlow);
+                // Removed blue PointLights — emissive material is sufficient
             }
 
             const underglowLEDs = [];
@@ -1119,7 +1366,8 @@
                 underglowLEDs.push({ mesh: led, mat: ledMat });
             }
 
-            const underglowMain = new THREE.PointLight(0x00ccff, 2.0, 8);
+            // Removed individual underglow PointLights — single reduced light only
+            const underglowMain = new THREE.PointLight(0x00ccff, 1.0, 5);
             underglowMain.position.set(0, -0.4, 0);
             drone.add(underglowMain);
             underglowLights.push(underglowMain);
@@ -2437,7 +2685,7 @@
                 missile.add(fin);
             }
 
-            missile.traverse(c => { if (c.isMesh) { c.castShadow = true; } });
+            missile.traverse(c => { if (c.isMesh) { c.castShadow = false; } }); // Perf: enemy missiles don't shadow
             return { group: missile, flame };
         }
 
@@ -2569,6 +2817,34 @@
                     respawnMissile(slot);
                 }
             });
+
+            // Reset Voxels and Grass
+            updateVoxelLayers();
+            resetGrass();
+
+            // Clear Active Effects
+            activeMissiles.forEach(m => {
+                scene.remove(m.mesh);
+                if (m.trail) scene.remove(m.trail);
+            });
+            activeMissiles.length = 0;
+
+            explosions.forEach(e => {
+                scene.remove(e.particles);
+                scene.remove(e.flash);
+                scene.remove(e.ring);
+                scene.remove(e.smokeParticles);
+            });
+            explosions.length = 0;
+
+            debrisList.forEach(d => {
+                scene.remove(d.mesh);
+                if (d.mesh.material) d.mesh.material.dispose();
+            });
+            debrisList.length = 0;
+
+            fadingTrails.forEach(ft => scene.remove(ft.trail));
+            fadingTrails.length = 0;
         }
 
         restartBtn.addEventListener('click', restartGame);
@@ -2744,6 +3020,88 @@
                 elapsed: 0,
                 duration: 2.0,
             });
+
+            // ── Voxel Destruction ──
+            const gridRadius = 3; // radius in blocks
+            const centerIx = Math.floor((position.x + 100) / VOXEL_SIZE);
+            const centerIz = Math.floor((position.z + 100) / VOXEL_SIZE);
+
+            if (centerIx >= 0 && centerIx < GRID_RES && centerIz >= 0 && centerIz < GRID_RES) {
+                const dummy = new THREE.Object3D();
+                dummy.scale.set(0.001, 0.001, 0.001); // Near-zero scale (or update matrix)
+                dummy.updateMatrix();
+
+                for (let x = -gridRadius; x <= gridRadius; x++) {
+                    for (let z = -gridRadius; z <= gridRadius; z++) {
+                        const dist = Math.sqrt(x * x + z * z);
+                        if (dist > gridRadius) continue;
+
+                        const ix = centerIx + x;
+                        const iz = centerIz + z;
+
+                        if (ix >= 0 && ix < GRID_RES && iz >= 0 && iz < GRID_RES) {
+                            const idx = ix * GRID_RES + iz;
+
+                            // Determine how many layers to destroy
+                            // Closer to center = deeper
+                            let destroyDepth = 0;
+                            if (dist < 1.0) destroyDepth = 3;
+                            else if (dist < 2.0) destroyDepth = 2;
+                            else destroyDepth = 1;
+
+                            // Layer 0 (Green)
+                            if (destroyDepth >= 1 && voxelState[idx] === 1) {
+                                voxelState[idx] = 0;
+                                voxelMeshes[0].setMatrixAt(idx, dummy.matrix); // Hide
+                                voxelMeshes[0].instanceMatrix.needsUpdate = true;
+
+                                // Spawn green debris
+                                spawnDebris(new THREE.Vector3(
+                                    (ix - OFFSET) * VOXEL_SIZE + VOXEL_SIZE / 2,
+                                    0,
+                                    (iz - OFFSET) * VOXEL_SIZE + VOXEL_SIZE / 2
+                                ), 0x3A7D2A, 1);
+
+                                // Remove grass
+                                if (grassMap.has(idx)) {
+                                    const gIndices = grassMap.get(idx);
+                                    gIndices.forEach(gi => {
+                                        grassMesh.setMatrixAt(gi, dummy.matrix);
+                                    });
+                                    grassMesh.instanceMatrix.needsUpdate = true;
+                                    grassMap.delete(idx);
+                                }
+                            }
+
+                            // Layer 1 (Dirt)
+                            if (destroyDepth >= 2 && voxelState[GRID_RES * GRID_RES + idx] === 1) {
+                                voxelState[GRID_RES * GRID_RES + idx] = 0;
+                                voxelMeshes[1].setMatrixAt(idx, dummy.matrix);
+                                voxelMeshes[1].instanceMatrix.needsUpdate = true;
+                                // Spawn brown debris
+                                spawnDebris(new THREE.Vector3(
+                                    (ix - OFFSET) * VOXEL_SIZE + VOXEL_SIZE / 2,
+                                    -VOXEL_SIZE,
+                                    (iz - OFFSET) * VOXEL_SIZE + VOXEL_SIZE / 2
+                                ), 0x5d4037, 1);
+                            }
+
+                            // Layer 2 (Deep Dirt)
+                            if (destroyDepth >= 3 && voxelState[GRID_RES * GRID_RES * 2 + idx] === 1) {
+                                voxelState[GRID_RES * GRID_RES * 2 + idx] = 0;
+                                voxelMeshes[2].setMatrixAt(idx, dummy.matrix);
+                                voxelMeshes[2].instanceMatrix.needsUpdate = true;
+                                // Debris
+                                spawnDebris(new THREE.Vector3(
+                                    (ix - OFFSET) * VOXEL_SIZE + VOXEL_SIZE / 2,
+                                    -VOXEL_SIZE * 2,
+                                    (iz - OFFSET) * VOXEL_SIZE + VOXEL_SIZE / 2
+                                ), 0x5d4037, 1);
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         function respawnMissile(slotData) {
@@ -3041,6 +3399,7 @@
         const _toDrone = new THREE.Vector3();
         const _upVec = new THREE.Vector3(0, 1, 0);
         const _camTargetPos = new THREE.Vector3();
+        const _scratchVec = new THREE.Vector3(); // reusable scratch vector for hot loop
 
         function animate() {
             requestAnimationFrame(animate);
@@ -3130,13 +3489,14 @@
             if (drone.position.z > FENCE_LIMIT) { drone.position.z = FENCE_LIMIT; currentVelocity.z = 0; }
             if (drone.position.z < -FENCE_LIMIT) { drone.position.z = -FENCE_LIMIT; currentVelocity.z = 0; }
 
-            /* ── Update shadow light to follow drone ── */
+            /* ── Update shadow light to follow drone tightly ── */
             moonLight.position.set(
-                drone.position.x - 10,
-                drone.position.y + 20,
-                drone.position.z - 10
+                drone.position.x - 8,
+                drone.position.y + 18,
+                drone.position.z - 8
             );
             moonLight.target.position.copy(drone.position);
+            moonLight.target.updateMatrixWorld();
 
             /* ── Camera fixed or manual pan ── */
             const timeSinceManual = t - lastCameraManualTime;
@@ -3261,7 +3621,8 @@
             for (let i = enemyMissiles.length - 1; i >= 0; i--) {
                 const em = enemyMissiles[i];
                 const moveAmount = ENEMY_MISSILE_SPEED * dt;
-                em.mesh.position.add(em.direction.clone().multiplyScalar(moveAmount));
+                _scratchVec.copy(em.direction).multiplyScalar(moveAmount);
+                em.mesh.position.add(_scratchVec);
                 em.distanceTraveled += moveAmount;
 
                 // Flicker the flame
@@ -3480,6 +3841,60 @@
                     ft.trail.geometry.dispose();
                     ft.trail.material.dispose();
                     fadingTrails.splice(i, 1);
+                }
+            }
+
+            /* ── Update Debris ── */
+            for (let i = debrisList.length - 1; i >= 0; i--) {
+                const d = debrisList[i];
+                d.vel.y -= 18.0 * dt; // Gravity
+                _scratchVec.copy(d.vel).multiplyScalar(dt);
+                d.mesh.position.add(_scratchVec);
+                d.mesh.rotation.x += d.vel.z * dt;
+                d.mesh.rotation.z -= d.vel.x * dt;
+
+                d.life -= dt;
+                if (d.life < 1.0) {
+                    d.mesh.material.opacity = Math.max(0, d.life);
+                }
+
+                if (d.life <= 0 || d.mesh.position.y < -8) {
+                    scene.remove(d.mesh);
+                    if (d.mesh.material) d.mesh.material.dispose();
+                    debrisList.splice(i, 1);
+                    continue;
+                }
+
+                // Check collisions
+                let floorY = -100;
+
+                // Check Voxel Grid Collision
+                if (Math.abs(d.mesh.position.x) < 100 && Math.abs(d.mesh.position.z) < 100) {
+                    const ix = Math.floor((d.mesh.position.x + 100) / VOXEL_SIZE);
+                    const iz = Math.floor((d.mesh.position.z + 100) / VOXEL_SIZE);
+                    if (ix >= 0 && ix < GRID_RES && iz >= 0 && iz < GRID_RES) {
+                        const idx = ix * GRID_RES + iz;
+                        // Check layers top to bottom
+                        if (voxelState[idx] === 1) floorY = 0.4; // Layer 0 (Top)
+                        else if (voxelState[GRID_RES * GRID_RES + idx] === 1) floorY = -1.6; // Layer 1
+                        else if (voxelState[GRID_RES * GRID_RES * 2 + idx] === 1) floorY = -3.6; // Layer 2
+                        else floorY = -5.6; // Bedrock at -6
+                    }
+                } else {
+                    // Outer Plane Collision
+                    floorY = 0.4;
+                }
+
+                if (d.mesh.position.y < floorY) {
+                    d.mesh.position.y = floorY;
+                    d.vel.y = -d.vel.y * 0.5;
+                    d.vel.x *= 0.8;
+                    d.vel.z *= 0.8;
+
+                    // Stop if slow
+                    if (Math.abs(d.vel.y) < 0.5 && d.mesh.position.y === floorY) {
+                        d.vel.set(0, 0, 0);
+                    }
                 }
             }
 
