@@ -48,8 +48,18 @@ io.on('connection', (socket) => {
     // Handle player details update (colors, etc)
     socket.on('updatePlayerDetails', (data) => {
         if (players[socket.id]) {
+            const oldUsername = players[socket.id].username;
             if (data.vehicleColors) players[socket.id].vehicleColors = data.vehicleColors;
-            if (data.username !== undefined) players[socket.id].username = data.username;
+            if (data.username !== undefined) {
+                players[socket.id].username = data.username;
+                if (oldUsername !== data.username) {
+                    if (oldUsername === "") {
+                        console.log(`User connected with username: ${data.username} (${socket.id})`);
+                    } else {
+                        console.log(`User ${oldUsername} changed username to ${data.username}`);
+                    }
+                }
+            }
             if (data.pedestrianColors) players[socket.id].pedestrianColors = data.pedestrianColors;
 
             // Broadcast update to others
@@ -62,10 +72,10 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Handle chat messages
     socket.on('sendChat', (message) => {
         const player = players[socket.id];
         if (player) {
+            console.log(`[CHAT] ${player.username || "Player"}: ${message}`);
             // Broadcast to everyone (including sender)
             io.emit('receiveChat', {
                 id: socket.id,
@@ -96,7 +106,8 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        console.log('User disconnected:', socket.id);
+        const username = players[socket.id] ? (players[socket.id].username || socket.id) : socket.id;
+        console.log('User disconnected:', username);
         delete players[socket.id];
         io.emit('playerDisconnected', socket.id);
     });
