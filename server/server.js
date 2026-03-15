@@ -2,14 +2,44 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
+const util = require('util');
 
 const app = express();
 app.use(cors());
 
+const logFile = path.join(__dirname, 'log.txt');
+
+// Override console.log and console.error to log to file
+const originalLog = console.log;
+const originalError = console.error;
+
+console.log = function (...args) {
+    const message = util.format(...args);
+    const logEntry = `[${new Date().toLocaleString()}] ${message}\n`;
+    try {
+        fs.appendFileSync(logFile, logEntry);
+    } catch (err) {
+        originalLog.call(console, 'Failed to write to log.txt:', err);
+    }
+    originalLog.apply(console, args);
+};
+
+console.error = function (...args) {
+    const message = util.format(...args);
+    const logEntry = `[${new Date().toLocaleString()}] ERROR: ${message}\n`;
+    try {
+        fs.appendFileSync(logFile, logEntry);
+    } catch (err) {
+        originalLog.call(console, 'Failed to write to log.txt:', err);
+    }
+    originalError.apply(console, args);
+};
+
 // Serve static files from the 'drive' directory (game client)
 // This allows players to access the game via http://YOUR_IP:3000/
 // avoiding the HTTPS vs HTTP Mixed Content issue.
-const path = require('path');
 app.use(express.static(path.join(__dirname, '../drive')));
 
 const server = http.createServer(app);
