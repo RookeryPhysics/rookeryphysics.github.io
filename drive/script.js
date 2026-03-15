@@ -198,6 +198,7 @@ let lastTapTime = 0,
   globalFrame = 0;
 const stickKnob = document.getElementById("stick-knob"),
   headingArrow = document.getElementById("heading-arrow"),
+  playerPointerArrow = document.getElementById("player-pointer-arrow"),
   movementZone = document.getElementById("movement-zone"),
   timeBtn = document.getElementById("time-btn"),
   collapseBtn = document.getElementById("collapse-btn"),
@@ -2933,6 +2934,35 @@ function updateHeadingIndicator() {
     o = Math.atan2(t, a) * (180 / Math.PI);
   headingArrow.style.transform = `rotate(${o}deg)`;
 }
+function updatePlayerPointerIndicator() {
+  if (!player || !playerPointerArrow) return;
+  const e = socket && socket.connected,
+    t = Object.keys(otherPlayers);
+  if (e && t.length > 0) {
+    playerPointerArrow.style.display = "block";
+    let e = null,
+      a = Infinity;
+    const o = getActivePosition();
+    if (
+      (t.forEach((t) => {
+        const r = otherPlayers[t];
+        if (r && r.mesh) {
+          const t = o.distanceToSquared(r.mesh.position);
+          t < a && ((a = t), (e = r));
+        }
+      }),
+        e)
+    ) {
+      const t = e.mesh.position.x - o.x,
+        a = e.mesh.position.z - o.z,
+        r = Math.atan2(t, a) - cameraAngle,
+        n = Math.sin(r),
+        s = -Math.cos(r),
+        i = Math.atan2(n, s) * (180 / Math.PI);
+      playerPointerArrow.style.transform = `rotate(${i}deg)`;
+    }
+  } else playerPointerArrow.style.display = "none";
+}
 function shortestAngleDist(e, t) {
   let a = t - e;
   for (; a > Math.PI;) a -= 2 * Math.PI;
@@ -3631,6 +3661,7 @@ function animate() {
         updateSnow(),
         updateCamera(),
         updateHeadingIndicator(),
+        updatePlayerPointerIndicator(),
         globalFrame % 1 == 0 && updateTraffic(e),
         socket && player && globalFrame % 3 == 0)
     ) {
