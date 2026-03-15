@@ -105,6 +105,7 @@ const scoreElement = document.getElementById("score-board"),
   allPedestrians = [],
   activeObstacles = [],
   particles = [],
+  bullets = [],
   floatingTexts = [],
   particlePool = [],
   pedestrianPool = [],
@@ -193,6 +194,8 @@ let isManualCamera = !1,
   camLastPos = { x: 0, y: 0 };
 const joystickRadius = 90;
 let lastTapTime = 0,
+  lastFireTime = 0,
+  isFiringMobile = !1,
   lastTime = performance.now(),
   frameCount = 0,
   globalFrame = 0;
@@ -457,6 +460,7 @@ function init() {
         "a",
         "s",
         "d",
+        " ",
         "ArrowUp",
         "ArrowLeft",
         "ArrowDown",
@@ -474,6 +478,7 @@ function init() {
         "a",
         "s",
         "d",
+        " ",
         "ArrowUp",
         "ArrowLeft",
         "ArrowDown",
@@ -1460,6 +1465,7 @@ function handlePedestrianTap() {
 function enterVehicle() {
   (userPedestrian &&
     (scene.remove(userPedestrian.mesh), (userPedestrian = null)),
+    (isFiringMobile = !1),
     (controlMode = "vehicle"),
     (controlMode = "vehicle"),
     centerCamera(),
@@ -2210,6 +2216,11 @@ function buildPedestrianMesh(e) {
       (n.castShadow = !0),
       (n.userData.partGroup = "hat"),
       t.add(n));
+    const rifle = createRifle();
+    rifle.position.set(0.2, -0.6, 0.4);
+    rifle.rotation.y = -Math.PI / 2;
+    l.add(rifle);
+    t.userData.rifle = rifle;
   }
   return (
     (n.userData.partGroup = "skin"),
@@ -2826,8 +2837,10 @@ function onTouchStart(e) {
     a = movementZone.getBoundingClientRect(),
     o = { x: a.left + a.width / 2, y: a.top + a.height / 2 },
     r = Date.now();
-  (r - lastTapTime < 250 && emitWheelSmoke(), (lastTapTime = r));
-  for (let e = 0; e < t.length; e++) {
+  (r - lastTapTime < 250 &&
+    (emitWheelSmoke(), "pedestrian" === controlMode && (isFiringMobile = !isFiringMobile)),
+    (lastTapTime = r));
+    for (let e = 0; e < t.length; e++) {
     const a = t[e];
     if (checkVehicleTap(a.clientX, a.clientY)) {
       handleVehicleTap();
@@ -3646,6 +3659,129 @@ function updateFPS() {
       (frameCount = 0),
       (lastTime = e));
 }
+function createRifle() {
+  const group = new THREE.Group();
+  const matDark = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.3, metalness: 0.7 });
+  const matMetal = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.2, metalness: 0.9 });
+  const matGlow = new THREE.MeshStandardMaterial({ color: 0x00ffff, emissive: 0x00ffff, emissiveIntensity: 2 });
+  const matCarbon = new THREE.MeshStandardMaterial({ color: 0x080808, roughness: 0.8, metalness: 0.1 });
+
+  const bodyGeo = new THREE.BoxGeometry(0.4, 0.08, 0.04);
+  const body = new THREE.Mesh(bodyGeo, matDark);
+  body.position.x = -0.05;
+  group.add(body);
+
+  const barrelGeo = new THREE.CylinderGeometry(0.008, 0.01, 0.3, 8);
+  barrelGeo.rotateZ(Math.PI / 2);
+  const barrel = new THREE.Mesh(barrelGeo, matMetal);
+  barrel.position.x = 0.25;
+  barrel.position.y = 0.01;
+  group.add(barrel);
+
+  const muzzleGeo = new THREE.BoxGeometry(0.04, 0.03, 0.03);
+  const muzzle = new THREE.Mesh(muzzleGeo, matDark);
+  muzzle.position.x = 0.4;
+  muzzle.position.y = 0.01;
+  group.add(muzzle);
+
+  const stockGeo = new THREE.BoxGeometry(0.12, 0.12, 0.045);
+  const stock = new THREE.Mesh(stockGeo, matDark);
+  stock.position.x = -0.28;
+  stock.position.y = -0.01;
+  group.add(stock);
+
+  const buttGeo = new THREE.BoxGeometry(0.02, 0.13, 0.05);
+  const butt = new THREE.Mesh(buttGeo, matCarbon);
+  butt.position.x = -0.34;
+  butt.position.y = -0.1;
+  group.add(butt);
+
+  const magGeo = new THREE.BoxGeometry(0.05, 0.12, 0.035);
+  magGeo.rotateZ(0.2);
+  const mag = new THREE.Mesh(magGeo, matDark);
+  mag.position.x = -0.18;
+  mag.position.y = -0.06;
+  group.add(mag);
+
+  const gripGeo = new THREE.BoxGeometry(0.04, 0.09, 0.035);
+  gripGeo.rotateZ(-0.4);
+  const grip = new THREE.Mesh(gripGeo, matCarbon);
+  grip.position.x = 0.05;
+  grip.position.y = -0.08;
+  group.add(grip);
+
+  const scopeGeo = new THREE.BoxGeometry(0.12, 0.04, 0.04);
+  const scope = new THREE.Mesh(scopeGeo, matDark);
+  scope.position.y = 0.08;
+  scope.position.x = -0.05;
+  group.add(scope);
+
+  const neon1 = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.005, 0.042), matGlow);
+  neon1.position.x = -0.05;
+  neon1.position.y = 0.02;
+  group.add(neon1);
+
+  group.scale.set(4, 4, 4); // Scaled for pedestrian model
+  return group;
+}
+function shoot() {
+  if (!userPedestrian || !userPedestrian.mesh) return;
+  
+  const rifle = userPedestrian.mesh.userData.rifle;
+  if (!rifle) return;
+  const worldMuzzlePos = new THREE.Vector3(0.4, 0, 0);
+  rifle.localToWorld(worldMuzzlePos);
+  
+  // Horizontal direction based on character rotation
+  const direction = new THREE.Vector3(0, 0, 1);
+  direction.applyQuaternion(userPedestrian.mesh.quaternion);
+  direction.y = 0; // Ensure purely horizontal
+  direction.normalize();
+
+  const bulletGeo = new THREE.SphereGeometry(0.1, 8, 8);
+  const bulletMat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+  const bullet = new THREE.Mesh(bulletGeo, bulletMat);
+  bullet.position.copy(worldMuzzlePos);
+  
+  bullet.userData.velocity = direction.multiplyScalar(2.0);
+  bullet.userData.life = 100;
+  scene.add(bullet);
+  bullets.push(bullet);
+}
+function updateBullets() {
+  for (let i = bullets.length - 1; i >= 0; i--) {
+    const b = bullets[i];
+    b.position.add(b.userData.velocity);
+    b.userData.life--;
+
+    // Collision check with pedestrians (activeObstacles)
+    for (let j = activeObstacles.length - 1; j >= 0; j--) {
+      const p = activeObstacles[j];
+      const dx = b.position.x - p.position.x;
+      const dz = b.position.z - p.position.z;
+      const distSq = dx * dx + dz * dz;
+      if (distSq < 4) { // Hit radius
+        explode(p.position);
+        spawnVoxelScore(p.position);
+        p.position.x = player.position.x + 300 * (Math.random() - 0.5);
+        p.position.z = player.position.z + 300 * (Math.random() - 0.5);
+        if (p.isActive) {
+          scene.remove(p.mesh);
+          p.isActive = false;
+        }
+        score++;
+        scoreElement.innerText = "Score: " + score;
+        b.userData.life = 0; // Destroy bullet
+        break;
+      }
+    }
+
+    if (b.userData.life <= 0) {
+      scene.remove(b);
+      bullets.splice(i, 1);
+    }
+  }
+}
 function animate() {
   (requestAnimationFrame(animate), updateFPS(), globalFrame++);
   const e = performance.now();
@@ -3654,6 +3790,7 @@ function animate() {
       (updatePhysics(),
         globalFrame % 15 == 0 && updateChunks(),
         globalFrame % 1 == 0 && updatePedestrians(),
+        globalFrame % 1 == 0 && updateBullets(),
         globalFrame % 1 == 0 && checkCollisions(),
         globalFrame % 1 == 0 && updateParticles(),
         updateFallingObjects(),
@@ -3688,6 +3825,11 @@ function animate() {
           isPedestrian: "pedestrian" === controlMode,
           vehicleData: a,
         }));
+    }
+    // Shooting logic (check every frame)
+    if ("pedestrian" === controlMode && (keysPressed[" "] || isFiringMobile) && e - lastFireTime > 100) {
+      shoot();
+      lastFireTime = e;
     }
     updateRemotePlayers();
     const t = getActivePosition();
