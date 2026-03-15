@@ -3727,12 +3727,13 @@ function createRifle() {
 const bulletGeo = new THREE.SphereGeometry(0.1, 8, 8);
 const bulletMat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
 
-function createBullet(position, direction) {
+function createBullet(position, direction, ownerId) {
   const bullet = new THREE.Mesh(bulletGeo, bulletMat);
   bullet.position.copy(position);
 
   bullet.userData.velocity = direction.clone().multiplyScalar(2.0);
   bullet.userData.life = 100;
+  bullet.userData.ownerId = ownerId;
   scene.add(bullet);
   bullets.push(bullet);
 }
@@ -3751,7 +3752,7 @@ function shoot() {
   direction.y = 0; // Ensure purely horizontal
   direction.normalize();
 
-  createBullet(worldMuzzlePos, direction);
+  createBullet(worldMuzzlePos, direction, socket ? socket.id : null);
 
   if (socket && socket.connected) {
     socket.emit("playerShoot", {
@@ -3785,6 +3786,47 @@ function updateBullets() {
         scoreElement.innerText = "Score: " + score;
         b.userData.life = 0; // Destroy bullet
         break;
+      }
+    }
+
+    if (b.userData.life <= 0) {
+      scene.remove(b);
+      bullets.splice(i, 1);
+      continue;
+    }
+
+    // Collision check with other players
+    for (const id in otherPlayers) {
+      if (id === b.userData.ownerId) continue;
+      const p = otherPlayers[id];
+      if (!p.mesh) continue;
+      const distSq = b.position.distanceToSquared(p.mesh.position);
+      if (distSq < 4) {
+        explode(p.mesh.position);
+        if (b.userData.ownerId === (socket ? socket.id : null)) {
+          spawnVoxelScore(p.mesh.position);
+          score++;
+          scoreElement.innerText = "Score: " + score;
+        }
+        b.userData.life = 0;
+        break;
+      }
+    }
+
+    if (b.userData.life <= 0) {
+      scene.remove(b);
+      bullets.splice(i, 1);
+      continue;
+    }
+
+    // Collision check with local player
+    if (b.userData.ownerId !== (socket ? socket.id : null)) {
+      const myPos = ("pedestrian" === controlMode && userPedestrian && userPedestrian.mesh) ? userPedestrian.mesh.position : player.position;
+      const distSq = b.position.distanceToSquared(myPos);
+      if (distSq < 4) {
+        explode(myPos);
+        triggerGameOver();
+        b.userData.life = 0;
       }
     }
 
@@ -4029,7 +4071,7 @@ function initSocket() {
     socket.on("playerShot", (data) => {
       const pos = new THREE.Vector3(data.position.x, data.position.y, data.position.z);
       const dir = new THREE.Vector3(data.direction.x, data.direction.y, data.direction.z);
-      createBullet(pos, dir);
+      createBullet(pos, dir, data.id);
     }));
 }
 function addOtherPlayer(e) {
