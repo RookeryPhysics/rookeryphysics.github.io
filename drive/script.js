@@ -3724,29 +3724,41 @@ function createRifle() {
   group.scale.set(4, 4, 4); // Scaled for pedestrian model
   return group;
 }
+const bulletGeo = new THREE.SphereGeometry(0.1, 8, 8);
+const bulletMat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+
+function createBullet(position, direction) {
+  const bullet = new THREE.Mesh(bulletGeo, bulletMat);
+  bullet.position.copy(position);
+
+  bullet.userData.velocity = direction.clone().multiplyScalar(2.0);
+  bullet.userData.life = 100;
+  scene.add(bullet);
+  bullets.push(bullet);
+}
+
 function shoot() {
   if (!userPedestrian || !userPedestrian.mesh) return;
-  
+
   const rifle = userPedestrian.mesh.userData.rifle;
   if (!rifle) return;
   const worldMuzzlePos = new THREE.Vector3(0.4, 0, 0);
   rifle.localToWorld(worldMuzzlePos);
-  
+
   // Horizontal direction based on character rotation
   const direction = new THREE.Vector3(0, 0, 1);
   direction.applyQuaternion(userPedestrian.mesh.quaternion);
   direction.y = 0; // Ensure purely horizontal
   direction.normalize();
 
-  const bulletGeo = new THREE.SphereGeometry(0.1, 8, 8);
-  const bulletMat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
-  const bullet = new THREE.Mesh(bulletGeo, bulletMat);
-  bullet.position.copy(worldMuzzlePos);
-  
-  bullet.userData.velocity = direction.multiplyScalar(2.0);
-  bullet.userData.life = 100;
-  scene.add(bullet);
-  bullets.push(bullet);
+  createBullet(worldMuzzlePos, direction);
+
+  if (socket && socket.connected) {
+    socket.emit("playerShoot", {
+      position: { x: worldMuzzlePos.x, y: worldMuzzlePos.y, z: worldMuzzlePos.z },
+      direction: { x: direction.x, y: direction.y, z: direction.z },
+    });
+  }
 }
 function updateBullets() {
   for (let i = bullets.length - 1; i >= 0; i--) {
@@ -4013,6 +4025,11 @@ function initSocket() {
     }),
     socket.on("receiveChat", (e) => {
       addChatMessage(e.username, e.message);
+    }),
+    socket.on("playerShot", (data) => {
+      const pos = new THREE.Vector3(data.position.x, data.position.y, data.position.z);
+      const dir = new THREE.Vector3(data.direction.x, data.direction.y, data.direction.z);
+      createBullet(pos, dir);
     }));
 }
 function addOtherPlayer(e) {

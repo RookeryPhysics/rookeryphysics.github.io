@@ -135,6 +135,14 @@ io.on('connection', (socket) => {
         }
     });
 
+    socket.on('playerShoot', (shootData) => {
+        socket.broadcast.emit('playerShot', {
+            id: socket.id,
+            position: shootData.position,
+            direction: shootData.direction
+        });
+    });
+
     socket.on('disconnect', () => {
         const username = players[socket.id] ? (players[socket.id].username || socket.id) : socket.id;
         console.log('User disconnected:', username);
