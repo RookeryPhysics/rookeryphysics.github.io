@@ -196,6 +196,7 @@ const joystickRadius = 90;
 let lastTapTime = 0,
   lastFireTime = 0,
   isFiringMobile = !1,
+  burstShotsRemaining = 0,
   lastTime = performance.now(),
   frameCount = 0,
   globalFrame = 0;
@@ -1466,6 +1467,7 @@ function enterVehicle() {
   (userPedestrian &&
     (scene.remove(userPedestrian.mesh), (userPedestrian = null)),
     (isFiringMobile = !1),
+    (burstShotsRemaining = 0),
     (controlMode = "vehicle"),
     (controlMode = "vehicle"),
     centerCamera(),
@@ -2838,7 +2840,7 @@ function onTouchStart(e) {
     o = { x: a.left + a.width / 2, y: a.top + a.height / 2 },
     r = Date.now();
   (r - lastTapTime < 250 &&
-    (emitWheelSmoke(), "pedestrian" === controlMode && (isFiringMobile = !isFiringMobile)),
+    (emitWheelSmoke(), "pedestrian" === controlMode && (burstShotsRemaining = 5)),
     (lastTapTime = r));
     for (let e = 0; e < t.length; e++) {
     const a = t[e];
@@ -3201,8 +3203,14 @@ function updatePhysics() {
   }
 }
 function triggerGameOver() {
+  const deathPos = { x: player.position.x, y: player.position.y, z: player.position.z };
+  const deathColor = vehicleColors[carType] ? vehicleColors[carType].body : 16711680;
+  socket && socket.emit("playerDeath", { position: deathPos, color: deathColor });
+
   ((isGameOver = !0),
     (player.visible = !1),
+    (isFiringMobile = !1),
+    (burstShotsRemaining = 0),
     velocity.set(0, 0, 0),
     score > highScore &&
     ((highScore = score), localStorage.setItem("highScore", highScore)));
@@ -3881,8 +3889,9 @@ function animate() {
         }));
     }
     // Shooting logic (check every frame)
-    if ("pedestrian" === controlMode && (keysPressed[" "] || isFiringMobile) && e - lastFireTime > 100) {
+    if ("pedestrian" === controlMode && (keysPressed[" "] || isFiringMobile || burstShotsRemaining > 0) && e - lastFireTime > 100) {
       shoot();
+      if (burstShotsRemaining > 0) burstShotsRemaining--;
       lastFireTime = e;
     }
     updateRemotePlayers();
@@ -4072,6 +4081,11 @@ function initSocket() {
       const pos = new THREE.Vector3(data.position.x, data.position.y, data.position.z);
       const dir = new THREE.Vector3(data.direction.x, data.direction.y, data.direction.z);
       createBullet(pos, dir, data.id);
+    }),
+    socket.on("playerExploded", (data) => {
+      const pos = new THREE.Vector3(data.position.x, data.position.y, data.position.z);
+      explode(pos, data.color || 16711680);
+      explode(pos, 16772608); // Second orange explosion
     }));
 }
 function addOtherPlayer(e) {

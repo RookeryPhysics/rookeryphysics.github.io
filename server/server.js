@@ -143,6 +143,14 @@ io.on('connection', (socket) => {
         });
     });
 
+    socket.on('playerDeath', (deathData) => {
+        socket.broadcast.emit('playerExploded', {
+            id: socket.id,
+            position: deathData.position,
+            color: deathData.color
+        });
+    });
+
     socket.on('disconnect', () => {
         const username = players[socket.id] ? (players[socket.id].username || socket.id) : socket.id;
         console.log('User disconnected:', username);
