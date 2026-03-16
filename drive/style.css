@@ -885,10 +885,11 @@ body.hud-hidden .instructions {
 }
 #shoot-btn {
   position: absolute;
-  bottom: 120px;
-  right: 50px;
-  width: 90px;
-  height: 90px;
+  bottom: 250px;
+  left: 30px;
+  right: auto;
+  width: 70px;
+  height: 70px;
   background: rgba(255, 0, 0, 0.3);
   border: 3px solid rgba(255, 255, 255, 0.4);
   border-radius: 50%;
