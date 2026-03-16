@@ -53,7 +53,8 @@ const io = new Server(server, {
 const players = {};
 
 io.on('connection', (socket) => {
-    console.log('A user connected:', socket.id);
+    const userIP = socket.handshake.address;
+    console.log('A user connected:', socket.id, 'IP:', userIP);
 
     // Initialize player state
     players[socket.id] = {
@@ -84,7 +85,7 @@ io.on('connection', (socket) => {
                 players[socket.id].username = data.username;
                 if (oldUsername !== data.username) {
                     if (oldUsername === "") {
-                        console.log(`User connected with username: ${data.username} (${socket.id})`);
+                        console.log(`User connected with username: ${data.username} (${socket.id}) IP: ${userIP}`);
                     } else {
                         console.log(`User ${oldUsername} changed username to ${data.username}`);
                     }

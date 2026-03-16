@@ -1,3 +1,0 @@
-[2026-03-15, 3:12:23 p.m.] Server running on port 3000
-[2026-03-15, 3:12:23 p.m.] - Local/LAN Access: http://172.16.1.218:3000
-[2026-03-15, 3:12:23 p.m.] - Internet Access:  http://YOUR_PUBLIC_IP:3000 (Requires Port Forwarding)
