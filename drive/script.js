@@ -3682,19 +3682,32 @@ function updateFPS() {
       (lastTime = e));
 }
 function createCrosshair() {
-  const group = new THREE.Group();
-  const mat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-  const geoH = new THREE.BoxGeometry(1, 0.1, 0.1);
-  const geoV = new THREE.BoxGeometry(0.1, 1, 0.1);
-  const h = new THREE.Mesh(geoH, mat);
-  const v = new THREE.Mesh(geoV, mat);
-  group.add(h);
-  group.add(v);
-  group.rotation.x = -Math.PI / 2; // Flat on the ground
-  group.position.y = 0.5; // Slightly above ground
-  group.visible = false;
-  scene.add(group);
-  return group;
+  const canvas = document.createElement("canvas");
+  canvas.width = 64;
+  canvas.height = 64;
+  const ctx = canvas.getContext("2d");
+  ctx.strokeStyle = "white";
+  ctx.lineWidth = 6;
+  ctx.beginPath();
+  ctx.moveTo(10, 32);
+  ctx.lineTo(54, 32);
+  ctx.moveTo(32, 10);
+  ctx.lineTo(32, 54);
+  ctx.stroke();
+
+  const texture = new THREE.CanvasTexture(canvas);
+  const material = new THREE.SpriteMaterial({
+    map: texture,
+    transparent: true,
+    depthTest: false,
+    sizeAttenuation: false,
+  });
+  const sprite = new THREE.Sprite(material);
+  sprite.scale.set(0.04, 0.04, 1);
+  sprite.renderOrder = 1000;
+  sprite.visible = false;
+  scene.add(sprite);
+  return sprite;
 }
 
 function createRifle() {
@@ -3796,7 +3809,6 @@ function handleDoubleTap(e, t) {
     if (e) {
       (targetPos = e.point.clone()),
         targetCrosshair.position.copy(targetPos),
-        (targetCrosshair.position.y += 0.2),
         (targetCrosshair.visible = !0),
         (lastTargetTime = performance.now()),
         (burstShotsRemaining = 3);
