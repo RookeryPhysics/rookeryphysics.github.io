@@ -98,6 +98,8 @@ let player,
   isNightMode = !1,
   controlMode = "vehicle",
   userPedestrian = null,
+  targetPos = null,
+  targetCrosshair = null,
   score = 0,
   highScore = localStorage.getItem("highScore") || 0;
 const scoreElement = document.getElementById("score-board"),
@@ -195,6 +197,7 @@ let isManualCamera = !1,
 const joystickRadius = 90;
 let lastTapTime = 0,
   lastFireTime = 0,
+  lastTargetTime = 0,
   isFiringMobile = !1,
   burstShotsRemaining = 0,
   lastTime = performance.now(),
@@ -210,7 +213,6 @@ const stickKnob = document.getElementById("stick-knob"),
   settingsModal = document.getElementById("settings-modal"),
   settingsModalClose = document.getElementById("settings-modal-close"),
   shareBtn = document.getElementById("share-btn"),
-  shootBtn = document.getElementById("shoot-btn"),
   shareModal = document.getElementById("share-modal"),
   shareModalClose = document.getElementById("share-modal-close"),
   shareLinkInput = document.getElementById("share-link"),
@@ -303,9 +305,9 @@ function init() {
     (snapFallbackLink.href =
       "https://www.snapchat.com/compose?attachmentUrl=" +
       encodeURIComponent(t)),
-    (scene = new THREE.Scene()));
-  ((scene.background = new THREE.Color(8900331)),
-    (scene.fog = new THREE.Fog(10541295, 50, 240)),
+      (scene = new THREE.Scene()));
+      targetCrosshair = createCrosshair();
+      ((scene.background = new THREE.Color(8900331)),    (scene.fog = new THREE.Fog(10541295, 50, 240)),
     (camera = new THREE.PerspectiveCamera(
       60,
       window.innerWidth / window.innerHeight,
@@ -602,26 +604,9 @@ function init() {
       },
       { passive: !1 },
     ),
-    shootBtn.addEventListener("mousedown", (e) => {
-      (e.stopPropagation(), (isFiringMobile = !0));
-    }),
     window.addEventListener("mouseup", () => {
       isFiringMobile = !1;
     }),
-    shootBtn.addEventListener(
-      "touchstart",
-      (e) => {
-        (e.preventDefault(), e.stopPropagation(), (isFiringMobile = !0));
-      },
-      { passive: !1 },
-    ),
-    shootBtn.addEventListener(
-      "touchend",
-      (e) => {
-        (e.preventDefault(), e.stopPropagation(), (isFiringMobile = !1));
-      },
-      { passive: !1 },
-    ),
     settingsModalClose.addEventListener("click", closeSettingsModal),    settingsModal.addEventListener("click", (e) => {
       e.target === settingsModal && closeSettingsModal();
     }),
@@ -1484,14 +1469,6 @@ function handlePedestrianTap() {
   openPedestrianModal();
 }
 function updateUIForControlMode() {
-  if (shootBtn) {
-    if (isMobile && ("pedestrian" === controlMode || "vehicle" === controlMode)) {
-      shootBtn.style.display = "flex";
-    } else {
-      shootBtn.style.display = "none";
-      isFiringMobile = false;
-    }
-  }
 }
 function enterVehicle() {
   (userPedestrian &&
@@ -2843,16 +2820,20 @@ function onMouseDown(e) {
   if (checkVehicleTap(e.clientX, e.clientY)) return void handleVehicleTap();
   if (e.target === timeBtn || e.target === shareBtn) return;
   const t = Date.now();
-  (t - lastTapTime < 250 && emitWheelSmoke(),
-    (lastTapTime = t),
-    e.clientX < window.innerWidth / 2 ||
-    ((isManualCamera = !0),
+  if (t - lastTapTime < 250) {
+    handleDoubleTap(e.clientX, e.clientY);
+  }
+  (lastTapTime = t);
+  if (e.clientX >= window.innerWidth / 2) {
+    (isManualCamera = !0),
       (manualCamTimer = 120),
       (camLastPos = { x: e.clientX, y: e.clientY }),
       document.addEventListener("mousemove", onMouseMoveCam),
-      document.addEventListener("mouseup", () => {
+      document.addEventListener("mouseup", function cleanup() {
         document.removeEventListener("mousemove", onMouseMoveCam);
-      })));
+        document.removeEventListener("mouseup", cleanup);
+      });
+  }
 }
 function onTouchStart(e) {
   if (shareModal.classList.contains("active")) {
@@ -2870,9 +2851,10 @@ function onTouchStart(e) {
     a = movementZone.getBoundingClientRect(),
     o = { x: a.left + a.width / 2, y: a.top + a.height / 2 },
     r = Date.now();
-  (r - lastTapTime < 250 &&
-    (emitWheelSmoke()),
-    (lastTapTime = r));
+  if (r - lastTapTime < 250) {
+    handleDoubleTap(t[0].clientX, t[0].clientY);
+  }
+  (lastTapTime = r);
     for (let e = 0; e < t.length; e++) {
     const a = t[e];
     if (checkVehicleTap(a.clientX, a.clientY)) {
@@ -3699,6 +3681,22 @@ function updateFPS() {
       (frameCount = 0),
       (lastTime = e));
 }
+function createCrosshair() {
+  const group = new THREE.Group();
+  const mat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  const geoH = new THREE.BoxGeometry(1, 0.1, 0.1);
+  const geoV = new THREE.BoxGeometry(0.1, 1, 0.1);
+  const h = new THREE.Mesh(geoH, mat);
+  const v = new THREE.Mesh(geoV, mat);
+  group.add(h);
+  group.add(v);
+  group.rotation.x = -Math.PI / 2; // Flat on the ground
+  group.position.y = 0.5; // Slightly above ground
+  group.visible = false;
+  scene.add(group);
+  return group;
+}
+
 function createRifle() {
   const group = new THREE.Group();
   const matDark = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.3, metalness: 0.7 });
@@ -3781,6 +3779,31 @@ function createBullet(position, direction, ownerId, inheritedVelocity = null) {
   bullets.push(bullet);
 }
 
+function handleDoubleTap(e, t) {
+  if (
+    settingsModal.classList.contains("active") ||
+    vehicleModalOpen ||
+    pedestrianModalOpen ||
+    shareModal.classList.contains("active")
+  )
+    return;
+  (mouse.x = (e / window.innerWidth) * 2 - 1),
+    (mouse.y = -(t / window.innerHeight) * 2 + 1),
+    raycaster.setFromCamera(mouse, camera);
+  const a = raycaster.intersectObjects(scene.children, !0);
+  if (a.length > 0) {
+    const e = a.find((e) => e.object !== targetCrosshair);
+    if (e) {
+      (targetPos = e.point.clone()),
+        targetCrosshair.position.copy(targetPos),
+        (targetCrosshair.position.y += 0.2),
+        (targetCrosshair.visible = !0),
+        (lastTargetTime = performance.now()),
+        (burstShotsRemaining = 3);
+    }
+  }
+}
+
 function shoot() {
   let worldMuzzlePos = new THREE.Vector3();
   let direction = new THREE.Vector3(0, 0, 1);
@@ -3791,12 +3814,24 @@ function shoot() {
     if (!rifle) return;
     worldMuzzlePos.set(0.4, 0, 0);
     rifle.localToWorld(worldMuzzlePos);
-    direction.applyQuaternion(userPedestrian.mesh.quaternion);
+    if (targetPos && burstShotsRemaining > 0) {
+      direction.subVectors(targetPos, worldMuzzlePos);
+      direction.x += (Math.random() - 0.5) * 2;
+      direction.z += (Math.random() - 0.5) * 2;
+    } else {
+      direction.applyQuaternion(userPedestrian.mesh.quaternion);
+    }
   } else if ("vehicle" === controlMode && player) {
     // Position muzzle beside the driver window (slightly left and forward)
     worldMuzzlePos.set(-1.2, 1.2, 1.5);
     player.localToWorld(worldMuzzlePos);
-    direction.applyQuaternion(player.quaternion);
+    if (targetPos && burstShotsRemaining > 0) {
+      direction.subVectors(targetPos, worldMuzzlePos);
+      direction.x += (Math.random() - 0.5) * 4;
+      direction.z += (Math.random() - 0.5) * 4;
+    } else {
+      direction.applyQuaternion(player.quaternion);
+    }
     inheritedVel = velocity.clone();
 
     // Briefly show the rifle beside the car
@@ -3950,10 +3985,13 @@ function animate() {
         }));
     }
     // Shooting logic (check every frame)
-    if ((keysPressed[" "] || isFiringMobile || burstShotsRemaining > 0) && e - lastFireTime > 100) {
+    if (burstShotsRemaining > 0 && e - lastFireTime > 100) {
       shoot();
-      if (burstShotsRemaining > 0) burstShotsRemaining--;
+      burstShotsRemaining--;
       lastFireTime = e;
+    }
+    if (targetCrosshair.visible && performance.now() - lastTargetTime > 1000) {
+      targetCrosshair.visible = false;
     }
     updateRemotePlayers();
     const t = getActivePosition();
