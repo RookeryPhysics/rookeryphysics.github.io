@@ -3816,6 +3816,18 @@ function handleDoubleTap(e, t) {
   }
 }
 
+function updateRecoil() {
+  if (userPedestrian && userPedestrian.mesh && userPedestrian.mesh.userData.rifle) {
+    const rifle = userPedestrian.mesh.userData.rifle;
+    rifle.userData.recoil = (rifle.userData.recoil || 0) * 0.8;
+    rifle.position.x = 0.2 - rifle.userData.recoil;
+  }
+  if (player && player.userData.carRifle) {
+    const rifle = player.userData.carRifle;
+    rifle.userData.recoil = (rifle.userData.recoil || 0) * 0.8;
+    rifle.position.set(0.5 - rifle.userData.recoil, 2.0, 0.5);
+  }
+}
 function shoot() {
   let worldMuzzlePos = new THREE.Vector3();
   let direction = new THREE.Vector3(0, 0, 1);
@@ -3824,6 +3836,7 @@ function shoot() {
   if ("pedestrian" === controlMode && userPedestrian && userPedestrian.mesh) {
     const rifle = userPedestrian.mesh.userData.rifle;
     if (!rifle) return;
+    rifle.userData.recoil = (rifle.userData.recoil || 0) + 0.3;
     worldMuzzlePos.set(0.4, 0, 0);
     rifle.localToWorld(worldMuzzlePos);
     if (targetPos && burstShotsRemaining > 0) {
@@ -3852,7 +3865,8 @@ function shoot() {
       player.add(player.userData.carRifle);
     }
     const carRifle = player.userData.carRifle;
-    carRifle.position.set(0.5, 2.0, 0.5);
+    carRifle.userData.recoil = (carRifle.userData.recoil || 0) + 0.3;
+    carRifle.position.set(0.5 - carRifle.userData.recoil, 2.0, 0.5);
     carRifle.rotation.set(0, -Math.PI / 2, 0);
     carRifle.visible = true;
     clearTimeout(player.userData.carRifleTimer);
@@ -3958,6 +3972,7 @@ function animate() {
   if (player && !vehicleModalOpen && !pedestrianModalOpen) {
     if (
       (updatePhysics(),
+        updateRecoil(),
         globalFrame % 15 == 0 && updateChunks(),
         globalFrame % 1 == 0 && updatePedestrians(),
         globalFrame % 1 == 0 && updateBullets(),
