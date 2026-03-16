@@ -114,12 +114,12 @@ const scoreElement = document.getElementById("score-board"),
   fallingObjects = [],
   debrisGeometry = new THREE.BoxGeometry(0.8, 0.8, 0.8),
   smokeBaseGeometry = new THREE.BoxGeometry(1, 1, 1),
-  debrisMaterialCache = new Map(),
-  isMobile =
+  debrisMaterialCache = new Map();
+let isMobile =
     /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
       navigator.userAgent,
-    ) || window.innerWidth < 768,
-  PEDESTRIAN_UPDATE_INTERVAL = 1,
+    ) || window.innerWidth < 768;
+const PEDESTRIAN_UPDATE_INTERVAL = 1,
   TRAFFIC_UPDATE_INTERVAL = 1,
   COLLISION_CHECK_INTERVAL = 1,
   PARTICLE_UPDATE_INTERVAL = 1;
@@ -210,6 +210,7 @@ const stickKnob = document.getElementById("stick-knob"),
   settingsModal = document.getElementById("settings-modal"),
   settingsModalClose = document.getElementById("settings-modal-close"),
   shareBtn = document.getElementById("share-btn"),
+  shootBtn = document.getElementById("shoot-btn"),
   shareModal = document.getElementById("share-modal"),
   shareModalClose = document.getElementById("share-modal-close"),
   shareLinkInput = document.getElementById("share-link"),
@@ -601,8 +602,27 @@ function init() {
       },
       { passive: !1 },
     ),
-    settingsModalClose.addEventListener("click", closeSettingsModal),
-    settingsModal.addEventListener("click", (e) => {
+    shootBtn.addEventListener("mousedown", (e) => {
+      (e.stopPropagation(), (isFiringMobile = !0));
+    }),
+    window.addEventListener("mouseup", () => {
+      isFiringMobile = !1;
+    }),
+    shootBtn.addEventListener(
+      "touchstart",
+      (e) => {
+        (e.preventDefault(), e.stopPropagation(), (isFiringMobile = !0));
+      },
+      { passive: !1 },
+    ),
+    shootBtn.addEventListener(
+      "touchend",
+      (e) => {
+        (e.preventDefault(), e.stopPropagation(), (isFiringMobile = !1));
+      },
+      { passive: !1 },
+    ),
+    settingsModalClose.addEventListener("click", closeSettingsModal),    settingsModal.addEventListener("click", (e) => {
       e.target === settingsModal && closeSettingsModal();
     }),
     settingsModalClose.addEventListener(
@@ -1463,13 +1483,23 @@ function handleVehicleTap() {
 function handlePedestrianTap() {
   openPedestrianModal();
 }
+function updateUIForControlMode() {
+  if (shootBtn) {
+    if (isMobile && ("pedestrian" === controlMode || "vehicle" === controlMode)) {
+      shootBtn.style.display = "flex";
+    } else {
+      shootBtn.style.display = "none";
+      isFiringMobile = false;
+    }
+  }
+}
 function enterVehicle() {
   (userPedestrian &&
     (scene.remove(userPedestrian.mesh), (userPedestrian = null)),
     (isFiringMobile = !1),
     (burstShotsRemaining = 0),
     (controlMode = "vehicle"),
-    (controlMode = "vehicle"),
+    updateUIForControlMode(),
     centerCamera(),
     updatePlayerLabel());
 }
@@ -1495,6 +1525,7 @@ function spawnPedestrianBesidePlayer() {
     userPedestrian.mesh.position.copy(userPedestrian.position),
     (userPedestrian.mesh.rotation.y = userPedestrian.rotation),
     (controlMode = "pedestrian"),
+    updateUIForControlMode(),
     updatePlayerLabel(),
     scene.add(userPedestrian.mesh));
 }
@@ -2840,7 +2871,7 @@ function onTouchStart(e) {
     o = { x: a.left + a.width / 2, y: a.top + a.height / 2 },
     r = Date.now();
   (r - lastTapTime < 250 &&
-    (emitWheelSmoke(), "pedestrian" === controlMode && (burstShotsRemaining = 5)),
+    (emitWheelSmoke()),
     (lastTapTime = r));
     for (let e = 0; e < t.length; e++) {
     const a = t[e];
@@ -3211,6 +3242,7 @@ function triggerGameOver() {
     (player.visible = !1),
     (isFiringMobile = !1),
     (burstShotsRemaining = 0),
+    updateUIForControlMode(),
     velocity.set(0, 0, 0),
     score > highScore &&
     ((highScore = score), localStorage.setItem("highScore", highScore)));
@@ -3230,8 +3262,8 @@ function resetGame() {
       scene.remove(userPedestrian.mesh),
       (userPedestrian = null),
       (controlMode = "vehicle")),
-    (player.visible = !0),
-    player.position.set(initialSpawnX, 0.05, initialSpawnZ),
+      updateUIForControlMode(),
+      (player.visible = !0),    player.position.set(initialSpawnX, 0.05, initialSpawnZ),
     player.rotation.set(0, 0, 0),
     velocity.set(0, 0, 0),
     (moveInput = { x: 0, y: 0 }),
@@ -3503,9 +3535,9 @@ function spawnSmokeParticle(e) {
     scene.add(t),
     particles.push(t));
 }
-function explode(e, t = 16711680) {
+function explode(e, t = 16711680, count = 3) {
   const a = getDebrisMaterial(t);
-  for (let t = 0; t < 3; t++) {
+  for (let t = 0; t < count; t++) {
     let t = getParticleFromPool();
     (t
       ? ((t.geometry = debrisGeometry), (t.material = a))
@@ -3735,11 +3767,14 @@ function createRifle() {
 const bulletGeo = new THREE.SphereGeometry(0.1, 8, 8);
 const bulletMat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
 
-function createBullet(position, direction, ownerId) {
+function createBullet(position, direction, ownerId, inheritedVelocity = null) {
   const bullet = new THREE.Mesh(bulletGeo, bulletMat);
   bullet.position.copy(position);
 
   bullet.userData.velocity = direction.clone().multiplyScalar(2.0);
+  if (inheritedVelocity) {
+    bullet.userData.velocity.add(inheritedVelocity);
+  }
   bullet.userData.life = 100;
   bullet.userData.ownerId = ownerId;
   scene.add(bullet);
@@ -3747,25 +3782,51 @@ function createBullet(position, direction, ownerId) {
 }
 
 function shoot() {
-  if (!userPedestrian || !userPedestrian.mesh) return;
+  let worldMuzzlePos = new THREE.Vector3();
+  let direction = new THREE.Vector3(0, 0, 1);
+  let inheritedVel = null;
 
-  const rifle = userPedestrian.mesh.userData.rifle;
-  if (!rifle) return;
-  const worldMuzzlePos = new THREE.Vector3(0.4, 0, 0);
-  rifle.localToWorld(worldMuzzlePos);
+  if ("pedestrian" === controlMode && userPedestrian && userPedestrian.mesh) {
+    const rifle = userPedestrian.mesh.userData.rifle;
+    if (!rifle) return;
+    worldMuzzlePos.set(0.4, 0, 0);
+    rifle.localToWorld(worldMuzzlePos);
+    direction.applyQuaternion(userPedestrian.mesh.quaternion);
+  } else if ("vehicle" === controlMode && player) {
+    // Position muzzle beside the driver window (slightly left and forward)
+    worldMuzzlePos.set(-1.2, 1.2, 1.5);
+    player.localToWorld(worldMuzzlePos);
+    direction.applyQuaternion(player.quaternion);
+    inheritedVel = velocity.clone();
 
-  // Horizontal direction based on character rotation
-  const direction = new THREE.Vector3(0, 0, 1);
-  direction.applyQuaternion(userPedestrian.mesh.quaternion);
-  direction.y = 0; // Ensure purely horizontal
+    // Briefly show the rifle beside the car
+    if (!player.userData.carRifle) {
+      player.userData.carRifle = createRifle();
+      player.add(player.userData.carRifle);
+    }
+    const carRifle = player.userData.carRifle;
+    carRifle.position.set(0.5, 2.0, 0.5);
+    carRifle.rotation.set(0, -Math.PI / 2, 0);
+    carRifle.visible = true;
+    clearTimeout(player.userData.carRifleTimer);
+    player.userData.carRifleTimer = setTimeout(() => {
+      if (player.userData.carRifle) player.userData.carRifle.visible = false;
+    }, 100);
+  } else {
+    return;
+  }
+
+  direction.y = 0; 
   direction.normalize();
 
-  createBullet(worldMuzzlePos, direction, socket ? socket.id : null);
+  createBullet(worldMuzzlePos, direction, socket ? socket.id : null, inheritedVel);
 
   if (socket && socket.connected) {
     socket.emit("playerShoot", {
       position: { x: worldMuzzlePos.x, y: worldMuzzlePos.y, z: worldMuzzlePos.z },
       direction: { x: direction.x, y: direction.y, z: direction.z },
+      velocity: inheritedVel ? { x: inheritedVel.x, y: inheritedVel.y, z: inheritedVel.z } : null,
+      isPedestrian: "pedestrian" === controlMode
     });
   }
 }
@@ -3889,7 +3950,7 @@ function animate() {
         }));
     }
     // Shooting logic (check every frame)
-    if ("pedestrian" === controlMode && (keysPressed[" "] || isFiringMobile || burstShotsRemaining > 0) && e - lastFireTime > 100) {
+    if ((keysPressed[" "] || isFiringMobile || burstShotsRemaining > 0) && e - lastFireTime > 100) {
       shoot();
       if (burstShotsRemaining > 0) burstShotsRemaining--;
       lastFireTime = e;
@@ -3966,6 +4027,11 @@ function updateMoveInputFromKeys() {
     (stickKnob.style.transform = `translate(calc(-50% + ${a}px), calc(-50% + ${o}px))`);
 }
 function onWindowResize() {
+  isMobile =
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent,
+    ) || window.innerWidth < 768;
+  updateUIForControlMode();
   if (
     ((camera.aspect = window.innerWidth / window.innerHeight),
       camera.updateProjectionMatrix(),
@@ -4080,12 +4146,13 @@ function initSocket() {
     socket.on("playerShot", (data) => {
       const pos = new THREE.Vector3(data.position.x, data.position.y, data.position.z);
       const dir = new THREE.Vector3(data.direction.x, data.direction.y, data.direction.z);
-      createBullet(pos, dir, data.id);
+      const vel = data.velocity ? new THREE.Vector3(data.velocity.x, data.velocity.y, data.velocity.z) : null;
+      createBullet(pos, dir, data.id, vel);
     }),
     socket.on("playerExploded", (data) => {
       const pos = new THREE.Vector3(data.position.x, data.position.y, data.position.z);
-      explode(pos, data.color || 16711680);
-      explode(pos, 16772608); // Second orange explosion
+      explode(pos, data.color || 16711680, 15);
+      explode(pos, 16772608, 10); // Second orange explosion
     }));
 }
 function addOtherPlayer(e) {

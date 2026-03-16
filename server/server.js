@@ -139,7 +139,9 @@ io.on('connection', (socket) => {
         socket.broadcast.emit('playerShot', {
             id: socket.id,
             position: shootData.position,
-            direction: shootData.direction
+            direction: shootData.direction,
+            isPedestrian: shootData.isPedestrian,
+            velocity: shootData.velocity
         });
     });
 

@@ -883,3 +883,36 @@ body.hud-hidden .instructions {
     opacity: 0;
   }
 }
+#shoot-btn {
+  position: absolute;
+  bottom: 120px;
+  right: 50px;
+  width: 90px;
+  height: 90px;
+  background: rgba(255, 0, 0, 0.3);
+  border: 3px solid rgba(255, 255, 255, 0.4);
+  border-radius: 50%;
+  color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  pointer-events: auto;
+  backdrop-filter: blur(4px);
+  z-index: 30;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.1s, background 0.2s;
+  display: none;
+}
+
+#shoot-btn:active {
+  background: rgba(255, 0, 0, 0.6);
+  transform: scale(0.9);
+}
+
+body.hud-hidden #shoot-btn {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
