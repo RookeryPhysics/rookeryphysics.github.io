@@ -221,7 +221,7 @@ const stickKnob = document.getElementById("stick-knob"),
   snapFallbackLink = document.getElementById("snap-fallback-link"),
   multiplayerModal = document.getElementById("multiplayer-modal"),
   multiplayerModalClose = document.getElementById("multiplayer-modal-close"),
-  copyIpBtn = document.getElementById("copy-ip-btn");
+  connectBtn = document.getElementById("connect-btn");
 function mergeGeometries(e) {
   let t = 0,
     a = 0,
@@ -645,11 +645,13 @@ function init() {
       },
       { passive: !1 },
     ),
-    copyIpBtn.addEventListener("click", copyIpAddress),
-    copyIpBtn.addEventListener(
+    connectBtn.addEventListener("click", () => {
+      window.location.href = "http://67.225.82.83:3000";
+    }),
+    connectBtn.addEventListener(
       "touchstart",
       (e) => {
-        (e.preventDefault(), e.stopPropagation(), copyIpAddress());
+        (e.preventDefault(), e.stopPropagation(), window.location.href = "http://67.225.82.83:3000");
       },
       { passive: !1 },
     ),
@@ -1292,35 +1294,7 @@ function copyShareLink() {
     ? navigator.clipboard.writeText(e).then(t).catch(a)
     : a();
 }
-function copyIpAddress() {
-  const e = document.getElementById("multiplayer-ip").value,
-    t = () => {
-      const btn = document.getElementById("copy-ip-btn");
-      ((btn.textContent = "Copied!"),
-        setTimeout(() => {
-          btn.textContent = "Copy";
-        }, 1200));
-    },
-    a = () => {
-      try {
-        const a = document.createElement("textarea");
-        ((a.value = e),
-          a.setAttribute("readonly", ""),
-          (a.style.position = "fixed"),
-          (a.style.top = "-9999px"),
-          document.body.appendChild(a),
-          a.select(),
-          document.execCommand("copy"),
-          document.body.removeChild(a),
-          t());
-      } catch (e) {
-        t();
-      }
-    };
-  navigator.clipboard && navigator.clipboard.writeText
-    ? navigator.clipboard.writeText(e).then(t).catch(a)
-    : a();
-}
+
 function toggleHUD() {
   document.body.classList.toggle("hud-hidden");
   const e = document.body.classList.contains("hud-hidden"),
