@@ -335,7 +335,8 @@ body {
   color: #f36;
 }
 
-#time-btn {
+#time-btn,
+#music-btn {
   position: relative;
   margin: 20px auto;
   width: 60px;
@@ -359,12 +360,14 @@ body {
     background 0.2s;
 }
 
-#time-btn:hover {
+#time-btn:hover,
+#music-btn:hover {
   background: rgba(255, 255, 255, 0.2);
   transform: scale(1.05);
 }
 
-#time-btn:active {
+#time-btn:active,
+#music-btn:active {
   background: rgba(255, 255, 255, 0.3);
   transform: scale(0.95);
 }

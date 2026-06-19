@@ -101,7 +101,10 @@ let player,
   targetPos = null,
   targetCrosshair = null,
   score = 0,
-  highScore = localStorage.getItem("highScore") || 0;
+  highScore = localStorage.getItem("highScore") || 0,
+  bgMusic = null,
+  musicPlaying = !1,
+  musicInitialized = !1;
 const scoreElement = document.getElementById("score-board"),
   fpsElement = document.getElementById("fps-counter"),
   allPedestrians = [],
@@ -208,6 +211,7 @@ const stickKnob = document.getElementById("stick-knob"),
   playerPointerArrow = document.getElementById("player-pointer-arrow"),
   movementZone = document.getElementById("movement-zone"),
   timeBtn = document.getElementById("time-btn"),
+  musicBtn = document.getElementById("music-btn"),
   collapseBtn = document.getElementById("collapse-btn"),
   settingsBtn = document.getElementById("settings-btn"),
   settingsModal = document.getElementById("settings-modal"),
@@ -289,6 +293,71 @@ function createVoxelTreeDatas() {
     }
   }
   return { trunk: mergeGeometries(e), leaves: mergeGeometries(t) };
+}
+function updateMusicButton(isPlaying) {
+  if (musicBtn) {
+    musicBtn.innerText = isPlaying ? "🔊" : "🔇";
+  }
+}
+function toggleMusic(e) {
+  if (e) {
+    e.stopPropagation();
+    e.preventDefault();
+  }
+  if (!bgMusic) {
+    bgMusic = new Audio("sig.mp3");
+    bgMusic.loop = true;
+    bgMusic.volume = 0.4;
+  }
+  if (musicPlaying) {
+    bgMusic.pause();
+    musicPlaying = !1;
+    localStorage.setItem("musicMuted", "true");
+    updateMusicButton(!1);
+  } else {
+    bgMusic.play().then(() => {
+      musicPlaying = !0;
+      musicInitialized = !0;
+      localStorage.setItem("musicMuted", "false");
+      updateMusicButton(!0);
+      removeInteractionListeners();
+    }).catch(err => {
+      console.error("Failed to play music:", err);
+    });
+  }
+}
+function startMusicOnInteraction(e) {
+  if (musicInitialized) return;
+  if (e && e.target && (e.target.id === "music-btn" || e.target.closest("#music-btn"))) {
+    return;
+  }
+  const savedMute = localStorage.getItem("musicMuted") === "true";
+  if (!bgMusic) {
+    bgMusic = new Audio("sig.mp3");
+    bgMusic.loop = true;
+    bgMusic.volume = 0.4;
+  }
+  if (!savedMute) {
+    bgMusic.play().then(() => {
+      musicInitialized = !0;
+      musicPlaying = !0;
+      updateMusicButton(!0);
+      removeInteractionListeners();
+    }).catch(err => {
+      console.log("Interaction play failed:", err);
+    });
+  } else {
+    musicInitialized = !0;
+    musicPlaying = !1;
+    updateMusicButton(!1);
+    removeInteractionListeners();
+  }
+}
+function removeInteractionListeners() {
+  document.removeEventListener("click", startMusicOnInteraction);
+  document.removeEventListener("keydown", startMusicOnInteraction);
+  document.removeEventListener("touchstart", startMusicOnInteraction);
+  document.removeEventListener("mousedown", startMusicOnInteraction);
 }
 function init() {
   const e = document.getElementById("game-container"),
@@ -510,6 +579,22 @@ function init() {
       },
       { passive: !1 },
     ));
+  if (musicBtn) {
+    const savedMute = localStorage.getItem("musicMuted") === "true";
+    musicBtn.innerText = savedMute ? "🔇" : "🔊";
+    musicBtn.addEventListener("mousedown", toggleMusic);
+    musicBtn.addEventListener(
+      "touchstart",
+      (e) => {
+        (e.preventDefault(), e.stopPropagation(), toggleMusic(e));
+      },
+      { passive: !1 }
+    );
+  }
+  document.addEventListener("click", startMusicOnInteraction);
+  document.addEventListener("keydown", startMusicOnInteraction);
+  document.addEventListener("touchstart", startMusicOnInteraction);
+  document.addEventListener("mousedown", startMusicOnInteraction);
   const g = document.getElementById("settings-pimp-btn");
   g &&
     (g.addEventListener("click", (e) => {
