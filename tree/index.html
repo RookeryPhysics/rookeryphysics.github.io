@@ -190,7 +190,9 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+        const isMobile = /Mobi|Android|iPhone|iPad|iPod|Windows Phone|webOS|BlackBerry|Opera Mini/i.test(navigator.userAgent);
+        const isComputer = !isMobile;
+        const isTouchDevice = (('ontouchstart' in window) || (navigator.maxTouchPoints > 0)) && !isComputer;
         if (isTouchDevice) {
             document.body.classList.add('is-touch');
         }
@@ -286,6 +288,7 @@
         const container = document.getElementById('canvas-container');
         const crosshair = document.getElementById('crosshair');
         const fpsCounter = document.getElementById('fps-counter');
+        const instructionsMini = document.getElementById('instructions-mini');
 
         // Collision & Movement variables
         let collidableBoxes = [];
@@ -548,6 +551,9 @@
             controls = new PointerLockControls(camera, renderer.domElement);
 
             if (!isTouchDevice) {
+                instructionsMini.style.display = 'block';
+                instructionsMini.innerText = "Click screen to lock • WASD to move • Space to jump";
+
                 controls.addEventListener('lock', () => {
                     crosshair.style.display = 'block';
                     instructionsMini.style.display = 'block';
@@ -557,7 +563,7 @@
                 controls.addEventListener('unlock', () => {
                     crosshair.style.display = 'none';
                     instructionsMini.style.display = 'block';
-                    instructionsMini.innerText = "Click screen to lock cursor";
+                    instructionsMini.innerText = "Click screen to lock • WASD to move • Space to jump";
                 });
             } else {
                 crosshair.style.display = 'block';
