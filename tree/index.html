@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Tree Planting Simulator</title>
     <style>
         * {
@@ -11,6 +11,7 @@
             margin: 0;
             padding: 0;
             user-select: none;
+            -webkit-user-select: none;
         }
 
         body {
@@ -20,6 +21,7 @@
             background-color: #1a1512;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             color: #f5f0eb;
+            touch-action: none;
         }
 
         #canvas-container {
@@ -31,108 +33,20 @@
             z-index: 1;
         }
 
-        #overlay {
+        #fps-counter {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 10;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+            top: 15px;
+            left: 15px;
             background: rgba(26, 21, 18, 0.7);
-            backdrop-filter: blur(10px);
-            transition: opacity 0.5s ease;
-        }
-
-        #overlay.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .card {
-            background: rgba(45, 38, 34, 0.85);
-            border: 1px solid rgba(224, 180, 140, 0.2);
-            border-radius: 16px;
-            padding: 40px;
-            text-align: center;
-            max-width: 500px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-            transform: translateY(0);
-            transition: transform 0.3s ease;
-        }
-
-        .card:hover {
-            transform: translateY(-5px);
-            border-color: rgba(224, 180, 140, 0.4);
-        }
-
-        h1 {
-            font-size: 2.5rem;
-            margin-bottom: 20px;
-            color: #e0b48c;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
-
-        p {
-            font-size: 1.1rem;
-            line-height: 1.6;
-            margin-bottom: 30px;
-            color: #d5c8be;
-        }
-
-        .controls-info {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            margin-bottom: 35px;
-            text-align: left;
-        }
-
-        .control-item {
-            background: rgba(20, 17, 15, 0.5);
-            padding: 12px 16px;
+            color: #4ade80;
+            padding: 8px 12px;
             border-radius: 8px;
-            border-left: 3px solid #e0b48c;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .key {
-            background: #e0b48c;
-            color: #1a1512;
-            padding: 2px 8px;
-            border-radius: 4px;
+            border: 1px solid rgba(224, 180, 140, 0.3);
+            font-family: monospace;
+            font-size: 14px;
             font-weight: bold;
-            font-size: 0.9rem;
-        }
-
-        button {
-            background: linear-gradient(135deg, #e0b48c, #c69469);
-            color: #1a1512;
-            border: none;
-            padding: 15px 40px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            border-radius: 30px;
-            cursor: pointer;
-            box-shadow: 0 5px 15px rgba(224, 180, 140, 0.3);
-            transition: all 0.2s ease;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        button:hover {
-            transform: scale(1.05);
-            box-shadow: 0 8px 25px rgba(224, 180, 140, 0.5);
-        }
-
-        button:active {
-            transform: scale(0.98);
+            z-index: 20;
+            pointer-events: none;
         }
 
         #crosshair {
@@ -151,7 +65,7 @@
         #crosshair::after {
             content: '';
             position: absolute;
-            background: rgba(245, 240, 235, 0.6);
+            background: rgba(245, 240, 235, 0.8);
         }
 
         #crosshair::before {
@@ -185,27 +99,108 @@
             letter-spacing: 0.5px;
             display: none;
         }
+
+        /* Mobile Controls UI - Hidden by default */
+        #mobile-ui {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        body.is-touch #mobile-ui {
+            display: block;
+        }
+
+        body.is-touch #instructions-mini {
+            display: none !important;
+        }
+
+        #joystick-zone {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            width: 140px;
+            height: 140px;
+            background: rgba(45, 38, 34, 0.4);
+            border: 2px solid rgba(224, 180, 140, 0.3);
+            border-radius: 50%;
+            pointer-events: auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #joystick-stick {
+            width: 60px;
+            height: 60px;
+            background: rgba(224, 180, 140, 0.8);
+            border-radius: 50%;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            pointer-events: none;
+        }
+
+        .action-btn {
+            position: absolute;
+            background: rgba(45, 38, 34, 0.6);
+            border: 2px solid rgba(224, 180, 140, 0.5);
+            color: #e0b48c;
+            border-radius: 50%;
+            pointer-events: auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 1rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            transition: background 0.1s;
+        }
+
+        .action-btn:active {
+            background: rgba(224, 180, 140, 0.4);
+        }
+
+        #jump-btn {
+            bottom: 65px;
+            right: 65px;
+            width: 70px;
+            height: 70px;
+        }
     </style>
 </head>
 
 <body>
+    <div id="fps-counter">FPS: 0</div>
     <div id="canvas-container"></div>
 
     <div id="crosshair"></div>
-    <div id="instructions-mini">Press ESC to unlock cursor</div>
+    <div id="instructions-mini">Click screen to lock cursor • Press ESC to unlock</div>
 
-    <!-- Import Three.js and PointerLockControls -->
+    <!-- Mobile UI Elements -->
+    <div id="mobile-ui">
+        <div id="joystick-zone">
+            <div id="joystick-stick"></div>
+        </div>
+        <div id="jump-btn" class="action-btn">JUMP</div>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
+        const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+        if (isTouchDevice) {
+            document.body.classList.add('is-touch');
+        }
+
         // PointerLockControls implementation directly inline
         class PointerLockControls {
             constructor(camera, domElement) {
                 this.camera = camera;
                 this.domElement = domElement || document.body;
                 this.isLocked = false;
-
-                this.minPolarAngle = 0; // radians
-                this.maxPolarAngle = Math.PI; // radians
 
                 this.changeEvent = { type: 'change' };
                 this.lockEvent = { type: 'lock' };
@@ -215,9 +210,21 @@
 
                 this.onMouseMove = this.onMouseMove.bind(this);
                 this.onPointerlockChange = this.onPointerlockChange.bind(this);
-                this.onPointerlockError = this.onPointerlockError.bind(this);
 
                 this.connect();
+            }
+
+            rotateCamera(deltaX, deltaY) {
+                this.euler.setFromQuaternion(this.camera.quaternion);
+
+                this.euler.y -= deltaX;
+                this.euler.x -= deltaY;
+
+                // Restrict looking straight up or down
+                this.euler.x = Math.max(Math.PI / 2 - Math.PI + 0.01, Math.min(Math.PI / 2 - 0.01, this.euler.x));
+
+                this.camera.quaternion.setFromEuler(this.euler);
+                this.dispatchEvent(this.changeEvent);
             }
 
             onMouseMove(event) {
@@ -226,17 +233,7 @@
                 const movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
                 const movementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
 
-                this.euler.setFromQuaternion(this.camera.quaternion);
-
-                this.euler.y -= movementX * 0.002;
-                this.euler.x -= movementY * 0.002;
-
-                // Restrict looking straight up or down
-                this.euler.x = Math.max(Math.PI / 2 - Math.PI + 0.01, Math.min(Math.PI / 2 - 0.01, this.euler.x));
-
-                this.camera.quaternion.setFromEuler(this.euler);
-
-                this.dispatchEvent(this.changeEvent);
+                this.rotateCamera(movementX * 0.002, movementY * 0.002);
             }
 
             onPointerlockChange() {
@@ -249,31 +246,15 @@
                 }
             }
 
-            onPointerlockError() {
-                console.error('PointerLockControls: Unable to use Pointer Lock API');
-            }
-
             connect() {
                 this.domElement.ownerDocument.addEventListener('mousemove', this.onMouseMove);
                 this.domElement.ownerDocument.addEventListener('pointerlockchange', this.onPointerlockChange);
-                this.domElement.ownerDocument.addEventListener('pointerlockerror', this.onPointerlockError);
-            }
-
-            disconnect() {
-                this.domElement.ownerDocument.removeEventListener('mousemove', this.onMouseMove);
-                this.domElement.ownerDocument.removeEventListener('pointerlockchange', this.onPointerlockChange);
-                this.domElement.ownerDocument.removeEventListener('pointerlockerror', this.onPointerlockError);
             }
 
             lock() {
                 this.domElement.requestPointerLock();
             }
 
-            unlock() {
-                this.domElement.ownerDocument.exitPointerLock();
-            }
-
-            // Simple EventDispatcher implementation
             addEventListener(type, listener) {
                 if (this._listeners === undefined) this._listeners = {};
                 const listeners = this._listeners;
@@ -301,35 +282,50 @@
         }
 
         // --- App Setup ---
-        let scene, camera, renderer, controls;
+        let scene, camera, renderer, controls, rotor, helicopterGroup;
         const container = document.getElementById('canvas-container');
         const crosshair = document.getElementById('crosshair');
-        const instructionsMini = document.getElementById('instructions-mini');
+        const fpsCounter = document.getElementById('fps-counter');
 
-        // Movement variables
-        const moveState = {
-            forward: false,
-            backward: false,
-            left: false,
-            right: false
-        };
+        // Collision & Movement variables
+        let collidableBoxes = [];
+        const moveState = { forward: false, backward: false, left: false, right: false };
+        let joystickDir = { x: 0, z: 0 };
+        let joystickActive = false;
+
         const velocity = new THREE.Vector3();
         const direction = new THREE.Vector3();
         let prevTime = performance.now();
         let canJump = false;
 
+        // FPS tracking
+        let frames = 0;
+        let lastFpsTime = performance.now();
+
+        // Map Size
+        const planeSize = 150;
+        const mapBound = 49;
+
+        // PERFORMANCE OPTIMIZATION: Freezes matrix calculations for static objects
+        function freezeObject(obj) {
+            obj.updateMatrixWorld(true);
+            obj.traverse((child) => {
+                child.matrixAutoUpdate = false;
+            });
+        }
+
         function init() {
             // Scene & Sky Color
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x1a1512);
-            scene.fog = new THREE.FogExp2(0x1a1512, 0.015);
+            scene.background = new THREE.Color(0x87ceeb); // Sky blue
+            scene.fog = new THREE.FogExp2(0x87ceeb, 0.008);
 
             // Camera
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.y = 1.6; // Average human eye level in meters
+            camera.position.set(0, 1.6, 20);
 
-            // Renderer
-            renderer = new THREE.WebGLRenderer({ antialias: true });
+            // Renderer (Added high-performance preference)
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.shadowMap.enabled = true;
@@ -351,258 +347,396 @@
             dirLight.shadow.camera.bottom = -100;
             dirLight.shadow.camera.left = -100;
             dirLight.shadow.camera.right = 100;
-            dirLight.shadow.camera.near = 0.1;
-            dirLight.shadow.camera.far = 500;
             dirLight.shadow.mapSize.width = 2048;
             dirLight.shadow.mapSize.height = 2048;
             scene.add(dirLight);
 
             // --- Terrain / Ground Plane ---
-            // Light brown terrain: Hex #c69469 or #d2b48c (Tan/Light Brown)
-            const planeSize = 1000;
             const planeGeo = new THREE.PlaneGeometry(planeSize, planeSize);
-            const planeMat = new THREE.MeshStandardMaterial({
-                color: 0xc69469,
-                roughness: 0.8,
-                metalness: 0.1
-            });
+            const planeMat = new THREE.MeshStandardMaterial({ color: 0xc69469, roughness: 0.8, metalness: 0.1 });
             const plane = new THREE.Mesh(planeGeo, planeMat);
             plane.rotation.x = -Math.PI / 2;
             plane.receiveShadow = true;
             scene.add(plane);
+            freezeObject(plane);
 
-            // Grid helper on top of plane for scale perception
-            const gridHelper = new THREE.GridHelper(planeSize, 200, 0x8a5b32, 0xa57548);
-            gridHelper.position.y = 0.01; // Slightly above plane to prevent z-fighting
+            // Grid scale reduced to match plane size
+            const gridHelper = new THREE.GridHelper(planeSize, 30, 0x8a5b32, 0xa57548);
+            gridHelper.position.y = 0.01;
             scene.add(gridHelper);
+            freezeObject(gridHelper);
 
-            // --- Green Patches on the Plane ---
-            const patchMat = new THREE.MeshStandardMaterial({
-                color: 0x5e7c56, // Low-poly organic green patch color
-                roughness: 0.9,
-                metalness: 0.0
+            // --- Flying Helicopter Assembly ---
+            helicopterGroup = new THREE.Group();
+
+            const heliAssembly = new THREE.Group();
+
+            const prismGeo = new THREE.BoxGeometry(2, 2, 6);
+            const prismMat = new THREE.MeshStandardMaterial({
+                color: 0xb0b8c0,
+                roughness: 0.4,
+                metalness: 0.6
             });
+            const prism = new THREE.Mesh(prismGeo, prismMat);
+            prism.castShadow = true;
+            prism.receiveShadow = true;
+            heliAssembly.add(prism);
 
-            // Create flat low-poly green patches scattered on the plane
-            for (let i = 0; i < 80; i++) {
-                const radius = 4 + Math.random() * 16;
-                const segments = 5 + Math.floor(Math.random() * 4); // 5 to 8 sides
+            const rotorGeo = new THREE.BoxGeometry(8, 0.1, 0.4);
+            const rotorMat = new THREE.MeshStandardMaterial({
+                color: 0x333333,
+                roughness: 0.6,
+                metalness: 0.4
+            });
+            rotor = new THREE.Mesh(rotorGeo, rotorMat);
+            rotor.position.set(0, 1.2, 0);
+            rotor.castShadow = true;
+            rotor.receiveShadow = true;
+            heliAssembly.add(rotor);
+
+            heliAssembly.rotation.x = 0.15;
+            heliAssembly.rotation.z = 0.35;
+
+            helicopterGroup.add(heliAssembly);
+            scene.add(helicopterGroup);
+
+            // Green Patches
+            const patchMat = new THREE.MeshStandardMaterial({ color: 0x5e7c56, roughness: 0.9, metalness: 0.0 });
+            for (let i = 0; i < 25; i++) {
+                const radius = 2 + Math.random() * 8;
+                const segments = 5 + Math.floor(Math.random() * 4);
                 const patchGeo = new THREE.CircleGeometry(radius, segments);
                 const patch = new THREE.Mesh(patchGeo, patchMat);
-
-                const x = (Math.random() - 0.5) * 450;
-                const z = (Math.random() - 0.5) * 450;
-
-                patch.position.set(x, 0.005, z); // Slightly above ground plane to prevent z-fighting
+                patch.position.set((Math.random() - 0.5) * 90, 0.005, (Math.random() - 0.5) * 90);
                 patch.rotation.x = -Math.PI / 2;
                 patch.rotation.z = Math.random() * Math.PI * 2;
                 patch.receiveShadow = true;
                 scene.add(patch);
+                freezeObject(patch);
             }
 
-            // Function to generate a low-poly spruce tree
-            function createSpruceTree() {
+            // Spruce Tree logic
+            window.createSpruceTree = function () {
                 const tree = new THREE.Group();
-
-                // Trunk
-                const trunkGeo = new THREE.CylinderGeometry(0.2, 0.3, 2, 5);
-                const trunkMat = new THREE.MeshStandardMaterial({
-                    color: 0x6e473b, // Brown trunk
-                    roughness: 0.9,
-                    metalness: 0.1,
-                    flatShading: true
-                });
-                const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+                const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.3, 2, 5), new THREE.MeshStandardMaterial({ color: 0x6e473b, roughness: 0.9, flatShading: true }));
                 trunk.position.y = 1;
                 trunk.castShadow = true;
                 trunk.receiveShadow = true;
                 tree.add(trunk);
 
-                // Foliage (stacked cones)
-                const foliageMat = new THREE.MeshStandardMaterial({
-                    color: 0x2e4f3b, // Spruce forest green
-                    roughness: 0.9,
-                    metalness: 0.1,
-                    flatShading: true
-                });
-
-                const coneHeights = [1.8, 1.4, 1.0];
-                const coneRadii = [1.2, 0.9, 0.6];
-                const coneYPositions = [2.2, 3.1, 3.8];
-
+                const foliageMat = new THREE.MeshStandardMaterial({ color: 0x2e4f3b, roughness: 0.9, flatShading: true });
+                const coneHeights = [1.8, 1.4, 1.0], coneRadii = [1.2, 0.9, 0.6], coneY = [2.2, 3.1, 3.8];
                 for (let i = 0; i < 3; i++) {
-                    const coneGeo = new THREE.ConeGeometry(coneRadii[i], coneHeights[i], 5);
-                    const cone = new THREE.Mesh(coneGeo, foliageMat);
-                    cone.position.y = coneYPositions[i];
+                    const cone = new THREE.Mesh(new THREE.ConeGeometry(coneRadii[i], coneHeights[i], 5), foliageMat);
+                    cone.position.y = coneY[i];
                     cone.castShadow = true;
                     cone.receiveShadow = true;
                     tree.add(cone);
                 }
-
                 return tree;
-            }
+            };
 
-            // Place a few spruce trees on the map (one near spawn, others scattered)
-            const treePositions = [
-                { x: 10, z: -15 },
-                { x: -20, z: -25 },
-                { x: 30, z: 30 },
-                { x: -35, z: 20 },
-                { x: 50, z: -60 },
-                { x: -60, z: -40 },
-                { x: 80, z: 10 },
-                { x: -10, z: 75 }
-            ];
-
-            treePositions.forEach(pos => {
+            // Random initial trees inside the boundaries
+            for (let i = 0; i < 15; i++) {
                 const tree = createSpruceTree();
-                tree.position.set(pos.x, 0, pos.z);
-                // Random scale variation
+                tree.position.set((Math.random() - 0.5) * 80, 0, (Math.random() - 0.5) * 80);
                 const scale = 0.8 + Math.random() * 0.5;
                 tree.scale.set(scale, scale, scale);
-                // Random rotation
                 tree.rotation.y = Math.random() * Math.PI;
                 scene.add(tree);
-            });
+                freezeObject(tree);
+            }
 
-            // --- Horizontal Logs (Dark Brown and White Birch) ---
-            const logGeo = new THREE.CylinderGeometry(0.2, 0.2, 3.5, 6); // Radius 0.2, Length 3.5, 6 sides (low poly)
+            // --- TALL BORDER TREES ---
+            const borderSpacing = 3;
+            const extraLayers = 4;
 
-            const darkBrownLogMat = new THREE.MeshStandardMaterial({
-                color: 0x4a2c11, // Dark brown wood
-                roughness: 0.9,
-                metalness: 0.1,
-                flatShading: true
-            });
-            const whiteLogMat = new THREE.MeshStandardMaterial({
-                color: 0xe5e0d8, // Birch white
-                roughness: 0.9,
-                metalness: 0.1,
-                flatShading: true
-            });
+            for (let layer = 0; layer <= extraLayers; layer++) {
+                const offset = layer * borderSpacing;
+                const currentZTop = -mapBound - offset;
+                const currentZBottom = mapBound + offset;
+                const currentXLeft = -mapBound - offset;
+                const currentXRight = mapBound + offset;
 
-            const logPositions = [
-                { x: 5, z: -10, type: 'brown' },
-                { x: -12, z: -18, type: 'white' },
-                { x: 25, z: 20, type: 'brown' },
-                { x: -28, z: 12, type: 'white' },
-                { x: 42, z: -50, type: 'brown' },
-                { x: -50, z: -30, type: 'white' },
-                { x: 65, z: 5, type: 'brown' },
-                { x: -5, z: 60, type: 'white' },
-                { x: 15, z: 40, type: 'brown' },
-                { x: -40, z: -5, type: 'white' }
-            ];
+                const xStart = -mapBound - offset;
+                const xEnd = mapBound + offset;
 
-            logPositions.forEach(pos => {
-                const mat = pos.type === 'brown' ? darkBrownLogMat : whiteLogMat;
-                const log = new THREE.Mesh(logGeo, mat);
+                for (let x = xStart; x <= xEnd; x += borderSpacing) {
+                    let treeTop = createSpruceTree();
+                    treeTop.position.set(x + (Math.random() - 0.5), 0, currentZTop + (Math.random() - 0.5));
+                    treeTop.scale.set(1.5 + Math.random() * 0.5, 3 + Math.random() * 1.5, 1.5 + Math.random() * 0.5);
+                    treeTop.rotation.y = Math.random() * Math.PI;
+                    scene.add(treeTop);
+                    freezeObject(treeTop);
 
-                // Position on ground (y = radius)
-                log.position.set(pos.x, 0.2, pos.z);
+                    let treeBottom = createSpruceTree();
+                    treeBottom.position.set(x + (Math.random() - 0.5), 0, currentZBottom + (Math.random() - 0.5));
+                    treeBottom.scale.set(1.5 + Math.random() * 0.5, 3 + Math.random() * 1.5, 1.5 + Math.random() * 0.5);
+                    treeBottom.rotation.y = Math.random() * Math.PI;
+                    scene.add(treeBottom);
+                    freezeObject(treeBottom);
+                }
 
-                // Lie horizontally: rotate on Z axis to lie flat, then randomly rotate on Y axis
-                log.rotation.z = Math.PI / 2;
-                log.rotation.y = Math.random() * Math.PI * 2;
+                const zStart = currentZTop + borderSpacing;
+                const zEnd = currentZBottom - borderSpacing;
 
-                log.castShadow = true;
-                log.receiveShadow = true;
-                scene.add(log);
-            });
+                for (let z = zStart; z <= zEnd; z += borderSpacing) {
+                    let treeLeft = createSpruceTree();
+                    treeLeft.position.set(currentXLeft + (Math.random() - 0.5), 0, z + (Math.random() - 0.5));
+                    treeLeft.scale.set(1.5 + Math.random() * 0.5, 3 + Math.random() * 1.5, 1.5 + Math.random() * 0.5);
+                    treeLeft.rotation.y = Math.random() * Math.PI;
+                    scene.add(treeLeft);
+                    freezeObject(treeLeft);
 
-            // Controls
+                    let treeRight = createSpruceTree();
+                    treeRight.position.set(currentXRight + (Math.random() - 0.5), 0, z + (Math.random() - 0.5));
+                    treeRight.scale.set(1.5 + Math.random() * 0.5, 3 + Math.random() * 1.5, 1.5 + Math.random() * 0.5);
+                    treeRight.rotation.y = Math.random() * Math.PI;
+                    scene.add(treeRight);
+                    freezeObject(treeRight);
+                }
+            }
+
+            // --- PERFORMANCE OPTIMIZED SCATTERED LOGS & STICKS ---
+            const logGeo = new THREE.CylinderGeometry(0.2, 0.2, 3.5, 6);
+            const stickGeo = new THREE.CylinderGeometry(0.05, 0.05, 1.5, 5);
+
+            const brownMat = new THREE.MeshStandardMaterial({ color: 0x4a2c11, roughness: 0.9, flatShading: true });
+            const stickMat = new THREE.MeshStandardMaterial({ color: 0x3d2817, roughness: 1.0, flatShading: true });
+
+            const logCount = 100;
+            const stickCount = 1000;
+
+            // InstancedMesh groups all logs/sticks into a single massive draw call each, hugely boosting FPS
+            const logInstanced = new THREE.InstancedMesh(logGeo, brownMat, logCount);
+            logInstanced.castShadow = true;
+            logInstanced.receiveShadow = true;
+
+            const stickInstanced = new THREE.InstancedMesh(stickGeo, stickMat, stickCount);
+            stickInstanced.castShadow = true;
+            stickInstanced.receiveShadow = true;
+
+            const dummyObj = new THREE.Object3D();
+            const collisionMeshCalculator = new THREE.Mesh(logGeo, brownMat);
+
+            // Add 100 Brown Logs to InstancedMesh
+            for (let i = 0; i < logCount; i++) {
+                dummyObj.position.set((Math.random() - 0.5) * 85, 0.2, (Math.random() - 0.5) * 85);
+                dummyObj.rotation.set(0, Math.random() * Math.PI * 2, Math.PI / 2);
+                dummyObj.updateMatrix();
+                logInstanced.setMatrixAt(i, dummyObj.matrix);
+
+                // Calculate and store collision bounding box mathematically based on position
+                collisionMeshCalculator.position.copy(dummyObj.position);
+                collisionMeshCalculator.rotation.copy(dummyObj.rotation);
+                collisionMeshCalculator.updateMatrixWorld(true);
+                collidableBoxes.push(new THREE.Box3().setFromObject(collisionMeshCalculator));
+            }
+            scene.add(logInstanced);
+            freezeObject(logInstanced);
+
+            // Add 1000 Smaller Sticks to InstancedMesh
+            for (let i = 0; i < stickCount; i++) {
+                dummyObj.position.set((Math.random() - 0.5) * 85, 0.05, (Math.random() - 0.5) * 85);
+                dummyObj.rotation.set(0, Math.random() * Math.PI * 2, Math.PI / 2);
+                dummyObj.updateMatrix();
+                stickInstanced.setMatrixAt(i, dummyObj.matrix);
+            }
+            scene.add(stickInstanced);
+            freezeObject(stickInstanced);
+
             controls = new PointerLockControls(camera, renderer.domElement);
 
-            controls.addEventListener('lock', () => {
+            if (!isTouchDevice) {
+                controls.addEventListener('lock', () => {
+                    crosshair.style.display = 'block';
+                    instructionsMini.style.display = 'block';
+                    instructionsMini.innerText = "Press ESC to unlock cursor";
+                });
+
+                controls.addEventListener('unlock', () => {
+                    crosshair.style.display = 'none';
+                    instructionsMini.style.display = 'block';
+                    instructionsMini.innerText = "Click screen to lock cursor";
+                });
+            } else {
                 crosshair.style.display = 'block';
-                instructionsMini.style.display = 'block';
-            });
+            }
 
-            controls.addEventListener('unlock', () => {
-                crosshair.style.display = 'none';
-                instructionsMini.style.display = 'none';
-            });
+            document.addEventListener('click', (event) => {
+                if (isTouchDevice) return;
 
-            // Click anywhere to lock pointer and controls, or plant a tree if already locked
-            document.addEventListener('click', () => {
                 if (controls.isLocked) {
-                    const raycaster = new THREE.Raycaster();
-                    raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
-
-                    const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-                    const intersectionPoint = new THREE.Vector3();
-
-                    if (raycaster.ray.intersectPlane(groundPlane, intersectionPoint)) {
-                        const distance = camera.position.distanceTo(intersectionPoint);
-                        if (distance < 50) {
-                            const tree = createSpruceTree();
-                            tree.position.copy(intersectionPoint);
-                            // Make it a small tree
-                            const scale = 0.2 + Math.random() * 0.1;
-                            tree.scale.set(scale, scale, scale);
-                            tree.rotation.y = Math.random() * Math.PI;
-                            scene.add(tree);
-                        }
-                    }
+                    plantTreeAction();
                 } else {
                     controls.lock();
                 }
             });
 
-            // Keyboard Listeners
+            setupTouchControls();
+
             window.addEventListener('keydown', onKeyDown);
             window.addEventListener('keyup', onKeyUp);
             window.addEventListener('resize', onWindowResize);
 
-            // Start loop
             animate();
+        }
+
+        function plantTreeAction(touchX, touchY) {
+            const raycaster = new THREE.Raycaster();
+            const pointer = new THREE.Vector2();
+
+            if (touchX !== undefined && touchY !== undefined) {
+                pointer.x = (touchX / window.innerWidth) * 2 - 1;
+                pointer.y = -(touchY / window.innerHeight) * 2 + 1;
+            } else {
+                pointer.x = 0;
+                pointer.y = 0;
+            }
+
+            raycaster.setFromCamera(pointer, camera);
+
+            const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+            const intersectionPoint = new THREE.Vector3();
+
+            if (raycaster.ray.intersectPlane(groundPlane, intersectionPoint)) {
+                if (camera.position.distanceTo(intersectionPoint) < 50) {
+                    const tree = createSpruceTree();
+                    tree.position.copy(intersectionPoint);
+                    const scale = 0.2 + Math.random() * 0.1;
+                    tree.scale.set(scale, scale, scale);
+                    tree.rotation.y = Math.random() * Math.PI;
+                    scene.add(tree);
+
+                    // Freeze newly planted tree to keep performance high
+                    freezeObject(tree);
+                }
+            }
+        }
+
+        // --- Touch Interactions ---
+        function setupTouchControls() {
+            if (!isTouchDevice) return;
+
+            const joystickZone = document.getElementById('joystick-zone');
+            const joystickStick = document.getElementById('joystick-stick');
+            const jumpBtn = document.getElementById('jump-btn');
+
+            let joystickTouchId = null;
+            let lookTouchId = null;
+            let lastLookX = 0;
+            let lastLookY = 0;
+
+            let lookTouchStartX = 0;
+            let lookTouchStartY = 0;
+            let lookTouchStartTime = 0;
+
+            function updateJoystick(touch) {
+                const rect = joystickZone.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+
+                let deltaX = touch.clientX - centerX;
+                let deltaY = touch.clientY - centerY;
+
+                const maxDist = rect.width / 2;
+                const distance = Math.min(maxDist, Math.sqrt(deltaX * deltaX + deltaY * deltaY));
+                const angle = Math.atan2(deltaY, deltaX);
+
+                const stickX = Math.cos(angle) * distance;
+                const stickY = Math.sin(angle) * distance;
+
+                joystickStick.style.transform = `translate(${stickX}px, ${stickY}px)`;
+
+                joystickDir.x = stickX / maxDist;
+                joystickDir.z = stickY / maxDist;
+            }
+
+            document.addEventListener('touchstart', (e) => {
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    const touch = e.changedTouches[i];
+                    const targetId = touch.target.id;
+
+                    if (targetId === 'joystick-zone' || targetId === 'joystick-stick') {
+                        joystickTouchId = touch.identifier;
+                        joystickActive = true;
+                        updateJoystick(touch);
+                    }
+                    else if (targetId === 'jump-btn') {
+                        if (canJump) { velocity.y += 10.0; canJump = false; }
+                    }
+                    else if (lookTouchId === null) {
+                        lookTouchId = touch.identifier;
+                        lastLookX = touch.clientX;
+                        lastLookY = touch.clientY;
+
+                        lookTouchStartX = touch.clientX;
+                        lookTouchStartY = touch.clientY;
+                        lookTouchStartTime = performance.now();
+                    }
+                }
+            }, { passive: false });
+
+            document.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    const touch = e.changedTouches[i];
+
+                    if (touch.identifier === joystickTouchId) {
+                        updateJoystick(touch);
+                    }
+                    else if (touch.identifier === lookTouchId) {
+                        const deltaX = touch.clientX - lastLookX;
+                        const deltaY = touch.clientY - lastLookY;
+
+                        controls.rotateCamera(deltaX * 0.005, deltaY * 0.005);
+
+                        lastLookX = touch.clientX;
+                        lastLookY = touch.clientY;
+                    }
+                }
+            }, { passive: false });
+
+            document.addEventListener('touchend', (e) => {
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    const touch = e.changedTouches[i];
+
+                    if (touch.identifier === joystickTouchId) {
+                        joystickActive = false;
+                        joystickTouchId = null;
+                        joystickDir = { x: 0, z: 0 };
+                        joystickStick.style.transform = `translate(0px, 0px)`;
+                    }
+                    else if (touch.identifier === lookTouchId) {
+                        const touchDuration = performance.now() - lookTouchStartTime;
+                        const moveDist = Math.hypot(touch.clientX - lookTouchStartX, touch.clientY - lookTouchStartY);
+
+                        if (touchDuration < 250 && moveDist < 15) {
+                            plantTreeAction(touch.clientX, touch.clientY);
+                        }
+
+                        lookTouchId = null;
+                    }
+                }
+            });
         }
 
         function onKeyDown(event) {
             switch (event.code) {
-                case 'KeyW':
-                case 'ArrowUp':
-                    moveState.forward = true;
-                    break;
-                case 'KeyS':
-                case 'ArrowDown':
-                    moveState.backward = true;
-                    break;
-                case 'KeyA':
-                case 'ArrowLeft':
-                    moveState.left = true;
-                    break;
-                case 'KeyD':
-                case 'ArrowRight':
-                    moveState.right = true;
-                    break;
-                case 'Space':
-                    if (canJump === true) {
-                        velocity.y += 10.0;
-                        canJump = false;
-                    }
-                    break;
+                case 'KeyW': case 'ArrowUp': moveState.forward = true; break;
+                case 'KeyS': case 'ArrowDown': moveState.backward = true; break;
+                case 'KeyA': case 'ArrowLeft': moveState.left = true; break;
+                case 'KeyD': case 'ArrowRight': moveState.right = true; break;
+                case 'Space': if (canJump) { velocity.y += 10.0; canJump = false; } break;
             }
         }
 
         function onKeyUp(event) {
             switch (event.code) {
-                case 'KeyW':
-                case 'ArrowUp':
-                    moveState.forward = false;
-                    break;
-                case 'KeyS':
-                case 'ArrowDown':
-                    moveState.backward = false;
-                    break;
-                case 'KeyA':
-                case 'ArrowLeft':
-                    moveState.left = false;
-                    break;
-                case 'KeyD':
-                case 'ArrowRight':
-                    moveState.right = false;
-                    break;
+                case 'KeyW': case 'ArrowUp': moveState.forward = false; break;
+                case 'KeyS': case 'ArrowDown': moveState.backward = false; break;
+                case 'KeyA': case 'ArrowLeft': moveState.left = false; break;
+                case 'KeyD': case 'ArrowRight': moveState.right = false; break;
             }
         }
 
@@ -612,67 +746,128 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
+        // Helper function for collision checking
+        function isColliding(nextX, nextZ, currentY) {
+            const playerRadius = 0.3;
+            const playerHeight = 1.6;
+            const feetY = currentY - playerHeight;
+
+            const playerBox = new THREE.Box3(
+                new THREE.Vector3(nextX - playerRadius, feetY, nextZ - playerRadius),
+                new THREE.Vector3(nextX + playerRadius, currentY, nextZ + playerRadius)
+            );
+
+            for (let i = 0; i < collidableBoxes.length; i++) {
+                if (playerBox.intersectsBox(collidableBoxes[i])) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         function animate() {
             requestAnimationFrame(animate);
 
             const time = performance.now();
 
-            if (controls.isLocked === true) {
+            // --- FPS Counter Update ---
+            frames++;
+            if (time >= lastFpsTime + 1000) {
+                fpsCounter.innerText = `FPS: ${frames}`;
+                frames = 0;
+                lastFpsTime = time;
+            }
+
+            if (rotor) {
+                rotor.rotation.y -= 0.6; // Spin the rotor very fast
+            }
+
+            if (helicopterGroup) {
+                const flightRadius = 30; // Circle radius
+                const flightSpeed = 0.0008; // Speed of circular motion
+                const flightHeight = 8; // Slightly lower, just above the treeline
+
+                // Calculate position on the circle
+                const angle = time * flightSpeed;
+                helicopterGroup.position.x = Math.cos(angle) * flightRadius;
+                helicopterGroup.position.z = Math.sin(angle) * flightRadius;
+                helicopterGroup.position.y = flightHeight;
+
+                // Make the helicopter face its flight path
+                const nextAngle = angle + 0.1;
+                const nextX = Math.cos(nextAngle) * flightRadius;
+                const nextZ = Math.sin(nextAngle) * flightRadius;
+                helicopterGroup.lookAt(nextX, flightHeight, nextZ);
+            }
+
+            if (controls.isLocked || isTouchDevice) {
                 const delta = (time - prevTime) / 1000;
 
                 // Apply gravity
                 velocity.y -= 9.8 * 2.5 * delta;
 
-                // Friction/Deceleration
+                // Friction
                 velocity.x -= velocity.x * 10.0 * delta;
                 velocity.z -= velocity.z * 10.0 * delta;
 
-                // Determine horizontal movement directions relative to look direction
-                direction.z = Number(moveState.forward) - Number(moveState.backward);
-                direction.x = Number(moveState.right) - Number(moveState.left);
-                direction.normalize(); // Ensure uniform speed in all directions
+                let moveZ = Number(moveState.forward) - Number(moveState.backward);
+                let moveX = Number(moveState.right) - Number(moveState.left);
 
-                // Vector representing the forward look direction
+                if (joystickActive) {
+                    moveZ = -joystickDir.z;
+                    moveX = joystickDir.x;
+                }
+
+                direction.set(moveX, 0, moveZ);
+                if (direction.length() > 1) direction.normalize();
+
                 const forwardVec = new THREE.Vector3();
                 camera.getWorldDirection(forwardVec);
-
-                // Project look direction onto the XZ horizontal plane and normalize
                 forwardVec.y = 0;
                 forwardVec.normalize();
 
-                // Vector representing the right direction (perpendicular to horizontal forward)
                 const rightVec = new THREE.Vector3();
                 rightVec.crossVectors(forwardVec, camera.up).normalize();
 
-                // Apply movement forces
                 const speed = 150.0;
-                if (moveState.forward || moveState.backward) {
-                    velocity.addScaledVector(forwardVec, direction.z * speed * delta);
-                }
-                if (moveState.left || moveState.right) {
-                    // Note: direction.x is right (+) or left (-).
-                    // rightVec is right (+), so we add scaled rightVec.
-                    velocity.addScaledVector(rightVec, direction.x * speed * delta);
-                }
 
-                // Update positions
-                camera.position.addScaledVector(velocity, delta);
+                velocity.addScaledVector(forwardVec, direction.z * speed * delta);
+                velocity.addScaledVector(rightVec, direction.x * speed * delta);
 
-                // Ground collision & jump reset
+                // Calculate requested translation amounts
+                const dx = velocity.x * delta;
+                const dy = velocity.y * delta;
+                const dz = velocity.z * delta;
+
+                // 1. Apply Y-axis movement (Jumping/Falling)
+                camera.position.y += dy;
+
                 if (camera.position.y < 1.6) {
                     velocity.y = 0;
                     camera.position.y = 1.6;
                     canJump = true;
                 }
 
-                // Boundary check (keep on the plane)
-                const bound = 490;
-                camera.position.x = Math.max(-bound, Math.min(bound, camera.position.x));
-                camera.position.z = Math.max(-bound, Math.min(bound, camera.position.z));
+                // 2. Apply X-axis movement with collision check
+                if (!isColliding(camera.position.x + dx, camera.position.z, camera.position.y)) {
+                    camera.position.x += dx;
+                } else {
+                    velocity.x = 0; // Stop X momentum on hit
+                }
+
+                // 3. Apply Z-axis movement with collision check
+                if (!isColliding(camera.position.x, camera.position.z + dz, camera.position.y)) {
+                    camera.position.z += dz;
+                } else {
+                    velocity.z = 0; // Stop Z momentum on hit
+                }
+
+                // Boundary Check
+                camera.position.x = Math.max(-mapBound, Math.min(mapBound, camera.position.x));
+                camera.position.z = Math.max(-mapBound, Math.min(mapBound, camera.position.z));
             }
 
             prevTime = time;
-
             renderer.render(scene, camera);
         }
 
