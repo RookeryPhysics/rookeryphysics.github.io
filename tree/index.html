@@ -284,7 +284,10 @@
         }
 
         // --- App Setup ---
-        let scene, camera, renderer, controls, rotor, helicopterGroup;
+        let scene, camera, renderer, controls, rotor, tailRotor, helicopterGroup, heliAssembly;
+        let landingStartTime = null;
+        const landingHeight = 1.0;
+        const landingDuration = 6000; // 6 seconds to land
         const container = document.getElementById('canvas-container');
         const crosshair = document.getElementById('crosshair');
         const fpsCounter = document.getElementById('fps-counter');
@@ -372,7 +375,7 @@
             // --- Flying Helicopter Assembly ---
             helicopterGroup = new THREE.Group();
 
-            const heliAssembly = new THREE.Group();
+            heliAssembly = new THREE.Group();
 
             const prismGeo = new THREE.BoxGeometry(2, 2, 6);
             const prismMat = new THREE.MeshStandardMaterial({
@@ -385,6 +388,7 @@
             prism.receiveShadow = true;
             heliAssembly.add(prism);
 
+            // Main Rotor
             const rotorGeo = new THREE.BoxGeometry(8, 0.1, 0.4);
             const rotorMat = new THREE.MeshStandardMaterial({
                 color: 0x333333,
@@ -396,6 +400,58 @@
             rotor.castShadow = true;
             rotor.receiveShadow = true;
             heliAssembly.add(rotor);
+
+            // Windows / Cockpit windshield (moved to +3.5 z, facing the opposite direction)
+            const cockpitGeo = new THREE.BoxGeometry(1.8, 1.2, 1.6);
+            const cockpitMat = new THREE.MeshStandardMaterial({
+                color: 0x112233,
+                roughness: 0.1,
+                metalness: 0.9,
+                transparent: true,
+                opacity: 0.75
+            });
+            const cockpit = new THREE.Mesh(cockpitGeo, cockpitMat);
+            cockpit.position.set(0, 0.4, 3.5);
+            cockpit.castShadow = true;
+            cockpit.receiveShadow = true;
+            heliAssembly.add(cockpit);
+
+            // Second lower window (translucent rectangular prism directly below the main window)
+            const lowerCockpitGeo = new THREE.BoxGeometry(1.5, 0.6, 1.2);
+            const lowerCockpit = new THREE.Mesh(lowerCockpitGeo, cockpitMat);
+            lowerCockpit.position.set(0, -0.6, 3.5);
+            lowerCockpit.castShadow = true;
+            lowerCockpit.receiveShadow = true;
+            heliAssembly.add(lowerCockpit);
+
+            // Tail Boom (moved to front at -4.5 z)
+            const tailBoomGeo = new THREE.BoxGeometry(0.4, 0.4, 4);
+            const tailBoom = new THREE.Mesh(tailBoomGeo, prismMat);
+            tailBoom.position.set(0, 0.2, -4.5);
+            tailBoom.castShadow = true;
+            tailBoom.receiveShadow = true;
+            heliAssembly.add(tailBoom);
+
+            // Tail Fin (moved to front at -6.1 z)
+            const tailFinGeo = new THREE.BoxGeometry(0.15, 1.6, 0.8);
+            const tailFin = new THREE.Mesh(tailFinGeo, prismMat);
+            tailFin.position.set(0, 1.0, -6.1);
+            tailFin.castShadow = true;
+            tailFin.receiveShadow = true;
+            heliAssembly.add(tailFin);
+
+            // Tail Rotor (moved to front at -6.1 z)
+            const tailRotorGeo = new THREE.BoxGeometry(0.05, 1.8, 0.15);
+            const tailRotorMat = new THREE.MeshStandardMaterial({
+                color: 0x333333,
+                roughness: 0.6,
+                metalness: 0.4
+            });
+            tailRotor = new THREE.Mesh(tailRotorGeo, tailRotorMat);
+            tailRotor.position.set(0.2, 1.2, -6.1);
+            tailRotor.castShadow = true;
+            tailRotor.receiveShadow = true;
+            heliAssembly.add(tailRotor);
 
             heliAssembly.rotation.x = 0.15;
             heliAssembly.rotation.z = 0.35;
@@ -776,34 +832,84 @@
 
             const time = performance.now();
 
+            const flightRadius = 30; // Circle radius
+            const flightSpeed = 0.0008; // Speed of circular motion
+            const flightHeight = 8; // Slightly lower, just above the treeline
+
+            const angle = time * flightSpeed;
+            const revs = angle / (2 * Math.PI);
+            const displayRevs = Math.min(20, Math.floor(revs));
+
             // --- FPS Counter Update ---
             frames++;
             if (time >= lastFpsTime + 1000) {
-                fpsCounter.innerText = `FPS: ${frames}`;
+                let statusText = "";
+                if (revs >= 20) {
+                    statusText = "<br>Status: Landed";
+                } else {
+                    statusText = `<br>Revs: ${displayRevs}/20`;
+                }
+                fpsCounter.innerHTML = `FPS: ${frames}${statusText}`;
                 frames = 0;
                 lastFpsTime = time;
             }
 
-            if (rotor) {
-                rotor.rotation.y -= 0.6; // Spin the rotor very fast
-            }
+            let rotorSpeedMultiplier = 1.0;
+            let tailRotorSpeedMultiplier = 1.0;
 
             if (helicopterGroup) {
-                const flightRadius = 30; // Circle radius
-                const flightSpeed = 0.0008; // Speed of circular motion
-                const flightHeight = 8; // Slightly lower, just above the treeline
+                const landingAngle = 20 * 2 * Math.PI;
+                if (angle >= landingAngle) {
+                    if (landingStartTime === null) {
+                        landingStartTime = time;
+                    }
+                    
+                    const t = Math.min(1, (time - landingStartTime) / landingDuration);
+                    const smoothT = t * t * (3 - 2 * t);
+                    
+                    const radius = flightRadius * (1 - smoothT);
+                    const height = flightHeight - (flightHeight - landingHeight) * smoothT;
+                    
+                    // Spiral angle continues to rotate a bit during landing for realism
+                    const spiralAngle = landingAngle + smoothT * Math.PI;
+                    
+                    helicopterGroup.position.x = Math.cos(spiralAngle) * radius;
+                    helicopterGroup.position.z = Math.sin(spiralAngle) * radius;
+                    helicopterGroup.position.y = height;
+                    
+                    if (heliAssembly) {
+                        heliAssembly.rotation.x = 0.15 * (1 - smoothT);
+                        heliAssembly.rotation.z = 0.35 * (1 - smoothT);
+                    }
+                    
+                    rotorSpeedMultiplier = 1.0 - smoothT;
+                    tailRotorSpeedMultiplier = 1.0 - smoothT;
 
-                // Calculate position on the circle
-                const angle = time * flightSpeed;
-                helicopterGroup.position.x = Math.cos(angle) * flightRadius;
-                helicopterGroup.position.z = Math.sin(angle) * flightRadius;
-                helicopterGroup.position.y = flightHeight;
+                    if (radius > 0.2) {
+                        const nextSpiralAngle = spiralAngle + 0.1;
+                        const nextX = Math.cos(nextSpiralAngle) * radius;
+                        const nextZ = Math.sin(nextSpiralAngle) * radius;
+                        helicopterGroup.lookAt(nextX, height, nextZ);
+                    }
+                } else {
+                    helicopterGroup.position.x = Math.cos(angle) * flightRadius;
+                    helicopterGroup.position.z = Math.sin(angle) * flightRadius;
+                    helicopterGroup.position.y = flightHeight;
 
-                // Make the helicopter face its flight path
-                const nextAngle = angle + 0.1;
-                const nextX = Math.cos(nextAngle) * flightRadius;
-                const nextZ = Math.sin(nextAngle) * flightRadius;
-                helicopterGroup.lookAt(nextX, flightHeight, nextZ);
+                    // Make the helicopter face its flight path
+                    const nextAngle = angle + 0.1;
+                    const nextX = Math.cos(nextAngle) * flightRadius;
+                    const nextZ = Math.sin(nextAngle) * flightRadius;
+                    helicopterGroup.lookAt(nextX, flightHeight, nextZ);
+                }
+            }
+
+            if (rotor) {
+                rotor.rotation.y -= 0.6 * rotorSpeedMultiplier; // Spin the rotor very fast
+            }
+
+            if (tailRotor) {
+                tailRotor.rotation.x -= 0.8 * tailRotorSpeedMultiplier; // Spin tail rotor fast
             }
 
             if (controls.isLocked || isTouchDevice) {
