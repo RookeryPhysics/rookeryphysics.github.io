@@ -284,7 +284,8 @@
         }
 
         // --- App Setup ---
-        let scene, camera, renderer, controls, rotor, tailRotor, helicopterGroup, heliAssembly;
+        let scene, camera, renderer, controls, rotor, tailRotor, helicopterGroup, heliAssembly, shovel;
+        let shovelSwingProgress = 1.0;
         let landingStartTime = null;
         const landingHeight = 1.0;
         const landingDuration = 6000; // 6 seconds to land
@@ -329,6 +330,92 @@
             // Camera
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             camera.position.set(0, 1.6, 20);
+            scene.add(camera);
+
+            // Create and position the colorful Voxel Shovel
+            window.createVoxelShovel = function() {
+                const shovelGrp = new THREE.Group();
+                const voxelSize = 0.015;
+                const voxelGeo = new THREE.BoxGeometry(voxelSize, voxelSize, voxelSize);
+
+                // Updated voxel materials
+                const colors = {
+                    lightGrey: new THREE.MeshStandardMaterial({ color: 0xd0d0d0, roughness: 0.3, metalness: 0.5 }),
+                    black: new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.6, metalness: 0.1 }),
+                    pink: new THREE.MeshStandardMaterial({ color: 0xff69b4, roughness: 0.4, metalness: 0.1 })
+                };
+
+                const voxels = [];
+
+                // 1. Blade (Y: 0 to 6) - Light Grey
+                voxels.push({ x: 0, y: 0, z: 0, mat: colors.lightGrey });
+                for (let x = -1; x <= 1; x++) voxels.push({ x, y: 1, z: 0, mat: colors.lightGrey });
+                for (let x = -2; x <= 2; x++) voxels.push({ x, y: 2, z: 0, mat: colors.lightGrey });
+                for (let x = -2; x <= 2; x++) voxels.push({ x, y: 3, z: 0, mat: colors.lightGrey });
+                for (let x = -2; x <= 2; x++) voxels.push({ x, y: 4, z: 0, mat: colors.lightGrey });
+                for (let x = -3; x <= 3; x++) voxels.push({ x, y: 5, z: 0, mat: colors.lightGrey });
+                for (let x = -3; x <= 3; x++) voxels.push({ x, y: 6, z: 0, mat: colors.lightGrey });
+
+                // 2. Connector / Collar area (Y: 7 to 9)
+                // Y: 7 and 8 - Grey and thicker (5-voxel cross structure)
+                for (let y = 7; y <= 8; y++) {
+                    voxels.push({ x: 0, y, z: 0, mat: colors.lightGrey });
+                    voxels.push({ x: 1, y, z: 0, mat: colors.lightGrey });
+                    voxels.push({ x: -1, y, z: 0, mat: colors.lightGrey });
+                    voxels.push({ x: 0, y, z: 1, mat: colors.lightGrey });
+                    voxels.push({ x: 0, y, z: -1, mat: colors.lightGrey });
+                }
+                // Y: 9 - Pink and thin
+                voxels.push({ x: 0, y: 9, z: 0, mat: colors.pink });
+
+                // 3. Shaft (Y: 10 to 20) - Black and slightly thinner (2x2 square structure)
+                for (let y = 10; y <= 20; y++) {
+                    voxels.push({ x: 0, y, z: 0, mat: colors.black });
+                    voxels.push({ x: 0, y, z: -1, mat: colors.black });
+                    voxels.push({ x: -1, y, z: 0, mat: colors.black });
+                    voxels.push({ x: -1, y, z: -1, mat: colors.black });
+                }
+
+                // 4. D-Grip (Y: 21 to 25) - Black and slightly thinner
+                // Grip base
+                for (let x = -2; x <= 2; x++) {
+                    for (let z = -1; z <= 0; z++) {
+                        voxels.push({ x, y: 21, z, mat: colors.black });
+                    }
+                }
+                // Grip sides
+                for (let y = 22; y <= 24; y++) {
+                    for (let z = -1; z <= 0; z++) {
+                        voxels.push({ x: -2, y, z, mat: colors.black });
+                        voxels.push({ x: 2, y, z, mat: colors.black });
+                    }
+                }
+                // Grip top
+                for (let x = -2; x <= 2; x++) {
+                    for (let z = -1; z <= 0; z++) {
+                        voxels.push({ x, y: 25, z, mat: colors.black });
+                    }
+                }
+
+                // Create individual voxel meshes
+                voxels.forEach(v => {
+                    const mesh = new THREE.Mesh(voxelGeo, v.mat);
+                    // Flip the Y coordinate (25 - v.y) to point the blade up
+                    mesh.position.set(v.x * voxelSize, ((25 - v.y) - 12) * voxelSize, v.z * voxelSize);
+                    mesh.castShadow = true;
+                    mesh.receiveShadow = true;
+                    shovelGrp.add(mesh);
+                });
+
+                return shovelGrp;
+            };
+
+            shovel = createVoxelShovel();
+            camera.add(shovel);
+
+            // Initial scale & offset relative to camera (first-person) - positioned to make entire handle visible
+            shovel.position.set(0.18, -0.20, -0.52);
+            shovel.rotation.set(-0.15, -0.55, 0.4);
 
             // Renderer (Added high-performance preference)
             renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
@@ -645,6 +732,7 @@
         }
 
         function plantTreeAction(touchX, touchY) {
+            shovelSwingProgress = 0.0;
             const raycaster = new THREE.Raycaster();
             const pointer = new THREE.Vector2();
 
@@ -831,6 +919,7 @@
             requestAnimationFrame(animate);
 
             const time = performance.now();
+            const delta = (time - prevTime) / 1000;
 
             const flightRadius = 30; // Circle radius
             const flightSpeed = 0.0008; // Speed of circular motion
@@ -838,16 +927,16 @@
 
             const angle = time * flightSpeed;
             const revs = angle / (2 * Math.PI);
-            const displayRevs = Math.min(20, Math.floor(revs));
+            const displayRevs = Math.min(3, Math.floor(revs));
 
             // --- FPS Counter Update ---
             frames++;
             if (time >= lastFpsTime + 1000) {
                 let statusText = "";
-                if (revs >= 20) {
+                if (revs >= 3) {
                     statusText = "<br>Status: Landed";
                 } else {
-                    statusText = `<br>Revs: ${displayRevs}/20`;
+                    statusText = `<br>Revs: ${displayRevs}/3`;
                 }
                 fpsCounter.innerHTML = `FPS: ${frames}${statusText}`;
                 frames = 0;
@@ -858,7 +947,7 @@
             let tailRotorSpeedMultiplier = 1.0;
 
             if (helicopterGroup) {
-                const landingAngle = 20 * 2 * Math.PI;
+                const landingAngle = 3 * 2 * Math.PI;
                 if (angle >= landingAngle) {
                     if (landingStartTime === null) {
                         landingStartTime = time;
@@ -913,7 +1002,6 @@
             }
 
             if (controls.isLocked || isTouchDevice) {
-                const delta = (time - prevTime) / 1000;
 
                 // Apply gravity
                 velocity.y -= 9.8 * 2.5 * delta;
@@ -977,6 +1065,72 @@
                 // Boundary Check
                 camera.position.x = Math.max(-mapBound, Math.min(mapBound, camera.position.x));
                 camera.position.z = Math.max(-mapBound, Math.min(mapBound, camera.position.z));
+            }
+
+            // Shovel swing & walk bob animation
+            if (shovel) {
+                let bobX = 0;
+                let bobY = 0;
+                let bobZ = 0;
+
+                // Apply walk bobbing when player is moving
+                const isMoving = moveState.forward || moveState.backward || moveState.left || moveState.right || joystickActive;
+                if (isMoving && (controls.isLocked || isTouchDevice)) {
+                    const bobSpeed = 10;
+                    bobX = Math.sin(time * 0.005 * bobSpeed) * 0.015;
+                    bobY = Math.cos(time * 0.01 * bobSpeed) * 0.012;
+                    bobZ = Math.sin(time * 0.005 * bobSpeed) * 0.01;
+                }
+
+                const basePos = { x: 0.18, y: -0.20, z: -0.52 };
+                const baseRot = { x: -0.15, y: -0.55, z: 0.4 };
+
+                if (shovelSwingProgress < 1.0) {
+                    shovelSwingProgress += delta * 2.8; // Duration: ~0.35s
+                    if (shovelSwingProgress > 1.0) shovelSwingProgress = 1.0;
+
+                    const t = shovelSwingProgress;
+                    let xOffset = 0;
+                    let yOffset = 0;
+                    let zOffset = 0;
+                    let rx = baseRot.x;
+                    let ry = baseRot.y;
+                    let rz = baseRot.z;
+
+                    if (t < 0.2) {
+                        // 1. Rapidly stick into the ground
+                        const p = t / 0.2;
+                        yOffset = -0.4 * p;
+                        zOffset = -0.15 * p;
+                        rx = baseRot.x - 0.9 * p;
+                        ry = baseRot.y + 0.15 * p;
+                        rz = baseRot.z - 0.2 * p;
+                    } else if (t < 0.75) {
+                        // 2. Swing it around (wiggle/dig)
+                        const p = (t - 0.2) / 0.55;
+                        yOffset = -0.4;
+                        zOffset = -0.15;
+                        rx = (baseRot.x - 0.9) + Math.sin(p * Math.PI * 3) * 0.15;
+                        ry = (baseRot.y + 0.15) + Math.sin(p * Math.PI * 2) * 0.6;
+                        rz = (baseRot.z - 0.2) + Math.cos(p * Math.PI * 2) * 0.3;
+                    } else {
+                        // 3. Pull it out
+                        const p = (t - 0.75) / 0.25;
+                        const ease = Math.sin(p * Math.PI / 2);
+                        yOffset = -0.4 * (1 - ease);
+                        zOffset = -0.15 * (1 - ease);
+                        rx = (baseRot.x - 0.9) + 0.9 * ease;
+                        ry = (baseRot.y + 0.15) - 0.15 * ease;
+                        rz = (baseRot.z - 0.2) + 0.2 * ease;
+                    }
+
+                    shovel.position.set(basePos.x + bobX + xOffset, basePos.y + bobY + yOffset, basePos.z + bobZ + zOffset);
+                    shovel.rotation.set(rx, ry, rz);
+                } else {
+                    // Default held position with walk bobbing
+                    shovel.position.set(basePos.x + bobX, basePos.y + bobY, basePos.z + bobZ);
+                    shovel.rotation.set(baseRot.x, baseRot.y + bobX * 2, baseRot.z);
+                }
             }
 
             prevTime = time;
