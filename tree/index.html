@@ -68,6 +68,48 @@
             transition: transform 0.1s ease;
         }
 
+        #tree-counter {
+            position: absolute;
+            top: 75px;
+            right: 15px;
+            background: rgba(26, 21, 18, 0.75);
+            backdrop-filter: blur(8px);
+            color: #e0b48c;
+            padding: 10px 18px;
+            border-radius: 10px;
+            border: 1px solid rgba(224, 180, 140, 0.3);
+            font-family: monospace;
+            font-size: 20px;
+            font-weight: bold;
+            z-index: 20;
+            pointer-events: none;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: transform 0.15s ease, color 0.15s ease;
+        }
+
+        #bag-prompt {
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(26, 21, 18, 0.85);
+            backdrop-filter: blur(8px);
+            color: #ffffff;
+            padding: 12px 24px;
+            border-radius: 12px;
+            border: 2px solid #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 1.1rem;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            z-index: 20;
+            pointer-events: none;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            display: none;
+            transition: color 0.15s ease, border-color 0.15s ease;
+        }
+
         #crosshair {
             position: absolute;
             top: 50%;
@@ -209,6 +251,8 @@
     <div id="flash-overlay"></div>
     <div id="fps-counter">FPS: 0</div>
     <div id="money-counter">$0.00</div>
+    <div id="tree-counter">Trees: 0</div>
+    <div id="bag-prompt">Click boxes to Bag Up</div>
     <div id="canvas-container"></div>
 
     <div id="crosshair"></div>
@@ -329,6 +373,120 @@
         const instructionsMini = document.getElementById('instructions-mini');
         let moneyCount = 0.00;
         const moneyCounter = document.getElementById('money-counter');
+
+        // Cache and Tree counters
+        let treesCount = 0;
+        let cacheGroup;
+        let cacheBoxes = [];
+        let cacheColliders = [];
+        let bagUpCount = 0;
+        const cacheLocation = new THREE.Vector3(0, 0, 0); // Center of the map
+
+        function updateCacheBoxes() {
+            if (cacheBoxes.length >= 3) {
+                cacheBoxes[2].visible = (bagUpCount < 2); // Top box
+                cacheBoxes[1].visible = (bagUpCount < 4); // Bottom right
+                cacheBoxes[0].visible = (bagUpCount < 6); // Bottom left
+            }
+        }
+
+        // Helicopter Bezier Path Points
+        const p0_in = new THREE.Vector3(80, 45, 80);
+        const p1_in = new THREE.Vector3(30, 35, 10);
+        const p2_in = new THREE.Vector3(0, 15, 0);
+
+        const p0_out = new THREE.Vector3(0, 1.0, 0);
+        const p1_out = new THREE.Vector3(-10, 30, -20);
+        const p2_out = new THREE.Vector3(-80, 50, -80);
+
+        function getBezierPoint(p0, p1, p2, t) {
+            const oneMinusT = 1 - t;
+            return new THREE.Vector3()
+                .addScaledVector(p0, oneMinusT * oneMinusT)
+                .addScaledVector(p1, 2 * oneMinusT * t)
+                .addScaledVector(p2, t * t);
+        }
+
+        function getBezierTangent(p0, p1, p2, t) {
+            const oneMinusT = 1 - t;
+            const term1 = p1.clone().sub(p0).multiplyScalar(2 * oneMinusT);
+            const term2 = p2.clone().sub(p1).multiplyScalar(2 * t);
+            return term1.add(term2).normalize();
+        }
+
+        // Screen Shake variables
+        let touchdownTriggered = false;
+        let shakeTime = 0;
+        let shakeDuration = 0.5;
+        let shakeMaxIntensity = 0.15;
+
+        // Dust Particles
+        let dustParticles;
+        const dustCount = 150;
+        const dustVelocities = [];
+        const dustLifes = new Float32Array(dustCount);
+        const dustMaxLifes = new Float32Array(dustCount);
+
+        function createCircleTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 16;
+            canvas.height = 16;
+            const ctx = canvas.getContext('2d');
+            const grad = ctx.createRadialGradient(8, 8, 0, 8, 8, 8);
+            grad.addColorStop(0, 'rgba(224, 180, 140, 0.6)');
+            grad.addColorStop(0.5, 'rgba(200, 160, 120, 0.2)');
+            grad.addColorStop(1, 'rgba(200, 160, 120, 0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 16, 16);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function updateDustParticles(delta, heliY, isHeliActive) {
+            if (!dustParticles) return;
+            const positions = dustParticles.geometry.attributes.position.array;
+            const intensity = isHeliActive ? Math.max(0, (10 - heliY) / 9.0) : 0;
+            dustParticles.material.opacity = intensity * 0.8;
+            
+            for (let i = 0; i < dustCount; i++) {
+                if (dustLifes[i] <= 0) {
+                    if (intensity > 0.05 && Math.random() < intensity * 0.4) {
+                        dustLifes[i] = 0.5 + Math.random() * 0.8;
+                        dustMaxLifes[i] = dustLifes[i];
+                        
+                        const angle = Math.random() * Math.PI * 2;
+                        const dist = Math.random() * 1.5;
+                        positions[i * 3] = Math.cos(angle) * dist;
+                        positions[i * 3 + 1] = 0.05 + Math.random() * 0.1;
+                        positions[i * 3 + 2] = Math.sin(angle) * dist;
+                        
+                        const speed = 10 + Math.random() * 15 * intensity;
+                        dustVelocities[i].set(
+                            Math.cos(angle) * speed,
+                            1.0 + Math.random() * 3.0,
+                            Math.sin(angle) * speed
+                        );
+                    } else {
+                        positions[i * 3 + 1] = -100;
+                    }
+                } else {
+                    dustLifes[i] -= delta;
+                    
+                    positions[i * 3] += dustVelocities[i].x * delta;
+                    positions[i * 3 + 1] += dustVelocities[i].y * delta;
+                    positions[i * 3 + 2] += dustVelocities[i].z * delta;
+                    
+                    dustVelocities[i].x *= 0.92;
+                    dustVelocities[i].z *= 0.92;
+                    dustVelocities[i].y -= 2.0 * delta;
+                    
+                    if (positions[i * 3 + 1] < 0.02) {
+                        positions[i * 3 + 1] = 0.02;
+                        dustVelocities[i].y = 0;
+                    }
+                }
+            }
+            dustParticles.geometry.attributes.position.needsUpdate = true;
+        }
 
         // Collision & Movement variables
         let collidableBoxes = [];
@@ -501,6 +659,10 @@
             scene.add(gridHelper);
             freezeObject(gridHelper);
 
+            // Initialize Tree Cache and UI
+            spawnCache();
+            updateTreesUI();
+
             // --- Flying Helicopter Assembly ---
             helicopterGroup = new THREE.Group();
 
@@ -581,6 +743,36 @@
             tailRotor.castShadow = true;
             tailRotor.receiveShadow = true;
             heliAssembly.add(tailRotor);
+
+            // Rotor Blur Disk
+            const blurDiskGeo = new THREE.RingGeometry(0.2, 4.0, 32);
+            const blurDiskMat = new THREE.MeshStandardMaterial({
+                color: 0x222222,
+                transparent: true,
+                opacity: 0.18,
+                roughness: 0.8,
+                metalness: 0.2,
+                side: THREE.DoubleSide
+            });
+            const blurDisk = new THREE.Mesh(blurDiskGeo, blurDiskMat);
+            blurDisk.rotation.x = Math.PI / 2;
+            blurDisk.position.set(0, 1.18, 0);
+            heliAssembly.add(blurDisk);
+
+            // Tail Rotor Blur Disk
+            const tailBlurDiskGeo = new THREE.RingGeometry(0.05, 0.9, 16);
+            const tailBlurDiskMat = new THREE.MeshStandardMaterial({
+                color: 0x222222,
+                transparent: true,
+                opacity: 0.18,
+                roughness: 0.8,
+                metalness: 0.2,
+                side: THREE.DoubleSide
+            });
+            const tailBlurDisk = new THREE.Mesh(tailBlurDiskGeo, tailBlurDiskMat);
+            tailBlurDisk.rotation.y = Math.PI / 2;
+            tailBlurDisk.position.set(0.2, 1.2, -6.1);
+            heliAssembly.add(tailBlurDisk);
 
             heliAssembly.rotation.x = 0.15;
             heliAssembly.rotation.z = 0.35;
@@ -734,6 +926,30 @@
             scene.add(stickInstanced);
             freezeObject(stickInstanced);
 
+            // Initialize Dust Particle system
+            const dustGeometry = new THREE.BufferGeometry();
+            const dustPositions = new Float32Array(dustCount * 3);
+            for (let i = 0; i < dustCount; i++) {
+                dustPositions[i * 3] = 0;
+                dustPositions[i * 3 + 1] = -100; // hide initially
+                dustPositions[i * 3 + 2] = 0;
+                dustVelocities.push(new THREE.Vector3(0, 0, 0));
+                dustLifes[i] = 0;
+                dustMaxLifes[i] = 1.0;
+            }
+            dustGeometry.setAttribute('position', new THREE.BufferAttribute(dustPositions, 3));
+            
+            const dustMaterial = new THREE.PointsMaterial({
+                size: 2.2,
+                map: createCircleTexture(),
+                transparent: true,
+                blending: THREE.NormalBlending,
+                depthWrite: false
+            });
+            
+            dustParticles = new THREE.Points(dustGeometry, dustMaterial);
+            scene.add(dustParticles);
+
             controls = new PointerLockControls(camera, renderer.domElement);
 
             if (!isTouchDevice) {
@@ -772,6 +988,63 @@
             window.addEventListener('resize', onWindowResize);
 
             animate();
+        }
+
+        function updateTreesUI() {
+            const treeCounter = document.getElementById('tree-counter');
+            if (treeCounter) {
+                treeCounter.innerText = `Trees: ${treesCount}`;
+            }
+        }
+
+        function spawnCache() {
+            cacheGroup = new THREE.Group();
+            
+            const boxGeo = new THREE.BoxGeometry(1.8, 0.8, 1.2);
+            const boxMat = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                roughness: 0.5,
+                metalness: 0.1
+            });
+            
+            // Box 1 (Bottom Left)
+            const box1 = new THREE.Mesh(boxGeo, boxMat);
+            box1.position.set(-0.7, 0.4, -0.7);
+            box1.castShadow = true;
+            box1.receiveShadow = true;
+            cacheGroup.add(box1);
+            cacheBoxes.push(box1);
+            
+            // Box 2 (Bottom Right)
+            const box2 = new THREE.Mesh(boxGeo, boxMat);
+            box2.position.set(0.7, 0.4, 0.7);
+            box2.castShadow = true;
+            box2.receiveShadow = true;
+            cacheGroup.add(box2);
+            cacheBoxes.push(box2);
+            
+            // Box 3 (Top Middle)
+            const box3 = new THREE.Mesh(boxGeo, boxMat);
+            box3.position.set(0, 1.2, 0);
+            box3.castShadow = true;
+            box3.receiveShadow = true;
+            cacheGroup.add(box3);
+            cacheBoxes.push(box3);
+
+            cacheGroup.position.copy(cacheLocation);
+            scene.add(cacheGroup);
+            
+            // Add bounding boxes for collision detection
+            box1.updateMatrixWorld(true);
+            box2.updateMatrixWorld(true);
+            box3.updateMatrixWorld(true);
+
+            // Compute global bounding box for collision
+            const cacheBox1 = new THREE.Box3().setFromObject(box1);
+            const cacheBox2 = new THREE.Box3().setFromObject(box2);
+            const cacheBox3 = new THREE.Box3().setFromObject(box3);
+            
+            cacheColliders.push(cacheBox1, cacheBox2, cacheBox3);
         }
 
         function createInspector() {
@@ -866,8 +1139,17 @@
         function triggerHeliArrival() {
             heliState = 'fly_in';
             heliTimer = 0;
-            helicopterGroup.position.set(80, 30, 80);
-            helicopterGroup.lookAt(0, 15, 0);
+            touchdownTriggered = false;
+            
+            // Set starting position for the bezier curve
+            helicopterGroup.position.copy(p0_in);
+            
+            // Calculate initial heading towards tangent
+            const tangent = getBezierTangent(p0_in, p1_in, p2_in, 0);
+            const yawDirection = new THREE.Vector3(tangent.x, 0, tangent.z).normalize();
+            const lookTarget = helicopterGroup.position.clone().add(yawDirection);
+            helicopterGroup.lookAt(lookTarget);
+            
             scene.add(helicopterGroup);
         }
 
@@ -922,15 +1204,26 @@
         }
 
         function plantTreeAction(touchX, touchY) {
+            const raycaster = new THREE.Raycaster();
+            const pointer = new THREE.Vector2();
+
+            if (touchX !== undefined && touchY !== undefined) {
+                pointer.x = (touchX / window.innerWidth) * 2 - 1;
+                pointer.y = -(touchY / window.innerHeight) * 2 + 1;
+            } else {
+                pointer.x = 0;
+                pointer.y = 0;
+            }
+
+            raycaster.setFromCamera(pointer, camera);
+
             let hitInspector = false;
             if (inspector) {
-                const distToInspector = camera.position.distanceTo(inspector.position);
-                if (distToInspector < 10) {
-                    const toInspector = inspector.position.clone().sub(camera.position).normalize();
-                    const forwardVec = new THREE.Vector3();
-                    camera.getWorldDirection(forwardVec);
-                    const dot = forwardVec.dot(toInspector);
-                    if (dot > 0.5) {
+                inspector.updateMatrixWorld(true);
+                const intersects = raycaster.intersectObject(inspector, true);
+                if (intersects.length > 0) {
+                    const hit = intersects[0];
+                    if (hit.distance < 10) {
                         damageInspector();
                         hitInspector = true;
                     }
@@ -946,24 +1239,48 @@
             swingType = 'dig';
             shovelSwingProgress = 0.0;
 
-            const raycaster = new THREE.Raycaster();
-            const pointer = new THREE.Vector2();
-
-            if (touchX !== undefined && touchY !== undefined) {
-                pointer.x = (touchX / window.innerWidth) * 2 - 1;
-                pointer.y = -(touchY / window.innerHeight) * 2 + 1;
-            } else {
-                pointer.x = 0;
-                pointer.y = 0;
+            // Check if player clicked the cache boxes to bag up
+            const distToCache = camera.position.distanceTo(cacheLocation);
+            if (distToCache < 4.5) {
+                const intersects = raycaster.intersectObjects(cacheBoxes);
+                if (intersects.length > 0 && intersects[0].object.visible) {
+                    if (treesCount === 0) {
+                        treesCount = 180;
+                        bagUpCount++;
+                        updateCacheBoxes();
+                        updateTreesUI();
+                        
+                        const treeCounter = document.getElementById('tree-counter');
+                        if (treeCounter) {
+                            treeCounter.style.transform = 'scale(1.3)';
+                            setTimeout(() => {
+                                treeCounter.style.transform = 'scale(1.0)';
+                            }, 150);
+                        }
+                    }
+                    return;
+                }
             }
-
-            raycaster.setFromCamera(pointer, camera);
 
             const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
             const intersectionPoint = new THREE.Vector3();
 
             if (raycaster.ray.intersectPlane(groundPlane, intersectionPoint)) {
                 if (camera.position.distanceTo(intersectionPoint) < 10) {
+                    // Check if player has trees left
+                    if (treesCount <= 0) {
+                        const treeCounter = document.getElementById('tree-counter');
+                        if (treeCounter) {
+                            treeCounter.style.transform = 'scale(1.2)';
+                            treeCounter.style.color = '#ef4444';
+                            setTimeout(() => {
+                                treeCounter.style.transform = 'scale(1.0)';
+                                treeCounter.style.color = '#e0b48c';
+                            }, 300);
+                        }
+                        return;
+                    }
+
                     const tree = createSpruceTree(0x3d6b50);
                     tree.position.copy(intersectionPoint);
                     const scale = 0.2 + Math.random() * 0.1;
@@ -997,6 +1314,10 @@
                     setTimeout(() => {
                         moneyCounter.style.transform = 'scale(1.0)';
                     }, 100);
+
+                    // Decrease treesCount and update UI
+                    treesCount -= 1;
+                    updateTreesUI();
                 }
             }
         }
@@ -1149,6 +1470,15 @@
                     return true;
                 }
             }
+
+            for (let i = 0; i < cacheColliders.length; i++) {
+                if (cacheBoxes[i] && cacheBoxes[i].visible) {
+                    if (playerBox.intersectsBox(cacheColliders[i])) {
+                        return true;
+                    }
+                }
+            }
+
             return false;
         }
 
@@ -1157,6 +1487,34 @@
 
             const time = performance.now();
             const delta = (time - prevTime) / 1000;
+
+            // Update bag up prompt based on distance to cache
+            if (cacheLocation) {
+                const distToCache = camera.position.distanceTo(cacheLocation);
+                const bagPrompt = document.getElementById('bag-prompt');
+                if (bagPrompt) {
+                    if (distToCache < 4.5) {
+                        if (bagUpCount >= 6) {
+                            bagPrompt.style.display = 'block';
+                            bagPrompt.innerText = 'Seedlings Depleted!';
+                            bagPrompt.style.borderColor = '#ef4444';
+                            bagPrompt.style.color = '#ef4444';
+                        } else if (treesCount === 0) {
+                            bagPrompt.style.display = 'block';
+                            bagPrompt.innerText = 'Click boxes to Bag Up';
+                            bagPrompt.style.borderColor = '#22c55e';
+                            bagPrompt.style.color = '#22c55e';
+                        } else {
+                            bagPrompt.style.display = 'block';
+                            bagPrompt.innerText = 'Trees remaining! Plant them first.';
+                            bagPrompt.style.borderColor = '#ef4444';
+                            bagPrompt.style.color = '#ef4444';
+                        }
+                    } else {
+                        bagPrompt.style.display = 'none';
+                    }
+                }
+            }
 
             const flightRadius = 30; // Circle radius
             const flightSpeed = 0.0008; // Speed of circular motion
@@ -1195,21 +1553,43 @@
                 heliTimer += delta;
                 
                 if (heliState === 'fly_in') {
-                    const duration = 4.0;
+                    const duration = 4.5;
                     const t = Math.min(1.0, heliTimer / duration);
                     const smoothT = t * t * (3 - 2 * t);
                     
-                    helicopterGroup.position.lerpVectors(
-                        new THREE.Vector3(80, 30, 80),
-                        new THREE.Vector3(0, 15, 0),
-                        smoothT
-                    );
+                    const pos = getBezierPoint(p0_in, p1_in, p2_in, smoothT);
+                    helicopterGroup.position.copy(pos);
+                    
+                    const tangent = getBezierTangent(p0_in, p1_in, p2_in, smoothT);
+                    const yawDirection = new THREE.Vector3(tangent.x, 0, tangent.z).normalize();
+                    const lookTarget = helicopterGroup.position.clone().add(yawDirection);
+                    
+                    const currentRot = helicopterGroup.quaternion.clone();
+                    helicopterGroup.lookAt(lookTarget);
+                    const targetRot = helicopterGroup.quaternion.clone();
+                    helicopterGroup.quaternion.copy(currentRot);
+                    
+                    const slerpFactor = Math.min(1.0, 12 * delta);
+                    helicopterGroup.quaternion.slerp(targetRot, slerpFactor);
+                    
+                    let pitch = 0;
+                    let roll = 0.12 * Math.sin(smoothT * Math.PI);
+                    
+                    if (smoothT < 0.6) {
+                        const p = smoothT / 0.6;
+                        pitch = -0.15 * (1 - p) + -0.05 * p;
+                    } else if (smoothT < 0.85) {
+                        const p = (smoothT - 0.6) / 0.25;
+                        pitch = -0.05 * (1 - p) + 0.25 * p;
+                    } else {
+                        const p = (smoothT - 0.85) / 0.15;
+                        pitch = 0.25 * (1 - p) + 0.05 * p;
+                    }
                     
                     if (heliAssembly) {
-                        heliAssembly.rotation.x = 0.2;
-                        heliAssembly.rotation.z = 0.1;
+                        heliAssembly.rotation.x = pitch;
+                        heliAssembly.rotation.z = roll;
                     }
-                    helicopterGroup.lookAt(0, 15, 0);
                     
                     if (t >= 1.0) {
                         heliState = 'landing';
@@ -1217,19 +1597,69 @@
                     }
                 } 
                 else if (heliState === 'landing') {
-                    const duration = 3.0;
+                    const duration = 3.5;
                     const t = Math.min(1.0, heliTimer / duration);
-                    const smoothT = t * t * (3 - 2 * t);
                     
-                    helicopterGroup.position.lerpVectors(
-                        new THREE.Vector3(0, 15, 0),
-                        new THREE.Vector3(0, 1.0, 0),
-                        smoothT
-                    );
+                    let currentY;
+                    let pitch = 0;
+                    let roll = 0;
+                    
+                    const yawDirection = new THREE.Vector3(-3, 0, -1).normalize();
+                    const lookTarget = helicopterGroup.position.clone().add(yawDirection);
+                    
+                    const currentRot = helicopterGroup.quaternion.clone();
+                    helicopterGroup.lookAt(lookTarget);
+                    const targetRot = helicopterGroup.quaternion.clone();
+                    helicopterGroup.quaternion.copy(currentRot);
+                    
+                    const slerpFactor = Math.min(1.0, 12 * delta);
+                    helicopterGroup.quaternion.slerp(targetRot, slerpFactor);
+                    
+                    const touchdownTime = 2.8;
+                    if (heliTimer < touchdownTime) {
+                        const p = heliTimer / touchdownTime;
+                        const smoothP = p * p * (3 - 2 * p);
+                        currentY = 15.0 - 14.0 * smoothP;
+                        
+                        const proximity = Math.max(0, (10 - currentY) / 9.0);
+                        if (proximity > 0) {
+                            const wobbleTime = time * 0.008;
+                            pitch = Math.sin(wobbleTime) * 0.03 * proximity;
+                            roll = Math.cos(wobbleTime * 0.9) * 0.03 * proximity;
+                            
+                            helicopterGroup.position.set(
+                                Math.sin(time * 0.005) * 0.15 * proximity,
+                                currentY,
+                                Math.cos(time * 0.004) * 0.15 * proximity
+                            );
+                        } else {
+                            helicopterGroup.position.set(0, currentY, 0);
+                        }
+                    } else {
+                        const p = (heliTimer - touchdownTime) / (duration - touchdownTime);
+                        const bounce = Math.sin(p * Math.PI * 2.5) * Math.exp(-p * 3.5) * 0.18;
+                        currentY = 1.0 - bounce;
+                        
+                        pitch = -0.06 * Math.sin(p * Math.PI * 2) * Math.exp(-p * 3);
+                        roll = 0.04 * Math.cos(p * Math.PI * 2) * Math.exp(-p * 3);
+                        
+                        helicopterGroup.position.set(0, currentY, 0);
+                        
+                        if (!touchdownTriggered) {
+                            touchdownTriggered = true;
+                            const distToHeli = camera.position.distanceTo(new THREE.Vector3(0, 1, 0));
+                            if (distToHeli < 40) {
+                                const proximity = 1.0 - (distToHeli / 40.0);
+                                shakeTime = 0.5;
+                                shakeDuration = 0.5;
+                                shakeMaxIntensity = 0.22 * proximity;
+                            }
+                        }
+                    }
                     
                     if (heliAssembly) {
-                        heliAssembly.rotation.x = 0.2 * (1 - smoothT);
-                        heliAssembly.rotation.z = 0.1 * (1 - smoothT);
+                        heliAssembly.rotation.x = pitch;
+                        heliAssembly.rotation.z = roll;
                     }
                     
                     if (t >= 1.0) {
@@ -1239,32 +1669,57 @@
                     }
                 } 
                 else if (heliState === 'unloading') {
-                    helicopterGroup.position.set(0, 1.0, 0);
+                    const vib = 0.005;
+                    helicopterGroup.position.set(
+                        (Math.random() - 0.5) * vib,
+                        1.0 + (Math.random() - 0.5) * vib,
+                        (Math.random() - 0.5) * vib
+                    );
+                    
                     if (heliAssembly) {
                         heliAssembly.rotation.set(0, 0, 0);
                     }
                     
-                    if (heliTimer >= 1.5) {
+                    if (heliTimer >= 1.8) {
                         heliState = 'fly_away';
                         heliTimer = 0;
                     }
                 } 
                 else if (heliState === 'fly_away') {
-                    const duration = 4.0;
+                    const duration = 4.5;
                     const t = Math.min(1.0, heliTimer / duration);
                     const smoothT = t * t * (3 - 2 * t);
                     
-                    helicopterGroup.position.lerpVectors(
-                        new THREE.Vector3(0, 1.0, 0),
-                        new THREE.Vector3(-80, 50, -80),
-                        smoothT
-                    );
+                    const pos = getBezierPoint(p0_out, p1_out, p2_out, smoothT);
+                    helicopterGroup.position.copy(pos);
+                    
+                    const tangent = getBezierTangent(p0_out, p1_out, p2_out, smoothT);
+                    const yawDirection = new THREE.Vector3(tangent.x, 0, tangent.z).normalize();
+                    const lookTarget = helicopterGroup.position.clone().add(yawDirection);
+                    
+                    const currentRot = helicopterGroup.quaternion.clone();
+                    helicopterGroup.lookAt(lookTarget);
+                    const targetRot = helicopterGroup.quaternion.clone();
+                    helicopterGroup.quaternion.copy(currentRot);
+                    
+                    const slerpFactor = Math.min(1.0, 12 * delta);
+                    helicopterGroup.quaternion.slerp(targetRot, slerpFactor);
+                    
+                    let pitch = 0;
+                    let roll = -0.15 * Math.sin(smoothT * Math.PI);
+                    
+                    if (smoothT < 0.3) {
+                        const p = smoothT / 0.3;
+                        pitch = -0.22 * p;
+                    } else {
+                        const p = (smoothT - 0.3) / 0.7;
+                        pitch = -0.22 * (1 - p) + -0.12 * p;
+                    }
                     
                     if (heliAssembly) {
-                        heliAssembly.rotation.x = 0.25 * smoothT;
-                        heliAssembly.rotation.z = -0.3 * smoothT;
+                        heliAssembly.rotation.x = pitch;
+                        heliAssembly.rotation.z = roll;
                     }
-                    helicopterGroup.lookAt(-80, 50, -80);
                     
                     if (t >= 1.0) {
                         scene.remove(helicopterGroup);
@@ -1272,12 +1727,16 @@
                     }
                 }
 
+                updateDustParticles(delta, helicopterGroup.position.y, true);
+
                 if (rotor) {
-                    rotor.rotation.y -= 0.6 * rotorSpeedMultiplier;
+                    rotor.rotation.y -= 0.75 * rotorSpeedMultiplier;
                 }
                 if (tailRotor) {
-                    tailRotor.rotation.x -= 0.8 * tailRotorSpeedMultiplier;
+                    tailRotor.rotation.x -= 0.95 * tailRotorSpeedMultiplier;
                 }
+            } else {
+                updateDustParticles(delta, 100, false);
             }
 
             if (controls.isLocked || isTouchDevice) {
@@ -1490,7 +1949,26 @@
             }
 
             prevTime = time;
+
+            // Apply camera shake if active
+            let activeShake = new THREE.Vector3();
+            if (shakeTime > 0) {
+                shakeTime -= delta;
+                const currentIntensity = (shakeTime / shakeDuration) * shakeMaxIntensity;
+                activeShake.set(
+                    (Math.random() - 0.5) * currentIntensity,
+                    (Math.random() - 0.5) * currentIntensity,
+                    (Math.random() - 0.5) * currentIntensity
+                );
+                camera.position.add(activeShake);
+            }
+
             renderer.render(scene, camera);
+
+            // Revert camera shake so it doesn't affect player position/physics calculations
+            if (shakeTime > 0) {
+                camera.position.sub(activeShake);
+            }
         }
 
         window.onload = init;
