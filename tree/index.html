@@ -663,89 +663,346 @@
             spawnCache();
             updateTreesUI();
 
-            // --- Flying Helicopter Assembly ---
+            // --- Flying Helicopter Assembly (Bell 206 JetRanger Design) ---
             helicopterGroup = new THREE.Group();
 
             heliAssembly = new THREE.Group();
 
-            const prismGeo = new THREE.BoxGeometry(2, 2, 6);
-            const prismMat = new THREE.MeshStandardMaterial({
-                color: 0xb0b8c0,
-                roughness: 0.4,
-                metalness: 0.6
-            });
-            const prism = new THREE.Mesh(prismGeo, prismMat);
-            prism.castShadow = true;
-            prism.receiveShadow = true;
-            heliAssembly.add(prism);
-
-            // Main Rotor
-            const rotorGeo = new THREE.BoxGeometry(8, 0.1, 0.4);
-            const rotorMat = new THREE.MeshStandardMaterial({
-                color: 0x333333,
-                roughness: 0.6,
-                metalness: 0.4
-            });
-            rotor = new THREE.Mesh(rotorGeo, rotorMat);
-            rotor.position.set(0, 1.2, 0);
-            rotor.castShadow = true;
-            rotor.receiveShadow = true;
-            heliAssembly.add(rotor);
-
-            // Windows / Cockpit windshield (moved to +3.5 z, facing the opposite direction)
-            const cockpitGeo = new THREE.BoxGeometry(1.8, 1.2, 1.6);
-            const cockpitMat = new THREE.MeshStandardMaterial({
-                color: 0x112233,
+            // High-fidelity materials for Bell 206 JetRanger
+            const paintWhiteMat = new THREE.MeshStandardMaterial({
+                color: 0xf5f5f7,
                 roughness: 0.1,
+                metalness: 0.2
+            });
+            const paintBlueMat = new THREE.MeshStandardMaterial({
+                color: 0x0a3c9e,
+                roughness: 0.1,
+                metalness: 0.3
+            });
+            const trimGoldMat = new THREE.MeshStandardMaterial({
+                color: 0xd4af37,
+                roughness: 0.2,
+                metalness: 0.8
+            });
+            const steelMetalMat = new THREE.MeshStandardMaterial({
+                color: 0x8a95a5,
+                roughness: 0.2,
+                metalness: 0.8
+            });
+            const darkSteelMat = new THREE.MeshStandardMaterial({
+                color: 0x2d3238,
+                roughness: 0.4,
+                metalness: 0.7
+            });
+            const glassMat = new THREE.MeshStandardMaterial({
+                color: 0x050c18,
+                roughness: 0.05,
                 metalness: 0.9,
                 transparent: true,
-                opacity: 0.75
+                opacity: 0.82
             });
-            const cockpit = new THREE.Mesh(cockpitGeo, cockpitMat);
-            cockpit.position.set(0, 0.4, 3.5);
-            cockpit.castShadow = true;
-            cockpit.receiveShadow = true;
-            heliAssembly.add(cockpit);
+            const bladeMat = new THREE.MeshStandardMaterial({
+                color: 0x1a1a1a,
+                roughness: 0.7,
+                metalness: 0.2
+            });
+            const yellowTipMat = new THREE.MeshStandardMaterial({
+                color: 0xfacc15,
+                roughness: 0.3,
+                metalness: 0.1
+            });
 
-            // Second lower window (translucent rectangular prism directly below the main window)
-            const lowerCockpitGeo = new THREE.BoxGeometry(1.5, 0.6, 1.2);
-            const lowerCockpit = new THREE.Mesh(lowerCockpitGeo, cockpitMat);
-            lowerCockpit.position.set(0, -0.6, 3.5);
-            lowerCockpit.castShadow = true;
-            lowerCockpit.receiveShadow = true;
-            heliAssembly.add(lowerCockpit);
+            // 1. Fuselage - Cabin Section
+            const cabinGeo = new THREE.BoxGeometry(1.6, 1.4, 3.2);
+            const cabin = new THREE.Mesh(cabinGeo, paintWhiteMat);
+            cabin.position.set(0, 0, 0.4);
+            cabin.castShadow = true;
+            cabin.receiveShadow = true;
+            heliAssembly.add(cabin);
 
-            // Tail Boom (moved to front at -4.5 z)
-            const tailBoomGeo = new THREE.BoxGeometry(0.4, 0.4, 4);
-            const tailBoom = new THREE.Mesh(tailBoomGeo, prismMat);
-            tailBoom.position.set(0, 0.2, -4.5);
+            // Blue accent stripe on fuselage
+            const stripeGeo = new THREE.BoxGeometry(1.64, 0.25, 3.2);
+            const stripe = new THREE.Mesh(stripeGeo, paintBlueMat);
+            stripe.position.set(0, -0.35, 0.4);
+            stripe.castShadow = true;
+            heliAssembly.add(stripe);
+
+            // Gold accent trim
+            const goldTrimGeo = new THREE.BoxGeometry(1.65, 0.05, 3.2);
+            const goldTrim = new THREE.Mesh(goldTrimGeo, trimGoldMat);
+            goldTrim.position.set(0, -0.2, 0.4);
+            heliAssembly.add(goldTrim);
+
+            // Sleek sloping nose (classic Bell 206 profile)
+            const noseGeo = new THREE.SphereGeometry(0.8, 24, 24);
+            const nose = new THREE.Mesh(noseGeo, paintWhiteMat);
+            nose.scale.set(1.0, 0.85, 1.5);
+            nose.position.set(0, -0.1, 1.9);
+            nose.castShadow = true;
+            nose.receiveShadow = true;
+            heliAssembly.add(nose);
+
+            // Nose blue stripe
+            const noseStripe = new THREE.Mesh(new THREE.SphereGeometry(0.81, 24, 24), paintBlueMat);
+            noseStripe.scale.set(1.0, 0.3, 1.51);
+            noseStripe.position.set(0, -0.45, 1.85);
+            noseStripe.castShadow = true;
+            heliAssembly.add(noseStripe);
+
+            // Nose gold stripe
+            const noseGold = new THREE.Mesh(new THREE.SphereGeometry(0.815, 24, 24), trimGoldMat);
+            noseGold.scale.set(1.01, 0.07, 1.51);
+            noseGold.position.set(0, -0.3, 1.87);
+            heliAssembly.add(noseGold);
+
+            // 2. Doghouse (Turbine Engine Cowling)
+            const doghouseGeo = new THREE.BoxGeometry(1.0, 0.6, 2.4);
+            const doghouse = new THREE.Mesh(doghouseGeo, paintWhiteMat);
+            doghouse.position.set(0, 0.9, 0.0);
+            doghouse.castShadow = true;
+            doghouse.receiveShadow = true;
+            heliAssembly.add(doghouse);
+
+            // Front air intakes (nostrils)
+            const intakeGeo = new THREE.CylinderGeometry(0.18, 0.18, 0.4, 12);
+            const intakeL = new THREE.Mesh(intakeGeo, darkSteelMat);
+            intakeL.rotation.x = Math.PI / 2;
+            intakeL.position.set(-0.25, 0.9, 1.2);
+            intakeL.castShadow = true;
+            heliAssembly.add(intakeL);
+
+            const intakeR = new THREE.Mesh(intakeGeo, darkSteelMat);
+            intakeR.rotation.x = Math.PI / 2;
+            intakeR.position.set(0.25, 0.9, 1.2);
+            intakeR.castShadow = true;
+            heliAssembly.add(intakeR);
+
+            // Rear engine exhausts
+            const exhaustGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.5, 12);
+            const exhaustL = new THREE.Mesh(exhaustGeo, darkSteelMat);
+            exhaustL.rotation.set(-0.2, 0, -0.4);
+            exhaustL.position.set(-0.35, 0.85, -0.8);
+            exhaustL.castShadow = true;
+            heliAssembly.add(exhaustL);
+
+            const exhaustR = new THREE.Mesh(exhaustGeo, darkSteelMat);
+            exhaustR.rotation.set(-0.2, 0, 0.4);
+            exhaustR.position.set(0.35, 0.85, -0.8);
+            exhaustR.castShadow = true;
+            heliAssembly.add(exhaustR);
+
+            // 3. Windows & Windshield
+            // Slanted windshield
+            const windshieldL = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.9, 0.05), glassMat);
+            windshieldL.rotation.set(0.4, -0.2, 0.1);
+            windshieldL.position.set(-0.35, 0.35, 1.8);
+            heliAssembly.add(windshieldL);
+
+            const windshieldR = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.9, 0.05), glassMat);
+            windshieldR.rotation.set(0.4, 0.2, -0.1);
+            windshieldR.position.set(0.35, 0.35, 1.8);
+            heliAssembly.add(windshieldR);
+
+            const windshieldPillar = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.0, 0.06), paintWhiteMat);
+            windshieldPillar.rotation.set(0.4, 0, 0);
+            windshieldPillar.position.set(0, 0.38, 1.82);
+            heliAssembly.add(windshieldPillar);
+
+            // Side cabin windows
+            const sideWindowFL = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.65, 0.9), glassMat);
+            sideWindowFL.position.set(-0.81, 0.2, 0.9);
+            heliAssembly.add(sideWindowFL);
+
+            const sideWindowFR = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.65, 0.9), glassMat);
+            sideWindowFR.position.set(0.81, 0.2, 0.9);
+            heliAssembly.add(sideWindowFR);
+
+            const sideWindowRL = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.5, 0.8), glassMat);
+            sideWindowRL.position.set(-0.81, 0.2, -0.1);
+            heliAssembly.add(sideWindowRL);
+
+            const sideWindowRR = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.5, 0.8), glassMat);
+            sideWindowRR.position.set(0.81, 0.2, -0.1);
+            heliAssembly.add(sideWindowRR);
+
+            // 4. Tail Section
+            const tailBoom = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.35, 5.0, 12), paintWhiteMat);
+            tailBoom.rotation.x = Math.PI / 2;
+            tailBoom.position.set(0, 0.15, -3.3);
             tailBoom.castShadow = true;
             tailBoom.receiveShadow = true;
             heliAssembly.add(tailBoom);
 
-            // Tail Fin (moved to front at -6.1 z)
-            const tailFinGeo = new THREE.BoxGeometry(0.15, 1.6, 0.8);
-            const tailFin = new THREE.Mesh(tailFinGeo, prismMat);
-            tailFin.position.set(0, 1.0, -6.1);
+            const tailBoomStripe = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.36, 5.0, 12), paintBlueMat);
+            tailBoomStripe.rotation.x = Math.PI / 2;
+            tailBoomStripe.scale.set(1.01, 0.3, 1.0);
+            tailBoomStripe.position.set(0, 0.05, -3.3);
+            heliAssembly.add(tailBoomStripe);
+
+            // Tail Fin (Vertical Stabilizer)
+            const tailFinGeo = new THREE.BoxGeometry(0.1, 1.8, 0.6);
+            const tailFin = new THREE.Mesh(tailFinGeo, paintWhiteMat);
+            tailFin.rotation.x = -0.4;
+            tailFin.position.set(0, 0.9, -5.7);
             tailFin.castShadow = true;
-            tailFin.receiveShadow = true;
             heliAssembly.add(tailFin);
 
-            // Tail Rotor (moved to front at -6.1 z)
-            const tailRotorGeo = new THREE.BoxGeometry(0.05, 1.8, 0.15);
-            const tailRotorMat = new THREE.MeshStandardMaterial({
-                color: 0x333333,
-                roughness: 0.6,
-                metalness: 0.4
-            });
-            tailRotor = new THREE.Mesh(tailRotorGeo, tailRotorMat);
-            tailRotor.position.set(0.2, 1.2, -6.1);
-            tailRotor.castShadow = true;
-            tailRotor.receiveShadow = true;
+            const ventralFin = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.6, 0.4), paintBlueMat);
+            ventralFin.rotation.x = 0.3;
+            ventralFin.position.set(0, -0.6, -5.6);
+            ventralFin.castShadow = true;
+            heliAssembly.add(ventralFin);
+
+            // Horizontal Stabilizer & Endplates
+            const stabilizer = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.04, 0.45), paintWhiteMat);
+            stabilizer.position.set(0, 0.2, -4.8);
+            stabilizer.castShadow = true;
+            heliAssembly.add(stabilizer);
+
+            const endplateL = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.45, 0.3), paintBlueMat);
+            endplateL.position.set(-0.95, 0.2, -4.8);
+            endplateL.castShadow = true;
+            heliAssembly.add(endplateL);
+
+            const endplateR = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.45, 0.3), paintBlueMat);
+            endplateR.position.set(0.95, 0.2, -4.8);
+            endplateR.castShadow = true;
+            heliAssembly.add(endplateR);
+
+            // 5. Landing Gear (Skids & Struts)
+            const skidL = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 4.4, 8), steelMetalMat);
+            skidL.rotation.x = Math.PI / 2;
+            skidL.position.set(-0.95, -1.2, 0.5);
+            skidL.castShadow = true;
+            skidL.receiveShadow = true;
+            heliAssembly.add(skidL);
+
+            const skidLTip = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.6, 8), steelMetalMat);
+            skidLTip.rotation.set(0.7, 0, 0);
+            skidLTip.position.set(-0.95, -1.0, 2.85);
+            skidLTip.castShadow = true;
+            heliAssembly.add(skidLTip);
+
+            const skidR = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 4.4, 8), steelMetalMat);
+            skidR.rotation.x = Math.PI / 2;
+            skidR.position.set(0.95, -1.2, 0.5);
+            skidR.castShadow = true;
+            skidR.receiveShadow = true;
+            heliAssembly.add(skidR);
+
+            const skidRTip = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.6, 8), steelMetalMat);
+            skidRTip.rotation.set(0.7, 0, 0);
+            skidRTip.position.set(0.95, -1.0, 2.85);
+            skidRTip.castShadow = true;
+            heliAssembly.add(skidRTip);
+
+            const strutGeo = new THREE.CylinderGeometry(0.05, 0.05, 1.2, 8);
+            
+            const strutFL = new THREE.Mesh(strutGeo, steelMetalMat);
+            strutFL.rotation.set(0.1, 0, 0.4);
+            strutFL.position.set(-0.6, -0.85, 1.4);
+            strutFL.castShadow = true;
+            heliAssembly.add(strutFL);
+
+            const strutFR = new THREE.Mesh(strutGeo, steelMetalMat);
+            strutFR.rotation.set(0.1, 0, -0.4);
+            strutFR.position.set(0.6, -0.85, 1.4);
+            strutFR.castShadow = true;
+            heliAssembly.add(strutFR);
+
+            const strutRL = new THREE.Mesh(strutGeo, steelMetalMat);
+            strutRL.rotation.set(-0.1, 0, 0.4);
+            strutRL.position.set(-0.6, -0.85, -0.4);
+            strutRL.castShadow = true;
+            heliAssembly.add(strutRL);
+
+            const strutRR = new THREE.Mesh(strutGeo, steelMetalMat);
+            strutRR.rotation.set(-0.1, 0, -0.4);
+            strutRR.position.set(0.6, -0.85, -0.4);
+            strutRR.castShadow = true;
+            heliAssembly.add(strutRR);
+
+            // 6. Main Rotor Mast
+            const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.7, 8), steelMetalMat);
+            mast.position.set(0, 1.5, 0.0);
+            mast.castShadow = true;
+            heliAssembly.add(mast);
+
+            // 7. Rotatable Main Rotor Assembly
+            rotor = new THREE.Group();
+            rotor.position.set(0, 1.85, 0.0);
+            
+            const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.12, 10), steelMetalMat);
+            hub.castShadow = true;
+            rotor.add(hub);
+
+            const stabBar = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.03, 0.06), steelMetalMat);
+            stabBar.rotation.y = Math.PI / 2;
+            stabBar.position.y = 0.04;
+            stabBar.castShadow = true;
+            rotor.add(stabBar);
+            
+            const stabWeightL = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.08, 8), darkSteelMat);
+            stabWeightL.rotation.y = Math.PI / 2;
+            stabWeightL.position.set(0, 0.04, -1.1);
+            rotor.add(stabWeightL);
+
+            const stabWeightR = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.08, 8), darkSteelMat);
+            stabWeightR.rotation.y = Math.PI / 2;
+            stabWeightR.position.set(0, 0.04, 1.1);
+            rotor.add(stabWeightR);
+
+            const blade1 = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.03, 0.35), bladeMat);
+            blade1.position.set(2.2, 0.06, 0);
+            blade1.castShadow = true;
+            rotor.add(blade1);
+
+            const tip1 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.031, 0.35), yellowTipMat);
+            tip1.position.set(4.3, 0.06, 0);
+            rotor.add(tip1);
+
+            const blade2 = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.03, 0.35), bladeMat);
+            blade2.position.set(-2.2, 0.06, 0);
+            blade2.castShadow = true;
+            rotor.add(blade2);
+
+            const tip2 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.031, 0.35), yellowTipMat);
+            tip2.position.set(-4.3, 0.06, 0);
+            rotor.add(tip2);
+
+            heliAssembly.add(rotor);
+
+            // 8. Rotatable Tail Rotor Assembly
+            tailRotor = new THREE.Group();
+            tailRotor.position.set(0.18, 0.9, -5.7);
+
+            const tHub = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.1, 8), steelMetalMat);
+            tHub.rotation.z = Math.PI / 2;
+            tHub.castShadow = true;
+            tailRotor.add(tHub);
+
+            const tBlade1 = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.8, 0.12), bladeMat);
+            tBlade1.position.set(0.06, 0.4, 0);
+            tBlade1.castShadow = true;
+            tailRotor.add(tBlade1);
+
+            const tTip1 = new THREE.Mesh(new THREE.BoxGeometry(0.031, 0.1, 0.12), yellowTipMat);
+            tTip1.position.set(0.06, 0.8, 0);
+            tailRotor.add(tTip1);
+
+            const tBlade2 = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.8, 0.12), bladeMat);
+            tBlade2.position.set(0.06, -0.4, 0);
+            tBlade2.castShadow = true;
+            tailRotor.add(tBlade2);
+
+            const tTip2 = new THREE.Mesh(new THREE.BoxGeometry(0.031, 0.1, 0.12), yellowTipMat);
+            tTip2.position.set(0.06, -0.8, 0);
+            tailRotor.add(tTip2);
+
             heliAssembly.add(tailRotor);
 
             // Rotor Blur Disk
-            const blurDiskGeo = new THREE.RingGeometry(0.2, 4.0, 32);
+            const blurDiskGeo = new THREE.RingGeometry(0.2, 4.4, 32);
             const blurDiskMat = new THREE.MeshStandardMaterial({
                 color: 0x222222,
                 transparent: true,
@@ -756,7 +1013,7 @@
             });
             const blurDisk = new THREE.Mesh(blurDiskGeo, blurDiskMat);
             blurDisk.rotation.x = Math.PI / 2;
-            blurDisk.position.set(0, 1.18, 0);
+            blurDisk.position.set(0, 1.89, 0);
             heliAssembly.add(blurDisk);
 
             // Tail Rotor Blur Disk
@@ -771,7 +1028,7 @@
             });
             const tailBlurDisk = new THREE.Mesh(tailBlurDiskGeo, tailBlurDiskMat);
             tailBlurDisk.rotation.y = Math.PI / 2;
-            tailBlurDisk.position.set(0.2, 1.2, -6.1);
+            tailBlurDisk.position.set(0.18, 0.9, -5.7);
             heliAssembly.add(tailBlurDisk);
 
             heliAssembly.rotation.x = 0.15;
