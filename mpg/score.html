@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Golf Scorecard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -32,16 +32,10 @@
             background-color: var(--bg-page);
             color: var(--text-main);
             min-height: 100vh;
-            padding: 1rem 0.5rem;
+            padding: 0.75rem 0.5rem;
             display: flex;
             flex-direction: column;
             align-items: center;
-        }
-
-        @media (max-width: 768px) {
-            body {
-                padding-bottom: 7rem; /* Space for mobile numpad */
-            }
         }
 
         .app-container {
@@ -55,11 +49,11 @@
             align-items: center;
             flex-wrap: wrap;
             gap: 0.5rem;
-            margin-bottom: 1rem;
+            margin-bottom: 0.75rem;
         }
 
         h1 {
-            font-size: 1.4rem;
+            font-size: 1.25rem;
             font-weight: 700;
             color: var(--text-main);
         }
@@ -67,20 +61,22 @@
         .actions {
             display: flex;
             gap: 0.4rem;
+            flex-wrap: wrap;
         }
 
         .btn {
             background: #ffffff;
             color: var(--text-main);
             border: 1px solid var(--border);
-            padding: 0.45rem 0.75rem;
+            padding: 0.4rem 0.65rem;
             border-radius: var(--radius);
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             font-weight: 600;
             cursor: pointer;
             text-decoration: none;
             display: inline-flex;
             align-items: center;
+            touch-action: manipulation;
         }
 
         .btn:hover {
@@ -91,40 +87,41 @@
             background: var(--bg-card);
             border-radius: var(--radius);
             border: 1px solid var(--border);
-            padding: 1rem;
+            padding: 0.75rem;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
 
         .meta-fields {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 0.75rem;
-            margin-bottom: 1rem;
-            padding-bottom: 0.75rem;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
             border-bottom: 1px solid var(--border);
         }
 
         .field {
             display: flex;
             flex-direction: column;
-            gap: 0.2rem;
+            gap: 0.15rem;
         }
 
         .field label {
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             font-weight: 700;
             text-transform: uppercase;
             color: var(--text-muted);
         }
 
         .field input, .field select {
-            padding: 0.4rem;
-            font-size: 0.95rem;
+            padding: 0.35rem 0.4rem;
+            font-size: 0.85rem;
             border: 1px solid var(--border);
             border-radius: 4px;
             outline: none;
             background: #ffffff;
             font-family: inherit;
+            width: 100%;
         }
 
         .field input:focus, .field select:focus {
@@ -135,19 +132,21 @@
             overflow-x: auto;
             border: 1px solid var(--border-dark);
             border-radius: 4px;
+            -webkit-overflow-scrolling: touch;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
             text-align: center;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
+            table-layout: auto;
         }
 
         th, td {
             border: 1px solid var(--border);
-            height: 40px;
-            min-width: 40px;
+            height: 36px;
+            min-width: 32px;
             padding: 0;
             position: relative;
         }
@@ -157,9 +156,10 @@
             left: 0;
             background: #ffffff;
             z-index: 5;
-            min-width: 120px;
+            min-width: 85px;
+            max-width: 100px;
             text-align: left;
-            padding: 0 0.4rem;
+            padding: 0 0.25rem;
             border-right: 2px solid var(--border-dark);
         }
 
@@ -167,7 +167,8 @@
             background: var(--primary);
             color: #ffffff;
             font-weight: 600;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
+            height: 32px;
         }
 
         tr.header-row th.col-player {
@@ -188,6 +189,7 @@
             font-weight: 700;
             border-left: 2px solid var(--border-dark);
             border-right: 2px solid var(--border-dark);
+            min-width: 36px;
         }
 
         /* Editable cell inputs */
@@ -199,12 +201,19 @@
             background: transparent;
             text-align: center;
             font-family: inherit;
-            font-size: 1.05rem;
+            font-size: 0.95rem;
             font-weight: 700;
             color: var(--text-main);
             padding: 0;
             margin: 0;
             border-radius: 0;
+            -moz-appearance: textfield;
+        }
+
+        .grid-input::-webkit-outer-spin-button,
+        .grid-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
         }
 
         .grid-input:focus {
@@ -219,63 +228,72 @@
             outline: none;
             background: transparent;
             font-family: inherit;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             font-weight: 600;
             color: var(--text-main);
         }
 
-        /* Numpad Footer Bar - Hidden by default on Desktop/Laptop, shown only on Mobile */
-        .numpad-bar {
-            display: none; /* Hidden on Desktop */
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: #ffffff;
-            border-top: 1px solid var(--border);
-            padding: 0.5rem;
-            box-shadow: 0 -4px 12px rgba(0,0,0,0.15);
-            flex-direction: column;
-            align-items: center;
-            z-index: 50;
-        }
-
-        @media (max-width: 768px) {
-            .numpad-bar {
-                display: flex; /* Shown only on mobile screens */
+        /* Mobile Optimization */
+        @media (max-width: 600px) {
+            body {
+                padding: 0.4rem 0.25rem;
             }
-        }
 
-        .numpad-grid {
-            display: flex;
-            gap: 0.25rem;
-            width: 100%;
-            max-width: 600px;
-            justify-content: center;
-        }
+            .card {
+                padding: 0.5rem;
+            }
 
-        .num-btn {
-            flex: 1;
-            padding: 0.65rem 0;
-            font-size: 1.15rem;
-            font-weight: 700;
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            background: #f8fafc;
-            cursor: pointer;
-            text-align: center;
-            touch-action: manipulation;
-        }
+            header {
+                margin-bottom: 0.5rem;
+            }
 
-        .num-btn:active {
-            background: var(--accent-blue);
-            color: #ffffff;
-        }
+            h1 {
+                font-size: 1.1rem;
+            }
 
-        .num-btn.btn-clear {
-            background: #fef2f2;
-            color: #dc2626;
-            font-size: 0.85rem;
+            .meta-fields {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 0.3rem;
+                margin-bottom: 0.5rem;
+                padding-bottom: 0.4rem;
+            }
+
+            .field label {
+                font-size: 0.6rem;
+            }
+
+            .field input, .field select {
+                padding: 0.25rem 0.3rem;
+                font-size: 0.8rem;
+            }
+
+            th, td {
+                height: 32px;
+                min-width: 26px;
+            }
+
+            th.col-player, td.col-player {
+                min-width: 70px;
+                max-width: 80px;
+                padding: 0 0.15rem;
+            }
+
+            .player-name-input {
+                font-size: 0.75rem;
+            }
+
+            .grid-input {
+                font-size: 0.85rem;
+            }
+
+            tr.header-row th {
+                font-size: 0.7rem;
+                height: 28px;
+            }
+
+            th.col-tot, td.col-tot {
+                min-width: 30px;
+            }
         }
     </style>
 </head>
@@ -322,28 +340,28 @@
                     </tr>
                     <tr class="par-row">
                         <td class="col-player">Par</td>
-                        <!-- Editable Par Values -->
-                        <td><input type="number" class="grid-input par-input" data-index="0" value="4"></td>
-                        <td><input type="number" class="grid-input par-input" data-index="1" value="4"></td>
-                        <td><input type="number" class="grid-input par-input" data-index="2" value="3"></td>
-                        <td><input type="number" class="grid-input par-input" data-index="3" value="5"></td>
-                        <td><input type="number" class="grid-input par-input" data-index="4" value="4"></td>
-                        <td><input type="number" class="grid-input par-input" data-index="5" value="4"></td>
-                        <td><input type="number" class="grid-input par-input" data-index="6" value="3"></td>
-                        <td><input type="number" class="grid-input par-input" data-index="7" value="5"></td>
-                        <td><input type="number" class="grid-input par-input" data-index="8" value="4"></td>
-                        <td class="col-tot" id="par-out">36</td>
-                        <td><input type="number" class="grid-input par-input" data-index="9" value="4"></td>
-                        <td><input type="number" class="grid-input par-input" data-index="10" value="4"></td>
-                        <td><input type="number" class="grid-input par-input" data-index="11" value="5"></td>
-                        <td><input type="number" class="grid-input par-input" data-index="12" value="3"></td>
-                        <td><input type="number" class="grid-input par-input" data-index="13" value="4"></td>
-                        <td><input type="number" class="grid-input par-input" data-index="14" value="4"></td>
-                        <td><input type="number" class="grid-input par-input" data-index="15" value="3"></td>
-                        <td><input type="number" class="grid-input par-input" data-index="16" value="5"></td>
-                        <td><input type="number" class="grid-input par-input" data-index="17" value="4"></td>
-                        <td class="col-tot" id="par-in">36</td>
-                        <td class="col-tot" id="par-tot">72</td>
+                        <!-- Par inputs left blank by default for player to enter -->
+                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="0" value=""></td>
+                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="1" value=""></td>
+                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="2" value=""></td>
+                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="3" value=""></td>
+                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="4" value=""></td>
+                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="5" value=""></td>
+                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="6" value=""></td>
+                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="7" value=""></td>
+                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="8" value=""></td>
+                        <td class="col-tot" id="par-out"></td>
+                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="9" value=""></td>
+                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="10" value=""></td>
+                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="11" value=""></td>
+                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="12" value=""></td>
+                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="13" value=""></td>
+                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="14" value=""></td>
+                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="15" value=""></td>
+                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="16" value=""></td>
+                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="17" value=""></td>
+                        <td class="col-tot" id="par-in"></td>
+                        <td class="col-tot" id="par-tot"></td>
                     </tr>
                 </thead>
                 <tbody id="tbody-players">
@@ -351,30 +369,13 @@
             </table>
         </div>
     </div>
-
-    <!-- On-screen Numpad (CSS hidden on desktop, visible on mobile <= 768px) -->
-    <div class="numpad-bar">
-        <div class="numpad-grid">
-            <button class="num-btn" data-val="1">1</button>
-            <button class="num-btn" data-val="2">2</button>
-            <button class="num-btn" data-val="3">3</button>
-            <button class="num-btn" data-val="4">4</button>
-            <button class="num-btn" data-val="5">5</button>
-            <button class="num-btn" data-val="6">6</button>
-            <button class="num-btn" data-val="7">7</button>
-            <button class="num-btn" data-val="8">8</button>
-            <button class="num-btn" data-val="9">9</button>
-            <button class="num-btn btn-clear" data-val="clear">⌫</button>
-        </div>
-    </div>
 </div>
 
 <script>
-    let pars = [4, 4, 3, 5, 4, 4, 3, 5, 4,  4, 4, 5, 3, 4, 4, 3, 5, 4];
+    let pars = Array(18).fill(null);
     let players = [
         { id: 1, name: 'Player 1', scores: Array(18).fill(null) }
     ];
-    let lastActiveScoreInput = null;
 
     function render() {
         const tbody = document.getElementById('tbody-players');
@@ -469,7 +470,6 @@
     // Event Delegation for Table Inputs
     document.getElementById('tbody-players').addEventListener('focusin', (e) => {
         if (e.target.classList.contains('score-input')) {
-            lastActiveScoreInput = e.target;
             e.target.select();
         }
     });
@@ -497,39 +497,8 @@
         input.addEventListener('input', (e) => {
             const idx = parseInt(e.target.dataset.index);
             const val = parseInt(e.target.value);
-            pars[idx] = isNaN(val) ? 0 : val;
+            pars[idx] = isNaN(val) ? null : val;
             calculateParTotals();
-        });
-    });
-
-    // Mobile On-screen Numpad logic
-    document.querySelectorAll('.num-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            if (!lastActiveScoreInput) return;
-
-            const val = btn.dataset.val;
-            const playerId = parseInt(lastActiveScoreInput.dataset.playerId);
-            const hole = parseInt(lastActiveScoreInput.dataset.hole);
-            const player = players.find(p => p.id === playerId);
-
-            if (val === 'clear') {
-                lastActiveScoreInput.value = '';
-                if (player) player.scores[hole] = null;
-            } else {
-                lastActiveScoreInput.value = val;
-                if (player) player.scores[hole] = parseInt(val);
-                
-                // Auto advance to next input field
-                const nextInput = document.querySelector(`.score-input[data-player-id="${playerId}"][data-hole="${hole + 1}"]`);
-                if (nextInput) {
-                    nextInput.focus();
-                    nextInput.select();
-                    lastActiveScoreInput = nextInput;
-                }
-            }
-
-            calculatePlayerTotals(playerId);
         });
     });
 
