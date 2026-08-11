@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BC Golf Courses Directory</title>
+    <title>BC Golf Courses</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -19,7 +20,11 @@
             --radius: 8px;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
         body {
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -71,7 +76,7 @@
             display: flex;
             flex-direction: column;
             gap: 1rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
 
         .search-box input {
@@ -150,7 +155,7 @@
         }
 
         .card:hover {
-            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
             transform: translateY(-2px);
         }
 
@@ -191,10 +196,25 @@
             color: var(--text-main);
         }
 
-        .tag.public { background: #d1fae5; color: #065f46; }
-        .tag.private { background: #fee2e2; color: #991b1b; }
-        .tag.semi-private { background: #e0f2fe; color: #075985; }
-        .tag.resort { background: #fef3c7; color: #92400e; }
+        .tag.public {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .tag.private {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .tag.semi-private {
+            background: #e0f2fe;
+            color: #075985;
+        }
+
+        .tag.resort {
+            background: #fef3c7;
+            color: #92400e;
+        }
 
         .card-action {
             text-align: right;
@@ -221,11 +241,12 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <header>
-            <h1>BC Golf Courses Directory</h1>
-            <p class="subtitle">Complete guide to golf facilities across British Columbia</p>
+            <h1>BC Golf Courses</h1>
+            <p class="subtitle">List of courses located in British Columbia</p>
         </header>
 
         <div class="controls">
@@ -234,11 +255,14 @@
             </div>
             <div class="filter-buttons" id="regionFilters">
                 <button class="filter-btn active" data-region="all">All Regions</button>
-                <button class="filter-btn" data-region="Metro Vancouver & Fraser Valley">Metro Vancouver & Fraser Valley</button>
-                <button class="filter-btn" data-region="Vancouver Island & Gulf Islands">Vancouver Island & Gulf Islands</button>
+                <button class="filter-btn" data-region="Metro Vancouver & Fraser Valley">Metro Vancouver & Fraser
+                    Valley</button>
+                <button class="filter-btn" data-region="Vancouver Island & Gulf Islands">Vancouver Island & Gulf
+                    Islands</button>
                 <button class="filter-btn" data-region="Thompson-Okanagan">Thompson-Okanagan</button>
                 <button class="filter-btn" data-region="Kootenay Rockies">Kootenay Rockies</button>
-                <button class="filter-btn" data-region="Sea to Sky & Sunshine Coast">Sea to Sky & Sunshine Coast</button>
+                <button class="filter-btn" data-region="Sea to Sky & Sunshine Coast">Sea to Sky & Sunshine
+                    Coast</button>
                 <button class="filter-btn" data-region="Northern BC & Cariboo">Northern BC & Cariboo</button>
             </div>
         </div>
@@ -252,7 +276,7 @@
 
     <script>
         const golfCourses = [
-// METRO VANCOUVER & FRASER VALLEY
+            // METRO VANCOUVER & FRASER VALLEY
             { name: "Fraserview Golf Course", city: "Vancouver", region: "Metro Vancouver & Fraser Valley", holes: "18 Holes", access: "Public" },
             { name: "McCleery Golf Course", city: "Vancouver", region: "Metro Vancouver & Fraser Valley", holes: "18 Holes", access: "Public" },
             { name: "Langara Golf Course", city: "Vancouver", region: "Metro Vancouver & Fraser Valley", holes: "18 Holes", access: "Public" },
@@ -563,7 +587,7 @@
         const visibleCountEl = document.getElementById('visibleCount');
 
         function getAccessClass(access) {
-            switch((access || '').toLowerCase()) {
+            switch ((access || '').toLowerCase()) {
                 case 'public': return 'public';
                 case 'private': return 'private';
                 case 'semi-private': return 'semi-private';
@@ -575,14 +599,14 @@
         function render() {
             grid.innerHTML = '';
             const q = searchQuery.toLowerCase().trim();
-            
+
             const filtered = golfCourses.filter(c => {
                 const matchRegion = selectedRegion === 'all' || c.region === selectedRegion;
-                const matchSearch = !q || 
-                    c.name.toLowerCase().includes(q) || 
-                    c.city.toLowerCase().includes(q) || 
-                    c.region.toLowerCase().includes(q) || 
-                    c.holes.toLowerCase().includes(q) || 
+                const matchSearch = !q ||
+                    c.name.toLowerCase().includes(q) ||
+                    c.city.toLowerCase().includes(q) ||
+                    c.region.toLowerCase().includes(q) ||
+                    c.holes.toLowerCase().includes(q) ||
                     c.access.toLowerCase().includes(q);
                 return matchRegion && matchSearch;
             });
@@ -635,4 +659,5 @@
         render();
     </script>
 </body>
+
 </html>
