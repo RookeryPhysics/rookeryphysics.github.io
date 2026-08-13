@@ -3,29 +3,34 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MPG Hub</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MPG Hub | Golf Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            user-select: none;
-            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         :root {
-            --bg-dark: #090d16;
-            --card-bg: rgba(30, 41, 59, 0.6);
+            --bg-dark: #080c14;
+            --card-bg: rgba(22, 30, 46, 0.75);
+            --card-border: rgba(255, 255, 255, 0.09);
+            --card-border-hover: rgba(52, 211, 153, 0.4);
             --accent-green: #10b981;
+            --accent-emerald: #059669;
             --accent-gold: #f59e0b;
             --accent-blue: #3b82f6;
             --accent-purple: #8b5cf6;
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
-            --dimple-shadow: rgba(0, 0, 0, 0.2);
-            --dimple-highlight: rgba(255, 255, 255, 0.95);
+            --text-dim: #64748b;
+            --dimple-shadow: rgba(0, 0, 0, 0.28);
+            --dimple-highlight: rgba(255, 255, 255, 0.9);
         }
 
         body {
@@ -33,18 +38,53 @@
             background: var(--bg-dark);
             color: var(--text-main);
             min-height: 100vh;
+            min-height: 100dvh;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-start;
             overflow-x: hidden;
+            position: relative;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
         }
 
-        /* Top Navigation Header */
+        /* Ambient Glow Background */
+        .bg-glow {
+            position: fixed;
+            width: 320px;
+            height: 320px;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(90px);
+            opacity: 0.22;
+            animation: pulseGlow 8s ease-in-out infinite alternate;
+        }
+
+        .bg-glow-1 {
+            top: -60px;
+            left: -60px;
+            background: #10b981;
+        }
+
+        .bg-glow-2 {
+            bottom: -40px;
+            right: -60px;
+            background: #3b82f6;
+            animation-delay: -4s;
+        }
+
+        @keyframes pulseGlow {
+            0% { transform: scale(1) translate(0, 0); opacity: 0.18; }
+            100% { transform: scale(1.15) translate(20px, 20px); opacity: 0.32; }
+        }
+
+        /* Header Navigation */
         header {
             width: 100%;
-            max-width: 1200px;
-            padding: 24px;
+            max-width: 520px;
+            padding: 18px 20px 10px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -55,110 +95,215 @@
             display: flex;
             align-items: center;
             gap: 12px;
+            text-decoration: none;
         }
 
         .brand-logo {
-            width: 40px;
-            height: 40px;
+            width: 42px;
+            height: 42px;
             border-radius: 50%;
             background: radial-gradient(circle at 35% 35%, #ffffff, #cbd5e1);
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), inset 1px 1px 2px #ffffff;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #0f172a;
-            font-weight: 800;
+            font-size: 19px;
+            flex-shrink: 0;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .brand:hover .brand-logo,
+        .brand:active .brand-logo {
+            transform: rotate(-10deg) scale(1.06);
+        }
+
+        .brand-text-wrap {
+            display: flex;
+            flex-direction: column;
         }
 
         .brand h1 {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 800;
             letter-spacing: -0.5px;
-            background: linear-gradient(135deg, #ffffff 0%, #34d399 100%);
+            line-height: 1.1;
+            background: linear-gradient(135deg, #ffffff 30%, #34d399 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+        }
+
+        .brand-subtitle {
+            font-size: 11px;
+            color: var(--accent-green);
+            font-weight: 600;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.28);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #34d399;
+        }
+
+        .pulse-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background-color: #10b981;
+            box-shadow: 0 0 8px #10b981;
+            animation: blink 2s infinite ease-in-out;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.85); }
         }
 
         /* Main Container for Options */
         .main-stage {
             display: flex;
+            flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             width: 100%;
-            max-width: 600px;
-            height: 600px;
-            margin-top: 20px;
-            padding: 0 20px;
-        }
-
-        /* Scrollable Viewport Container */
-        .scroll-viewport {
-            width: 100%;
-            height: 100%;
-            overflow-y: scroll;
-            scroll-snap-type: y mandatory;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-            padding: 180px 0;
+            max-width: 520px;
+            padding: 10px 16px 36px;
             z-index: 5;
+            flex: 1;
         }
 
-        .scroll-viewport::-webkit-scrollbar {
-            display: none;
+        .section-header {
+            width: 100%;
+            padding: 0 4px 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+
+        .section-title {
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+        }
+
+        .section-count {
+            font-size: 12px;
+            color: var(--text-dim);
+            font-weight: 500;
         }
 
         .options-list {
+            width: 100%;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            gap: 40px;
+            gap: 13px;
         }
 
-        /* Golf Ball Styled App Icon Cards */
+        /* Interactive Golf Option Card */
         .golf-option-card {
-            scroll-snap-align: center;
-            width: 360px;
+            position: relative;
+            width: 100%;
             background: var(--card-bg);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 32px;
-            padding: 24px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
+            border-radius: 22px;
+            padding: 16px 18px;
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 16px;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.4);
+            text-decoration: none;
+            color: inherit;
+            overflow: hidden;
+            transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
+                        border-color 0.25s ease,
+                        box-shadow 0.25s ease,
+                        background-color 0.25s ease;
+            box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.35);
+            outline: none;
         }
 
-        .golf-option-card:hover,
-        .golf-option-card.active {
-            transform: scale(1.05);
-            border-color: rgba(255, 255, 255, 0.35);
-            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.6),
-                0 0 25px rgba(16, 185, 129, 0.25);
+        /* Hover & Touch Active Animations */
+        @media (hover: hover) {
+            .golf-option-card:hover {
+                transform: translateY(-2px) scale(1.015);
+                border-color: var(--card-border-hover);
+                background: rgba(30, 41, 59, 0.85);
+                box-shadow: 0 14px 30px -4px rgba(0, 0, 0, 0.5),
+                            0 0 20px rgba(16, 185, 129, 0.15);
+            }
+            .golf-option-card:hover .arrow-icon {
+                transform: translateX(4px);
+                color: #ffffff;
+            }
+            .golf-option-card:hover .golf-ball-icon {
+                transform: rotate(16deg) scale(1.06);
+            }
+            .golf-option-card:hover .ball-symbol {
+                transform: scale(1.12);
+            }
         }
 
-        /* Golf Ball Graphic */
+        .golf-option-card:active {
+            transform: scale(0.975);
+            background: rgba(30, 41, 59, 0.95);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+
+        .golf-option-card:focus-visible {
+            border-color: var(--accent-green);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.35);
+        }
+
+        /* Card Shimmer Glow Overlay */
+        .golf-option-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+            transition: left 0.6s ease;
+            pointer-events: none;
+        }
+
+        .golf-option-card:hover::before {
+            left: 100%;
+        }
+
+        /* 3D Realistic Golf Ball Graphic */
         .golf-ball-icon {
-            width: 80px;
-            height: 80px;
-            min-width: 80px;
+            width: 66px;
+            height: 66px;
+            min-width: 66px;
             border-radius: 50%;
-            background: radial-gradient(circle at 35% 35%, #ffffff 0%, #f1f5f9 50%, #cbd5e1 85%, #94a3b8 100%);
-            box-shadow: inset -5px -7px 14px rgba(15, 23, 42, 0.4),
-                inset 4px 4px 10px rgba(255, 255, 255, 0.95),
-                0 10px 20px rgba(0, 0, 0, 0.4);
+            background: radial-gradient(circle at 35% 32%, #ffffff 0%, #f1f5f9 45%, #cbd5e1 80%, #94a3b8 100%);
+            box-shadow: inset -4px -6px 12px rgba(15, 23, 42, 0.45),
+                        inset 3px 3px 8px rgba(255, 255, 255, 0.95),
+                        0 8px 16px rgba(0, 0, 0, 0.35);
             position: relative;
             display: flex;
             justify-content: center;
             align-items: center;
             overflow: hidden;
-            transition: transform 0.5s ease;
+            flex-shrink: 0;
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
-        /* Dimple Texture */
+        /* Dimple Texture Pattern */
         .golf-ball-icon::before {
             content: '';
             position: absolute;
@@ -168,109 +313,173 @@
             bottom: 0;
             border-radius: 50%;
             background-image:
-                radial-gradient(circle, var(--dimple-shadow) 1px, transparent 1.5px),
-                radial-gradient(circle, var(--dimple-highlight) 1px, transparent 1.5px);
-            background-size: 12px 12px;
-            background-position: 0 0, 1px 1px;
-            opacity: 0.6;
+                radial-gradient(circle, var(--dimple-shadow) 1px, transparent 1.6px),
+                radial-gradient(circle, var(--dimple-highlight) 1px, transparent 1.6px);
+            background-size: 11px 11px;
+            background-position: 0 0, 1.5px 1.5px;
+            opacity: 0.65;
             mix-blend-mode: multiply;
         }
 
         .ball-symbol {
             position: relative;
             z-index: 2;
-            width: 40px;
-            height: 40px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             color: #ffffff;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.3);
             transition: transform 0.3s ease;
         }
 
-        .golf-option-card:hover .golf-ball-icon {
-            transform: rotate(20deg) scale(1.05);
-        }
-
-        .golf-option-card:hover .ball-symbol {
-            transform: scale(1.1);
-        }
-
-        /* Color Schemes per Option */
+        /* Custom Color Schemes per Option */
         .opt-1 .ball-symbol {
-            background: linear-gradient(135deg, #10b981, #059669);
+            background: linear-gradient(135deg, #10b981, #047857);
         }
-
         .opt-2 .ball-symbol {
             background: linear-gradient(135deg, #3b82f6, #1d4ed8);
         }
-
         .opt-3 .ball-symbol {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
+            background: linear-gradient(135deg, #f59e0b, #b45309);
         }
-
         .opt-4 .ball-symbol {
             background: linear-gradient(135deg, #8b5cf6, #6d28d9);
         }
-
         .opt-5 .ball-symbol {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
+            background: linear-gradient(135deg, #64748b, #475569);
         }
 
-        .golf-option-card.opt-5 {
-            position: relative;
-            cursor: not-allowed;
-            opacity: 0.7;
-        }
-
-        .golf-option-card.opt-5::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: -30px;
-            right: -30px;
-            height: 6px;
-            background: #ef4444;
-            box-shadow: 0 0 12px rgba(239, 68, 68, 0.9);
-            transform: translateY(-50%) rotate(-16deg);
-            border-radius: 3px;
-            pointer-events: none;
-            z-index: 10;
-        }
-
+        /* Card Content Area */
         .option-info {
             display: flex;
             flex-direction: column;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .option-title-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 3px;
         }
 
         .option-title {
-            font-size: 19px;
+            font-size: 17px;
             font-weight: 700;
             color: var(--text-main);
-            margin-bottom: 4px;
+            letter-spacing: -0.2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .option-badge {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 2px 7px;
+            border-radius: 10px;
+            letter-spacing: 0.5px;
+            flex-shrink: 0;
+        }
+
+        .badge-live {
+            background: rgba(16, 185, 129, 0.18);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .badge-book {
+            background: rgba(59, 130, 246, 0.18);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .badge-info {
+            background: rgba(245, 158, 11, 0.18);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .badge-dining {
+            background: rgba(139, 92, 246, 0.18);
+            color: #a78bfa;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+        }
+
+        .badge-soon {
+            background: rgba(148, 163, 184, 0.18);
+            color: #94a3b8;
+            border: 1px solid rgba(148, 163, 184, 0.3);
         }
 
         .option-desc {
             font-size: 13px;
             color: var(--text-muted);
-            line-height: 1.4;
+            line-height: 1.35;
+            white-space: normal;
+        }
+
+        /* Action Chevron */
+        .arrow-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-dim);
+            flex-shrink: 0;
+            transition: transform 0.25s ease, color 0.25s ease;
+        }
+
+        /* Option 5: Coming Soon / Locked styling */
+        .golf-option-card.opt-5 {
+            opacity: 0.68;
+            cursor: pointer;
+            border-style: dashed;
+        }
+
+        .golf-option-card.opt-5:hover {
+            opacity: 0.88;
+            border-color: rgba(148, 163, 184, 0.4);
+            box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Corner Ribbon for Locked Item */
+        .lock-ribbon {
+            position: absolute;
+            top: 10px;
+            right: 12px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #94a3b8;
+            background: rgba(15, 23, 42, 0.6);
+            padding: 3px 8px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
 
         /* Toast Modal Popup */
         .toast-modal {
             position: fixed;
-            bottom: 40px;
+            bottom: 24px;
             left: 50%;
-            transform: translateX(-50%) translateY(40px);
-            background: rgba(16, 185, 129, 0.95);
+            transform: translateX(-50%) translateY(30px);
+            background: rgba(15, 23, 42, 0.94);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
             color: #ffffff;
-            padding: 14px 28px;
+            padding: 12px 22px;
             border-radius: 30px;
             font-weight: 600;
-            font-size: 15px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            font-size: 14px;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.1);
             opacity: 0;
             pointer-events: none;
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -278,148 +487,469 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            max-width: 90vw;
+            white-space: nowrap;
         }
 
         .toast-modal.show {
             opacity: 1;
             transform: translateX(-50%) translateY(0);
+            pointer-events: auto;
+        }
+
+        .toast-icon-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+        }
+
+        /* Quick Info Modal for Weather & Clubhouse */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(4, 7, 13, 0.78);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 200;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-card {
+            background: #131d2e;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 24px;
+            width: 100%;
+            max-width: 400px;
+            padding: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+            transform: scale(0.92);
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .modal-overlay.active .modal-card {
+            transform: scale(1);
+        }
+
+        .modal-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .modal-head h3 {
+            font-size: 18px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modal-close {
+            background: rgba(255, 255, 255, 0.08);
+            border: none;
+            color: #94a3b8;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .modal-close:hover,
+        .modal-close:active {
+            background: rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+        }
+
+        .modal-body {
+            font-size: 14px;
+            color: #cbd5e1;
+            line-height: 1.5;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .info-stat {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 12px;
+            border-radius: 14px;
+        }
+
+        .info-stat-label {
+            font-size: 11px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .info-stat-value {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .modal-action-btn {
+            width: 100%;
+            margin-top: 20px;
+            padding: 12px;
+            background: var(--accent-green);
+            color: #064e3b;
+            font-weight: 700;
+            font-size: 14px;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: opacity 0.2s ease, transform 0.1s ease;
+        }
+
+        .modal-action-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* Responsiveness for smallest mobile screens (320px - 360px) */
+        @media (max-width: 360px) {
+            header {
+                padding: 12px 14px 8px;
+            }
+            .main-stage {
+                padding: 8px 12px 28px;
+            }
+            .golf-option-card {
+                padding: 12px 14px;
+                gap: 12px;
+                border-radius: 20px;
+            }
+            .golf-ball-icon {
+                width: 56px;
+                height: 56px;
+                min-width: 56px;
+            }
+            .ball-symbol {
+                width: 30px;
+                height: 30px;
+            }
+            .ball-symbol svg {
+                width: 17px;
+                height: 17px;
+            }
+            .option-title {
+                font-size: 15px;
+            }
+            .option-desc {
+                font-size: 12px;
+            }
         }
     </style>
 </head>
 
 <body>
 
+    <!-- Ambient Glow Effects -->
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+
     <!-- Header Navigation -->
     <header>
-        <div class="brand">
+        <a href="main.html" class="brand" title="Max Pass Membership">
             <div class="brand-logo">⛳</div>
-            <h1>MPG</h1>
+            <div class="brand-text-wrap">
+                <h1>MPG Hub</h1>
+                <span class="brand-subtitle">Multiplayed Golf</span>
+            </div>
+        </a>
+        <div class="status-badge">
+            <span class="pulse-dot"></span>
+            <span>Live Portal</span>
         </div>
     </header>
 
-    <!-- Main Stage Container -->
-    <div class="main-stage">
-
-        <!-- Scrollable Options List -->
-        <div class="scroll-viewport" id="scrollViewport">
-            <div class="options-list">
-
-                <!-- Option 1: Scorecard -->
-                <div class="golf-option-card opt-1" onclick="location.href='score.html'">
-                    <div class="golf-ball-icon">
-                        <div class="ball-symbol">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="18" y1="20" x2="18" y2="10"></line>
-                                <line x1="12" y1="20" x2="12" y2="4"></line>
-                                <line x1="6" y1="20" x2="6" y2="14"></line>
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="option-info">
-                        <div class="option-title">Scorecard</div>
-                        <div class="option-desc">Live scoring & handicap calculation</div>
-                    </div>
-                </div>
-
-                <!-- Option 2: Teesheet -->
-                <div class="golf-option-card opt-2" onclick="location.href='teesheet.html'">
-                    <div class="golf-ball-icon">
-                        <div class="ball-symbol">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                                <line x1="16" y1="2" x2="16" y2="6"></line>
-                                <line x1="8" y1="2" x2="8" y2="6"></line>
-                                <line x1="3" y1="10" x2="21" y2="10"></line>
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="option-info">
-                        <div class="option-title">Teesheet</div>
-                        <div class="option-desc">Reserve tee times & view daily schedules</div>
-                    </div>
-                </div>
-
-                <!-- Option 3: Weather & Course Info -->
-                <div class="golf-option-card opt-3" onclick="selectOption('Weather & Course Info')">
-                    <div class="golf-ball-icon">
-                        <div class="ball-symbol">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M17.5 19.5A4.5 4.5 0 0 0 21 12a4.5 4.5 0 0 0-4.5-4.5H16A7 7 0 1 0 5 16h12.5z"></path>
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="option-info">
-                        <div class="option-title">Weather & Course Info</div>
-                        <div class="option-desc">Live weather, wind & condition reports</div>
-                    </div>
-                </div>
-
-                <!-- Option 4: Clubhouse & Dining -->
-                <div class="golf-option-card opt-4" onclick="selectOption('Clubhouse & Dining')">
-                    <div class="golf-ball-icon">
-                        <div class="ball-symbol">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
-                                <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
-                                <line x1="6" y1="1" x2="6" y2="4"></line>
-                                <line x1="10" y1="1" x2="10" y2="4"></line>
-                                <line x1="14" y1="1" x2="14" y2="4"></line>
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="option-info">
-                        <div class="option-title">Clubhouse & Dining</div>
-                        <div class="option-desc">Order food, drinks & view club menu</div>
-                    </div>
-                </div>
-
-                <!-- Option 5: Betting (Disabled) -->
-                <div class="golf-option-card opt-5" onclick="event.preventDefault(); return false;">
-                    <div class="golf-ball-icon">
-                        <div class="ball-symbol">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="12" y1="1" x2="12" y2="23"></line>
-                                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="option-info">
-                        <div class="option-title">Betting</div>
-                        <div class="option-desc">Side games, wagers & match bets</div>
-                    </div>
-                </div>
-
-            </div>
+    <!-- Main Content Container -->
+    <main class="main-stage">
+        
+        <div class="section-header">
+            <span class="section-title">Course Apps</span>
+            <span class="section-count">4 Available</span>
         </div>
 
+        <div class="options-list">
+
+            <!-- Option 1: Scorecard -->
+            <a href="score.html" class="golf-option-card opt-1" role="button" tabindex="0" aria-label="Open Golf Scorecard">
+                <div class="golf-ball-icon">
+                    <div class="ball-symbol">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="20" x2="18" y2="10"></line>
+                            <line x1="12" y1="20" x2="12" y2="4"></line>
+                            <line x1="6" y1="20" x2="6" y2="14"></line>
+                        </svg>
+                    </div>
+                </div>
+                <div class="option-info">
+                    <div class="option-title-row">
+                        <span class="option-title">Scorecard</span>
+                        <span class="option-badge badge-live">Live</span>
+                    </div>
+                    <div class="option-desc">Live scoring, net tally & handicap calculator</div>
+                </div>
+                <div class="arrow-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                </div>
+            </a>
+
+            <!-- Option 2: Teesheet -->
+            <a href="teesheet.html" class="golf-option-card opt-2" role="button" tabindex="0" aria-label="Open Daily Teesheet">
+                <div class="golf-ball-icon">
+                    <div class="ball-symbol">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                        </svg>
+                    </div>
+                </div>
+                <div class="option-info">
+                    <div class="option-title-row">
+                        <span class="option-title">Teesheet</span>
+                        <span class="option-badge badge-book">Book</span>
+                    </div>
+                    <div class="option-desc">Reserve tee times & view daily group schedules</div>
+                </div>
+                <div class="arrow-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                </div>
+            </a>
+
+            <!-- Option 3: Weather & Course Info -->
+            <div class="golf-option-card opt-3" role="button" tabindex="0" aria-label="View Weather and Course Info" onclick="openWeatherModal()">
+                <div class="golf-ball-icon">
+                    <div class="ball-symbol">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17.5 19.5A4.5 4.5 0 0 0 21 12a4.5 4.5 0 0 0-4.5-4.5H16A7 7 0 1 0 5 16h12.5z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="option-info">
+                    <div class="option-title-row">
+                        <span class="option-title">Weather & Conditions</span>
+                        <span class="option-badge badge-info">Forecast</span>
+                    </div>
+                    <div class="option-desc">Real-time wind, green speed & course status</div>
+                </div>
+                <div class="arrow-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Option 4: Clubhouse & Dining -->
+            <div class="golf-option-card opt-4" role="button" tabindex="0" aria-label="View Clubhouse and Dining" onclick="openDiningModal()">
+                <div class="golf-ball-icon">
+                    <div class="ball-symbol">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
+                            <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
+                            <line x1="6" y1="1" x2="6" y2="4"></line>
+                            <line x1="10" y1="1" x2="10" y2="4"></line>
+                            <line x1="14" y1="1" x2="14" y2="4"></line>
+                        </svg>
+                    </div>
+                </div>
+                <div class="option-info">
+                    <div class="option-title-row">
+                        <span class="option-title">Clubhouse & Dining</span>
+                        <span class="option-badge badge-dining">Menu</span>
+                    </div>
+                    <div class="option-desc">Order on course, turn snacks & drink specials</div>
+                </div>
+                <div class="arrow-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Option 5: Side Bets & Games (Locked / Coming Soon) -->
+            <div class="golf-option-card opt-5" role="button" tabindex="0" aria-label="Betting and Side Games Coming Soon" onclick="showToast('Betting & Skins game tracking launching next tournament update!', 'info')">
+                <div class="lock-ribbon">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                    <span>Soon</span>
+                </div>
+                <div class="golf-ball-icon">
+                    <div class="ball-symbol">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="1" x2="12" y2="23"></line>
+                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="option-info">
+                    <div class="option-title-row">
+                        <span class="option-title">Side Games & Bets</span>
+                        <span class="option-badge badge-soon">Upcoming</span>
+                    </div>
+                    <div class="option-desc">Skins, match wagers & automated pot tracking</div>
+                </div>
+                <div class="arrow-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Weather & Course Conditions Modal -->
+    <div class="modal-overlay" id="weatherModal" onclick="closeModal('weatherModal')">
+        <div class="modal-card" onclick="event.stopPropagation()">
+            <div class="modal-head">
+                <h3>☀️ Course Conditions</h3>
+                <button class="modal-close" onclick="closeModal('weatherModal')" aria-label="Close modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Conditions are optimal for play today. Fairways are firm and rolling fast.</p>
+                <div class="info-grid">
+                    <div class="info-stat">
+                        <div class="info-stat-label">Temperature</div>
+                        <div class="info-stat-value">74°F (Sunny)</div>
+                    </div>
+                    <div class="info-stat">
+                        <div class="info-stat-label">Wind</div>
+                        <div class="info-stat-value">7 mph SW</div>
+                    </div>
+                    <div class="info-stat">
+                        <div class="info-stat-label">Green Speed</div>
+                        <div class="info-stat-value">11.5 (Stimp)</div>
+                    </div>
+                    <div class="info-stat">
+                        <div class="info-stat-label">Cart Rule</div>
+                        <div class="info-stat-value" style="color: #34d399;">90° Rule</div>
+                    </div>
+                </div>
+            </div>
+            <button class="modal-action-btn" onclick="closeModal('weatherModal')">Got It</button>
+        </div>
+    </div>
+
+    <!-- Clubhouse & Dining Modal -->
+    <div class="modal-overlay" id="diningModal" onclick="closeModal('diningModal')">
+        <div class="modal-card" onclick="event.stopPropagation()">
+            <div class="modal-head">
+                <h3>🍔 Clubhouse & Dining</h3>
+                <button class="modal-close" onclick="closeModal('diningModal')" aria-label="Close modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>The 19th Hole Lounge & Snack Shack are open. Order ahead to have your food ready at the turn.</p>
+                <div class="info-grid">
+                    <div class="info-stat">
+                        <div class="info-stat-label">Snack Shack</div>
+                        <div class="info-stat-value" style="color: #34d399;">Open (Hole 9)</div>
+                    </div>
+                    <div class="info-stat">
+                        <div class="info-stat-label">Beverage Cart</div>
+                        <div class="info-stat-value" style="color: #34d399;">Active On-Course</div>
+                    </div>
+                    <div class="info-stat" style="grid-column: span 2;">
+                        <div class="info-stat-label">Daily Special</div>
+                        <div class="info-stat-value" style="font-size: 14px; font-weight: 600;">Smoked Brisket Sandwich + Craft Draft</div>
+                    </div>
+                </div>
+            </div>
+            <button class="modal-action-btn" onclick="closeModal('diningModal')">Close</button>
+        </div>
     </div>
 
     <!-- Notification Toast Modal -->
     <div class="toast-modal" id="toastModal">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-            <polyline points="20 6 9 17 4 12"></polyline>
-        </svg>
+        <div class="toast-icon-wrap" id="toastIcon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+        </div>
         <span id="toastText">Selected Option</span>
     </div>
 
     <script>
         const toastModal = document.getElementById('toastModal');
         const toastText = document.getElementById('toastText');
+        let toastTimeout;
 
-        // Click Action for Options
-        function selectOption(title) {
-            toastText.textContent = `Opened: ${title}`;
+        function showToast(message, type = 'success') {
+            clearTimeout(toastTimeout);
+            toastText.textContent = message;
             toastModal.classList.add('show');
 
-            setTimeout(() => {
+            toastTimeout = setTimeout(() => {
                 toastModal.classList.remove('show');
-            }, 2000);
+            }, 2500);
         }
+
+        function openWeatherModal() {
+            document.getElementById('weatherModal').classList.add('active');
+        }
+
+        function openDiningModal() {
+            document.getElementById('diningModal').classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        // Add keyboard accessibility for enter / space keypress on role=button
+        document.querySelectorAll('.golf-option-card').forEach(card => {
+            card.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    card.click();
+                }
+            });
+        });
+
+        // Close modal on Escape
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeModal('weatherModal');
+                closeModal('diningModal');
+            }
+        });
     </script>
 </body>
 
