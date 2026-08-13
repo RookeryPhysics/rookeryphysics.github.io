@@ -748,9 +748,9 @@
                 </div>
             </a>
 
-            <!-- Card 3: Weather & Conditions -->
+            <!-- Card 3: Weather -->
             <div class="option-card theme-amber" role="button" tabindex="0"
-                aria-label="View Weather and Course Conditions" onclick="openWeatherModal()">
+                aria-label="View Weather" onclick="openWeatherModal()">
                 <div class="icon-box">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round">
@@ -759,10 +759,10 @@
                 </div>
                 <div class="option-content">
                     <div class="option-title-row">
-                        <span class="option-title">Course Conditions</span>
-                        <span class="status-chip chip-amber">Live Data</span>
+                        <span class="option-title">Weather</span>
+                        <span class="status-chip chip-amber">Forecast</span>
                     </div>
-                    <p class="option-desc">Real-time wind speed, green Stimp speeds, cart policy & radar</p>
+                    <p class="option-desc">Real-time wind speed, temperature & course forecast</p>
                 </div>
                 <div class="option-action">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -772,9 +772,9 @@
                 </div>
             </div>
 
-            <!-- Card 4: Clubhouse & Dining -->
+            <!-- Card 4: Food -->
             <div class="option-card theme-purple" role="button" tabindex="0"
-                aria-label="View Clubhouse and Dining Options" onclick="openDiningModal()">
+                aria-label="View Food and Dining Options" onclick="openDiningModal()">
                 <div class="icon-box">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                         stroke-linecap="round" stroke-linejoin="round">
@@ -787,10 +787,10 @@
                 </div>
                 <div class="option-content">
                     <div class="option-title-row">
-                        <span class="option-title">Clubhouse & Turn</span>
-                        <span class="status-chip chip-purple">Dining</span>
+                        <span class="option-title">Food</span>
+                        <span class="status-chip chip-purple">Menu</span>
                     </div>
-                    <p class="option-desc">Order on course, turn window pickup & 19th hole lounge menu</p>
+                    <p class="option-desc">Order on course, turn window pickup & dining menu</p>
                 </div>
                 <div class="option-action">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -838,7 +838,7 @@
 
     </main>
 
-    <!-- Weather & Course Conditions Modal -->
+    <!-- Weather Modal -->
     <div class="modal-backdrop" id="weatherModal" onclick="closeModal('weatherModal')">
         <div class="modal-window" onclick="event.stopPropagation()">
             <div class="modal-header">
@@ -856,47 +856,18 @@
                             <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
                             <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
                         </svg>
-                        Course Conditions
+                        Weather
                     </h3>
-                    <div class="modal-subtitle">Updated 15 mins ago • Championship Course</div>
                 </div>
                 <button class="modal-close-btn" onclick="closeModal('weatherModal')"
                     aria-label="Close dialog">&times;</button>
             </div>
-            <div class="modal-content">
-                <p>Fairways are firm with fast rolling surfaces. Greens were rolled this morning at 6:30 AM.</p>
-                <div class="telemetry-grid">
-                    <div class="telemetry-card">
-                        <div class="telemetry-label">Temperature</div>
-                        <div class="telemetry-value">74°F Clear</div>
-                    </div>
-                    <div class="telemetry-card">
-                        <div class="telemetry-label">Wind Velocity</div>
-                        <div class="telemetry-value">7 mph SW</div>
-                    </div>
-                    <div class="telemetry-card">
-                        <div class="telemetry-label">Green Stimp Speed</div>
-                        <div class="telemetry-value">11.5 ft</div>
-                    </div>
-                    <div class="telemetry-card">
-                        <div class="telemetry-label">Cart Policy</div>
-                        <div class="telemetry-value" style="color: var(--emerald-400);">90° Rule</div>
-                    </div>
-                    <div class="telemetry-card">
-                        <div class="telemetry-label">Pin Placement</div>
-                        <div class="telemetry-value">Position #2</div>
-                    </div>
-                    <div class="telemetry-card">
-                        <div class="telemetry-label">Sunset Today</div>
-                        <div class="telemetry-value">8:24 PM</div>
-                    </div>
-                </div>
-            </div>
-            <button class="modal-primary-btn" onclick="closeModal('weatherModal')">Close Window</button>
+            <div class="modal-content"></div>
+            <button class="modal-primary-btn" onclick="closeModal('weatherModal')">Done</button>
         </div>
     </div>
 
-    <!-- Clubhouse & Dining Modal -->
+    <!-- Food Modal -->
     <div class="modal-backdrop" id="diningModal" onclick="closeModal('diningModal')">
         <div class="modal-window" onclick="event.stopPropagation()">
             <div class="modal-header">
@@ -910,31 +881,13 @@
                             <line x1="10" y1="1" x2="10" y2="4"></line>
                             <line x1="14" y1="1" x2="14" y2="4"></line>
                         </svg>
-                        Clubhouse & Turn Order
+                        Food
                     </h3>
-                    <div class="modal-subtitle">19th Hole Lounge & Course Refreshments</div>
                 </div>
                 <button class="modal-close-btn" onclick="closeModal('diningModal')"
                     aria-label="Close dialog">&times;</button>
             </div>
-            <div class="modal-content">
-                <p>Call or pre-order on Hole 8 for express pick-up as you transition to the back nine.</p>
-                <div class="telemetry-grid">
-                    <div class="telemetry-card">
-                        <div class="telemetry-label">Turn Window (Hole 9)</div>
-                        <div class="telemetry-value" style="color: var(--emerald-400);">Open</div>
-                    </div>
-                    <div class="telemetry-card">
-                        <div class="telemetry-label">Beverage Cart</div>
-                        <div class="telemetry-value" style="color: var(--emerald-400);">On Course</div>
-                    </div>
-                    <div class="telemetry-card" style="grid-column: span 2;">
-                        <div class="telemetry-label">Chef's Turn Special</div>
-                        <div class="telemetry-value" style="font-size: 14px; font-weight: 600;">Smoked Prime Brisket
-                            Panini & Craft IPA</div>
-                    </div>
-                </div>
-            </div>
+            <div class="modal-content"></div>
             <button class="modal-primary-btn" onclick="closeModal('diningModal')">Done</button>
         </div>
     </div>
