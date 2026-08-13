@@ -76,8 +76,15 @@
         }
 
         @keyframes pulseGlow {
-            0% { transform: scale(1) translate(0, 0); opacity: 0.18; }
-            100% { transform: scale(1.15) translate(20px, 20px); opacity: 0.32; }
+            0% {
+                transform: scale(1) translate(0, 0);
+                opacity: 0.18;
+            }
+
+            100% {
+                transform: scale(1.15) translate(20px, 20px);
+                opacity: 0.32;
+            }
         }
 
         /* Header Navigation */
@@ -163,8 +170,17 @@
         }
 
         @keyframes blink {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.4; transform: scale(0.85); }
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.4;
+                transform: scale(0.85);
+            }
         }
 
         /* Main Container for Options */
@@ -227,9 +243,9 @@
             color: inherit;
             overflow: hidden;
             transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
-                        border-color 0.25s ease,
-                        box-shadow 0.25s ease,
-                        background-color 0.25s ease;
+                border-color 0.25s ease,
+                box-shadow 0.25s ease,
+                background-color 0.25s ease;
             box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.35);
             outline: none;
         }
@@ -241,15 +257,18 @@
                 border-color: var(--card-border-hover);
                 background: rgba(30, 41, 59, 0.85);
                 box-shadow: 0 14px 30px -4px rgba(0, 0, 0, 0.5),
-                            0 0 20px rgba(16, 185, 129, 0.15);
+                    0 0 20px rgba(16, 185, 129, 0.15);
             }
+
             .golf-option-card:hover .arrow-icon {
                 transform: translateX(4px);
                 color: #ffffff;
             }
+
             .golf-option-card:hover .golf-ball-icon {
                 transform: rotate(16deg) scale(1.06);
             }
+
             .golf-option-card:hover .ball-symbol {
                 transform: scale(1.12);
             }
@@ -292,8 +311,8 @@
             border-radius: 50%;
             background: radial-gradient(circle at 35% 32%, #ffffff 0%, #f1f5f9 45%, #cbd5e1 80%, #94a3b8 100%);
             box-shadow: inset -4px -6px 12px rgba(15, 23, 42, 0.45),
-                        inset 3px 3px 8px rgba(255, 255, 255, 0.95),
-                        0 8px 16px rgba(0, 0, 0, 0.35);
+                inset 3px 3px 8px rgba(255, 255, 255, 0.95),
+                0 8px 16px rgba(0, 0, 0, 0.35);
             position: relative;
             display: flex;
             justify-content: center;
@@ -339,15 +358,19 @@
         .opt-1 .ball-symbol {
             background: linear-gradient(135deg, #10b981, #047857);
         }
+
         .opt-2 .ball-symbol {
             background: linear-gradient(135deg, #3b82f6, #1d4ed8);
         }
+
         .opt-3 .ball-symbol {
             background: linear-gradient(135deg, #f59e0b, #b45309);
         }
+
         .opt-4 .ball-symbol {
             background: linear-gradient(135deg, #8b5cf6, #6d28d9);
         }
+
         .opt-5 .ball-symbol {
             background: linear-gradient(135deg, #64748b, #475569);
         }
@@ -638,30 +661,37 @@
             header {
                 padding: 12px 14px 8px;
             }
+
             .main-stage {
                 padding: 8px 12px 28px;
             }
+
             .golf-option-card {
                 padding: 12px 14px;
                 gap: 12px;
                 border-radius: 20px;
             }
+
             .golf-ball-icon {
                 width: 56px;
                 height: 56px;
                 min-width: 56px;
             }
+
             .ball-symbol {
                 width: 30px;
                 height: 30px;
             }
+
             .ball-symbol svg {
                 width: 17px;
                 height: 17px;
             }
+
             .option-title {
                 font-size: 15px;
             }
+
             .option-desc {
                 font-size: 12px;
             }
@@ -692,7 +722,7 @@
 
     <!-- Main Content Container -->
     <main class="main-stage">
-        
+
         <div class="section-header">
             <span class="section-title">Course Apps</span>
             <span class="section-count">4 Available</span>
@@ -701,10 +731,12 @@
         <div class="options-list">
 
             <!-- Option 1: Scorecard -->
-            <a href="score.html" class="golf-option-card opt-1" role="button" tabindex="0" aria-label="Open Golf Scorecard">
+            <a href="score.html" class="golf-option-card opt-1" role="button" tabindex="0"
+                aria-label="Open Golf Scorecard">
                 <div class="golf-ball-icon">
                     <div class="ball-symbol">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <line x1="18" y1="20" x2="18" y2="10"></line>
                             <line x1="12" y1="20" x2="12" y2="4"></line>
                             <line x1="6" y1="20" x2="6" y2="14"></line>
@@ -719,17 +751,20 @@
                     <div class="option-desc">Live scoring, net tally & handicap calculator</div>
                 </div>
                 <div class="arrow-icon">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="9 18 15 12 9 6"></polyline>
                     </svg>
                 </div>
             </a>
 
             <!-- Option 2: Teesheet -->
-            <a href="teesheet.html" class="golf-option-card opt-2" role="button" tabindex="0" aria-label="Open Daily Teesheet">
+            <a href="teesheet.html" class="golf-option-card opt-2" role="button" tabindex="0"
+                aria-label="Open Daily Teesheet">
                 <div class="golf-ball-icon">
                     <div class="ball-symbol">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
                             <line x1="16" y1="2" x2="16" y2="6"></line>
                             <line x1="8" y1="2" x2="8" y2="6"></line>
@@ -745,18 +780,22 @@
                     <div class="option-desc">Reserve tee times & view daily group schedules</div>
                 </div>
                 <div class="arrow-icon">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="9 18 15 12 9 6"></polyline>
                     </svg>
                 </div>
             </a>
 
             <!-- Option 3: Weather & Course Info -->
-            <div class="golf-option-card opt-3" role="button" tabindex="0" aria-label="View Weather and Course Info" onclick="openWeatherModal()">
+            <div class="golf-option-card opt-3" role="button" tabindex="0" aria-label="View Weather and Course Info"
+                onclick="openWeatherModal()">
                 <div class="golf-ball-icon">
                     <div class="ball-symbol">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M17.5 19.5A4.5 4.5 0 0 0 21 12a4.5 4.5 0 0 0-4.5-4.5H16A7 7 0 1 0 5 16h12.5z"></path>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17.5 19.5A4.5 4.5 0 0 0 21 12a4.5 4.5 0 0 0-4.5-4.5H16A7 7 0 1 0 5 16h12.5z">
+                            </path>
                         </svg>
                     </div>
                 </div>
@@ -768,17 +807,20 @@
                     <div class="option-desc">Real-time wind, green speed & course status</div>
                 </div>
                 <div class="arrow-icon">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="9 18 15 12 9 6"></polyline>
                     </svg>
                 </div>
             </div>
 
             <!-- Option 4: Clubhouse & Dining -->
-            <div class="golf-option-card opt-4" role="button" tabindex="0" aria-label="View Clubhouse and Dining" onclick="openDiningModal()">
+            <div class="golf-option-card opt-4" role="button" tabindex="0" aria-label="View Clubhouse and Dining"
+                onclick="openDiningModal()">
                 <div class="golf-ball-icon">
                     <div class="ball-symbol">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
                             <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
                             <line x1="6" y1="1" x2="6" y2="4"></line>
@@ -795,16 +837,20 @@
                     <div class="option-desc">Order on course, turn snacks & drink specials</div>
                 </div>
                 <div class="arrow-icon">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="9 18 15 12 9 6"></polyline>
                     </svg>
                 </div>
             </div>
 
             <!-- Option 5: Side Bets & Games (Locked / Coming Soon) -->
-            <div class="golf-option-card opt-5" role="button" tabindex="0" aria-label="Betting and Side Games Coming Soon" onclick="showToast('Betting & Skins game tracking launching next tournament update!', 'info')">
+            <div class="golf-option-card opt-5" role="button" tabindex="0"
+                aria-label="Betting and Side Games Coming Soon"
+                onclick="showToast('Betting & Skins game tracking launching next tournament update!', 'info')">
                 <div class="lock-ribbon">
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5">
                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                         <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                     </svg>
@@ -812,7 +858,8 @@
                 </div>
                 <div class="golf-ball-icon">
                     <div class="ball-symbol">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <line x1="12" y1="1" x2="12" y2="23"></line>
                             <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
                         </svg>
@@ -826,7 +873,8 @@
                     <div class="option-desc">Skins, match wagers & automated pot tracking</div>
                 </div>
                 <div class="arrow-icon">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5">
                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                         <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                     </svg>
@@ -841,7 +889,8 @@
         <div class="modal-card" onclick="event.stopPropagation()">
             <div class="modal-head">
                 <h3>☀️ Course Conditions</h3>
-                <button class="modal-close" onclick="closeModal('weatherModal')" aria-label="Close modal">&times;</button>
+                <button class="modal-close" onclick="closeModal('weatherModal')"
+                    aria-label="Close modal">&times;</button>
             </div>
             <div class="modal-body">
                 <p>Conditions are optimal for play today. Fairways are firm and rolling fast.</p>
@@ -873,7 +922,8 @@
         <div class="modal-card" onclick="event.stopPropagation()">
             <div class="modal-head">
                 <h3>🍔 Clubhouse & Dining</h3>
-                <button class="modal-close" onclick="closeModal('diningModal')" aria-label="Close modal">&times;</button>
+                <button class="modal-close" onclick="closeModal('diningModal')"
+                    aria-label="Close modal">&times;</button>
             </div>
             <div class="modal-body">
                 <p>The 19th Hole Lounge & Snack Shack are open. Order ahead to have your food ready at the turn.</p>
@@ -888,7 +938,8 @@
                     </div>
                     <div class="info-stat" style="grid-column: span 2;">
                         <div class="info-stat-label">Daily Special</div>
-                        <div class="info-stat-value" style="font-size: 14px; font-weight: 600;">Smoked Brisket Sandwich + Craft Draft</div>
+                        <div class="info-stat-value" style="font-size: 14px; font-weight: 600;">Smoked Brisket Sandwich
+                            + Craft Draft</div>
                     </div>
                 </div>
             </div>
