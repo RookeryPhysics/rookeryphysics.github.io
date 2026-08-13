@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three.js Basic Game Engine Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            overflow: hidden;
+            background-color: #1a1a1a;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+        }
+    </style>
+    <!-- Import Three.js and OrbitControls via ES Modules -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="canvas-container"></div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // 1. Scene setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1a1a24);
+        scene.fog = new THREE.FogExp2(0x1a1a24, 0.015);
+
+        // 2. Camera setup
+        const camera = new THREE.PerspectiveCamera(
+            60,
+            window.innerWidth / window.innerHeight,
+            0.1,
+            1000
+        );
+        camera.position.set(0, 5, 10);
+
+        // 3. Renderer setup
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        // 4. Orbit Controls
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.target.set(0, 0.5, 0);
+
+        // 5. Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        dirLight.position.set(10, 20, 10);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        dirLight.shadow.camera.near = 0.5;
+        dirLight.shadow.camera.far = 50;
+        dirLight.shadow.camera.left = -10;
+        dirLight.shadow.camera.right = 10;
+        dirLight.shadow.camera.top = 10;
+        dirLight.shadow.camera.bottom = -10;
+        scene.add(dirLight);
+
+        // Grid Helper
+        const gridHelper = new THREE.GridHelper(20, 20, 0x444466, 0x222233);
+        gridHelper.position.y = 0.01;
+        scene.add(gridHelper);
+
+        // 6. Flat Plane
+        const planeGeometry = new THREE.PlaneGeometry(20, 20);
+        const planeMaterial = new THREE.MeshStandardMaterial({
+            color: 0x2c2c3e,
+            roughness: 0.8,
+            metalness: 0.2
+        });
+        const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+        plane.rotation.x = -Math.PI / 2;
+        plane.receiveShadow = true;
+        scene.add(plane);
+
+        // 7. Small Cube hovering over Plane
+        const cubeSize = 1;
+        const hoverHeight = 0.6; // Hover elevation over plane
+        const groundY = (cubeSize / 2) + hoverHeight; // 1.1 height
+
+        const cubeGeometry = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize);
+        const cubeMaterial = new THREE.MeshStandardMaterial({
+            color: 0x6366f1,
+            roughness: 0.3,
+            metalness: 0.5
+        });
+        const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+        cube.position.set(0, groundY, 0);
+        cube.castShadow = true;
+        cube.receiveShadow = true;
+        scene.add(cube);
+
+        // Update initial controls target to cube resting position
+        controls.target.set(0, groundY, 0);
+        camera.position.set(0, groundY + 4.5, 10);
+
+        // 8. Keyboard Controls & Physics Setup
+        const keys = {};
+        window.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true;
+            if (e.code === 'Space') keys['space'] = true;
+        });
+
+        window.addEventListener('keyup', (e) => {
+            keys[e.key.toLowerCase()] = false;
+            if (e.code === 'Space') keys['space'] = false;
+        });
+
+        const clock = new THREE.Clock();
+        const moveSpeed = 6.0; // units per second
+        const jumpStrength = 7.5;
+        const gravity = 20.0;
+
+        let vy = 0;
+        let isGrounded = true;
+
+        // Camera offset tracking (maintains exact angle and distance)
+        const cameraOffset = new THREE.Vector3().subVectors(camera.position, controls.target);
+
+        // 9. Window Resize Handler
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // 10. Game Loop / Render Loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const deltaTime = Math.min(clock.getDelta(), 0.1);
+
+            // Movement vector
+            let moveX = 0;
+            let moveZ = 0;
+
+            if (keys['w']) moveZ -= 1;
+            if (keys['s']) moveZ += 1;
+            if (keys['a']) moveX -= 1;
+            if (keys['d']) moveX += 1;
+
+            const isMoving = moveX !== 0 || moveZ !== 0;
+
+            // Normalize diagonal movement
+            if (isMoving) {
+                const len = Math.hypot(moveX, moveZ);
+                moveX = (moveX / len) * moveSpeed * deltaTime;
+                moveZ = (moveZ / len) * moveSpeed * deltaTime;
+            }
+
+            // Update X and Z positions with plane bounds (-9.5 to 9.5)
+            cube.position.x = Math.max(-9.5, Math.min(9.5, cube.position.x + moveX));
+            cube.position.z = Math.max(-9.5, Math.min(9.5, cube.position.z + moveZ));
+
+            // Jump handling
+            if (keys['space'] && isGrounded) {
+                vy = jumpStrength;
+                isGrounded = false;
+            }
+
+            // Apply gravity and Y movement
+            if (!isGrounded || vy !== 0) {
+                cube.position.y += vy * deltaTime;
+                vy -= gravity * deltaTime;
+
+                if (cube.position.y <= groundY) {
+                    cube.position.y = groundY;
+                    vy = 0;
+                    isGrounded = true;
+                }
+            }
+
+            // Rotation logic: Idle rotation vs fast rotation when moving or airborne
+            const rotationSpeed = (isMoving || !isGrounded) ? 6.0 : 0.5;
+            cube.rotation.y += rotationSpeed * deltaTime;
+            if (isMoving) {
+                cube.rotation.x += rotationSpeed * 0.5 * deltaTime;
+            }
+
+            // Keep camera at the exact same angle and distance following the cube
+            camera.position.x = cube.position.x + cameraOffset.x;
+            camera.position.z = cube.position.z + cameraOffset.z;
+            controls.target.x = cube.position.x;
+            controls.target.z = cube.position.z;
+
+            controls.update();
+
+            // Update stored offset if user orbits manually
+            cameraOffset.subVectors(camera.position, controls.target);
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+    </script>
+</body>
+</html>
