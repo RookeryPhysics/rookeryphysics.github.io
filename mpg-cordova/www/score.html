@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Golf Scorecard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-page: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #cbd5e1;
+            --border-dark: #334155;
+            --primary: #1e3a29;
+            --accent-blue: #0284c7;
+            --radius: 8px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 0.75rem 0.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 1050px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .actions {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background: #ffffff;
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 0.4rem 0.65rem;
+            border-radius: var(--radius);
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            touch-action: manipulation;
+        }
+
+        .btn:hover {
+            background: #f1f5f9;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            padding: 0.75rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .meta-fields {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+        }
+
+        .field label {
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        .field input, .field select {
+            padding: 0.35rem 0.4rem;
+            font-size: 0.85rem;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            outline: none;
+            background: #ffffff;
+            font-family: inherit;
+            width: 100%;
+        }
+
+        .field input:focus, .field select:focus {
+            border-color: var(--accent-blue);
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            border: 1px solid var(--border-dark);
+            border-radius: 4px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: center;
+            font-size: 0.85rem;
+            table-layout: auto;
+        }
+
+        th, td {
+            border: 1px solid var(--border);
+            height: 36px;
+            min-width: 32px;
+            padding: 0;
+            position: relative;
+        }
+
+        th.col-player, td.col-player {
+            position: sticky;
+            left: 0;
+            background: #ffffff;
+            z-index: 5;
+            min-width: 85px;
+            max-width: 100px;
+            text-align: left;
+            padding: 0 0.25rem;
+            border-right: 2px solid var(--border-dark);
+        }
+
+        tr.header-row th {
+            background: var(--primary);
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 0.75rem;
+            height: 32px;
+        }
+
+        tr.header-row th.col-player {
+            background: var(--primary);
+        }
+
+        tr.par-row {
+            background: #f1f5f9;
+            font-weight: 600;
+        }
+
+        tr.par-row td.col-player {
+            background: #f1f5f9;
+        }
+
+        th.col-tot, td.col-tot {
+            background: #f8fafc;
+            font-weight: 700;
+            border-left: 2px solid var(--border-dark);
+            border-right: 2px solid var(--border-dark);
+            min-width: 36px;
+        }
+
+        /* Editable cell inputs */
+        .grid-input {
+            width: 100%;
+            height: 100%;
+            border: none;
+            outline: none;
+            background: transparent;
+            text-align: center;
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-main);
+            padding: 0;
+            margin: 0;
+            border-radius: 0;
+            -moz-appearance: textfield;
+        }
+
+        .grid-input::-webkit-outer-spin-button,
+        .grid-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .grid-input:focus {
+            background: #e0f2fe;
+            box-shadow: inset 0 0 0 2px var(--accent-blue);
+        }
+
+        .player-name-input {
+            width: 100%;
+            height: 100%;
+            border: none;
+            outline: none;
+            background: transparent;
+            font-family: inherit;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        /* Modal styling */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-box {
+            background: #ffffff;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            padding: 1.25rem;
+            max-width: 360px;
+            width: 90%;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .modal-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+        }
+
+        .modal-body {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 1.25rem;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: #ffffff;
+            border: 1px solid #dc2626;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .player-col-container {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            width: 100%;
+            height: 100%;
+        }
+
+        .btn-remove-player {
+            background: transparent;
+            border: none;
+            color: #ef4444;
+            font-size: 0.75rem;
+            cursor: pointer;
+            padding: 0.1rem 0.25rem;
+            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+
+        .btn-remove-player:hover {
+            background: #fee2e2;
+        }
+
+        /* Mobile Optimization */
+        @media (max-width: 600px) {
+            body {
+                padding: 0.4rem 0.25rem;
+            }
+
+            .card {
+                padding: 0.5rem;
+            }
+
+            header {
+                margin-bottom: 0.5rem;
+            }
+
+            h1 {
+                font-size: 1.1rem;
+            }
+
+            .meta-fields {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 0.3rem;
+                margin-bottom: 0.5rem;
+                padding-bottom: 0.4rem;
+            }
+
+            .field label {
+                font-size: 0.6rem;
+            }
+
+            .field input, .field select {
+                padding: 0.25rem 0.3rem;
+                font-size: 0.8rem;
+            }
+
+            th, td {
+                height: 32px;
+                min-width: 26px;
+            }
+
+            th.col-player, td.col-player {
+                min-width: 90px;
+                max-width: 105px;
+                padding: 0 0.15rem;
+            }
+
+            .player-name-input {
+                font-size: 0.75rem;
+            }
+
+            .grid-input {
+                font-size: 0.85rem;
+            }
+
+            tr.header-row th {
+                font-size: 0.7rem;
+                height: 28px;
+            }
+
+            th.col-tot, td.col-tot {
+                min-width: 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <header>
+        <h1>Golf Scorecard</h1>
+        <div class="actions">
+            <button class="btn" id="btn-add">➕ Add Player</button>
+            <button class="btn" id="btn-clear">🧹 Clear</button>
+        </div>
+    </header>
+
+    <div class="card">
+        <!-- Meta Details -->
+        <div class="meta-fields">
+            <div class="field">
+                <label for="course-name">Course</label>
+                <input type="text" id="course-name" placeholder="Course name...">
+            </div>
+            <div class="field">
+                <label for="round-date">Date</label>
+                <input type="date" id="round-date">
+            </div>
+            <div class="field">
+                <label for="tee-box">Tee</label>
+                <input type="text" id="tee-box" placeholder="Tee color...">
+            </div>
+        </div>
+
+        <!-- Clean Score Spreadsheet with editable inputs -->
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr class="header-row">
+                        <th class="col-player">Hole</th>
+                        <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th>
+                        <th class="col-tot">OUT</th>
+                        <th>10</th><th>11</th><th>12</th><th>13</th><th>14</th><th>15</th><th>16</th><th>17</th><th>18</th>
+                        <th class="col-tot">IN</th>
+                        <th class="col-tot">TOT</th>
+                    </tr>
+                    <tr class="par-row">
+                        <td class="col-player">Par</td>
+                        <!-- Par inputs left blank by default for player to enter -->
+                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="0" value=""></td>
+                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="1" value=""></td>
+                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="2" value=""></td>
+                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="3" value=""></td>
+                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="4" value=""></td>
+                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="5" value=""></td>
+                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="6" value=""></td>
+                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="7" value=""></td>
+                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="8" value=""></td>
+                        <td class="col-tot" id="par-out"></td>
+                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="9" value=""></td>
+                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="10" value=""></td>
+                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="11" value=""></td>
+                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="12" value=""></td>
+                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="13" value=""></td>
+                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="14" value=""></td>
+                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="15" value=""></td>
+                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="16" value=""></td>
+                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="17" value=""></td>
+                        <td class="col-tot" id="par-in"></td>
+                        <td class="col-tot" id="par-tot"></td>
+                    </tr>
+                </thead>
+                <tbody id="tbody-players">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for confirm player removal -->
+<div class="modal-overlay" id="remove-modal">
+    <div class="modal-box">
+        <div class="modal-title">Remove Player</div>
+        <div class="modal-body" id="remove-modal-text">Are you sure you want to remove this player?</div>
+        <div class="modal-actions">
+            <button class="btn" id="modal-cancel-btn">Cancel</button>
+            <button class="btn btn-danger" id="modal-confirm-btn">Remove</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let pars = Array(18).fill(null);
+    let players = [
+        { id: 1, name: 'Player 1', scores: Array(18).fill(null) }
+    ];
+    let playerToRemoveId = null;
+
+    function render() {
+        const tbody = document.getElementById('tbody-players');
+        tbody.innerHTML = '';
+
+        players.forEach(player => {
+            const tr = document.createElement('tr');
+            
+            // Name with Remove Button
+            const tdName = document.createElement('td');
+            tdName.className = 'col-player';
+            tdName.innerHTML = `
+                <div class="player-col-container">
+                    <input type="text" class="player-name-input" value="${escapeHtml(player.name)}" data-id="${player.id}">
+                    <button class="btn-remove-player" data-id="${player.id}" title="Remove player">✕</button>
+                </div>
+            `;
+            tr.appendChild(tdName);
+
+            let out = 0, inSum = 0;
+
+            for (let i = 0; i < 18; i++) {
+                const s = player.scores[i];
+                if (s) {
+                    if (i < 9) out += s;
+                    else inSum += s;
+                }
+
+                const td = document.createElement('td');
+                td.innerHTML = `
+                    <input type="number" 
+                           pattern="[0-9]*"
+                           inputmode="numeric"
+                           class="grid-input score-input" 
+                           data-player-id="${player.id}" 
+                           data-hole="${i}" 
+                           value="${s || ''}">
+                `;
+                tr.appendChild(td);
+
+                if (i === 8) {
+                    const tdOut = document.createElement('td');
+                    tdOut.className = 'col-tot';
+                    tdOut.id = `out-${player.id}`;
+                    tdOut.textContent = out || '';
+                    tr.appendChild(tdOut);
+                }
+            }
+
+            const tdIn = document.createElement('td');
+            tdIn.className = 'col-tot';
+            tdIn.id = `in-${player.id}`;
+            tdIn.textContent = inSum || '';
+            tr.appendChild(tdIn);
+
+            const tdTot = document.createElement('td');
+            tdTot.className = 'col-tot';
+            tdTot.id = `tot-${player.id}`;
+            tdTot.textContent = (out + inSum) || '';
+            tr.appendChild(tdTot);
+
+            tbody.appendChild(tr);
+        });
+
+        calculateParTotals();
+    }
+
+    function calculateParTotals() {
+        const out = pars.slice(0, 9).reduce((a, b) => a + (b || 0), 0);
+        const inSum = pars.slice(9, 18).reduce((a, b) => a + (b || 0), 0);
+        document.getElementById('par-out').textContent = out || '';
+        document.getElementById('par-in').textContent = inSum || '';
+        document.getElementById('par-tot').textContent = (out + inSum) || '';
+    }
+
+    function calculatePlayerTotals(playerId) {
+        const player = players.find(p => p.id === playerId);
+        if (!player) return;
+
+        let out = 0, inSum = 0;
+        player.scores.forEach((s, idx) => {
+            if (s) {
+                if (idx < 9) out += s;
+                else inSum += s;
+            }
+        });
+
+        const elOut = document.getElementById(`out-${playerId}`);
+        const elIn = document.getElementById(`in-${playerId}`);
+        const elTot = document.getElementById(`tot-${playerId}`);
+
+        if (elOut) elOut.textContent = out || '';
+        if (elIn) elIn.textContent = inSum || '';
+        if (elTot) elTot.textContent = (out + inSum) || '';
+    }
+
+    // Event Delegation for Table Inputs & Remove Button
+    document.getElementById('tbody-players').addEventListener('focusin', (e) => {
+        if (e.target.classList.contains('score-input')) {
+            e.target.select();
+        }
+    });
+
+    document.getElementById('tbody-players').addEventListener('click', (e) => {
+        const removeBtn = e.target.closest('.btn-remove-player');
+        if (removeBtn) {
+            const playerId = parseInt(removeBtn.dataset.id);
+            openRemoveModal(playerId);
+        }
+    });
+
+    document.getElementById('tbody-players').addEventListener('input', (e) => {
+        if (e.target.classList.contains('score-input')) {
+            const playerId = parseInt(e.target.dataset.playerId);
+            const hole = parseInt(e.target.dataset.hole);
+            const val = parseInt(e.target.value);
+
+            const player = players.find(p => p.id === playerId);
+            if (player) {
+                player.scores[hole] = isNaN(val) ? null : val;
+                calculatePlayerTotals(playerId);
+            }
+        } else if (e.target.classList.contains('player-name-input')) {
+            const playerId = parseInt(e.target.dataset.id);
+            const player = players.find(p => p.id === playerId);
+            if (player) player.name = e.target.value;
+        }
+    });
+
+    // Par Input changes
+    document.querySelectorAll('.par-input').forEach(input => {
+        input.addEventListener('input', (e) => {
+            const idx = parseInt(e.target.dataset.index);
+            const val = parseInt(e.target.value);
+            pars[idx] = isNaN(val) ? null : val;
+            calculateParTotals();
+        });
+    });
+
+    // Add Player Button
+    document.getElementById('btn-add').onclick = () => {
+        players.push({ id: Date.now(), name: `Player ${players.length + 1}`, scores: Array(18).fill(null) });
+        render();
+    };
+
+    // Clear Scores
+    document.getElementById('btn-clear').onclick = () => {
+        players.forEach(p => p.scores = Array(18).fill(null));
+        render();
+    };
+
+    // Modal logic
+    const modalOverlay = document.getElementById('remove-modal');
+    const modalText = document.getElementById('remove-modal-text');
+    const modalCancelBtn = document.getElementById('modal-cancel-btn');
+    const modalConfirmBtn = document.getElementById('modal-confirm-btn');
+
+    function openRemoveModal(playerId) {
+        playerToRemoveId = playerId;
+        const player = players.find(p => p.id === playerId);
+        const name = player ? player.name.trim() || 'this player' : 'this player';
+        modalText.textContent = `Are you sure you want to remove ${name}?`;
+        modalOverlay.classList.add('active');
+    }
+
+    function closeRemoveModal() {
+        playerToRemoveId = null;
+        modalOverlay.classList.remove('active');
+    }
+
+    modalCancelBtn.onclick = closeRemoveModal;
+
+    modalOverlay.addEventListener('click', (e) => {
+        if (e.target === modalOverlay) {
+            closeRemoveModal();
+        }
+    });
+
+    modalConfirmBtn.onclick = () => {
+        if (playerToRemoveId !== null) {
+            players = players.filter(p => p.id !== playerToRemoveId);
+            closeRemoveModal();
+            render();
+        }
+    };
+
+    function escapeHtml(str) {
+        return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    render();
+</script>
+
+</body>
+</html>
+

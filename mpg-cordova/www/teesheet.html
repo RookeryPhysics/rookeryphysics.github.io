@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multiplayed Golf | Tee Sheet</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-slate-900 text-white sticky top-0 z-30 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-4">
+                <a href="index.html" class="flex items-center gap-2 font-bold text-lg text-emerald-400 hover:text-emerald-300">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"></path></svg>
+                    Multiplayed Golf
+                </a>
+                <span class="text-xs bg-slate-800 text-slate-300 px-2.5 py-1 rounded border border-slate-700 font-semibold">Tee Sheet</span>
+                <select id="courseSelect" onchange="renderTeeSheet()" class="bg-slate-800 text-white text-xs border border-slate-700 rounded px-2 py-1 font-semibold focus:outline-none cursor-pointer">
+                    <option value="x">x Course</option>
+                    <option value="y">y Course</option>
+                    <option value="z">z Course</option>
+                </select>
+            </div>
+            <div class="flex items-center gap-2">
+                <a href="score.html" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold py-1.5 px-3 rounded transition">Scorecard</a>
+                <button onclick="openBookingModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-1.5 px-3 rounded shadow transition">+ New Booking</button>
+                <button onclick="clearAllBookings()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-semibold py-1.5 px-3 rounded transition">Clear All</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 py-4 flex-grow w-full space-y-4">
+
+        <!-- Quick Summary Stats -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+            <div class="bg-white p-3 rounded-lg border border-slate-200 shadow-sm flex justify-between items-center">
+                <div><div class="text-slate-400 font-medium">Occupancy</div><div id="statOccupancy" class="text-base font-bold text-slate-900">0%</div></div>
+                <div id="statBookedSlots" class="text-slate-500 text-right">0/0 slots</div>
+            </div>
+            <div class="bg-white p-3 rounded-lg border border-slate-200 shadow-sm flex justify-between items-center">
+                <div><div class="text-slate-400 font-medium">Check-Ins</div><div id="statCheckIns" class="text-base font-bold text-slate-900">0 / 0</div></div>
+                <div id="statCheckInPct" class="text-slate-500 text-right">0%</div>
+            </div>
+            <div class="bg-white p-3 rounded-lg border border-slate-200 shadow-sm flex justify-between items-center">
+                <div><div class="text-slate-400 font-medium">Max Pass Members</div><div id="statMembers" class="text-base font-bold text-emerald-700">0</div></div>
+                <div id="statPublic" class="text-slate-500 text-right">Public: 0</div>
+            </div>
+            <div class="bg-white p-3 rounded-lg border border-slate-200 shadow-sm flex justify-between items-center">
+                <div><div class="text-slate-400 font-medium">Forecast Revenue</div><div id="statRevenue" class="text-base font-bold text-slate-900">$0</div></div>
+                <div id="statUnpaid" class="text-amber-700 font-medium text-right">Unpaid: $0</div>
+            </div>
+        </div>
+
+        <!-- Controls Toolbar -->
+        <div class="bg-white p-3 rounded-lg border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-3 text-xs">
+            <!-- Date Navigator -->
+            <div class="flex items-center gap-1.5">
+                <button onclick="changeDate(-1)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 border rounded text-slate-700 font-bold">←</button>
+                <input type="date" id="sheetDate" value="2026-08-13" onchange="renderTeeSheet()" class="bg-slate-50 border rounded px-2 py-1 font-bold text-slate-800 cursor-pointer">
+                <span id="dateLabel" class="bg-slate-100 text-slate-700 px-2 py-1 rounded border font-medium">Today</span>
+                <button onclick="changeDate(1)" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 border rounded text-slate-700 font-bold">→</button>
+            </div>
+            <!-- Filters -->
+            <div class="flex items-center gap-1 bg-slate-100 p-1 rounded font-medium text-slate-600" id="filterGroup">
+                <button onclick="setFilter('all', this)" class="px-2.5 py-1 rounded bg-slate-800 text-white">All</button>
+                <button onclick="setFilter('available', this)" class="px-2.5 py-1 rounded hover:bg-slate-200">Available</button>
+                <button onclick="setFilter('maxpass', this)" class="px-2.5 py-1 rounded hover:bg-slate-200">Max Pass</button>
+                <button onclick="setFilter('checkedin', this)" class="px-2.5 py-1 rounded hover:bg-slate-200">Checked In</button>
+                <button onclick="setFilter('unpaid', this)" class="px-2.5 py-1 rounded hover:bg-slate-200">Unpaid</button>
+            </div>
+            <!-- Search -->
+            <input type="text" id="searchInput" onkeyup="renderTeeSheet()" placeholder="Search player or time..." class="bg-slate-50 border rounded px-3 py-1.5 w-48 focus:outline-none focus:border-slate-400">
+        </div>
+
+        <!-- Tee Sheet Table -->
+        <div class="bg-white rounded-lg border border-slate-200 overflow-hidden shadow-sm">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs border-collapse min-w-[900px]">
+                    <thead class="bg-slate-800 text-slate-200 font-semibold uppercase text-[11px]">
+                        <tr>
+                            <th class="py-2.5 px-3 w-24">Time</th>
+                            <th class="py-2.5 px-2 w-16 text-center">Holes</th>
+                            <th class="py-2.5 px-3">Players</th>
+                            <th class="py-2.5 px-3 w-28 text-center">Payment</th>
+                            <th class="py-2.5 px-3 w-28 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="teeSheetBody" class="divide-y divide-slate-200">
+                        <!-- JS injected rows -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Booking / Edit Modal -->
+    <div id="bookingModal" class="fixed inset-0 bg-slate-900/60 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg border shadow-xl max-w-lg w-full p-5 space-y-4">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h3 class="font-bold text-sm text-slate-900">Manage Tee Slot <span id="modalTimeBadge" class="font-mono bg-slate-100 border px-1.5 py-0.5 rounded text-xs ml-2"></span></h3>
+                <button onclick="closeBookingModal()" class="text-slate-400 hover:text-slate-700 text-base font-bold">&times;</button>
+            </div>
+            <form id="bookingForm" onsubmit="saveBooking(event)" class="space-y-3 text-xs">
+                <input type="hidden" id="modalSlotId">
+                <div class="grid grid-cols-3 gap-2">
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">Round</label>
+                        <select id="modalHoles" class="w-full border rounded p-1.5">
+                            <option value="18">18 Holes</option>
+                            <option value="9">9 Holes</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">Payment</label>
+                        <select id="modalPaymentStatus" class="w-full border rounded p-1.5">
+                            <option value="Paid">Paid ($)</option>
+                            <option value="Due">Due at Counter</option>
+                            <option value="Member">Max Pass (Included)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-600 mb-1">Slot Action</label>
+                        <select id="modalBlockOption" onchange="toggleBlockInput()" class="w-full border rounded p-1.5">
+                            <option value="open">Active / Open</option>
+                            <option value="block">Block Slot</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="blockReasonGroup" class="hidden">
+                    <label class="block font-semibold text-slate-600 mb-1">Block Reason</label>
+                    <input type="text" id="modalBlockReason" placeholder="e.g., Maintenance, Tournament" class="w-full border rounded p-1.5">
+                </div>
+                <div id="playersGroup" class="space-y-2 pt-1 border-t">
+                    <div class="font-bold text-slate-700">Player Assignments</div>
+                    <div id="playerInputsContainer" class="space-y-2"></div>
+                </div>
+                <div class="flex justify-end gap-2 pt-2 border-t">
+                    <button type="button" onclick="closeBookingModal()" class="px-3 py-1.5 bg-slate-100 border rounded font-semibold text-slate-700">Cancel</button>
+                    <button type="submit" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Application Script -->
+    <script>
+        const initialSlots = [
+            { id: '0630', time: '06:30 AM', holes: 18, isBlocked: false, blockReason: '', paymentStatus: 'Available', players: [] },
+            { id: '0640', time: '06:40 AM', holes: 18, isBlocked: false, blockReason: '', paymentStatus: 'Available', players: [] },
+            { id: '0650', time: '06:50 AM', holes: 18, isBlocked: false, blockReason: '', paymentStatus: 'Available', players: [] },
+            { id: '0700', time: '07:00 AM', holes: 18, isBlocked: false, blockReason: '', paymentStatus: 'Available', players: [] },
+            { id: '0710', time: '07:10 AM', holes: 18, isBlocked: false, blockReason: '', paymentStatus: 'Available', players: [] },
+            { id: '0720', time: '07:20 AM', holes: 18, isBlocked: false, blockReason: '', paymentStatus: 'Available', players: [] },
+            { id: '0730', time: '07:30 AM', holes: 18, isBlocked: false, blockReason: '', paymentStatus: 'Available', players: [] },
+            { id: '0740', time: '07:40 AM', holes: 18, isBlocked: false, blockReason: '', paymentStatus: 'Available', players: [] },
+            { id: '0750', time: '07:50 AM', holes: 18, isBlocked: false, blockReason: '', paymentStatus: 'Available', players: [] },
+            { id: '0800', time: '08:00 AM', holes: 18, isBlocked: false, blockReason: '', paymentStatus: 'Available', players: [] },
+            { id: '0810', time: '08:10 AM', holes: 18, isBlocked: false, blockReason: '', paymentStatus: 'Available', players: [] },
+            { id: '0820', time: '08:20 AM', holes: 18, isBlocked: false, blockReason: '', paymentStatus: 'Available', players: [] },
+            { id: '0830', time: '08:30 AM', holes: 18, isBlocked: false, blockReason: '', paymentStatus: 'Available', players: [] },
+            { id: '0840', time: '08:40 AM', holes: 18, isBlocked: false, blockReason: '', paymentStatus: 'Available', players: [] },
+            { id: '0850', time: '08:50 AM', holes: 18, isBlocked: false, blockReason: '', paymentStatus: 'Available', players: [] },
+            { id: '0900', time: '09:00 AM', holes: 18, isBlocked: false, blockReason: '', paymentStatus: 'Available', players: [] }
+        ];
+
+        let slotsData = JSON.parse(JSON.stringify(initialSlots));
+        let currentFilter = 'all';
+
+        function renderTeeSheet() {
+            const tbody = document.getElementById('teeSheetBody');
+            tbody.innerHTML = '';
+            const search = document.getElementById('searchInput').value.toLowerCase().trim();
+
+            slotsData.forEach(slot => {
+                if (!matchesFilter(slot, currentFilter)) return;
+                if (search && !matchesSearch(slot, search)) return;
+
+                const tr = document.createElement('tr');
+                tr.className = `hover:bg-slate-50 border-b ${slot.isBlocked ? 'bg-amber-50/50' : ''}`;
+
+                let timeCell = `<td class="py-2.5 px-3 font-mono font-bold text-slate-800">${slot.time}</td>`;
+                let holesCell = `<td class="py-2.5 px-2 text-center"><span class="bg-slate-100 border px-1.5 py-0.5 rounded font-medium">${slot.holes}H</span></td>`;
+
+                if (slot.isBlocked) {
+                    tr.innerHTML = `${timeCell}${holesCell}
+                        <td class="py-2.5 px-3 text-amber-800 font-semibold">BLOCKED: ${slot.blockReason || 'Maintenance'}</td>
+                        <td class="py-2.5 px-3 text-center"><span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded">Blocked</span></td>
+                        <td class="py-2.5 px-3 text-right"><button onclick="unblockSlot('${slot.id}')" class="text-amber-700 hover:underline font-semibold">Unblock</button></td>`;
+                    tbody.appendChild(tr);
+                    return;
+                }
+
+                let playersHtml = '';
+                if (!slot.players || slot.players.length === 0) {
+                    playersHtml = `<button onclick="openBookingModal('${slot.id}')" class="text-slate-400 hover:text-emerald-700 italic">+ Open Slot — Click to Reserve</button>`;
+                } else {
+                    playersHtml = `<div class="grid grid-cols-2 md:grid-cols-4 gap-1.5">` +
+                        slot.players.map((p, idx) => `
+                            <div class="p-1.5 rounded border flex flex-col justify-between ${p.checkedIn ? 'bg-emerald-50 border-emerald-300' : 'bg-slate-50 border-slate-200'}">
+                                <div class="flex items-center justify-between font-bold text-slate-800">
+                                    <span class="truncate max-w-[80px]" title="${p.name}">${p.name}</span>
+                                    <button onclick="toggleCheckIn('${slot.id}', ${idx})" class="text-[10px] px-1 py-0.2 rounded font-semibold ${p.checkedIn ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'}">
+                                        ${p.checkedIn ? 'IN' : 'Check-In'}
+                                    </button>
+                                </div>
+                                <div class="flex justify-between text-[10px] text-slate-500 mt-1">
+                                    <span class="font-medium ${p.type === 'Max Pass' ? 'text-emerald-700' : ''}">${p.type}</span>
+                                    <span>${p.cart}</span>
+                                </div>
+                            </div>
+                        `).join('') + `</div>`;
+                }
+
+                let badge = slot.paymentStatus === 'Member' ? '<span class="bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded font-semibold">Max Pass</span>' :
+                            slot.paymentStatus === 'Paid' ? '<span class="bg-blue-50 text-blue-800 border border-blue-200 px-2 py-0.5 rounded font-semibold">Paid ($)</span>' :
+                            slot.paymentStatus === 'Due' ? '<span class="bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded font-semibold">Due ($50)</span>' :
+                            '<span class="text-slate-400">Open</span>';
+
+                tr.innerHTML = `${timeCell}${holesCell}
+                    <td class="py-2.5 px-3">${playersHtml}</td>
+                    <td class="py-2.5 px-3 text-center">${badge}</td>
+                    <td class="py-2.5 px-3 text-right space-x-1">
+                        <button onclick="openBookingModal('${slot.id}')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 border rounded text-slate-700 font-medium">Edit</button>
+                        ${slot.players && slot.players.length ? `<button onclick="clearSlot('${slot.id}')" class="px-2 py-1 bg-slate-100 hover:bg-red-50 text-red-600 border rounded font-medium">Clear</button>` : ''}
+                    </td>`;
+                tbody.appendChild(tr);
+            });
+            updateStats();
+        }
+
+        function matchesFilter(slot, filter) {
+            if (filter === 'all') return true;
+            if (filter === 'available') return !slot.isBlocked && (!slot.players || slot.players.length < 4);
+            if (filter === 'maxpass') return slot.players && slot.players.some(p => p.type === 'Max Pass');
+            if (filter === 'checkedin') return slot.players && slot.players.some(p => p.checkedIn);
+            if (filter === 'unpaid') return slot.paymentStatus === 'Due';
+            return true;
+        }
+
+        function matchesSearch(slot, term) {
+            return slot.time.toLowerCase().includes(term) || (slot.blockReason && slot.blockReason.toLowerCase().includes(term)) ||
+                   (slot.players && slot.players.some(p => p.name.toLowerCase().includes(term) || p.type.toLowerCase().includes(term)));
+        }
+
+        function setFilter(filter, btn) {
+            currentFilter = filter;
+            document.querySelectorAll('#filterGroup button').forEach(b => b.className = 'px-2.5 py-1 rounded hover:bg-slate-200');
+            btn.className = 'px-2.5 py-1 rounded bg-slate-800 text-white';
+            renderTeeSheet();
+        }
+
+        function toggleCheckIn(slotId, pIdx) {
+            const slot = slotsData.find(s => s.id === slotId);
+            if (slot && slot.players[pIdx]) {
+                slot.players[pIdx].checkedIn = !slot.players[pIdx].checkedIn;
+                renderTeeSheet();
+            }
+        }
+
+        function updateStats() {
+            let total = slotsData.length * 4, booked = 0, checkedIn = 0, members = 0, publicP = 0, unpaid = 0;
+            slotsData.forEach(s => {
+                if (!s.isBlocked && s.players) {
+                    s.players.forEach(p => {
+                        if (p.name) {
+                            booked++;
+                            if (p.checkedIn) checkedIn++;
+                            if (p.type === 'Max Pass') members++; else publicP++;
+                        }
+                    });
+                    if (s.paymentStatus === 'Due') unpaid += (s.players.length || 1) * 50;
+                }
+            });
+            document.getElementById('statOccupancy').textContent = `${((booked/total)*100).toFixed(1)}%`;
+            document.getElementById('statBookedSlots').textContent = `${booked}/${total} slots`;
+            document.getElementById('statCheckIns').textContent = `${checkedIn} / ${booked}`;
+            document.getElementById('statCheckInPct').textContent = `${booked ? Math.round((checkedIn/booked)*100) : 0}%`;
+            document.getElementById('statMembers').textContent = members;
+            document.getElementById('statPublic').textContent = `Public: ${publicP}`;
+            document.getElementById('statRevenue').textContent = `$${(members * 30 + publicP * 65).toLocaleString()}.00`;
+            document.getElementById('statUnpaid').textContent = `Unpaid: $${unpaid}`;
+        }
+
+        function changeDate(days) {
+            const input = document.getElementById('sheetDate');
+            const d = new Date(input.value);
+            d.setDate(d.getDate() + days);
+            input.value = d.toISOString().split('T')[0];
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('dateLabel').textContent = input.value === today ? 'Today' : d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+            renderTeeSheet();
+        }
+
+        function openBookingModal(slotId) {
+            const slot = slotsData.find(s => s.id === slotId) || slotsData[0];
+            document.getElementById('modalSlotId').value = slot.id;
+            document.getElementById('modalTimeBadge').textContent = slot.time;
+            document.getElementById('modalHoles').value = slot.holes;
+            document.getElementById('modalPaymentStatus').value = slot.paymentStatus === 'Blocked' ? 'Paid' : (slot.paymentStatus === 'Available' ? 'Paid' : slot.paymentStatus);
+            document.getElementById('modalBlockOption').value = slot.isBlocked ? 'block' : 'open';
+            document.getElementById('modalBlockReason').value = slot.blockReason || '';
+            toggleBlockInput();
+
+            const container = document.getElementById('playerInputsContainer');
+            container.innerHTML = '';
+            for (let i = 1; i <= 4; i++) {
+                const p = (slot.players && slot.players[i-1]) || {};
+                container.innerHTML += `
+                    <div class="grid grid-cols-3 gap-2 items-center bg-slate-50 p-2 rounded border">
+                        <input type="text" id="p${i}Name" value="${p.name || ''}" placeholder="Player ${i} Name" class="border rounded p-1">
+                        <select id="p${i}Type" class="border rounded p-1">
+                            <option value="Max Pass" ${p.type === 'Max Pass' ? 'selected' : ''}>Max Pass</option>
+                            <option value="Public" ${p.type === 'Public' ? 'selected' : ''}>Public Golfer</option>
+                            <option value="Senior" ${p.type === 'Senior' ? 'selected' : ''}>Senior VIP</option>
+                        </select>
+                        <select id="p${i}Cart" class="border rounded p-1">
+                            <option value="Riding" ${p.cart === 'Riding' ? 'selected' : ''}>Riding</option>
+                            <option value="Walker" ${p.cart === 'Walker' ? 'selected' : ''}>Walker</option>
+                            <option value="Push Cart" ${p.cart === 'Push Cart' ? 'selected' : ''}>Push Cart</option>
+                        </select>
+                    </div>`;
+            }
+            document.getElementById('bookingModal').classList.remove('hidden');
+        }
+
+        function closeBookingModal() { document.getElementById('bookingModal').classList.add('hidden'); }
+        function toggleBlockInput() {
+            const isBlocked = document.getElementById('modalBlockOption').value === 'block';
+            document.getElementById('blockReasonGroup').classList.toggle('hidden', !isBlocked);
+            document.getElementById('playersGroup').classList.toggle('hidden', isBlocked);
+        }
+
+        function saveBooking(e) {
+            e.preventDefault();
+            const slotId = document.getElementById('modalSlotId').value;
+            const slot = slotsData.find(s => s.id === slotId);
+            if (!slot) return;
+
+            slot.holes = parseInt(document.getElementById('modalHoles').value);
+            const isBlocked = document.getElementById('modalBlockOption').value === 'block';
+
+            if (isBlocked) {
+                slot.isBlocked = true;
+                slot.blockReason = document.getElementById('modalBlockReason').value || 'Maintenance';
+                slot.players = [];
+                slot.paymentStatus = 'Blocked';
+            } else {
+                slot.isBlocked = false;
+                slot.blockReason = '';
+                slot.paymentStatus = document.getElementById('modalPaymentStatus').value;
+                slot.players = [];
+                for (let i = 1; i <= 4; i++) {
+                    const name = document.getElementById(`p${i}Name`).value.trim();
+                    if (name) {
+                        slot.players.push({
+                            name,
+                            type: document.getElementById(`p${i}Type`).value,
+                            cart: document.getElementById(`p${i}Cart`).value,
+                            checkedIn: false
+                        });
+                    }
+                }
+            }
+            renderTeeSheet();
+            closeBookingModal();
+        }
+
+        function clearSlot(slotId) {
+            if (confirm('Clear all players from this time slot?')) {
+                const slot = slotsData.find(s => s.id === slotId);
+                if (slot) { slot.players = []; slot.paymentStatus = 'Available'; renderTeeSheet(); }
+            }
+        }
+
+        function clearAllBookings() {
+            if (confirm('Clear all bookings and reset the tee sheet?')) {
+                slotsData.forEach(s => { s.players = []; s.isBlocked = false; s.blockReason = ''; s.paymentStatus = 'Available'; });
+                renderTeeSheet();
+            }
+        }
+
+        function unblockSlot(slotId) {
+            const slot = slotsData.find(s => s.id === slotId);
+            if (slot) { slot.isBlocked = false; slot.blockReason = ''; slot.paymentStatus = 'Available'; renderTeeSheet(); }
+        }
+
+        renderTeeSheet();
+    </script>
+</body>
+</html>
