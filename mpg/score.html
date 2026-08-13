@@ -233,6 +233,94 @@
             color: var(--text-main);
         }
 
+        /* Modal styling */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-box {
+            background: #ffffff;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            padding: 1.25rem;
+            max-width: 360px;
+            width: 90%;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .modal-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+        }
+
+        .modal-body {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 1.25rem;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: #ffffff;
+            border: 1px solid #dc2626;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .player-col-container {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            width: 100%;
+            height: 100%;
+        }
+
+        .btn-remove-player {
+            background: transparent;
+            border: none;
+            color: #ef4444;
+            font-size: 0.75rem;
+            cursor: pointer;
+            padding: 0.1rem 0.25rem;
+            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+
+        .btn-remove-player:hover {
+            background: #fee2e2;
+        }
+
         /* Mobile Optimization */
         @media (max-width: 600px) {
             body {
@@ -273,8 +361,8 @@
             }
 
             th.col-player, td.col-player {
-                min-width: 70px;
-                max-width: 80px;
+                min-width: 90px;
+                max-width: 105px;
                 padding: 0 0.15rem;
             }
 
@@ -305,7 +393,6 @@
         <div class="actions">
             <button class="btn" id="btn-add">➕ Add Player</button>
             <button class="btn" id="btn-clear">🧹 Clear</button>
-            <a href="index.html" class="btn">🏠 Directory</a>
         </div>
     </header>
 
@@ -371,11 +458,24 @@
     </div>
 </div>
 
+<!-- Modal for confirm player removal -->
+<div class="modal-overlay" id="remove-modal">
+    <div class="modal-box">
+        <div class="modal-title">Remove Player</div>
+        <div class="modal-body" id="remove-modal-text">Are you sure you want to remove this player?</div>
+        <div class="modal-actions">
+            <button class="btn" id="modal-cancel-btn">Cancel</button>
+            <button class="btn btn-danger" id="modal-confirm-btn">Remove</button>
+        </div>
+    </div>
+</div>
+
 <script>
     let pars = Array(18).fill(null);
     let players = [
         { id: 1, name: 'Player 1', scores: Array(18).fill(null) }
     ];
+    let playerToRemoveId = null;
 
     function render() {
         const tbody = document.getElementById('tbody-players');
@@ -384,10 +484,15 @@
         players.forEach(player => {
             const tr = document.createElement('tr');
             
-            // Name
+            // Name with Remove Button
             const tdName = document.createElement('td');
             tdName.className = 'col-player';
-            tdName.innerHTML = `<input type="text" class="player-name-input" value="${escapeHtml(player.name)}" data-id="${player.id}">`;
+            tdName.innerHTML = `
+                <div class="player-col-container">
+                    <input type="text" class="player-name-input" value="${escapeHtml(player.name)}" data-id="${player.id}">
+                    <button class="btn-remove-player" data-id="${player.id}" title="Remove player">✕</button>
+                </div>
+            `;
             tr.appendChild(tdName);
 
             let out = 0, inSum = 0;
@@ -467,10 +572,18 @@
         if (elTot) elTot.textContent = (out + inSum) || '';
     }
 
-    // Event Delegation for Table Inputs
+    // Event Delegation for Table Inputs & Remove Button
     document.getElementById('tbody-players').addEventListener('focusin', (e) => {
         if (e.target.classList.contains('score-input')) {
             e.target.select();
+        }
+    });
+
+    document.getElementById('tbody-players').addEventListener('click', (e) => {
+        const removeBtn = e.target.closest('.btn-remove-player');
+        if (removeBtn) {
+            const playerId = parseInt(removeBtn.dataset.id);
+            openRemoveModal(playerId);
         }
     });
 
@@ -514,6 +627,41 @@
         render();
     };
 
+    // Modal logic
+    const modalOverlay = document.getElementById('remove-modal');
+    const modalText = document.getElementById('remove-modal-text');
+    const modalCancelBtn = document.getElementById('modal-cancel-btn');
+    const modalConfirmBtn = document.getElementById('modal-confirm-btn');
+
+    function openRemoveModal(playerId) {
+        playerToRemoveId = playerId;
+        const player = players.find(p => p.id === playerId);
+        const name = player ? player.name.trim() || 'this player' : 'this player';
+        modalText.textContent = `Are you sure you want to remove ${name}?`;
+        modalOverlay.classList.add('active');
+    }
+
+    function closeRemoveModal() {
+        playerToRemoveId = null;
+        modalOverlay.classList.remove('active');
+    }
+
+    modalCancelBtn.onclick = closeRemoveModal;
+
+    modalOverlay.addEventListener('click', (e) => {
+        if (e.target === modalOverlay) {
+            closeRemoveModal();
+        }
+    });
+
+    modalConfirmBtn.onclick = () => {
+        if (playerToRemoveId !== null) {
+            players = players.filter(p => p.id !== playerToRemoveId);
+            closeRemoveModal();
+            render();
+        }
+    };
+
     function escapeHtml(str) {
         return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
     }
@@ -523,3 +671,4 @@
 
 </body>
 </html>
+
