@@ -384,8 +384,8 @@
                 desc: 'Description',
                 loft: 10.5,
                 shaftLength: 3.80, // Highest (Back-Left)
-                slotPos: [-0.42, 2.4, -0.34],
-                rotOffset: [-0.08, 0, -0.16],
+                slotPos: [-0.38, 2.4, -0.32],
+                rotOffset: [-0.18, -0.20, 0.08],
                 elevateOffset: [-0.70, 2.2, 0.70]
             },
             {
@@ -396,8 +396,8 @@
                 desc: 'Explore premier championship courses, track course slope and rating metrics, book open tee times, and manage your group rotations seamlessly.',
                 loft: 15.0,
                 shaftLength: 3.45, // Tier 2 (Back-Right)
-                slotPos: [0.40, 2.4, -0.30],
-                rotOffset: [-0.06, 0, 0.16],
+                slotPos: [0.36, 2.4, -0.28],
+                rotOffset: [-0.16, 0.20, -0.08],
                 elevateOffset: [0.60, 2.0, 0.70]
             },
             {
@@ -408,8 +408,8 @@
                 desc: 'Digital match play scoring engine. Real-time skins calculation, strokes against par, and instant live leaderboard synchronization with playing partners.',
                 loft: 24.0,
                 shaftLength: 3.10, // Tier 3 (Center-Left)
-                slotPos: [-0.46, 2.4, 0.08],
-                rotOffset: [0.06, 0, -0.14],
+                slotPos: [-0.42, 2.4, 0.02],
+                rotOffset: [-0.02, -0.24, 0.12],
                 elevateOffset: [-0.60, 1.8, 0.75]
             },
             {
@@ -420,8 +420,8 @@
                 desc: 'Explore active tournaments, seasonal leaderboards, community match archives, and verified past round histories.',
                 loft: 32.0,
                 shaftLength: 2.75, // Tier 4 (Center-Right)
-                slotPos: [0.44, 2.4, 0.12],
-                rotOffset: [0.08, 0, 0.14],
+                slotPos: [0.40, 2.4, 0.06],
+                rotOffset: [0.02, 0.24, -0.12],
                 elevateOffset: [0.60, 1.7, 0.75]
             },
             {
@@ -432,8 +432,8 @@
                 desc: 'Unlock member achievements, earn pro shop perks, claim tournament bounties, and submit attested rounds for seasonal club rewards.',
                 loft: 46.0,
                 shaftLength: 2.40, // Tier 5 (Front-Left)
-                slotPos: [-0.25, 2.4, 0.44],
-                rotOffset: [0.18, 0, -0.08],
+                slotPos: [-0.26, 2.4, 0.38],
+                rotOffset: [0.22, -0.15, 0.08],
                 elevateOffset: [-0.45, 1.6, 0.85]
             },
             {
@@ -444,8 +444,8 @@
                 desc: 'Report course issue.',
                 loft: 3.0,
                 shaftLength: 2.05, // Shortest (Front-Right)
-                slotPos: [0.25, 2.4, 0.44],
-                rotOffset: [0.18, 0, 0.08],
+                slotPos: [0.26, 2.4, 0.38],
+                rotOffset: [0.22, 0.15, -0.08],
                 elevateOffset: [0.45, 1.5, 0.85]
             }
         ];
@@ -506,6 +506,152 @@
                     ctx.fill();
                 }
             }
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function createPebbleLeatherTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#808080';
+            ctx.fillRect(0, 0, 512, 512);
+
+            // Fine organic pebble noise
+            const imgData = ctx.getImageData(0, 0, 512, 512);
+            const data = imgData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                const n = (Math.random() - 0.5) * 45;
+                data[i] = Math.min(255, Math.max(0, 128 + n));
+                data[i + 1] = Math.min(255, Math.max(0, 128 + n));
+                data[i + 2] = Math.min(255, Math.max(0, 128 + n));
+            }
+            ctx.putImageData(imgData, 0, 0);
+
+            // Pebble cell stipples
+            for (let i = 0; i < 2800; i++) {
+                const x = Math.random() * 512;
+                const y = Math.random() * 512;
+                const r = Math.random() * 3.5 + 1.5;
+                const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
+                grad.addColorStop(0, 'rgba(210, 210, 210, 0.45)');
+                grad.addColorStop(0.7, 'rgba(128, 128, 128, 0.2)');
+                grad.addColorStop(1, 'rgba(40, 40, 40, 0.5)');
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.wrapS = THREE.RepeatWrapping;
+            tex.wrapT = THREE.RepeatWrapping;
+            tex.repeat.set(4, 4);
+            return tex;
+        }
+
+        function createCarbonFiberTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 64;
+            canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#16191d';
+            ctx.fillRect(0, 0, 64, 64);
+
+            const size = 16;
+            for (let x = 0; x < 64; x += size) {
+                for (let y = 0; y < 64; y += size) {
+                    const isAlt = ((x / size) + (y / size)) % 2 === 0;
+                    ctx.fillStyle = isAlt ? '#2b303a' : '#111418';
+                    ctx.fillRect(x, y, size, size);
+
+                    // Micro twill weave lines
+                    ctx.strokeStyle = isAlt ? '#3a424e' : '#080a0c';
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    if (isAlt) {
+                        ctx.moveTo(x, y);
+                        ctx.lineTo(x + size, y + size);
+                    } else {
+                        ctx.moveTo(x + size, y);
+                        ctx.lineTo(x, y + size);
+                    }
+                    ctx.stroke();
+                }
+            }
+
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.wrapS = THREE.RepeatWrapping;
+            tex.wrapT = THREE.RepeatWrapping;
+            tex.repeat.set(6, 6);
+            return tex;
+        }
+
+        function createMeshFabricTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 64;
+            canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#18201a';
+            ctx.fillRect(0, 0, 64, 64);
+
+            ctx.fillStyle = '#0a0e0b';
+            for (let x = 4; x < 64; x += 8) {
+                for (let y = 4; y < 64; y += 8) {
+                    const offset = ((y / 8) % 2) * 4;
+                    ctx.beginPath();
+                    ctx.arc(x + offset, y, 2.2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.wrapS = THREE.RepeatWrapping;
+            tex.wrapT = THREE.RepeatWrapping;
+            tex.repeat.set(4, 4);
+            return tex;
+        }
+
+        function createBagEmblemTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+
+            // Outer gold bevel ring
+            const grad = ctx.createRadialGradient(128, 128, 90, 128, 128, 126);
+            grad.addColorStop(0, '#d4af37');
+            grad.addColorStop(0.5, '#fff2a8');
+            grad.addColorStop(1, '#997a15');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(128, 128, 124, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Inner dark emerald enamel core
+            ctx.fillStyle = '#061d13';
+            ctx.beginPath();
+            ctx.arc(128, 128, 102, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Gold Laurel & Monogram Details
+            ctx.fillStyle = '#d4af37';
+            ctx.font = 'bold 36px "Cinzel", serif, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('RP', 128, 118);
+
+            ctx.font = 'bold 13px sans-serif';
+            ctx.letterSpacing = '3px';
+            ctx.fillText('TOUR SPEC', 128, 160);
+
+            // Stars
+            ctx.font = '16px sans-serif';
+            ctx.fillText('★ ★ ★', 128, 80);
+
             return new THREE.CanvasTexture(canvas);
         }
 
@@ -702,32 +848,48 @@
         }
 
         // -------------------------------------------------------------------------
-        // Photorealistic Tour Golf Bag
+        // Clean Minimalist Luxury Golf Bag
         // -------------------------------------------------------------------------
         function setupGolfBag() {
             bagGroup = new THREE.Group();
 
+            const leatherBumpTex = createPebbleLeatherTexture();
+
+            // Refined Premium Materials
             const leatherMat = new THREE.MeshPhysicalMaterial({
-                color: 0x081e14,
-                roughness: 0.4,
-                metalness: 0.2,
-                clearcoat: 0.4,
-                clearcoatRoughness: 0.3
+                color: 0x09261b,
+                roughness: 0.38,
+                metalness: 0.15,
+                clearcoat: 0.5,
+                clearcoatRoughness: 0.25,
+                bumpMap: leatherBumpTex,
+                bumpScale: 0.006
             });
 
             const blackTrimMat = new THREE.MeshPhysicalMaterial({
-                color: 0x0f172a,
-                roughness: 0.25,
-                metalness: 0.8,
-                clearcoat: 0.6
+                color: 0x10151c,
+                roughness: 0.32,
+                metalness: 0.45,
+                clearcoat: 0.55
             });
 
-            const goldHardwareMat = new THREE.MeshStandardMaterial({
+            const goldMat = new THREE.MeshStandardMaterial({
                 color: 0xd4af37,
-                metalness: 0.96,
-                roughness: 0.12
+                metalness: 0.95,
+                roughness: 0.15
             });
 
+            const darkVelvetMat = new THREE.MeshStandardMaterial({
+                color: 0x05130b,
+                roughness: 0.95
+            });
+
+            const baseMat = new THREE.MeshStandardMaterial({
+                color: 0x0a0d10,
+                roughness: 0.85
+            });
+
+            // 1. Sleek Main Body
             const bodyGeo = new THREE.CylinderGeometry(0.88, 0.72, 3.6, 36);
             const body = new THREE.Mesh(bodyGeo, leatherMat);
             body.position.y = 1.9;
@@ -735,56 +897,62 @@
             body.receiveShadow = true;
             bagGroup.add(body);
 
-            const pocketGeo = new THREE.BoxGeometry(0.75, 1.7, 0.45);
+            // 2. Clean Forward Pocket
+            const pocketGeo = new THREE.BoxGeometry(0.76, 1.75, 0.44);
             const pocket = new THREE.Mesh(pocketGeo, blackTrimMat);
-            pocket.position.set(0, 1.75, 0.75);
+            pocket.position.set(0, 1.75, 0.76);
             pocket.rotation.x = -0.04;
             pocket.castShadow = true;
             bagGroup.add(pocket);
 
-            const zipGeo = new THREE.BoxGeometry(0.04, 1.5, 0.02);
-            const zip = new THREE.Mesh(zipGeo, goldHardwareMat);
-            zip.position.set(0, 1.75, 0.98);
+            // Gold Zipper Line
+            const zipGeo = new THREE.BoxGeometry(0.035, 1.5, 0.02);
+            const zip = new THREE.Mesh(zipGeo, goldMat);
+            zip.position.set(0, 1.75, 0.99);
+            zip.rotation.x = -0.04;
             bagGroup.add(zip);
 
-            const topCollarGeo = new THREE.TorusGeometry(0.90, 0.05, 16, 48);
-            const topCollar = new THREE.Mesh(topCollarGeo, goldHardwareMat);
+            // 3. Gold Collar Trims
+            const topCollarGeo = new THREE.TorusGeometry(0.90, 0.045, 16, 48);
+            const topCollar = new THREE.Mesh(topCollarGeo, goldMat);
             topCollar.rotation.x = Math.PI / 2;
             topCollar.position.y = 3.7;
             bagGroup.add(topCollar);
 
-            const midCollarGeo = new THREE.TorusGeometry(0.81, 0.035, 16, 48);
-            const midCollar = new THREE.Mesh(midCollarGeo, goldHardwareMat);
+            const midCollarGeo = new THREE.TorusGeometry(0.81, 0.03, 16, 48);
+            const midCollar = new THREE.Mesh(midCollarGeo, goldMat);
             midCollar.rotation.x = Math.PI / 2;
             midCollar.position.y = 0.95;
             bagGroup.add(midCollar);
 
-            const baseGeo = new THREE.CylinderGeometry(0.75, 0.82, 0.28, 32);
-            const baseMat = new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.85 });
+            // 4. Velvet Divider Top
+            const dividerGeo = new THREE.CylinderGeometry(0.85, 0.85, 0.15, 32);
+            const divider = new THREE.Mesh(dividerGeo, darkVelvetMat);
+            divider.position.y = 3.63;
+            bagGroup.add(divider);
+
+            // 5. Sleek Dual Stand Legs
+            const legGeo = new THREE.CylinderGeometry(0.024, 0.024, 3.25, 16);
+            const leg1 = new THREE.Mesh(legGeo, goldMat);
+            leg1.position.set(-0.62, 1.55, -0.85);
+            leg1.rotation.set(-0.54, 0, -0.22);
+            leg1.castShadow = true;
+            bagGroup.add(leg1);
+
+            const leg2 = new THREE.Mesh(legGeo, goldMat);
+            leg2.position.set(0.62, 1.55, -0.85);
+            leg2.rotation.set(-0.54, 0, 0.22);
+            leg2.castShadow = true;
+            bagGroup.add(leg2);
+
+            // 6. Molded Base
+            const baseGeo = new THREE.CylinderGeometry(0.74, 0.82, 0.28, 32);
             const base = new THREE.Mesh(baseGeo, baseMat);
             base.position.y = 0.14;
             base.castShadow = true;
             bagGroup.add(base);
 
-            const legGeo = new THREE.CylinderGeometry(0.028, 0.028, 3.2, 16);
-            const leg1 = new THREE.Mesh(legGeo, goldHardwareMat);
-            leg1.position.set(-0.65, 1.5, -0.85);
-            leg1.rotation.set(-0.55, 0, -0.22);
-            leg1.castShadow = true;
-            bagGroup.add(leg1);
-
-            const leg2 = new THREE.Mesh(legGeo, goldHardwareMat);
-            leg2.position.set(0.65, 1.5, -0.85);
-            leg2.rotation.set(-0.55, 0, 0.22);
-            leg2.castShadow = true;
-            bagGroup.add(leg2);
-
-            const dividerMat = new THREE.MeshStandardMaterial({ color: 0x03120b, roughness: 0.95 });
-            const dividerGeo = new THREE.CylinderGeometry(0.84, 0.84, 0.15, 32);
-            const divider = new THREE.Mesh(dividerGeo, dividerMat);
-            divider.position.y = 3.63;
-            bagGroup.add(divider);
-
+            // Bag Natural Tilt
             bagGroup.rotation.x = 0.12;
             bagGroup.rotation.z = -0.04;
             scene.add(bagGroup);
