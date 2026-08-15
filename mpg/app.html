@@ -18,20 +18,21 @@
         body {
             font-family: 'Inter', sans-serif;
             background-color: #1a1a1a;
-            /* Dark background outside the phone container */
+            /* Dark background outside the phone container on desktop */
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
+            min-height: 100dvh;
             margin: 0;
             overflow: hidden;
-            /* Prevent body scroll, handle scroll in app container */
         }
 
         /* Phone container styling to look like a device on desktop */
         #device-container {
             width: 100%;
             height: 100vh;
+            height: 100dvh;
             background-color: #f3f4f6;
             position: relative;
             box-shadow: 0 0 0 rgba(0, 0, 0, 0);
@@ -43,6 +44,7 @@
                 width: 390px;
                 /* Standard phone width */
                 height: 844px;
+                max-height: 90vh;
                 /* Standard phone height */
                 border-radius: 40px;
                 border: 12px solid #0f0f0f;
@@ -58,6 +60,7 @@
             height: 100%;
             position: relative;
             background-color: #f9fafb;
+            overflow: hidden;
         }
 
         /* Hide scrollbar for cleaner look */
@@ -112,14 +115,15 @@
         .bottom-nav {
             position: absolute;
             bottom: 0;
+            left: 0;
+            right: 0;
             width: 100%;
             background-color: #ffffff;
             /* Curved top corners to match reference somewhat */
             border-top-left-radius: 20px;
             border-top-right-radius: 20px;
             box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.05);
-            padding-bottom: 24px;
-            /* Padding for safe area/home indicator on phones */
+            padding-bottom: max(16px, env(safe-area-inset-bottom, 16px));
             padding-top: 10px;
             display: flex;
             justify-content: space-between;
