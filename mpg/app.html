@@ -91,24 +91,44 @@
         }
 
         .floating-btn {
-            width: 68px;
-            height: 68px;
-            background-color: #0066cc;
-            /* Wendy's blue button color */
+            width: 72px;
+            height: 72px;
+            /* 3D sphere lighting with dimple pattern */
+            background-color: #ffffff;
+            background-image: 
+                radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.2) 35%, rgba(180, 190, 205, 0.6) 80%, rgba(130, 140, 160, 0.9) 100%),
+                radial-gradient(#b8c2cc 18%, transparent 22%),
+                radial-gradient(#b8c2cc 18%, transparent 22%);
+            background-position: 0 0, 0 0, 5px 5px;
+            background-size: 100% 100%, 10px 10px, 10px 10px;
             border-radius: 50%;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            color: white;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            /* Creating the white cutout effect */
-            border: 5px solid #ffffff;
-            transition: transform 0.1s;
+            color: #1b4332;
+            box-shadow: 
+                0 10px 18px -3px rgba(0, 0, 0, 0.25),
+                0 4px 6px -2px rgba(0, 0, 0, 0.15),
+                inset 0 -5px 10px rgba(0, 0, 0, 0.25),
+                inset 0 3px 6px rgba(255, 255, 255, 0.9);
+            border: 4px solid #ffffff;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease;
+        }
+
+        .floating-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 
+                0 14px 22px -3px rgba(0, 0, 0, 0.28),
+                0 6px 8px -2px rgba(0, 0, 0, 0.18),
+                inset 0 -5px 10px rgba(0, 0, 0, 0.25),
+                inset 0 3px 6px rgba(255, 255, 255, 0.9);
         }
 
         .floating-btn:active {
-            transform: scale(0.95);
+            transform: scale(0.94) translateY(1px);
         }
 
         /* Bottom Nav styling */
@@ -173,7 +193,7 @@
                 <div
                     class="flex items-center bg-black/10 px-3 py-1.5 rounded-full cursor-pointer hover:bg-black/20 transition-colors">
                     <div class="bg-yellow-400 rounded-full w-4 h-4 flex items-center justify-center mr-1.5 shadow-sm">
-                        <span class="text-[#E2231A] text-[10px] font-bold">M</span>
+                        <span class="text-[#E2231A] text-[10px] font-bold">U</span>
                     </div>
                     <span class="font-bold text-sm tracking-tight">0 Points</span>
                 </div>
@@ -242,8 +262,8 @@
                 <div class="center-nav-item">
                     <div class="floating-btn-wrapper">
                         <button class="floating-btn">
-                            <i data-lucide="flag-triangle-right" class="w-8 h-8 mb-0.5"></i>
-                            <span class="text-[10px] font-bold">Courses</span>
+                            <i data-lucide="flag-triangle-right" class="w-8 h-8 mb-0.5 text-emerald-800 drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]"></i>
+                            <span class="text-[10px] font-bold text-gray-900 drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]">Courses</span>
                         </button>
                     </div>
                 </div>
