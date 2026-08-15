@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Golf Ball Submission Form</title>
+    <!-- Modern Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: rgba(23, 32, 54, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent: #10b981;
+            --accent-hover: #059669;
+            --accent-glow: rgba(16, 185, 129, 0.25);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --input-bg: rgba(15, 23, 42, 0.6);
+            --input-border: rgba(255, 255, 255, 0.12);
+            --input-focus-border: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            min-height: 100vh;
+            background: radial-gradient(circle at 50% 15%, #1e293b 0%, #0b0f19 80%);
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Subtle ambient glow circles */
+        .ambient-glow {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0) 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -60%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 460px;
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+            padding: 2.5rem 2rem;
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Three.js Canvas Container */
+        .logo-wrapper {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            margin-bottom: 1.25rem;
+            cursor: grab;
+        }
+
+        .logo-wrapper:active {
+            cursor: grabbing;
+        }
+
+        #golfBallCanvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            display: block;
+            outline: none;
+        }
+
+        .badge {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--accent);
+            background: var(--accent-glow);
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            margin-bottom: 0.75rem;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-align: center;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.025em;
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            line-height: 1.5;
+        }
+
+        form {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #cbd5e1;
+            margin-left: 0.25rem;
+        }
+
+        .input-control {
+            width: 100%;
+            padding: 0.85rem 1.1rem;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 12px;
+            color: var(--text-main);
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        .input-control:focus {
+            border-color: var(--input-focus-border);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+            background: rgba(15, 23, 42, 0.85);
+        }
+
+        .input-control::placeholder {
+            color: #64748b;
+        }
+
+        textarea.input-control {
+            resize: vertical;
+            min-height: 90px;
+        }
+
+        .submit-btn {
+            margin-top: 0.5rem;
+            width: 100%;
+            padding: 0.95rem 1.5rem;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border: none;
+            border-radius: 12px;
+            color: #ffffff;
+            font-size: 1rem;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+            cursor: pointer;
+            box-shadow: 0 4px 14px 0 var(--accent-glow);
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px 0 rgba(16, 185, 129, 0.35);
+            background: linear-gradient(135deg, #34d399 0%, #059669 100%);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Success Message Modal/Alert */
+        .status-msg {
+            display: none;
+            margin-top: 1rem;
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+            font-size: 0.875rem;
+            text-align: center;
+            width: 100%;
+        }
+
+        .status-msg.success {
+            display: block;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #34d399;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="ambient-glow"></div>
+
+    <main class="container">
+        <!-- Three.js Golf Ball Canvas Container -->
+        <!-- Three.js Golf Ball Canvas Container -->
+        <div class="logo-wrapper" title="Drag to rotate golf ball">
+            <canvas id="golfBallCanvas"></canvas>
+        </div>
+
+        <h1>Get in Touch</h1>
+        <p class="subtitle">Desccribe the issue and submit a report.</p>
+
+        <form id="submissionForm" onsubmit="handleFormSubmit(event)">
+            <div class="form-group">
+                <label for="message">Message</label>
+                <textarea id="message" class="input-control" rows="4" placeholder="Write your message here..."
+                    required></textarea>
+            </div>
+
+            <button type="submit" class="submit-btn" id="submitBtn">
+                Submit Message
+            </button>
+
+            <div id="statusMsg" class="status-msg"></div>
+        </form>
+    </main>
+
+    <script>
+        // --- 1. Procedural Golf Ball Texture Generator (Dimples + Normal Map) ---
+        function createGolfBallDimpleTextures() {
+            const size = 1024;
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+
+            // Fill base diffuse color (pure white)
+            ctx.fillStyle = '#f8fafc';
+            ctx.fillRect(0, 0, size, size);
+
+            // Canvas for Bump / Height Map
+            const bumpCanvas = document.createElement('canvas');
+            bumpCanvas.width = size;
+            bumpCanvas.height = size;
+            const bumpCtx = bumpCanvas.getContext('2d');
+
+            // Mid-gray base for bump map (zero elevation)
+            bumpCtx.fillStyle = '#808080';
+            bumpCtx.fillRect(0, 0, size, size);
+
+            // Generate dimple pattern on bump map
+            const rows = 36;
+            const cols = 72;
+            const radius = size / cols * 0.46;
+
+            for (let y = 0; y < rows; y++) {
+                const isOdd = y % 2 === 1;
+                const yPos = (y + 0.5) * (size / rows);
+
+                for (let x = 0; x < cols; x++) {
+                    const xOffset = isOdd ? (size / cols) / 2 : 0;
+                    const xPos = (x * (size / cols) + xOffset) % size;
+
+                    // Draw concave dimple gradient (dark center = indentation)
+                    const grad = bumpCtx.createRadialGradient(xPos, yPos, 0, xPos, yPos, radius);
+                    grad.addColorStop(0, '#202020');   // deep dimple center
+                    grad.addColorStop(0.7, '#606060');
+                    grad.addColorStop(1, '#808080');   // surface level
+
+                    bumpCtx.fillStyle = grad;
+                    bumpCtx.beginPath();
+                    bumpCtx.arc(xPos, yPos, radius, 0, Math.PI * 2);
+                    bumpCtx.fill();
+
+                    // Subtle ambient shadow on diffuse texture
+                    const diffGrad = ctx.createRadialGradient(xPos, yPos, 0, xPos, yPos, radius);
+                    diffGrad.addColorStop(0, '#e2e8f0');
+                    diffGrad.addColorStop(0.8, '#f1f5f9');
+                    diffGrad.addColorStop(1, '#ffffff');
+
+                    ctx.fillStyle = diffGrad;
+                    ctx.beginPath();
+                    ctx.arc(xPos, yPos, radius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            const diffuseTexture = new THREE.CanvasTexture(canvas);
+            const bumpTexture = new THREE.CanvasTexture(bumpCanvas);
+            bumpTexture.wrapS = THREE.RepeatWrapping;
+            bumpTexture.wrapT = THREE.RepeatWrapping;
+            diffuseTexture.wrapS = THREE.RepeatWrapping;
+            diffuseTexture.wrapT = THREE.RepeatWrapping;
+
+            return { diffuseTexture, bumpTexture };
+        }
+
+        // --- 2. Three.js Scene Setup ---
+        const canvas = document.getElementById('golfBallCanvas');
+        const container = canvas.parentElement;
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
+        camera.position.z = 3.6;
+
+        const renderer = new THREE.WebGLRenderer({
+            canvas: canvas,
+            alpha: true,
+            antialias: true
+        });
+        renderer.setSize(120, 120);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.15;
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        scene.add(ambientLight);
+
+        const keyLight = new THREE.DirectionalLight(0xffffff, 1.4);
+        keyLight.position.set(4, 5, 4);
+        scene.add(keyLight);
+
+        const rimLight = new THREE.DirectionalLight(0x34d399, 0.8); // subtle emerald rim light
+        rimLight.position.set(-4, -3, -3);
+        scene.add(rimLight);
+
+        const fillLight = new THREE.PointLight(0xffffff, 0.4);
+        fillLight.position.set(-3, 2, 3);
+        scene.add(fillLight);
+
+        // Golf Ball Mesh
+        const { diffuseTexture, bumpTexture } = createGolfBallDimpleTextures();
+        const geometry = new THREE.SphereGeometry(1, 64, 64);
+        const material = new THREE.MeshStandardMaterial({
+            map: diffuseTexture,
+            bumpMap: bumpTexture,
+            bumpScale: 0.045,
+            roughness: 0.28,
+            metalness: 0.02,
+            color: 0xffffff
+        });
+
+        const golfBall = new THREE.Mesh(geometry, material);
+        scene.add(golfBall);
+
+        // --- 3. Interactive Mouse / Touch Drag Rotation & Idle Animation ---
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        let autoRotate = true;
+
+        const startDragging = (e) => {
+            isDragging = true;
+            autoRotate = false;
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            previousMousePosition = { x: clientX, y: clientY };
+        };
+
+        const stopDragging = () => {
+            isDragging = false;
+            setTimeout(() => { autoRotate = true; }, 1200);
+        };
+
+        const onDrag = (e) => {
+            if (!isDragging) return;
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            const deltaX = clientX - previousMousePosition.x;
+            const deltaY = clientY - previousMousePosition.y;
+
+            golfBall.rotation.y += deltaX * 0.02;
+            golfBall.rotation.x += deltaY * 0.02;
+
+            previousMousePosition = { x: clientX, y: clientY };
+        };
+
+        container.addEventListener('mousedown', startDragging);
+        window.addEventListener('mouseup', stopDragging);
+        window.addEventListener('mousemove', onDrag);
+
+        container.addEventListener('touchstart', startDragging, { passive: true });
+        window.addEventListener('touchend', stopDragging);
+        window.addEventListener('touchmove', onDrag, { passive: true });
+
+        // Animation Loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (autoRotate) {
+                golfBall.rotation.y += 0.01;
+                golfBall.rotation.x += 0.003;
+            }
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // --- 4. Form Submission Handler (Google Sheets Integration) ---
+        // REPLACE THIS URL with your deployed Google Apps Script Web App URL:
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwCFXAT4r-7HIO6tpPazCeZ9EV_cSpt4_rUC2C0z5RjveQfUQEtZfup0FVaaVER4d5iqQ/exec";
+
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            const status = document.getElementById('statusMsg');
+            const messageInput = document.getElementById('message');
+            const messageValue = messageInput.value.trim();
+
+            if (!messageValue) return;
+
+            btn.disabled = true;
+            btn.innerHTML = 'Submitting...';
+            status.className = 'status-msg';
+            status.style.display = 'none';
+
+            // Check if user has replaced placeholder URL
+            if (GOOGLE_SCRIPT_URL === "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE" || !GOOGLE_SCRIPT_URL) {
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = 'Submit Message';
+                    status.className = 'status-msg';
+                    status.style.display = 'block';
+                    status.style.background = 'rgba(239, 68, 68, 0.15)';
+                    status.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+                    status.style.color = '#f87171';
+                    status.innerHTML = '⚠ Please configure your Google Apps Script URL in the code.';
+                }, 400);
+                return;
+            }
+
+            try {
+                // Using URLSearchParams / FormData with POST
+                const payload = new URLSearchParams();
+                payload.append('message', messageValue);
+                payload.append('timestamp', new Date().toISOString());
+
+                await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', // standard for Google Apps Script Web App submissions
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: payload.toString()
+                });
+
+                // Success visual feedback
+                btn.disabled = false;
+                btn.innerHTML = 'Submit Message';
+                status.className = 'status-msg success';
+                status.style.display = 'block';
+                status.style.background = 'rgba(16, 185, 129, 0.15)';
+                status.style.border = '1px solid rgba(16, 185, 129, 0.3)';
+                status.style.color = '#34d399';
+                status.innerHTML = '✓ Thank you! Your report has been submitted.';
+                document.getElementById('submissionForm').reset();
+
+                // Fun spin on submission!
+                let spinSpeed = 0.25;
+                const spinInterval = setInterval(() => {
+                    golfBall.rotation.y += spinSpeed;
+                    golfBall.rotation.x += spinSpeed * 0.5;
+                    spinSpeed *= 0.94;
+                    if (spinSpeed < 0.01) {
+                        clearInterval(spinInterval);
+                    }
+                }, 16);
+
+            } catch (err) {
+                console.error("Submission error:", err);
+                btn.disabled = false;
+                btn.innerHTML = 'Submit Message';
+                status.className = 'status-msg';
+                status.style.display = 'block';
+                status.style.background = 'rgba(239, 68, 68, 0.15)';
+                status.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+                status.style.color = '#f87171';
+                status.innerHTML = '✕ Failed to submit. Please try again.';
+            }
+        }
+    </script>
+</body>
+
+</html>
