@@ -410,19 +410,23 @@
 
         let allSubmissions = [];
 
-        async function fetchSubmissions() {
+        async function fetchSubmissions(isAutoRefresh = false) {
             const refreshBtn = document.getElementById('refreshBtn');
             const loadingState = document.getElementById('loadingState');
             const errorState = document.getElementById('errorState');
             const tableWrapper = document.getElementById('tableWrapper');
             const emptyState = document.getElementById('emptyState');
 
-            refreshBtn.disabled = true;
-            refreshBtn.textContent = 'Refreshing...';
-            loadingState.style.display = 'flex';
-            errorState.style.display = 'none';
-            tableWrapper.style.display = 'none';
-            emptyState.style.display = 'none';
+            if (!isAutoRefresh) {
+                refreshBtn.disabled = true;
+                refreshBtn.textContent = 'Refreshing...';
+                if (allSubmissions.length === 0) {
+                    loadingState.style.display = 'flex';
+                    errorState.style.display = 'none';
+                    tableWrapper.style.display = 'none';
+                    emptyState.style.display = 'none';
+                }
+            }
 
             try {
                 // Fetch JSON data via GET from the Google Apps Script Web App
@@ -441,22 +445,29 @@
                 allSubmissions = Array.isArray(data) ? data : (data.data || data.submissions || []);
 
                 loadingState.style.display = 'none';
-                renderTable(allSubmissions);
+                errorState.style.display = 'none';
+                
+                // Re-apply active search filter if any
+                filterSubmissions();
 
             } catch (err) {
                 console.error("Fetch error:", err);
-                loadingState.style.display = 'none';
-                errorState.style.display = 'block';
+                if (allSubmissions.length === 0) {
+                    loadingState.style.display = 'none';
+                    errorState.style.display = 'block';
 
-                const errBox = document.getElementById('errorMessage');
-                errBox.innerHTML = `
-                    <strong>⚠️ Could not load data from Google Sheets</strong><br>
-                    <p style="margin-top: 0.5rem;">Please ensure your Google Apps Script has a <code>doGet(e)</code> function returning JSON and has been updated with a new deployment.</p>
-                    <pre>${err.message}</pre>
-                `;
+                    const errBox = document.getElementById('errorMessage');
+                    errBox.innerHTML = `
+                        <strong>⚠️ Could not load data from Google Sheets</strong><br>
+                        <p style="margin-top: 0.5rem;">Please ensure your Google Apps Script has a <code>doGet(e)</code> function returning JSON and has been updated with a new deployment.</p>
+                        <pre>${err.message}</pre>
+                    `;
+                }
             } finally {
-                refreshBtn.disabled = false;
-                refreshBtn.textContent = '↻ Refresh';
+                if (!isAutoRefresh) {
+                    refreshBtn.disabled = false;
+                    refreshBtn.textContent = '↻ Refresh';
+                }
             }
         }
 
@@ -533,8 +544,13 @@
             return text.replace(/[&<>"']/g, m => map[m]);
         }
 
-        // Initial load on page start
-        document.addEventListener('DOMContentLoaded', fetchSubmissions);
+        // Initial load on page start and set 10s auto-refresh
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchSubmissions();
+            setInterval(() => {
+                fetchSubmissions(true);
+            }, 10000);
+        });
     </script>
 </body>
 
