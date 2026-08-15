@@ -343,16 +343,12 @@
         <!-- Header -->
         <header class="header">
             <div class="header-left">
-                <span class="badge">Live View</span>
                 <h1>Golf Submissions Dashboard</h1>
             </div>
             <div class="header-actions">
                 <a href="golf-submission.html" class="btn btn-secondary">
                     + New Submission
                 </a>
-                <button class="btn btn-refresh" id="refreshBtn" onclick="fetchSubmissions()">
-                    ↻ Refresh
-                </button>
             </div>
         </header>
 
@@ -411,21 +407,16 @@
         let allSubmissions = [];
 
         async function fetchSubmissions(isAutoRefresh = false) {
-            const refreshBtn = document.getElementById('refreshBtn');
             const loadingState = document.getElementById('loadingState');
             const errorState = document.getElementById('errorState');
             const tableWrapper = document.getElementById('tableWrapper');
             const emptyState = document.getElementById('emptyState');
 
-            if (!isAutoRefresh) {
-                refreshBtn.disabled = true;
-                refreshBtn.textContent = 'Refreshing...';
-                if (allSubmissions.length === 0) {
-                    loadingState.style.display = 'flex';
-                    errorState.style.display = 'none';
-                    tableWrapper.style.display = 'none';
-                    emptyState.style.display = 'none';
-                }
+            if (!isAutoRefresh && allSubmissions.length === 0) {
+                loadingState.style.display = 'flex';
+                errorState.style.display = 'none';
+                tableWrapper.style.display = 'none';
+                emptyState.style.display = 'none';
             }
 
             try {
@@ -462,11 +453,6 @@
                         <p style="margin-top: 0.5rem;">Please ensure your Google Apps Script has a <code>doGet(e)</code> function returning JSON and has been updated with a new deployment.</p>
                         <pre>${err.message}</pre>
                     `;
-                }
-            } finally {
-                if (!isAutoRefresh) {
-                    refreshBtn.disabled = false;
-                    refreshBtn.textContent = '↻ Refresh';
                 }
             }
         }
