@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Multiplayed Golf</title>
+
+    <!-- Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Three.js + Addons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- GSAP for Smooth Kinematics -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+
+    <style>
+        :root {
+            --accent-gold: #d4af37;
+            --accent-green: #10b981;
+            --text-primary: #ffffff;
+            --text-muted: #cbd5e1;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #05140d;
+            color: var(--text-primary);
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            user-select: none;
+        }
+
+        #canvas-container {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            cursor: grab;
+        }
+
+        #canvas-container:active {
+            cursor: grabbing;
+        }
+
+        /* Minimal Clean UI Overlay */
+        .overlay-layer {
+            position: absolute;
+            inset: 0;
+            z-index: 10;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 2.2rem 3.5rem;
+        }
+
+        .interactive {
+            pointer-events: auto;
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 1.1rem;
+            text-decoration: none;
+            color: #fff;
+        }
+
+        .brand-logo {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--accent-gold);
+            box-shadow: 0 0 25px rgba(212, 175, 55, 0.4), inset 0 0 10px rgba(0, 0, 0, 0.5);
+            transition: transform 0.4s ease;
+        }
+
+        .brand:hover .brand-logo {
+            transform: scale(1.08) rotate(6deg);
+        }
+
+        .brand-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.45rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #ffffff;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .cta-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.7rem 1.5rem;
+            background: rgba(5, 20, 13, 0.75);
+            border: 1px solid rgba(212, 175, 55, 0.4);
+            border-radius: 9999px;
+            color: #fff;
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-decoration: none;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .cta-button:hover {
+            background: rgba(212, 175, 55, 0.2);
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(212, 175, 55, 0.35);
+        }
+
+        /* Active Club Hero Typography */
+        .club-hero-display {
+            position: absolute;
+            left: 3.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            max-width: 480px;
+            opacity: 0;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+
+        .club-hero-display.visible {
+            opacity: 1;
+            transform: translateY(-50%);
+        }
+
+        .club-hero-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 3.4rem;
+            font-weight: 800;
+            line-height: 1.05;
+            letter-spacing: -0.02em;
+            color: #ffffff;
+            margin-bottom: 0.9rem;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+        }
+
+        .club-hero-desc {
+            font-size: 1rem;
+            line-height: 1.65;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+        }
+
+        .club-enter-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 0.95rem 2.2rem;
+            background: linear-gradient(135deg, #d4af37 0%, #f7d070 100%);
+            border-radius: 9999px;
+            color: #041209;
+            font-size: 0.9rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            text-decoration: none;
+            box-shadow: 0 12px 35px rgba(212, 175, 55, 0.45);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .club-enter-btn:hover {
+            transform: scale(1.05) translateY(-2px);
+            box-shadow: 0 18px 45px rgba(212, 175, 55, 0.65);
+            background: linear-gradient(135deg, #f7d070, #ffffff);
+        }
+
+        .club-enter-btn svg {
+            transition: transform 0.3s ease;
+        }
+
+        .club-enter-btn:hover svg {
+            transform: translateX(5px);
+        }
+
+        /* Bottom Minimalist Club Navigation Pill */
+        .bottom-nav {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .club-selector-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.45rem 0.6rem;
+            background: rgba(4, 18, 12, 0.72);
+            backdrop-filter: blur(28px) saturate(180%);
+            -webkit-backdrop-filter: blur(28px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 9999px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.75);
+        }
+
+        .club-btn {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.88rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            padding: 0.65rem 1.35rem;
+            border-radius: 9999px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .club-btn:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .club-btn.active {
+            color: #041209;
+            background: linear-gradient(135deg, #d4af37, #f7d070);
+            box-shadow: 0 4px 22px rgba(212, 175, 55, 0.5);
+        }
+
+        .hint-text {
+            position: absolute;
+            bottom: 6.8rem;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.75rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.5);
+            pointer-events: none;
+            text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .overlay-layer {
+                padding: 1.5rem;
+            }
+
+            .club-hero-display {
+                left: 1.5rem;
+                right: 1.5rem;
+                top: auto;
+                bottom: 8.5rem;
+                transform: none;
+                max-width: none;
+                background: rgba(4, 18, 12, 0.88);
+                padding: 1.5rem;
+                border-radius: 1.5rem;
+                backdrop-filter: blur(24px);
+                border: 1px solid rgba(255, 255, 255, 0.15);
+            }
+
+            .club-hero-title {
+                font-size: 2.2rem;
+            }
+
+            .club-btn {
+                padding: 0.5rem 0.8rem;
+                font-size: 0.78rem;
+            }
+
+            .hint-text {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- 3D Canvas Container -->
+    <div id="canvas-container"></div>
+
+    <!-- UI Overlay Layer -->
+    <div class="overlay-layer">
+
+        <!-- Header -->
+        <header class="interactive">
+            <a href="javascript:void(0)" class="brand">
+                <img src="logo.jpeg" alt="Multiplayed Golf" class="brand-logo" onerror="this.src='../icon.jpg'">
+                <div>
+                    <div class="brand-title">Multiplayed Golf</div>
+                </div>
+            </a>
+
+            <div class="header-actions">
+                <a href="javascript:void(0)" class="cta-button" onclick="return false;">
+                    <span>Launch App</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="7" y1="17" x2="17" y2="7"></line>
+                        <polyline points="7 7 17 7 17 17"></polyline>
+                    </svg>
+                </a>
+            </div>
+        </header>
+
+        <!-- Active Club Hero Typography -->
+        <div id="hero-display" class="club-hero-display interactive visible">
+            <h1 id="hero-title" class="club-hero-title">Mobile App</h1>
+            <p id="hero-desc" class="club-hero-desc">
+                Description
+            </p>
+            <a id="hero-link" href="javascript:void(0)" class="club-enter-btn" onclick="return false;">
+                <span>Enter Page</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+            </a>
+        </div>
+
+        <div class="hint-text">Drag to rotate · Click club or use Arrow Keys (← →) / 1-6</div>
+
+        <!-- Bottom Club Selector -->
+        <div class="bottom-nav interactive">
+            <div class="club-selector-bar">
+                <button class="club-btn active" data-index="0" onclick="selectClub(0)">Mobile App</button>
+                <button class="club-btn" data-index="1" onclick="selectClub(1)">Courses</button>
+                <button class="club-btn" data-index="2" onclick="selectClub(2)">Score Card</button>
+                <button class="club-btn" data-index="3" onclick="selectClub(3)">Tournaments</button>
+                <button class="club-btn" data-index="4" onclick="selectClub(4)">Rewards</button>
+                <button class="club-btn" data-index="5" onclick="selectClub(5)">Make Report</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // -------------------------------------------------------------------------
+        // Distinctly Tiered Height Club Database & Navigation Specs
+        // -------------------------------------------------------------------------
+        const CLUBS = [
+            {
+                name: 'Mobile App',
+                code: '1W',
+                tag: '1W · 10.5° Forged Titanium Tour',
+                page: 'app.html',
+                desc: 'Description',
+                loft: 10.5,
+                shaftLength: 3.80, // Highest (Back-Left)
+                slotPos: [-0.42, 2.4, -0.34],
+                rotOffset: [-0.08, 0, -0.16],
+                elevateOffset: [-0.70, 2.2, 0.70]
+            },
+            {
+                name: 'Courses',
+                code: '3W',
+                tag: '3W · 15.0° Forged Titanium Tour',
+                page: 'teesheet.html',
+                desc: 'Explore premier championship courses, track course slope and rating metrics, book open tee times, and manage your group rotations seamlessly.',
+                loft: 15.0,
+                shaftLength: 3.45, // Tier 2 (Back-Right)
+                slotPos: [0.40, 2.4, -0.30],
+                rotOffset: [-0.06, 0, 0.16],
+                elevateOffset: [0.60, 2.0, 0.70]
+            },
+            {
+                name: 'Score Card',
+                code: '5I',
+                tag: '5I · 24.0° Forged Titanium Tour',
+                page: 'score.html',
+                desc: 'Digital match play scoring engine. Real-time skins calculation, strokes against par, and instant live leaderboard synchronization with playing partners.',
+                loft: 24.0,
+                shaftLength: 3.10, // Tier 3 (Center-Left)
+                slotPos: [-0.46, 2.4, 0.08],
+                rotOffset: [0.06, 0, -0.14],
+                elevateOffset: [-0.60, 1.8, 0.75]
+            },
+            {
+                name: 'Tournaments',
+                code: '7I',
+                tag: '7I · 32.0° Forged Titanium Tour',
+                page: 'list.html',
+                desc: 'Explore active tournaments, seasonal leaderboards, community match archives, and verified past round histories.',
+                loft: 32.0,
+                shaftLength: 2.75, // Tier 4 (Center-Right)
+                slotPos: [0.44, 2.4, 0.12],
+                rotOffset: [0.08, 0, 0.14],
+                elevateOffset: [0.60, 1.7, 0.75]
+            },
+            {
+                name: 'Rewards',
+                code: 'PW',
+                tag: 'PW · 46.0° Forged Titanium Tour',
+                page: 'submit.html',
+                desc: 'Unlock member achievements, earn pro shop perks, claim tournament bounties, and submit attested rounds for seasonal club rewards.',
+                loft: 46.0,
+                shaftLength: 2.40, // Tier 5 (Front-Left)
+                slotPos: [-0.25, 2.4, 0.44],
+                rotOffset: [0.18, 0, -0.08],
+                elevateOffset: [-0.45, 1.6, 0.85]
+            },
+            {
+                name: 'Make Report',
+                code: 'PUTT',
+                tag: 'PUTT · Course Feedback & Maintenance',
+                page: 'view.html',
+                desc: 'Report course issue.',
+                loft: 3.0,
+                shaftLength: 2.05, // Shortest (Front-Right)
+                slotPos: [0.25, 2.4, 0.44],
+                rotOffset: [0.18, 0, 0.08],
+                elevateOffset: [0.45, 1.5, 0.85]
+            }
+        ];
+
+        let selectedIndex = 0;
+        let scene, camera, renderer, controls;
+        let clubs = [];
+        let bagGroup;
+        let grassInstancedMesh;
+        let raycaster, mouse;
+
+        // -------------------------------------------------------------------------
+        // Procedural Textures & Natural Materials (Pure Solid Clean Metal)
+        // -------------------------------------------------------------------------
+        function createFairwayGrassTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024;
+            canvas.height = 1024;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#113b24';
+            ctx.fillRect(0, 0, 1024, 1024);
+
+            const stripeWidth = 128;
+            for (let x = 0; x < 1024; x += stripeWidth * 2) {
+                ctx.fillStyle = '#174e30';
+                ctx.fillRect(x, 0, stripeWidth, 1024);
+            }
+
+            for (let i = 0; i < 40000; i++) {
+                const rx = Math.random() * 1024;
+                const ry = Math.random() * 1024;
+                const shade = Math.random() > 0.5 ? '#1f633d' : '#0c2d1b';
+                ctx.fillStyle = shade;
+                ctx.fillRect(rx, ry, Math.random() * 2 + 1, Math.random() * 4 + 2);
+            }
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(8, 8);
+            return texture;
+        }
+
+        function createGolfBallTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, 256, 256);
+
+            ctx.fillStyle = '#d5dde6';
+            for (let x = 8; x < 256; x += 16) {
+                for (let y = 8; y < 256; y += 16) {
+                    ctx.beginPath();
+                    ctx.arc(x + ((y / 16) % 2) * 8, y, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        // -------------------------------------------------------------------------
+        // Scene Setup & Atmosphere
+        // -------------------------------------------------------------------------
+        function init() {
+            const container = document.getElementById('canvas-container');
+
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x061a11);
+            scene.fog = new THREE.FogExp2(0x061a11, 0.032);
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 60);
+            camera.position.set(3.2, 5.2, 9.8);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.35;
+            container.appendChild(renderer.domElement);
+
+            // Controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.minDistance = 4.5;
+            controls.maxDistance = 16;
+            controls.maxPolarAngle = Math.PI / 2 - 0.04;
+            controls.target.set(0.4, 2.6, 0);
+
+            // Lighting & Atmosphere
+            setupFairwayLighting();
+
+            // Lush Green Grass Field & 3D Grass Blades
+            setupGreenGrassField();
+
+            // Bag & Clean Unified Solid Forged Clubs with Tiered Heights
+            setupGolfBag();
+            setupTieredClubs();
+
+            // Raycaster
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+
+            // Event Listeners
+            window.addEventListener('resize', onWindowResize);
+            container.addEventListener('pointerdown', onPointerDown);
+
+            // Keyboard Navigation (Arrow Keys & Number Keys 1-6)
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                    const nextIndex = (selectedIndex + 1) % CLUBS.length;
+                    selectClub(nextIndex);
+                } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                    const prevIndex = (selectedIndex - 1 + CLUBS.length) % CLUBS.length;
+                    selectClub(prevIndex);
+                } else {
+                    const num = parseInt(e.key);
+                    if (!isNaN(num) && num >= 1 && num <= CLUBS.length) {
+                        selectClub(num - 1);
+                    }
+                }
+            });
+
+            // Default Select Driver
+            selectClub(0, true);
+
+            // Animation Loop
+            animate();
+        }
+
+        // -------------------------------------------------------------------------
+        // Natural Golf Fairway Lighting
+        // -------------------------------------------------------------------------
+        function setupFairwayLighting() {
+            const hemiLight = new THREE.HemisphereLight(0xcdebd8, 0x0a2e1c, 1.4);
+            scene.add(hemiLight);
+
+            const sunLight = new THREE.DirectionalLight(0xfff7e0, 3.0);
+            sunLight.position.set(8, 14, 7);
+            sunLight.castShadow = true;
+            sunLight.shadow.mapSize.width = 2048;
+            sunLight.shadow.mapSize.height = 2048;
+            sunLight.shadow.bias = -0.0001;
+            sunLight.shadow.camera.near = 1;
+            sunLight.shadow.camera.far = 30;
+            sunLight.shadow.camera.left = -7;
+            sunLight.shadow.camera.right = 7;
+            sunLight.shadow.camera.top = 7;
+            sunLight.shadow.camera.bottom = -7;
+            scene.add(sunLight);
+
+            const rimLight = new THREE.DirectionalLight(0x7ee787, 2.0);
+            rimLight.position.set(-8, 9, -6);
+            scene.add(rimLight);
+
+            const goldFill = new THREE.PointLight(0xd4af37, 1.8, 14);
+            goldFill.position.set(3, 4, 3);
+            scene.add(goldFill);
+        }
+
+        // -------------------------------------------------------------------------
+        // Lush Green Grass Field & Instanced 3D Grass Blades
+        // -------------------------------------------------------------------------
+        function setupGreenGrassField() {
+            const grassTex = createFairwayGrassTexture();
+
+            const groundGeo = new THREE.PlaneGeometry(80, 80, 32, 32);
+            const groundMat = new THREE.MeshStandardMaterial({
+                map: grassTex,
+                roughness: 0.85,
+                metalness: 0.1,
+                color: 0x228b4c
+            });
+            const ground = new THREE.Mesh(groundGeo, groundMat);
+            ground.rotation.x = -Math.PI / 2;
+            ground.position.y = 0;
+            ground.receiveShadow = true;
+            scene.add(ground);
+
+            const bladeCount = 38000;
+            const bladeGeo = new THREE.ConeGeometry(0.025, 0.28, 3);
+            bladeGeo.translate(0, 0.14, 0);
+
+            const bladeMat = new THREE.MeshStandardMaterial({
+                color: 0x1e7e45,
+                roughness: 0.6,
+                metalness: 0.05,
+                flatShading: true
+            });
+
+            grassInstancedMesh = new THREE.InstancedMesh(bladeGeo, bladeMat, bladeCount);
+            grassInstancedMesh.receiveShadow = true;
+
+            const dummy = new THREE.Object3D();
+            const radius = 21; // Tripled from 9.5
+
+            for (let i = 0; i < bladeCount; i++) {
+                const r = Math.sqrt(Math.random()) * radius;
+                const theta = Math.random() * Math.PI * 2;
+                const x = r * Math.cos(theta);
+                const z = r * Math.sin(theta);
+
+                if (x * x + z * z < 0.6) continue;
+
+                dummy.position.set(x, 0, z);
+                dummy.rotation.y = Math.random() * Math.PI * 2;
+                dummy.rotation.x = (Math.random() - 0.5) * 0.35;
+                dummy.rotation.z = (Math.random() - 0.5) * 0.35;
+
+                const scaleH = Math.random() * 0.6 + 0.7;
+                dummy.scale.set(1, scaleH, 1);
+                dummy.updateMatrix();
+
+                grassInstancedMesh.setMatrixAt(i, dummy.matrix);
+            }
+            grassInstancedMesh.instanceMatrix.needsUpdate = true;
+            scene.add(grassInstancedMesh);
+
+            // Ball & Wooden Tee
+            const ballGroup = new THREE.Group();
+            ballGroup.position.set(1.4, 0, 1.2);
+
+            const teeGeo = new THREE.CylinderGeometry(0.015, 0.005, 0.25, 12);
+            const teeMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, roughness: 0.4 });
+            const tee = new THREE.Mesh(teeGeo, teeMat);
+            tee.position.y = 0.12;
+            ballGroup.add(tee);
+
+            const ballGeo = new THREE.SphereGeometry(0.09, 32, 32);
+            const ballTex = createGolfBallTexture();
+            const ballMat = new THREE.MeshPhysicalMaterial({
+                color: 0xffffff,
+                bumpMap: ballTex,
+                bumpScale: 0.015,
+                roughness: 0.25,
+                metalness: 0.05,
+                clearcoat: 0.9,
+                clearcoatRoughness: 0.1
+            });
+            const ball = new THREE.Mesh(ballGeo, ballMat);
+            ball.position.y = 0.32;
+            ball.castShadow = true;
+            ballGroup.add(ball);
+
+            scene.add(ballGroup);
+        }
+
+        // -------------------------------------------------------------------------
+        // Photorealistic Tour Golf Bag
+        // -------------------------------------------------------------------------
+        function setupGolfBag() {
+            bagGroup = new THREE.Group();
+
+            const leatherMat = new THREE.MeshPhysicalMaterial({
+                color: 0x081e14,
+                roughness: 0.4,
+                metalness: 0.2,
+                clearcoat: 0.4,
+                clearcoatRoughness: 0.3
+            });
+
+            const blackTrimMat = new THREE.MeshPhysicalMaterial({
+                color: 0x0f172a,
+                roughness: 0.25,
+                metalness: 0.8,
+                clearcoat: 0.6
+            });
+
+            const goldHardwareMat = new THREE.MeshStandardMaterial({
+                color: 0xd4af37,
+                metalness: 0.96,
+                roughness: 0.12
+            });
+
+            const bodyGeo = new THREE.CylinderGeometry(0.88, 0.72, 3.6, 36);
+            const body = new THREE.Mesh(bodyGeo, leatherMat);
+            body.position.y = 1.9;
+            body.castShadow = true;
+            body.receiveShadow = true;
+            bagGroup.add(body);
+
+            const pocketGeo = new THREE.BoxGeometry(0.75, 1.7, 0.45);
+            const pocket = new THREE.Mesh(pocketGeo, blackTrimMat);
+            pocket.position.set(0, 1.75, 0.75);
+            pocket.rotation.x = -0.04;
+            pocket.castShadow = true;
+            bagGroup.add(pocket);
+
+            const zipGeo = new THREE.BoxGeometry(0.04, 1.5, 0.02);
+            const zip = new THREE.Mesh(zipGeo, goldHardwareMat);
+            zip.position.set(0, 1.75, 0.98);
+            bagGroup.add(zip);
+
+            const topCollarGeo = new THREE.TorusGeometry(0.90, 0.05, 16, 48);
+            const topCollar = new THREE.Mesh(topCollarGeo, goldHardwareMat);
+            topCollar.rotation.x = Math.PI / 2;
+            topCollar.position.y = 3.7;
+            bagGroup.add(topCollar);
+
+            const midCollarGeo = new THREE.TorusGeometry(0.81, 0.035, 16, 48);
+            const midCollar = new THREE.Mesh(midCollarGeo, goldHardwareMat);
+            midCollar.rotation.x = Math.PI / 2;
+            midCollar.position.y = 0.95;
+            bagGroup.add(midCollar);
+
+            const baseGeo = new THREE.CylinderGeometry(0.75, 0.82, 0.28, 32);
+            const baseMat = new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.85 });
+            const base = new THREE.Mesh(baseGeo, baseMat);
+            base.position.y = 0.14;
+            base.castShadow = true;
+            bagGroup.add(base);
+
+            const legGeo = new THREE.CylinderGeometry(0.028, 0.028, 3.2, 16);
+            const leg1 = new THREE.Mesh(legGeo, goldHardwareMat);
+            leg1.position.set(-0.65, 1.5, -0.85);
+            leg1.rotation.set(-0.55, 0, -0.22);
+            leg1.castShadow = true;
+            bagGroup.add(leg1);
+
+            const leg2 = new THREE.Mesh(legGeo, goldHardwareMat);
+            leg2.position.set(0.65, 1.5, -0.85);
+            leg2.rotation.set(-0.55, 0, 0.22);
+            leg2.castShadow = true;
+            bagGroup.add(leg2);
+
+            const dividerMat = new THREE.MeshStandardMaterial({ color: 0x03120b, roughness: 0.95 });
+            const dividerGeo = new THREE.CylinderGeometry(0.84, 0.84, 0.15, 32);
+            const divider = new THREE.Mesh(dividerGeo, dividerMat);
+            divider.position.y = 3.63;
+            bagGroup.add(divider);
+
+            bagGroup.rotation.x = 0.12;
+            bagGroup.rotation.z = -0.04;
+            scene.add(bagGroup);
+        }
+
+        // -------------------------------------------------------------------------
+        // SOLID FORGED BLADE GEOMETRY
+        // -------------------------------------------------------------------------
+        function createSolidForgedBladeGeometry() {
+            const shape = new THREE.Shape();
+            shape.moveTo(0, 0); // Heel
+            shape.bezierCurveTo(0.12, -0.05, 0.48, -0.08, 0.68, 0.04); // Cambered sole
+            shape.bezierCurveTo(0.78, 0.14, 0.76, 0.32, 0.62, 0.44); // Rounded high toe
+            shape.bezierCurveTo(0.42, 0.48, 0.14, 0.44, 0.02, 0.36); // Chamfered top line
+            shape.bezierCurveTo(-0.02, 0.22, -0.02, 0.08, 0, 0); // Hosel junction
+
+            const extrudeSettings = {
+                steps: 2,
+                depth: 0.09,
+                bevelEnabled: true,
+                bevelThickness: 0.03,
+                bevelSize: 0.03,
+                bevelOffset: 0,
+                bevelSegments: 4
+            };
+
+            return new THREE.ExtrudeGeometry(shape, extrudeSettings);
+        }
+
+        function setupTieredClubs() {
+            const solidBladeGeo = createSolidForgedBladeGeometry();
+
+            const mirrorChromeMat = new THREE.MeshPhysicalMaterial({
+                color: 0xf8fafc,
+                metalness: 0.98,
+                roughness: 0.06,
+                clearcoat: 1.0,
+                clearcoatRoughness: 0.05
+            });
+
+            const goldTrimMat = new THREE.MeshStandardMaterial({
+                color: 0xd4af37,
+                metalness: 0.96,
+                roughness: 0.12
+            });
+
+            CLUBS.forEach((clubData, idx) => {
+                const clubContainer = new THREE.Group();
+                clubContainer.position.set(clubData.slotPos[0], clubData.slotPos[1], clubData.slotPos[2]);
+
+                clubContainer.userData = {
+                    index: idx,
+                    data: clubData,
+                    restingPos: new THREE.Vector3(clubData.slotPos[0], clubData.slotPos[1], clubData.slotPos[2]),
+                    restingRot: new THREE.Euler(clubData.rotOffset[0], clubData.rotOffset[1], clubData.rotOffset[2]),
+                    elevatedPos: new THREE.Vector3(
+                        clubData.slotPos[0] + clubData.elevateOffset[0],
+                        clubData.slotPos[1] + clubData.elevateOffset[1],
+                        clubData.slotPos[2] + clubData.elevateOffset[2]
+                    ),
+                    elevatedRot: new THREE.Euler(-0.15, 0.45, 0.05)
+                };
+                clubContainer.rotation.copy(clubContainer.userData.restingRot);
+
+                // 1. Chrome Shaft with specific staggered height
+                const shaftGeo = new THREE.CylinderGeometry(0.018, 0.032, clubData.shaftLength, 24);
+                const shaft = new THREE.Mesh(shaftGeo, mirrorChromeMat);
+                shaft.position.y = clubData.shaftLength / 2;
+                shaft.castShadow = true;
+                clubContainer.add(shaft);
+
+                // 2. Velvet Tour Grip
+                const gripGeo = new THREE.CylinderGeometry(0.034, 0.037, 0.9, 20);
+                const gripMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 });
+                const grip = new THREE.Mesh(gripGeo, gripMat);
+                grip.position.y = 0.45;
+                clubContainer.add(grip);
+
+                // 3. Gold Ferrule Collar
+                const ferruleGeo = new THREE.CylinderGeometry(0.036, 0.036, 0.14, 16);
+                const ferruleMat = new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.2 });
+                const ferrule = new THREE.Mesh(ferruleGeo, ferruleMat);
+                ferrule.position.y = clubData.shaftLength - 0.07;
+                clubContainer.add(ferrule);
+
+                const ring1 = new THREE.Mesh(new THREE.CylinderGeometry(0.037, 0.037, 0.015, 16), goldTrimMat);
+                ring1.position.y = clubData.shaftLength - 0.03;
+                clubContainer.add(ring1);
+
+                // 4. Solid Head Assembly
+                const headGroup = new THREE.Group();
+                headGroup.position.set(0, clubData.shaftLength, 0);
+
+                const loftRad = clubData.loft * Math.PI / 180;
+
+                // Hosel Neck
+                const hoselGeo = new THREE.CylinderGeometry(0.034, 0.034, 0.22, 16);
+                const hosel = new THREE.Mesh(hoselGeo, mirrorChromeMat);
+                hosel.position.set(0, -0.04, 0);
+                hosel.rotation.z = -0.15;
+                headGroup.add(hosel);
+
+                // Solid Forged Chrome Blade Body
+                const blade = new THREE.Mesh(solidBladeGeo, mirrorChromeMat);
+                blade.position.set(0.04, 0.02, 0.02);
+                blade.rotation.set(-loftRad * 0.35, 0.32, -0.12);
+                blade.castShadow = true;
+                headGroup.add(blade);
+
+                // Integrated Gold Cavity Accent
+                const cavityGeo = new THREE.BoxGeometry(0.38, 0.20, 0.03);
+                const cavity = new THREE.Mesh(cavityGeo, goldTrimMat);
+                cavity.position.set(0.34, 0.16, -0.035);
+                cavity.rotation.set(-loftRad * 0.35, 0.32, -0.12);
+                headGroup.add(cavity);
+
+                // Generous Interactive Click Hitbox
+                const hitGeo = new THREE.SphereGeometry(0.72, 12, 12);
+                const hitMat = new THREE.MeshBasicMaterial({ visible: false });
+                const hit = new THREE.Mesh(hitGeo, hitMat);
+                hit.position.y = clubData.shaftLength + 0.1;
+                hit.userData = { clubIndex: idx };
+                clubContainer.add(hit);
+
+                clubContainer.add(headGroup);
+                bagGroup.add(clubContainer);
+                clubs.push(clubContainer);
+            });
+        }
+
+        // -------------------------------------------------------------------------
+        // Silky Smooth Club Selection & Camera Focus
+        // -------------------------------------------------------------------------
+        function selectClub(index, skipTween = false) {
+            if (index < 0 || index >= CLUBS.length) return;
+            selectedIndex = index;
+            const data = CLUBS[index];
+
+            // 1. Update UI Elements
+            document.querySelectorAll('.club-btn').forEach((btn, i) => {
+                btn.classList.toggle('active', i === index);
+            });
+
+            const heroDisplay = document.getElementById('hero-display');
+            const heroTitle = document.getElementById('hero-title');
+            const heroDesc = document.getElementById('hero-desc');
+            const heroLink = document.getElementById('hero-link');
+
+            heroTitle.textContent = data.name;
+            heroDesc.textContent = data.desc;
+            heroLink.href = 'javascript:void(0)';
+            heroLink.onclick = () => false;
+            heroLink.querySelector('span').textContent = `Explore ${data.name}`;
+
+            if (!skipTween) {
+                gsap.fromTo(heroDisplay,
+                    { opacity: 0, x: -20 },
+                    { opacity: 1, x: 0, duration: 0.45, ease: 'power2.out' }
+                );
+            }
+
+            // 2. Animate 3D Clubs
+            clubs.forEach((clubMesh, i) => {
+                const isTarget = (i === index);
+                const uData = clubMesh.userData;
+
+                if (isTarget) {
+                    gsap.to(clubMesh.position, {
+                        x: uData.elevatedPos.x,
+                        y: uData.elevatedPos.y,
+                        z: uData.elevatedPos.z,
+                        duration: 0.7,
+                        ease: 'back.out(1.4)'
+                    });
+                    gsap.to(clubMesh.rotation, {
+                        x: uData.elevatedRot.x,
+                        y: uData.elevatedRot.y,
+                        z: uData.elevatedRot.z,
+                        duration: 0.7,
+                        ease: 'power2.out'
+                    });
+                } else {
+                    gsap.to(clubMesh.position, {
+                        x: uData.restingPos.x,
+                        y: uData.restingPos.y,
+                        z: uData.restingPos.z,
+                        duration: 0.5,
+                        ease: 'power2.inOut'
+                    });
+                    gsap.to(clubMesh.rotation, {
+                        x: uData.restingRot.x,
+                        y: uData.restingRot.y,
+                        z: uData.restingRot.z,
+                        duration: 0.5,
+                        ease: 'power2.inOut'
+                    });
+                }
+            });
+
+            // 3. Smooth Camera Refocus
+            const targetPos = clubs[index].userData.elevatedPos;
+            gsap.to(controls.target, {
+                x: targetPos.x * 0.35 + 0.3,
+                y: targetPos.y + 0.8,
+                z: targetPos.z * 0.35,
+                duration: 0.9,
+                ease: 'power2.out'
+            });
+        }
+
+        // -------------------------------------------------------------------------
+        // 3D Pointer & Direct Click Interaction
+        // -------------------------------------------------------------------------
+        function onPointerDown(event) {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(scene.children, true);
+
+            for (let i = 0; i < intersects.length; i++) {
+                const hit = intersects[i].object;
+                if (hit.userData && typeof hit.userData.clubIndex === 'number') {
+                    selectClub(hit.userData.clubIndex);
+                    break;
+                }
+            }
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // -------------------------------------------------------------------------
+        // Animation Loop
+        // -------------------------------------------------------------------------
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const elapsedTime = clock.getElapsedTime();
+            controls.update();
+
+            // Subtle Fairway Grass Sway
+            if (grassInstancedMesh) {
+                grassInstancedMesh.rotation.y = Math.sin(elapsedTime * 0.6) * 0.005;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+
+</html>
