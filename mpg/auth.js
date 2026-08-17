@@ -36,20 +36,97 @@ class MultiplayedAuth {
     }
 
     /**
-     * Compute SHA-256 hash using Web Cryptography API
-     */
-    /**
-     * Compute SHA-256 hash using Web Cryptography API
+     * Compute SHA-256 hash using Web Cryptography API with a pure-JS fallback for non-secure contexts (HTTP)
      */
     async hashPassword(password, username) {
-        const encoder = new TextEncoder();
-        // Deterministic unique per-user pepper/salt
         const salt = 'mpg_golf_salt_' + username.trim().toLowerCase();
-        const data = encoder.encode(password + '::mpg_secure::' + salt);
-        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-        return hashHex;
+        const text = password + '::mpg_secure::' + salt;
+
+        // In secure contexts (HTTPS / localhost), window.crypto.subtle is available
+        if (typeof window !== 'undefined' && window.crypto && window.crypto.subtle && typeof window.crypto.subtle.digest === 'function') {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(text);
+            const hashBuffer = await window.crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        // Fallback SHA-256 for non-secure (HTTP) contexts where crypto.subtle is undefined
+        return this.sha256Fallback(text);
+    }
+
+    /**
+     * Pure JavaScript SHA-256 implementation for environments without window.crypto.subtle
+     */
+    sha256Fallback(ascii) {
+        function rightRotate(value, amount) {
+            return (value >>> amount) | (value << (32 - amount));
+        }
+
+        const mathPow = Math.pow;
+        const maxWord = mathPow(2, 32);
+        let result = '';
+
+        const words = [];
+        const asciiBitLength = ascii.length * 8;
+
+        let hash = [];
+        const k = [];
+        let primeCounter = 0;
+
+        const isPrime = {};
+        for (let candidate = 2; primeCounter < 64; candidate++) {
+            if (!isPrime[candidate]) {
+                for (let i = candidate * candidate; i < 312; i += candidate) {
+                    isPrime[i] = true;
+                }
+                if (primeCounter < 8) {
+                    hash[primeCounter] = (mathPow(candidate, 0.5) * maxWord) | 0;
+                }
+                k[primeCounter] = (mathPow(candidate, 1 / 3) * maxWord) | 0;
+                primeCounter++;
+            }
+        }
+
+        ascii += '\x80';
+        while ((ascii.length % 64) - 56) ascii += '\x00';
+        for (let i = 0; i < ascii.length; i++) {
+            const j = ascii.charCodeAt(i);
+            if (j >> 8) return; // Only ASCII supported
+            words[i >> 2] |= j << (((3 - i) % 4) * 8);
+        }
+        words[words.length] = (asciiBitLength / maxWord) | 0;
+        words[words.length] = asciiBitLength;
+
+        for (let j = 0; j < words.length;) {
+            const w = words.slice(j, j += 16);
+            const oldHash = hash;
+            hash = hash.slice(0, 8);
+
+            for (let i = 0; i < 64; i++) {
+                const w15 = w[i - 15], w2 = w[i - 2];
+                const s0 = rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15 >>> 3);
+                const s1 = rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2 >>> 10);
+                const ch = (hash[4] & hash[5]) ^ (~hash[4] & hash[6]);
+                const temp1 = (hash[7] + (rightRotate(hash[4], 6) ^ rightRotate(hash[4], 11) ^ rightRotate(hash[4], 25)) + ch + k[i] + (w[i] = (i < 16) ? (w[i] || 0) : ((w[i - 16] + s0 + w[i - 7] + s1) | 0))) | 0;
+                const maj = (hash[0] & hash[1]) ^ (hash[0] & hash[2]) ^ (hash[1] & hash[2]);
+                const temp2 = ((rightRotate(hash[0], 2) ^ rightRotate(hash[0], 13) ^ rightRotate(hash[0], 22)) + maj) | 0;
+
+                hash = [(temp1 + temp2) | 0, hash[0], hash[1], hash[2], (hash[3] + temp1) | 0, hash[4], hash[5], hash[6]];
+            }
+
+            for (let i = 0; i < 8; i++) {
+                hash[i] = (hash[i] + oldHash[i]) | 0;
+            }
+        }
+
+        for (let i = 0; i < 8; i++) {
+            for (let j = 3; j >= 0; j--) {
+                const b = (hash[i] >> (8 * j)) & 255;
+                result += ((b < 16) ? '0' : '') + b.toString(16);
+            }
+        }
+        return result;
     }
 
     /**
