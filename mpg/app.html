@@ -259,7 +259,7 @@
             </header>
 
             <!-- Scrollable Main Content -->
-            <main class="flex-1 overflow-y-auto scrollable-content pb-32">
+            <main id="main-content" class="flex-1 overflow-y-auto scrollable-content pb-32">
                 <!-- Main Promo Banner -->
                 <div class="p-4">
                     <div class="rounded-xl p-0 overflow-hidden shadow-md relative h-40 flex items-center bg-green-700"
@@ -306,13 +306,13 @@
             <!-- Bottom Navigation Bar based on sketch -->
             <nav class="bottom-nav">
                 <!-- Home -->
-                <a href="#" class="nav-item active">
+                <a href="#" id="home-btn" class="nav-item active">
                     <i data-lucide="home" class="nav-icon"></i>
                     <span>Home</span>
                 </a>
 
                 <!-- Rewards -->
-                <a href="#" class="nav-item hover:text-gray-900 transition-colors">
+                <a href="#" id="rewards-btn" class="nav-item hover:text-gray-900 transition-colors">
                     <i data-lucide="award" class="nav-icon"></i>
                     <span>Rewards</span>
                 </a>
@@ -320,7 +320,7 @@
                 <!-- Courses (Center Prominent Button) -->
                 <div class="center-nav-item">
                     <div class="floating-btn-wrapper">
-                        <button class="floating-btn">
+                        <button id="courses-btn" class="floating-btn">
                             <i data-lucide="flag-triangle-right" class="w-8 h-8 mb-0.5 text-emerald-800 drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]"></i>
                             <span class="text-[10px] font-bold text-gray-900 drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)]">Courses</span>
                         </button>
@@ -328,17 +328,30 @@
                 </div>
 
                 <!-- Scan -->
-                <a href="#" class="nav-item hover:text-gray-900 transition-colors">
+                <a href="#" id="scan-btn" class="nav-item hover:text-gray-900 transition-colors">
                     <i data-lucide="qr-code" class="nav-icon"></i>
                     <span>Scan</span>
                 </a>
 
                 <!-- Account -->
-                <a href="#" class="nav-item hover:text-gray-900 transition-colors">
+                <a href="#" id="account-btn" class="nav-item hover:text-gray-900 transition-colors">
                     <i data-lucide="user" class="nav-icon"></i>
                     <span>Account</span>
                 </a>
             </nav>
+
+            <!-- Modal Overlay -->
+            <div id="modal" class="hidden absolute inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 transition-opacity">
+                <!-- Empty Modal Container with Close Button -->
+                <div class="bg-white rounded-2xl p-6 w-full max-w-xs shadow-2xl relative min-h-[220px] flex flex-col items-center justify-center border border-gray-100 animate-in fade-in zoom-in-95 duration-200">
+                    <button id="close-modal-btn" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors" aria-label="Close modal">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                    <div id="modal-body" class="w-full flex-1 flex items-center justify-center">
+                        <!-- Empty modal content -->
+                    </div>
+                </div>
+            </div>
 
         </div>
     </div>
@@ -354,6 +367,81 @@
                 el.offsetHeight; /* trigger reflow */
                 el.style.animation = 'golfBallBounceLeftToRight 1.5s linear both';
             }
+        }
+
+        // Modal Controls
+        const modal = document.getElementById('modal');
+        const rewardsBtn = document.getElementById('rewards-btn');
+        const scanBtn = document.getElementById('scan-btn');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const accountBtn = document.getElementById('account-btn');
+        const homeBtn = document.getElementById('home-btn');
+        const coursesBtn = document.getElementById('courses-btn');
+        const mainContent = document.getElementById('main-content');
+
+        // Store original home content HTML so user can return to Home if needed
+        const homeContentHTML = mainContent ? mainContent.innerHTML : '';
+
+        function openModal(e) {
+            if (e) e.preventDefault();
+            if (modal) {
+                modal.classList.remove('hidden');
+            }
+        }
+
+        function closeModal(e) {
+            if (e) e.preventDefault();
+            if (modal) {
+                modal.classList.add('hidden');
+            }
+        }
+
+        function setActiveNav(activeElement) {
+            document.querySelectorAll('.bottom-nav .nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            if (activeElement) {
+                activeElement.classList.add('active');
+            }
+        }
+
+        function showHomeView(e) {
+            if (e) e.preventDefault();
+            if (mainContent && mainContent.innerHTML === '') {
+                mainContent.innerHTML = homeContentHTML;
+                lucide.createIcons();
+            }
+            setActiveNav(homeBtn);
+        }
+
+        if (rewardsBtn) rewardsBtn.addEventListener('click', openModal);
+        if (scanBtn) scanBtn.addEventListener('click', openModal);
+        if (closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
+
+        if (accountBtn) {
+            accountBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (mainContent) {
+                    mainContent.innerHTML = '';
+                }
+                setActiveNav(accountBtn);
+            });
+        }
+
+        if (homeBtn) {
+            homeBtn.addEventListener('click', showHomeView);
+        }
+
+        if (coursesBtn) {
+            coursesBtn.addEventListener('click', showHomeView);
+        }
+
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
         }
     </script>
 </body>
