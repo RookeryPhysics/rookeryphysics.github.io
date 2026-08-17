@@ -248,13 +248,14 @@
                     </div>
                 </div>
 
-                <!-- Points Area -->
-                <div
-                    class="flex items-center bg-black/10 px-3 py-1.5 rounded-full cursor-pointer hover:bg-black/20 transition-colors">
-                    <div class="bg-yellow-400 rounded-full w-4 h-4 flex items-center justify-center mr-1.5 shadow-sm">
-                        <span class="text-[#1b4332] text-[10px] font-bold">U</span>
+                <!-- Points Area (Interactive) -->
+                <div id="header-points-pill"
+                    onclick="handleHeaderPointsClick()"
+                    class="flex items-center bg-black/20 border border-yellow-500/30 px-3 py-1.5 rounded-full cursor-pointer hover:bg-black/30 transition-all hover:scale-105 active:scale-95 shadow-sm">
+                    <div id="header-points-avatar" class="bg-gradient-to-tr from-yellow-500 to-amber-300 rounded-full w-5 h-5 flex items-center justify-center mr-1.5 shadow-sm">
+                        <span id="header-points-avatar-char" class="text-[#1b4332] text-[10px] font-black">U</span>
                     </div>
-                    <span class="font-bold text-sm tracking-tight">0 Points</span>
+                    <span id="header-points-val" class="font-bold text-sm tracking-tight text-amber-200">0 Points</span>
                 </div>
             </header>
 
@@ -341,14 +342,14 @@
             </nav>
 
             <!-- Modal Overlay -->
-            <div id="modal" class="hidden absolute inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 transition-opacity">
-                <!-- Empty Modal Container with Close Button -->
-                <div class="bg-white rounded-2xl p-6 w-full max-w-xs shadow-2xl relative min-h-[220px] flex flex-col items-center justify-center border border-gray-100 animate-in fade-in zoom-in-95 duration-200">
-                    <button id="close-modal-btn" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors" aria-label="Close modal">
+            <div id="modal" class="hidden absolute inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 transition-opacity">
+                <!-- Modal Container with Close Button -->
+                <div class="bg-white rounded-3xl p-6 w-full max-w-xs shadow-2xl relative min-h-[220px] flex flex-col items-center justify-center border border-gray-100 animate-in fade-in zoom-in-95 duration-200">
+                    <button id="close-modal-btn" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600 p-1.5 rounded-full hover:bg-gray-100 transition-colors" aria-label="Close modal">
                         <i data-lucide="x" class="w-5 h-5"></i>
                     </button>
                     <div id="modal-body" class="w-full flex-1 flex items-center justify-center">
-                        <!-- Empty modal content -->
+                        <!-- Dynamic modal content -->
                     </div>
                 </div>
             </div>
@@ -356,7 +357,8 @@
         </div>
     </div>
 
-    <!-- Initialize Icons & Animations -->
+    <!-- Initialize Icons, Auth & Navigation Logic -->
+    <script src="auth.js"></script>
     <script>
         lucide.createIcons();
 
@@ -369,8 +371,9 @@
             }
         }
 
-        // Modal Controls
+        // Modal & Navigation Controls
         const modal = document.getElementById('modal');
+        const modalBody = document.getElementById('modal-body');
         const rewardsBtn = document.getElementById('rewards-btn');
         const scanBtn = document.getElementById('scan-btn');
         const closeModalBtn = document.getElementById('close-modal-btn');
@@ -379,12 +382,15 @@
         const coursesBtn = document.getElementById('courses-btn');
         const mainContent = document.getElementById('main-content');
 
-        // Store original home content HTML so user can return to Home if needed
+        // Store original home content HTML
         const homeContentHTML = mainContent ? mainContent.innerHTML : '';
 
-        function openModal(e) {
-            if (e) e.preventDefault();
+        function openModal(contentHtml) {
             if (modal) {
+                if (contentHtml && modalBody) {
+                    modalBody.innerHTML = contentHtml;
+                    lucide.createIcons();
+                }
                 modal.classList.remove('hidden');
             }
         }
@@ -407,42 +413,364 @@
 
         function showHomeView(e) {
             if (e) e.preventDefault();
-            if (mainContent && mainContent.innerHTML === '') {
+            if (mainContent) {
                 mainContent.innerHTML = homeContentHTML;
                 lucide.createIcons();
             }
             setActiveNav(homeBtn);
         }
 
-        if (rewardsBtn) rewardsBtn.addEventListener('click', openModal);
-        if (scanBtn) scanBtn.addEventListener('click', openModal);
-        if (closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
+        // Sync header points display with Auth state
+        function updateHeaderPoints() {
+            const valEl = document.getElementById('header-points-val');
+            const avatarChar = document.getElementById('header-points-avatar-char');
+            const user = window.Auth ? window.Auth.getUser() : null;
 
-        if (accountBtn) {
-            accountBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                if (mainContent) {
-                    mainContent.innerHTML = '';
+            if (user && user.username) {
+                if (valEl) valEl.textContent = `${user.points || 0} Points`;
+                if (avatarChar) avatarChar.textContent = user.username.charAt(0).toUpperCase();
+            } else {
+                if (valEl) valEl.textContent = 'Sign In';
+                if (avatarChar) avatarChar.textContent = '?';
+            }
+        }
+
+        function handleHeaderPointsClick() {
+            if (window.Auth && window.Auth.isLoggedIn()) {
+                // Show Quick Points summary modal
+                const user = window.Auth.getUser();
+                openModal(`
+                    <div class="text-center w-full py-2">
+                        <div class="w-14 h-14 mx-auto rounded-full bg-amber-100 border-2 border-amber-400 flex items-center justify-center text-amber-600 mb-3 shadow-inner">
+                            <i data-lucide="sparkles" class="w-7 h-7"></i>
+                        </div>
+                        <h3 class="text-lg font-black text-gray-900">${user.username}'s Golf Points</h3>
+                        <p class="text-3xl font-extrabold text-emerald-700 my-2">${user.points || 0} <span class="text-sm font-semibold text-gray-500">PTS</span></p>
+                        <p class="text-xs text-gray-500 mb-4 px-2">Earn points by booking tee times, submitting match scorecards, and competing in tournaments!</p>
+                        <button onclick="renderAccountView(); closeModal();" class="w-full py-2.5 bg-[#1b4332] text-white rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-[#143326] transition-colors shadow-md">
+                            Manage Account
+                        </button>
+                    </div>
+                `);
+            } else {
+                // Prompt Login in Account Tab
+                renderAccountView();
+            }
+        }
+
+        // ---------------------------------------------------------------------
+        // Render Account View
+        // ---------------------------------------------------------------------
+        function renderAccountView(e) {
+            if (e) e.preventDefault();
+            setActiveNav(accountBtn);
+
+            if (!mainContent) return;
+
+            const user = window.Auth ? window.Auth.getUser() : null;
+
+            if (user && user.username) {
+                // Logged In View
+                mainContent.innerHTML = `
+                    <div class="p-5 space-y-4 animate-in fade-in duration-300">
+                        <!-- Profile Card -->
+                        <div class="bg-gradient-to-br from-[#1b4332] to-[#0f291e] rounded-3xl p-6 text-white shadow-xl relative overflow-hidden">
+                            <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-white/5 rounded-full blur-xl pointer-events-none"></div>
+                            
+                            <div class="flex items-center gap-4">
+                                <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-yellow-400 to-amber-200 text-[#1b4332] flex items-center justify-center text-2xl font-black shadow-lg border-2 border-white/20">
+                                    ${user.username.charAt(0).toUpperCase()}
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <h2 class="text-xl font-black tracking-tight truncate">${user.username}</h2>
+                                    <p class="text-xs text-emerald-200 truncate opacity-80">${user.email || 'Member Golfer'}</p>
+                                    <span class="inline-block mt-1 px-2.5 py-0.5 bg-yellow-400/20 border border-yellow-400/40 text-yellow-300 text-[10px] font-bold rounded-full uppercase tracking-wider">Verified Player</span>
+                                </div>
+                            </div>
+
+                            <!-- Points Banner Inside Card -->
+                            <div class="mt-6 pt-5 border-t border-white/10 flex items-center justify-between">
+                                <div>
+                                    <span class="text-[11px] uppercase tracking-wider text-emerald-200 font-semibold">Available Points</span>
+                                    <div class="text-3xl font-extrabold text-yellow-300 tracking-tight leading-none mt-1">${user.points || 0} <span class="text-xs font-bold text-white/70">PTS</span></div>
+                                </div>
+                                <button onclick="refreshPoints(this)" class="p-2.5 bg-white/10 hover:bg-white/20 rounded-xl transition-colors text-white" title="Refresh points">
+                                    <i data-lucide="rotate-cw" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Quick Test / Earn Points Simulator -->
+                        <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                            <h3 class="text-xs font-extrabold text-gray-500 uppercase tracking-wider mb-2">Test Points Integration</h3>
+                            <p class="text-xs text-gray-500 mb-3">Add points to test live database updates to Google Sheets.</p>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button onclick="handleEarnPoints(25)" class="py-2 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold transition-all active:scale-95 flex items-center justify-center gap-1.5">
+                                    <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+                                    +25 Points
+                                </button>
+                                <button onclick="handleEarnPoints(100)" class="py-2 px-3 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-xl text-xs font-bold transition-all active:scale-95 flex items-center justify-center gap-1.5">
+                                    <i data-lucide="award" class="w-3.5 h-3.5"></i>
+                                    +100 Points
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Navigation & Actions -->
+                        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-100 overflow-hidden">
+                            <a href="index.html" class="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                                        <i data-lucide="globe" class="w-4 h-4"></i>
+                                    </div>
+                                    <span class="text-sm font-semibold text-gray-700">3D Bag Showcase</span>
+                                </div>
+                                <i data-lucide="chevron-right" class="w-4 h-4 text-gray-400"></i>
+                            </a>
+                            <a href="score.html" class="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
+                                        <i data-lucide="trophy" class="w-4 h-4"></i>
+                                    </div>
+                                    <span class="text-sm font-semibold text-gray-700">Score Card</span>
+                                </div>
+                                <i data-lucide="chevron-right" class="w-4 h-4 text-gray-400"></i>
+                            </a>
+                            <a href="submit.html" class="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center">
+                                        <i data-lucide="file-text" class="w-4 h-4"></i>
+                                    </div>
+                                    <span class="text-sm font-semibold text-gray-700">Rewards & Submissions</span>
+                                </div>
+                                <i data-lucide="chevron-right" class="w-4 h-4 text-gray-400"></i>
+                            </a>
+                        </div>
+
+                        <!-- Sign Out Button -->
+                        <button onclick="handleAppLogout()" class="w-full py-3 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200/80 rounded-2xl text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2">
+                            <i data-lucide="log-out" class="w-4 h-4"></i>
+                            Sign Out of Account
+                        </button>
+                    </div>
+                `;
+            } else {
+                // Logged Out / Sign In & Register View
+                mainContent.innerHTML = `
+                    <div class="p-5 space-y-4 animate-in fade-in duration-300">
+                        <div class="text-center pt-3 pb-1">
+                            <div class="w-16 h-16 mx-auto rounded-3xl bg-gradient-to-tr from-[#1b4332] to-[#2d6a4f] text-yellow-300 flex items-center justify-center shadow-lg border-2 border-yellow-400/30 mb-3">
+                                <i data-lucide="user" class="w-8 h-8"></i>
+                            </div>
+                            <h2 class="text-2xl font-black text-gray-900 tracking-tight">Golfer Account</h2>
+                            <p class="text-xs text-gray-500 mt-1">Sign in or create an account to track your points and game stats.</p>
+                        </div>
+
+                        <!-- Tab Selector -->
+                        <div class="bg-gray-200/80 p-1 rounded-2xl flex">
+                            <button id="app-tab-login" onclick="toggleAppAuthMode('login')" class="flex-1 py-2 text-xs font-bold rounded-xl transition-all bg-white text-gray-900 shadow-sm">Sign In</button>
+                            <button id="app-tab-register" onclick="toggleAppAuthMode('register')" class="flex-1 py-2 text-xs font-bold rounded-xl transition-all text-gray-600">Create Account</button>
+                        </div>
+
+                        <div id="app-auth-alert" class="hidden p-3 rounded-xl text-xs font-medium"></div>
+
+                        <!-- Login Form -->
+                        <form id="app-form-login" onsubmit="handleAppLogin(event)" class="space-y-3 bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-1">Username or Email</label>
+                                <input type="text" id="app-input-login-user" required placeholder="Enter username or email" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b4332] bg-gray-50/50">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-1">Password</label>
+                                <input type="password" id="app-input-login-pass" required placeholder="••••••••" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b4332] bg-gray-50/50">
+                            </div>
+                            <button type="submit" id="app-btn-login" class="w-full py-3 bg-[#1b4332] hover:bg-[#143326] text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-md transition-all active:scale-95">
+                                Sign In
+                            </button>
+                        </form>
+
+                        <!-- Register Form -->
+                        <form id="app-form-register" onsubmit="handleAppRegister(event)" class="hidden space-y-3 bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-1">Username</label>
+                                <input type="text" id="app-input-reg-user" required placeholder="Choose a username" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b4332] bg-gray-50/50">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-1">Email</label>
+                                <input type="email" id="app-input-reg-email" required placeholder="golfer@example.com" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b4332] bg-gray-50/50">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-1">Password</label>
+                                <input type="password" id="app-input-reg-pass" required placeholder="At least 4 characters" minlength="4" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b4332] bg-gray-50/50">
+                            </div>
+                            <button type="submit" id="app-btn-register" class="w-full py-3 bg-[#1b4332] hover:bg-[#143326] text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-md transition-all active:scale-95">
+                                Create Account (0 Points Default)
+                            </button>
+                        </form>
+                    </div>
+                `;
+            }
+
+            lucide.createIcons();
+        }
+
+        function toggleAppAuthMode(mode) {
+            const tabLogin = document.getElementById('app-tab-login');
+            const tabReg = document.getElementById('app-tab-register');
+            const formLogin = document.getElementById('app-form-login');
+            const formReg = document.getElementById('app-form-register');
+            const alertBox = document.getElementById('app-auth-alert');
+            if (alertBox) alertBox.className = 'hidden';
+
+            if (mode === 'register') {
+                tabLogin.className = 'flex-1 py-2 text-xs font-bold rounded-xl transition-all text-gray-600';
+                tabReg.className = 'flex-1 py-2 text-xs font-bold rounded-xl transition-all bg-white text-gray-900 shadow-sm';
+                formLogin.classList.add('hidden');
+                formReg.classList.remove('hidden');
+            } else {
+                tabLogin.className = 'flex-1 py-2 text-xs font-bold rounded-xl transition-all bg-white text-gray-900 shadow-sm';
+                tabReg.className = 'flex-1 py-2 text-xs font-bold rounded-xl transition-all text-gray-600';
+                formLogin.classList.remove('hidden');
+                formReg.classList.add('hidden');
+            }
+        }
+
+        async function handleAppLogin(e) {
+            e.preventDefault();
+            const btn = document.getElementById('app-btn-login');
+            const userVal = document.getElementById('app-input-login-user').value;
+            const passVal = document.getElementById('app-input-login-pass').value;
+            const alertBox = document.getElementById('app-auth-alert');
+
+            btn.disabled = true;
+            btn.textContent = 'Signing in...';
+            if (alertBox) alertBox.className = 'hidden';
+
+            try {
+                await window.Auth.login(userVal, passVal);
+                renderAccountView();
+            } catch (err) {
+                btn.disabled = false;
+                btn.textContent = 'Sign In';
+                if (alertBox) {
+                    alertBox.className = 'p-3 rounded-xl text-xs font-medium bg-red-100 text-red-700 border border-red-200';
+                    alertBox.textContent = err.message || 'Login failed';
                 }
-                setActiveNav(accountBtn);
+            }
+        }
+
+        async function handleAppRegister(e) {
+            e.preventDefault();
+            const btn = document.getElementById('app-btn-register');
+            const userVal = document.getElementById('app-input-reg-user').value;
+            const emailVal = document.getElementById('app-input-reg-email').value;
+            const passVal = document.getElementById('app-input-reg-pass').value;
+            const alertBox = document.getElementById('app-auth-alert');
+
+            btn.disabled = true;
+            btn.textContent = 'Creating Account...';
+            if (alertBox) alertBox.className = 'hidden';
+
+            try {
+                await window.Auth.register(userVal, emailVal, passVal);
+                renderAccountView();
+            } catch (err) {
+                btn.disabled = false;
+                btn.textContent = 'Create Account (0 Points Default)';
+                if (alertBox) {
+                    alertBox.className = 'p-3 rounded-xl text-xs font-medium bg-red-100 text-red-700 border border-red-200';
+                    alertBox.textContent = err.message || 'Registration failed';
+                }
+            }
+        }
+
+        async function handleEarnPoints(amount) {
+            try {
+                await window.Auth.updatePoints({ delta: amount });
+                renderAccountView();
+            } catch (err) {
+                alert(err.message || 'Could not update points');
+            }
+        }
+
+        async function refreshPoints(btn) {
+            if (btn) {
+                btn.classList.add('animate-spin');
+            }
+            try {
+                await window.Auth.refreshUser();
+                renderAccountView();
+            } catch (e) {
+                console.error(e);
+            } finally {
+                if (btn) btn.classList.remove('animate-spin');
+            }
+        }
+
+        function handleAppLogout() {
+            if (window.Auth) {
+                window.Auth.logout();
+            }
+            renderAccountView();
+        }
+
+        // Event Bindings
+        if (rewardsBtn) {
+            rewardsBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const user = window.Auth ? window.Auth.getUser() : null;
+                const points = user ? (user.points || 0) : 0;
+                openModal(`
+                    <div class="text-center w-full py-2">
+                        <div class="w-14 h-14 mx-auto rounded-full bg-emerald-100 border-2 border-emerald-400 flex items-center justify-center text-emerald-700 mb-3 shadow-inner">
+                            <i data-lucide="award" class="w-7 h-7"></i>
+                        </div>
+                        <h3 class="text-lg font-black text-gray-900">Member Rewards</h3>
+                        <p class="text-sm font-extrabold text-emerald-700 my-1">${points} Points Available</p>
+                        <p class="text-xs text-gray-500 mb-4">Redeem your points for clubhouse drinks, pro-shop gear, and discount green fees.</p>
+                        <button onclick="closeModal()" class="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors">
+                            Close
+                        </button>
+                    </div>
+                `);
             });
         }
 
-        if (homeBtn) {
-            homeBtn.addEventListener('click', showHomeView);
+        if (scanBtn) {
+            scanBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                openModal(`
+                    <div class="text-center w-full py-2">
+                        <div class="w-14 h-14 mx-auto rounded-full bg-blue-100 border-2 border-blue-400 flex items-center justify-center text-blue-700 mb-3 shadow-inner">
+                            <i data-lucide="qr-code" class="w-7 h-7"></i>
+                        </div>
+                        <h3 class="text-lg font-black text-gray-900">Scan QR Code</h3>
+                        <p class="text-xs text-gray-500 my-2">Scan on-course markers or clubhouse kiosks to check-in and claim bonus points.</p>
+                        <div class="p-4 bg-gray-50 rounded-2xl border border-dashed border-gray-300 my-3">
+                            <span class="text-xs font-mono text-gray-400">Camera ready for scanning...</span>
+                        </div>
+                        <button onclick="closeModal()" class="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors">
+                            Dismiss
+                        </button>
+                    </div>
+                `);
+            });
         }
 
-        if (coursesBtn) {
-            coursesBtn.addEventListener('click', showHomeView);
-        }
+        if (closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
+        if (accountBtn) accountBtn.addEventListener('click', renderAccountView);
+        if (homeBtn) homeBtn.addEventListener('click', showHomeView);
+        if (coursesBtn) coursesBtn.addEventListener('click', showHomeView);
 
         if (modal) {
             modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    closeModal();
-                }
+                if (e.target === modal) closeModal();
             });
         }
+
+        // Global auth change listener
+        window.addEventListener('mpg-auth-change', updateHeaderPoints);
+        document.addEventListener('DOMContentLoaded', updateHeaderPoints);
     </script>
 </body>
 
