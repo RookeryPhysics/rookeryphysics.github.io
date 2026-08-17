@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>MULTIPLAYED - QR Scanner Terminal</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- HTML5 QR Code Scanner Library -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Righteous&family=Russo+One&display=swap" rel="stylesheet">
+    <!-- Confetti for rewarding scan animation -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b1d14;
+            color: #f8fafc;
+            min-height: 100vh;
+            min-height: 100dvh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        .scanner-card {
+            width: 100%;
+            max-width: 480px;
+            min-height: 100vh;
+            min-height: 100dvh;
+            background: linear-gradient(180deg, #133324 0%, #0d2319 100%);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+        }
+
+        @media (min-width: 520px) {
+            .scanner-card {
+                min-height: auto;
+                height: 840px;
+                max-height: 92vh;
+                border-radius: 36px;
+                border: 2px solid rgba(255, 255, 255, 0.08);
+                overflow: hidden;
+            }
+        }
+
+        /* Custom Scanner Viewport Frame */
+        #reader {
+            width: 100% !important;
+            border: none !important;
+            border-radius: 20px;
+            overflow: hidden;
+            background: #000;
+        }
+
+        #reader video {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+            border-radius: 20px;
+        }
+
+        #reader__scan_region {
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        #reader__dashboard {
+            display: none !important; /* Hide ugly default scanner buttons */
+        }
+
+        /* Pulsing laser guide */
+        .scan-laser {
+            position: absolute;
+            left: 10%;
+            right: 10%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #10b981, #34d399, transparent);
+            box-shadow: 0 0 12px #10b981, 0 0 20px #34d399;
+            animation: scanLaserAnim 2.2s ease-in-out infinite alternate;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        @keyframes scanLaserAnim {
+            0% {
+                top: 15%;
+                opacity: 0.3;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                top: 85%;
+                opacity: 0.3;
+            }
+        }
+
+        .multiplayed-font {
+            font-family: 'Righteous', 'Russo One', sans-serif;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="scanner-card">
+        <!-- Header -->
+        <header class="p-5 flex items-center justify-between border-b border-emerald-900/50 bg-[#0d281c]/80 backdrop-blur-sm">
+            <div class="flex items-center gap-3">
+                <a href="app.html" class="p-2 rounded-xl bg-white/10 hover:bg-white/20 transition-colors text-emerald-300" title="Back to App">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                </a>
+                <div>
+                    <h1 class="text-lg font-black tracking-tight text-white flex items-center gap-2">
+                        <span class="multiplayed-font text-emerald-400">MULTIPLAYED</span> Scanner
+                    </h1>
+                    <p class="text-[11px] text-emerald-200/70 font-medium">Scan Golfer Pass to Award +1 Pt</p>
+                </div>
+            </div>
+
+            <!-- Switch Camera / Torch -->
+            <div class="flex items-center gap-2">
+                <button id="btn-toggle-cam" onclick="toggleCameraFacing()" class="p-2.5 rounded-xl bg-emerald-800/60 hover:bg-emerald-700/80 text-white transition-all active:scale-95" title="Flip Camera">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Viewport -->
+        <main class="flex-1 flex flex-col p-5 overflow-y-auto">
+            
+            <!-- Target Scanner Box -->
+            <div class="relative w-full aspect-square max-w-[340px] mx-auto rounded-3xl overflow-hidden shadow-2xl border-2 border-emerald-500/40 bg-black flex items-center justify-center mb-4">
+                
+                <!-- Video Camera Stream Container -->
+                <div id="reader" class="w-full h-full"></div>
+
+                <!-- Laser scanning visualizer -->
+                <div id="scan-laser-line" class="scan-laser"></div>
+
+                <!-- Viewport Corner Guides -->
+                <div class="absolute top-3 left-3 w-6 h-6 border-t-4 border-l-4 border-emerald-400 rounded-tl-lg pointer-events-none z-10"></div>
+                <div class="absolute top-3 right-3 w-6 h-6 border-t-4 border-r-4 border-emerald-400 rounded-tr-lg pointer-events-none z-10"></div>
+                <div class="absolute bottom-3 left-3 w-6 h-6 border-b-4 border-l-4 border-emerald-400 rounded-bl-lg pointer-events-none z-10"></div>
+                <div class="absolute bottom-3 right-3 w-6 h-6 border-b-4 border-r-4 border-emerald-400 rounded-br-lg pointer-events-none z-10"></div>
+
+                <!-- Camera Perms Overlay placeholder if needed -->
+                <div id="camera-loading" class="absolute inset-0 bg-[#0d2319] flex flex-col items-center justify-center p-6 text-center z-20">
+                    <i data-lucide="camera" class="w-12 h-12 text-emerald-400 mb-3 animate-pulse"></i>
+                    <p class="text-sm font-bold text-white mb-1">Starting Camera...</p>
+                    <p class="text-xs text-emerald-300/60">Allow camera permissions when prompted.</p>
+                </div>
+            </div>
+
+            <!-- Manual Mode / Direct Test / Feedback Box -->
+            <div id="scan-result-card" class="bg-emerald-950/60 border border-emerald-800/60 rounded-2xl p-4 shadow-sm relative overflow-hidden transition-all duration-300">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                        <span class="text-xs font-bold text-emerald-300 uppercase tracking-wider">Ready to Scan</span>
+                    </div>
+                    <span id="scan-status-badge" class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-800/50 text-emerald-200">Terminal Online</span>
+                </div>
+                <p id="scan-feedback-msg" class="text-xs text-emerald-100/80 leading-relaxed">
+                    Point camera at the QR code displayed in the Golfer's Multiplayed App.
+                </p>
+            </div>
+
+            <!-- Scan Log / Recent Awards -->
+            <div class="mt-4 flex-1 flex flex-col">
+                <div class="flex items-center justify-between mb-2 px-1">
+                    <h3 class="text-xs font-bold text-emerald-300 uppercase tracking-wider">Recent Scans</h3>
+                    <button onclick="clearRecentScans()" class="text-[11px] text-emerald-400 hover:text-emerald-300 font-semibold underline">Clear</button>
+                </div>
+
+                <div id="recent-scans-list" class="space-y-2 overflow-y-auto max-h-48 pr-1">
+                    <div class="text-center py-6 text-xs text-emerald-300/40 italic">
+                        No recent scans yet this session
+                    </div>
+                </div>
+            </div>
+
+            <!-- Manual User Input Fallback -->
+            <div class="mt-4 pt-3 border-t border-emerald-900/60">
+                <details class="group">
+                    <summary class="flex items-center justify-between text-xs font-bold text-emerald-400 cursor-pointer list-none select-none hover:text-emerald-300">
+                        <span>Manual Point Entry (Optional)</span>
+                        <i data-lucide="chevron-down" class="w-4 h-4 transition-transform group-open:rotate-180"></i>
+                    </summary>
+                    <div class="mt-3 flex gap-2">
+                        <input type="text" id="manual-username-input" placeholder="Golfer username..." class="flex-1 px-3 py-2 text-xs bg-black/40 border border-emerald-800/80 rounded-xl text-white placeholder-emerald-700 focus:outline-none focus:border-emerald-400">
+                        <button onclick="handleManualAward()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all active:scale-95 shadow-md">
+                            +1 Pt
+                        </button>
+                    </div>
+                </details>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Auth Module with Google Apps Script Connection -->
+    <script src="auth.js?v=2"></script>
+    <script>
+        lucide.createIcons();
+
+        let html5QrCode = null;
+        let currentCameraFacing = "environment"; // "environment" (back camera) or "user" (front camera)
+        let isProcessingScan = false;
+        let recentScans = [];
+
+        // Initialize Audio Beep (Web Audio API)
+        function playSuccessBeep() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+                osc.frequency.setValueAtTime(880, ctx.currentTime + 0.08); // A5
+                gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.25);
+            } catch (e) {
+                console.warn('Audio not supported:', e);
+            }
+        }
+
+        // Initialize and Start Scanner
+        async function startScanner() {
+            const loadingOverlay = document.getElementById('camera-loading');
+            try {
+                if (html5QrCode) {
+                    await html5QrCode.stop().catch(() => {});
+                }
+                html5QrCode = new Html5Qrcode("reader");
+
+                const config = {
+                    fps: 15,
+                    qrbox: { width: 250, height: 250 },
+                    aspectRatio: 1.0
+                };
+
+                await html5QrCode.start(
+                    { facingMode: currentCameraFacing },
+                    config,
+                    onScanSuccess,
+                    onScanFailure
+                );
+
+                if (loadingOverlay) loadingOverlay.classList.add('hidden');
+            } catch (err) {
+                console.error("Camera start error:", err);
+                if (loadingOverlay) {
+                    loadingOverlay.innerHTML = `
+                        <i data-lucide="alert-triangle" class="w-10 h-10 text-amber-400 mb-2"></i>
+                        <p class="text-sm font-bold text-white mb-1">Camera Access Issue</p>
+                        <p class="text-xs text-amber-200/80 mb-3 px-3">${err.message || 'Please check browser camera permissions.'}</p>
+                        <button onclick="startScanner()" class="px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-500">
+                            Retry Camera
+                        </button>
+                    `;
+                    lucide.createIcons();
+                }
+            }
+        }
+
+        async function toggleCameraFacing() {
+            currentCameraFacing = (currentCameraFacing === "environment") ? "user" : "environment";
+            const loadingOverlay = document.getElementById('camera-loading');
+            if (loadingOverlay) loadingOverlay.classList.remove('hidden');
+            await startScanner();
+        }
+
+        // Handle successful QR Scan
+        async function onScanSuccess(decodedText, decodedResult) {
+            if (isProcessingScan) return; // Prevent double-trigger during API call
+            
+            isProcessingScan = true;
+            playSuccessBeep();
+
+            // Fire confetti
+            try {
+                confetti({
+                    particleCount: 50,
+                    spread: 60,
+                    origin: { y: 0.6 },
+                    colors: ['#10b981', '#34d399', '#f59e0b', '#ffffff']
+                });
+            } catch(e) {}
+
+            let parsedUser = null;
+            let pointsDelta = 1;
+
+            try {
+                // Check if QR data is our JSON payload
+                const data = JSON.parse(decodedText);
+                if (data.username) {
+                    parsedUser = data.username;
+                    if (data.points) pointsDelta = Number(data.points) || 1;
+                }
+            } catch (e) {
+                // If raw text or username was encoded
+                parsedUser = decodedText.trim();
+            }
+
+            if (!parsedUser) {
+                showScanFeedback(false, "Invalid QR code format. Could not detect Golfer ID.");
+                setTimeout(() => { isProcessingScan = false; }, 2000);
+                return;
+            }
+
+            await awardPoints(parsedUser, pointsDelta);
+
+            // Debounce scanner for 2.5s before reading next code
+            setTimeout(() => {
+                isProcessingScan = false;
+            }, 2500);
+        }
+
+        function onScanFailure(error) {
+            // Silence normal scanning loop ticks
+        }
+
+        // Award points via auth.js backend (Google Apps Script / Local storage)
+        async function awardPoints(username, delta = 1) {
+            const statusBadge = document.getElementById('scan-status-badge');
+            const feedbackMsg = document.getElementById('scan-feedback-msg');
+
+            statusBadge.className = "text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-500/30 text-amber-200 animate-pulse";
+            statusBadge.textContent = "Updating Sheet...";
+            feedbackMsg.innerHTML = `<span class="text-amber-200">Awarding +${delta} point to <strong>${username}</strong>...</span>`;
+
+            try {
+                // Send point update
+                const response = await window.Auth.sendApiRequest('update_points', {
+                    username: username,
+                    delta: delta
+                });
+
+                if (response && response.success) {
+                    const newTotal = response.user ? response.user.points : '?';
+                    
+                    // If current logged-in user in this browser is the scanned user, sync session
+                    if (window.Auth.currentUser && window.Auth.currentUser.username.toLowerCase() === username.toLowerCase()) {
+                        window.Auth.saveSession({
+                            ...window.Auth.currentUser,
+                            points: newTotal
+                        });
+                    }
+
+                    showScanFeedback(true, `Successfully added +${delta} Point to <strong>${username}</strong>! (New Balance: ${newTotal} PTS)`);
+                    logRecentScan(username, delta, newTotal, true);
+                } else {
+                    const errMsg = response.error || "User not found or update rejected.";
+                    showScanFeedback(false, `Failed for <strong>${username}</strong>: ${errMsg}`);
+                    logRecentScan(username, delta, '-', false);
+                }
+            } catch (err) {
+                console.error("Points award error:", err);
+                showScanFeedback(false, `Error updating points for <strong>${username}</strong>: ${err.message}`);
+                logRecentScan(username, delta, '-', false);
+            }
+        }
+
+        function showScanFeedback(success, htmlMessage) {
+            const card = document.getElementById('scan-result-card');
+            const statusBadge = document.getElementById('scan-status-badge');
+            const feedbackMsg = document.getElementById('scan-feedback-msg');
+
+            if (success) {
+                card.className = "bg-emerald-900/80 border border-emerald-400/60 rounded-2xl p-4 shadow-lg transition-all";
+                statusBadge.className = "text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500 text-white";
+                statusBadge.textContent = "+1 PT ADDED!";
+            } else {
+                card.className = "bg-red-950/80 border border-red-500/60 rounded-2xl p-4 shadow-lg transition-all";
+                statusBadge.className = "text-[10px] px-2 py-0.5 rounded-full font-bold bg-red-600 text-white";
+                statusBadge.textContent = "SCAN ERROR";
+            }
+
+            feedbackMsg.innerHTML = htmlMessage;
+
+            // Reset banner after 4s
+            setTimeout(() => {
+                card.className = "bg-emerald-950/60 border border-emerald-800/60 rounded-2xl p-4 shadow-sm transition-all";
+                statusBadge.className = "text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-800/50 text-emerald-200";
+                statusBadge.textContent = "Terminal Online";
+                feedbackMsg.innerHTML = "Point camera at the QR code displayed in the Golfer's Multiplayed App.";
+            }, 4000);
+        }
+
+        function logRecentScan(username, delta, newTotal, success) {
+            const list = document.getElementById('recent-scans-list');
+            const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+            const item = {
+                username,
+                delta,
+                newTotal,
+                timeStr,
+                success
+            };
+            recentScans.unshift(item);
+            if (recentScans.length > 8) recentScans.pop();
+
+            renderRecentScans();
+        }
+
+        function renderRecentScans() {
+            const list = document.getElementById('recent-scans-list');
+            if (!list) return;
+
+            if (recentScans.length === 0) {
+                list.innerHTML = `<div class="text-center py-6 text-xs text-emerald-300/40 italic">No recent scans yet this session</div>`;
+                return;
+            }
+
+            list.innerHTML = recentScans.map(s => `
+                <div class="bg-black/30 border ${s.success ? 'border-emerald-800/60' : 'border-red-900/60'} rounded-xl p-2.5 flex items-center justify-between text-xs">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-7 h-7 rounded-lg ${s.success ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'} flex items-center justify-center font-black text-xs">
+                            ${s.username.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                            <p class="font-bold text-white">${s.username}</p>
+                            <p class="text-[10px] text-emerald-300/60">${s.timeStr}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="font-black ${s.success ? 'text-emerald-400' : 'text-red-400'}">${s.success ? `+${s.delta} PT` : 'Failed'}</span>
+                        ${s.success && s.newTotal !== '?' ? `<p class="text-[10px] text-emerald-200/50">${s.newTotal} PTS total</p>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function clearRecentScans() {
+            recentScans = [];
+            renderRecentScans();
+        }
+
+        async function handleManualAward() {
+            const input = document.getElementById('manual-username-input');
+            const username = input.value.trim();
+            if (!username) {
+                alert('Please enter a username');
+                return;
+            }
+            input.value = '';
+            playSuccessBeep();
+            await awardPoints(username, 1);
+        }
+
+        // Start scanner on load
+        document.addEventListener('DOMContentLoaded', () => {
+            startScanner();
+        });
+    </script>
+</body>
+
+</html>

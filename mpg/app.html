@@ -9,6 +9,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- QRCode.js library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -718,20 +720,92 @@
             });
         }
 
+        function renderScanModal() {
+            const user = window.Auth ? window.Auth.getUser() : null;
+            if (!user || !user.username) {
+                openModal(`
+                    <div class="text-center w-full py-2">
+                        <div class="w-14 h-14 mx-auto rounded-full bg-amber-100 border-2 border-amber-400 flex items-center justify-center text-amber-700 mb-3 shadow-inner">
+                            <i data-lucide="user-x" class="w-7 h-7"></i>
+                        </div>
+                        <h3 class="text-lg font-black text-gray-900 mb-1">Sign In Required</h3>
+                        <p class="text-xs text-gray-500 mb-4 px-2">Please sign in or create an account first so the scanner knows which golfer to award points to!</p>
+                        <div class="space-y-2">
+                            <button onclick="renderAccountView(); closeModal();" class="w-full py-2.5 bg-[#1b4332] text-white rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-[#143326] transition-colors shadow-md">
+                                Sign In / Register
+                            </button>
+                            <button onclick="closeModal()" class="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                `);
+                return;
+            }
+
+            // Construct payload with user info and timestamp
+            const payload = JSON.stringify({
+                app: 'multiplayed_golf',
+                type: 'golfer_id',
+                username: user.username,
+                id: user.id || '',
+                points: 1
+            });
+
+            openModal(`
+                <div class="text-center w-full py-1">
+                    <div class="flex items-center justify-center gap-2 mb-2">
+                        <span class="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-[11px] font-extrabold rounded-full uppercase tracking-wider border border-emerald-300/60 flex items-center gap-1">
+                            <i data-lucide="sparkles" class="w-3 h-3 text-emerald-600"></i> +1 Point Pass
+                        </span>
+                    </div>
+                    <h3 class="text-base font-black text-gray-900 mb-0.5">${user.username}'s Member QR</h3>
+                    <p class="text-[11px] text-gray-500 mb-3">Scan this code at the scanner terminal to add +1 point.</p>
+                    
+                    <div class="bg-white p-3 rounded-2xl shadow-inner border border-gray-200 inline-block mx-auto mb-3">
+                        <div id="user-qrcode" class="flex justify-center items-center w-[170px] h-[170px]"></div>
+                    </div>
+
+                    <div class="bg-gray-50 rounded-xl p-2 mb-3 border border-gray-100">
+                        <p class="text-[11px] text-gray-600 font-medium">Current Balance: <strong class="text-emerald-700 font-black">${user.points || 0} PTS</strong></p>
+                    </div>
+
+                    <button onclick="closeModal()" class="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors">
+                        Done
+                    </button>
+                </div>
+            `);
+
+            // Generate QR Code into container
+            setTimeout(() => {
+                const qrContainer = document.getElementById('user-qrcode');
+                if (qrContainer) {
+                    qrContainer.innerHTML = '';
+                    if (typeof QRCode !== 'undefined') {
+                        new QRCode(qrContainer, {
+                            text: payload,
+                            width: 170,
+                            height: 170,
+                            colorDark: "#0f291e",
+                            colorLight: "#ffffff",
+                            correctLevel: QRCode.CorrectLevel.M
+                        });
+                    } else {
+                        // Fallback API if script blocked
+                        const img = document.createElement('img');
+                        img.src = `https://api.qrserver.com/v1/create-qr-code/?size=170x170&data=${encodeURIComponent(payload)}`;
+                        img.alt = 'Member QR Code';
+                        img.className = 'w-[170px] h-[170px] rounded-lg';
+                        qrContainer.appendChild(img);
+                    }
+                }
+            }, 50);
+        }
+
         if (scanBtn) {
             scanBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                openModal(`
-                    <div class="text-center w-full py-2">
-                        <div class="w-14 h-14 mx-auto rounded-full bg-blue-100 border-2 border-blue-400 flex items-center justify-center text-blue-700 mb-3 shadow-inner">
-                            <i data-lucide="qr-code" class="w-7 h-7"></i>
-                        </div>
-                        <h3 class="text-lg font-black text-gray-900 mb-4">Scan QR Code</h3>
-                        <button onclick="closeModal()" class="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors">
-                            Dismiss
-                        </button>
-                    </div>
-                `);
+                renderScanModal();
             });
         }
 
