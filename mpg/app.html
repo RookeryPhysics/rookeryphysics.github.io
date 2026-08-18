@@ -314,10 +314,10 @@
                     <span>Home</span>
                 </a>
 
-                <!-- Rewards -->
-                <a href="#" id="rewards-btn" class="nav-item hover:text-gray-900 transition-colors">
-                    <i data-lucide="award" class="nav-icon"></i>
-                    <span>Rewards</span>
+                <!-- Report -->
+                <a href="#" id="report-btn" class="nav-item hover:text-gray-900 transition-colors">
+                    <i data-lucide="flag" class="nav-icon"></i>
+                    <span>Report</span>
                 </a>
 
                 <!-- Courses (Center Prominent Button) -->
@@ -376,7 +376,7 @@
         // Modal & Navigation Controls
         const modal = document.getElementById('modal');
         const modalBody = document.getElementById('modal-body');
-        const rewardsBtn = document.getElementById('rewards-btn');
+        const reportBtn = document.getElementById('report-btn');
         const scanBtn = document.getElementById('scan-btn');
         const closeModalBtn = document.getElementById('close-modal-btn');
         const accountBtn = document.getElementById('account-btn');
@@ -459,8 +459,7 @@
                             <i data-lucide="sparkles" class="w-7 h-7"></i>
                         </div>
                         <h3 class="text-lg font-black text-gray-900">${user.username}'s Golf Points</h3>
-                        <p class="text-3xl font-extrabold text-emerald-700 my-2">${user.points || 0} <span class="text-sm font-semibold text-gray-500">PTS</span></p>
-                        <p class="text-xs text-gray-500 mb-4 px-2">Earn points by booking tee times, submitting match scorecards, and competing in tournaments!</p>
+                        <p class="text-3xl font-extrabold text-emerald-700 mt-2 mb-4">${user.points || 0} <span class="text-sm font-semibold text-gray-500">PTS</span></p>
                         <button onclick="renderAccountView(); closeModal();" class="w-full py-2.5 bg-[#1b4332] text-white rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-[#143326] transition-colors shadow-md">
                             Manage Account
                         </button>
@@ -686,22 +685,24 @@
         }
 
         // Event Bindings
-        if (rewardsBtn) {
-            rewardsBtn.addEventListener('click', (e) => {
+        if (reportBtn) {
+            reportBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                const user = window.Auth ? window.Auth.getUser() : null;
-                const points = user ? (user.points || 0) : 0;
                 openModal(`
                     <div class="text-center w-full py-2">
-                        <div class="w-14 h-14 mx-auto rounded-full bg-emerald-100 border-2 border-emerald-400 flex items-center justify-center text-emerald-700 mb-3 shadow-inner">
-                            <i data-lucide="award" class="w-7 h-7"></i>
+                        <div class="w-14 h-14 mx-auto rounded-full bg-amber-100 border-2 border-amber-400 flex items-center justify-center text-amber-600 mb-3 shadow-inner">
+                            <i data-lucide="flag" class="w-7 h-7"></i>
                         </div>
-                        <h3 class="text-lg font-black text-gray-900">Member Rewards</h3>
-                        <p class="text-sm font-extrabold text-emerald-700 my-1">${points} Points Available</p>
-                        <p class="text-xs text-gray-500 mb-4">Redeem your points for clubhouse drinks, pro-shop gear, and discount green fees.</p>
-                        <button onclick="closeModal()" class="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors">
-                            Close
-                        </button>
+                        <h3 class="text-lg font-black text-gray-900">Course Report</h3>
+                        <p class="text-xs text-gray-500 mt-1 mb-4 px-2">Report a lost ball, course maintenance issue, or feedback.</p>
+                        <div class="space-y-2">
+                            <a href="submit.html" class="block w-full py-2.5 bg-[#1b4332] hover:bg-[#143326] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-md text-center">
+                                Open Submission Form
+                            </a>
+                            <button onclick="closeModal()" class="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors">
+                                Cancel
+                            </button>
+                        </div>
                     </div>
                 `);
             });

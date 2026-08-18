@@ -490,6 +490,26 @@
             transform: translateX(5px);
         }
 
+        .club-enter-btn.disabled {
+            background: rgba(255, 255, 255, 0.12);
+            color: rgba(255, 255, 255, 0.4);
+            box-shadow: none;
+            cursor: not-allowed;
+            pointer-events: none;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .club-enter-btn.disabled:hover {
+            transform: none;
+            background: rgba(255, 255, 255, 0.12);
+            box-shadow: none;
+        }
+
+        .club-enter-btn.disabled svg {
+            opacity: 0.4;
+            transform: none !important;
+        }
+
         /* Bottom Minimalist Club Navigation Pill */
         .bottom-nav {
             display: flex;
@@ -668,8 +688,8 @@
             <p id="hero-desc" class="club-hero-desc">
                 Description
             </p>
-            <a id="hero-link" href="javascript:void(0)" class="club-enter-btn" onclick="return false;">
-                <span>Enter Page</span>
+            <a id="hero-link" href="app.html" class="club-enter-btn">
+                <span>Explore Mobile App</span>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
                     stroke-linecap="round" stroke-linejoin="round">
                     <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -678,7 +698,7 @@
             </a>
         </div>
 
-        <div class="hint-text">Drag to rotate · Click club or use Arrow Keys (← →) / 1-6</div>
+        <div class="hint-text">Drag to rotate · Click club or use Arrow Keys (← →) / 1-5</div>
 
         <!-- Bottom Club Selector -->
         <div class="bottom-nav interactive">
@@ -686,9 +706,8 @@
                 <button class="club-btn active" data-index="0" onclick="selectClub(0)">Mobile App</button>
                 <button class="club-btn" data-index="1" onclick="selectClub(1)">Courses</button>
                 <button class="club-btn" data-index="2" onclick="selectClub(2)">Score Card</button>
-                <button class="club-btn" data-index="3" onclick="selectClub(3)">Tournaments</button>
-                <button class="club-btn" data-index="4" onclick="selectClub(4)">Rewards</button>
-                <button class="club-btn" data-index="5" onclick="selectClub(5)">Make Report</button>
+                <button class="club-btn" data-index="3" onclick="selectClub(3)">Rewards</button>
+                <button class="club-btn" data-index="4" onclick="selectClub(4)">Make Report</button>
             </div>
         </div>
 
@@ -771,8 +790,8 @@
                 name: 'Courses',
                 code: '3W',
                 tag: '3W · 15.0° Forged Titanium Tour',
-                page: 'teesheet.html',
-                desc: 'Explore premier championship courses, track course slope and rating metrics, book open tee times, and manage your group rotations seamlessly.',
+                page: null,
+                desc: 'Coming soon.',
                 loft: 15.0,
                 shaftLength: 3.45, // Tier 2 (Back-Right)
                 slotPos: [0.36, 2.4, -0.28],
@@ -784,7 +803,7 @@
                 code: '5I',
                 tag: '5I · 24.0° Forged Titanium Tour',
                 page: 'score.html',
-                desc: 'Digital match play scoring engine. Real-time skins calculation, strokes against par, and instant live leaderboard synchronization with playing partners.',
+                desc: 'Description',
                 loft: 24.0,
                 shaftLength: 3.10, // Tier 3 (Center-Left)
                 slotPos: [-0.42, 2.4, 0.02],
@@ -792,22 +811,10 @@
                 elevateOffset: [-0.60, 1.8, 0.75]
             },
             {
-                name: 'Tournaments',
-                code: '7I',
-                tag: '7I · 32.0° Forged Titanium Tour',
-                page: 'list.html',
-                desc: 'Explore active tournaments, seasonal leaderboards, community match archives, and verified past round histories.',
-                loft: 32.0,
-                shaftLength: 2.75, // Tier 4 (Center-Right)
-                slotPos: [0.40, 2.4, 0.06],
-                rotOffset: [0.02, 0.24, -0.12],
-                elevateOffset: [0.60, 1.7, 0.75]
-            },
-            {
                 name: 'Rewards',
                 code: 'PW',
                 tag: 'PW · 46.0° Forged Titanium Tour',
-                page: 'submit.html',
+                page: 'app.html',
                 desc: 'Unlock member achievements, earn pro shop perks, claim tournament bounties, and submit attested rounds for seasonal club rewards.',
                 loft: 46.0,
                 shaftLength: 2.40, // Tier 5 (Front-Left)
@@ -819,7 +826,7 @@
                 name: 'Make Report',
                 code: 'PUTT',
                 tag: 'PUTT · Course Feedback & Maintenance',
-                page: 'view.html',
+                page: 'submit.html',
                 desc: 'Report course issue.',
                 loft: 3.0,
                 shaftLength: 2.05, // Shortest (Front-Right)
@@ -1540,9 +1547,19 @@
 
             heroTitle.textContent = data.name;
             heroDesc.textContent = data.desc;
-            heroLink.href = 'javascript:void(0)';
-            heroLink.onclick = () => false;
-            heroLink.querySelector('span').textContent = `Explore ${data.name}`;
+
+            if (data.page) {
+                heroLink.href = data.page;
+                heroLink.classList.remove('disabled');
+                heroLink.removeAttribute('aria-disabled');
+                heroLink.onclick = null;
+            } else {
+                heroLink.href = 'javascript:void(0)';
+                heroLink.classList.add('disabled');
+                heroLink.setAttribute('aria-disabled', 'true');
+                heroLink.onclick = (e) => { e.preventDefault(); return false; };
+            }
+            heroLink.querySelector('span').textContent = data.name === 'Make Report' ? 'Make Report' : `Explore ${data.name}`;
 
             if (!skipTween) {
                 gsap.fromTo(heroDisplay,
