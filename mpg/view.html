@@ -334,6 +334,15 @@
         }
     </style>
 </head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XGRS4FHSJ4"></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+
+    gtag('config', 'G-XGRS4FHSJ4');
+</script>
 
 <body>
 
@@ -437,7 +446,7 @@
 
                 loadingState.style.display = 'none';
                 errorState.style.display = 'none';
-                
+
                 // Re-apply active search filter if any
                 filterSubmissions();
 

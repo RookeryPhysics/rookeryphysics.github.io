@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -88,7 +89,7 @@
             border-radius: var(--radius);
             border: 1px solid var(--border);
             padding: 0.75rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
 
         .meta-fields {
@@ -113,7 +114,8 @@
             color: var(--text-muted);
         }
 
-        .field input, .field select {
+        .field input,
+        .field select {
             padding: 0.35rem 0.4rem;
             font-size: 0.85rem;
             border: 1px solid var(--border);
@@ -124,7 +126,8 @@
             width: 100%;
         }
 
-        .field input:focus, .field select:focus {
+        .field input:focus,
+        .field select:focus {
             border-color: var(--accent-blue);
         }
 
@@ -143,7 +146,8 @@
             table-layout: auto;
         }
 
-        th, td {
+        th,
+        td {
             border: 1px solid var(--border);
             height: 36px;
             min-width: 32px;
@@ -151,7 +155,8 @@
             position: relative;
         }
 
-        th.col-player, td.col-player {
+        th.col-player,
+        td.col-player {
             position: sticky;
             left: 0;
             background: #ffffff;
@@ -184,7 +189,8 @@
             background: #f1f5f9;
         }
 
-        th.col-tot, td.col-tot {
+        th.col-tot,
+        td.col-tot {
             background: #f8fafc;
             font-weight: 700;
             border-left: 2px solid var(--border-dark);
@@ -350,17 +356,20 @@
                 font-size: 0.6rem;
             }
 
-            .field input, .field select {
+            .field input,
+            .field select {
                 padding: 0.25rem 0.3rem;
                 font-size: 0.8rem;
             }
 
-            th, td {
+            th,
+            td {
                 height: 32px;
                 min-width: 26px;
             }
 
-            th.col-player, td.col-player {
+            th.col-player,
+            td.col-player {
                 min-width: 90px;
                 max-width: 105px;
                 padding: 0 0.15rem;
@@ -379,133 +388,178 @@
                 height: 28px;
             }
 
-            th.col-tot, td.col-tot {
+            th.col-tot,
+            td.col-tot {
                 min-width: 30px;
             }
         }
     </style>
 </head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XGRS4FHSJ4"></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+
+    gtag('config', 'G-XGRS4FHSJ4');
+</script>
+
 <body>
 
-<div class="app-container">
-    <header>
-        <h1>Golf Scorecard</h1>
-        <div class="actions">
-            <button class="btn" id="btn-add">➕ Add Player</button>
-            <button class="btn" id="btn-clear">🧹 Clear</button>
-        </div>
-    </header>
+    <div class="app-container">
+        <header>
+            <h1>Golf Scorecard</h1>
+            <div class="actions">
+                <button class="btn" id="btn-add">➕ Add Player</button>
+                <button class="btn" id="btn-clear">🧹 Clear</button>
+            </div>
+        </header>
 
-    <div class="card">
-        <!-- Meta Details -->
-        <div class="meta-fields">
-            <div class="field">
-                <label for="course-name">Course</label>
-                <input type="text" id="course-name" placeholder="Course name...">
+        <div class="card">
+            <!-- Meta Details -->
+            <div class="meta-fields">
+                <div class="field">
+                    <label for="course-name">Course</label>
+                    <input type="text" id="course-name" placeholder="Course name...">
+                </div>
+                <div class="field">
+                    <label for="round-date">Date</label>
+                    <input type="date" id="round-date">
+                </div>
+                <div class="field">
+                    <label for="tee-box">Tee</label>
+                    <input type="text" id="tee-box" placeholder="Tee color...">
+                </div>
             </div>
-            <div class="field">
-                <label for="round-date">Date</label>
-                <input type="date" id="round-date">
-            </div>
-            <div class="field">
-                <label for="tee-box">Tee</label>
-                <input type="text" id="tee-box" placeholder="Tee color...">
-            </div>
-        </div>
 
-        <!-- Clean Score Spreadsheet with editable inputs -->
-        <div class="table-wrapper">
-            <table>
-                <thead>
-                    <tr class="header-row">
-                        <th class="col-player">Hole</th>
-                        <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th>
-                        <th class="col-tot">OUT</th>
-                        <th>10</th><th>11</th><th>12</th><th>13</th><th>14</th><th>15</th><th>16</th><th>17</th><th>18</th>
-                        <th class="col-tot">IN</th>
-                        <th class="col-tot">TOT</th>
-                    </tr>
-                    <tr class="par-row">
-                        <td class="col-player">Par</td>
-                        <!-- Par inputs left blank by default for player to enter -->
-                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="0" value=""></td>
-                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="1" value=""></td>
-                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="2" value=""></td>
-                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="3" value=""></td>
-                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="4" value=""></td>
-                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="5" value=""></td>
-                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="6" value=""></td>
-                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="7" value=""></td>
-                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="8" value=""></td>
-                        <td class="col-tot" id="par-out"></td>
-                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="9" value=""></td>
-                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="10" value=""></td>
-                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="11" value=""></td>
-                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="12" value=""></td>
-                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="13" value=""></td>
-                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="14" value=""></td>
-                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="15" value=""></td>
-                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="16" value=""></td>
-                        <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input" data-index="17" value=""></td>
-                        <td class="col-tot" id="par-in"></td>
-                        <td class="col-tot" id="par-tot"></td>
-                    </tr>
-                </thead>
-                <tbody id="tbody-players">
-                </tbody>
-            </table>
+            <!-- Clean Score Spreadsheet with editable inputs -->
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr class="header-row">
+                            <th class="col-player">Hole</th>
+                            <th>1</th>
+                            <th>2</th>
+                            <th>3</th>
+                            <th>4</th>
+                            <th>5</th>
+                            <th>6</th>
+                            <th>7</th>
+                            <th>8</th>
+                            <th>9</th>
+                            <th class="col-tot">OUT</th>
+                            <th>10</th>
+                            <th>11</th>
+                            <th>12</th>
+                            <th>13</th>
+                            <th>14</th>
+                            <th>15</th>
+                            <th>16</th>
+                            <th>17</th>
+                            <th>18</th>
+                            <th class="col-tot">IN</th>
+                            <th class="col-tot">TOT</th>
+                        </tr>
+                        <tr class="par-row">
+                            <td class="col-player">Par</td>
+                            <!-- Par inputs left blank by default for player to enter -->
+                            <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input"
+                                    data-index="0" value=""></td>
+                            <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input"
+                                    data-index="1" value=""></td>
+                            <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input"
+                                    data-index="2" value=""></td>
+                            <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input"
+                                    data-index="3" value=""></td>
+                            <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input"
+                                    data-index="4" value=""></td>
+                            <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input"
+                                    data-index="5" value=""></td>
+                            <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input"
+                                    data-index="6" value=""></td>
+                            <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input"
+                                    data-index="7" value=""></td>
+                            <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input"
+                                    data-index="8" value=""></td>
+                            <td class="col-tot" id="par-out"></td>
+                            <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input"
+                                    data-index="9" value=""></td>
+                            <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input"
+                                    data-index="10" value=""></td>
+                            <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input"
+                                    data-index="11" value=""></td>
+                            <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input"
+                                    data-index="12" value=""></td>
+                            <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input"
+                                    data-index="13" value=""></td>
+                            <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input"
+                                    data-index="14" value=""></td>
+                            <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input"
+                                    data-index="15" value=""></td>
+                            <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input"
+                                    data-index="16" value=""></td>
+                            <td><input type="number" pattern="[0-9]*" inputmode="numeric" class="grid-input par-input"
+                                    data-index="17" value=""></td>
+                            <td class="col-tot" id="par-in"></td>
+                            <td class="col-tot" id="par-tot"></td>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-players">
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
-</div>
 
-<!-- Modal for confirm player removal -->
-<div class="modal-overlay" id="remove-modal">
-    <div class="modal-box">
-        <div class="modal-title">Remove Player</div>
-        <div class="modal-body" id="remove-modal-text">Are you sure you want to remove this player?</div>
-        <div class="modal-actions">
-            <button class="btn" id="modal-cancel-btn">Cancel</button>
-            <button class="btn btn-danger" id="modal-confirm-btn">Remove</button>
+    <!-- Modal for confirm player removal -->
+    <div class="modal-overlay" id="remove-modal">
+        <div class="modal-box">
+            <div class="modal-title">Remove Player</div>
+            <div class="modal-body" id="remove-modal-text">Are you sure you want to remove this player?</div>
+            <div class="modal-actions">
+                <button class="btn" id="modal-cancel-btn">Cancel</button>
+                <button class="btn btn-danger" id="modal-confirm-btn">Remove</button>
+            </div>
         </div>
     </div>
-</div>
 
-<script>
-    let pars = Array(18).fill(null);
-    let players = [
-        { id: 1, name: 'Player 1', scores: Array(18).fill(null) }
-    ];
-    let playerToRemoveId = null;
+    <script>
+        let pars = Array(18).fill(null);
+        let players = [
+            { id: 1, name: 'Player 1', scores: Array(18).fill(null) }
+        ];
+        let playerToRemoveId = null;
 
-    function render() {
-        const tbody = document.getElementById('tbody-players');
-        tbody.innerHTML = '';
+        function render() {
+            const tbody = document.getElementById('tbody-players');
+            tbody.innerHTML = '';
 
-        players.forEach(player => {
-            const tr = document.createElement('tr');
-            
-            // Name with Remove Button
-            const tdName = document.createElement('td');
-            tdName.className = 'col-player';
-            tdName.innerHTML = `
+            players.forEach(player => {
+                const tr = document.createElement('tr');
+
+                // Name with Remove Button
+                const tdName = document.createElement('td');
+                tdName.className = 'col-player';
+                tdName.innerHTML = `
                 <div class="player-col-container">
                     <input type="text" class="player-name-input" value="${escapeHtml(player.name)}" data-id="${player.id}">
                     <button class="btn-remove-player" data-id="${player.id}" title="Remove player">✕</button>
                 </div>
             `;
-            tr.appendChild(tdName);
+                tr.appendChild(tdName);
 
-            let out = 0, inSum = 0;
+                let out = 0, inSum = 0;
 
-            for (let i = 0; i < 18; i++) {
-                const s = player.scores[i];
-                if (s) {
-                    if (i < 9) out += s;
-                    else inSum += s;
-                }
+                for (let i = 0; i < 18; i++) {
+                    const s = player.scores[i];
+                    if (s) {
+                        if (i < 9) out += s;
+                        else inSum += s;
+                    }
 
-                const td = document.createElement('td');
-                td.innerHTML = `
+                    const td = document.createElement('td');
+                    td.innerHTML = `
                     <input type="number" 
                            pattern="[0-9]*"
                            inputmode="numeric"
@@ -514,161 +568,161 @@
                            data-hole="${i}" 
                            value="${s || ''}">
                 `;
-                tr.appendChild(td);
+                    tr.appendChild(td);
 
-                if (i === 8) {
-                    const tdOut = document.createElement('td');
-                    tdOut.className = 'col-tot';
-                    tdOut.id = `out-${player.id}`;
-                    tdOut.textContent = out || '';
-                    tr.appendChild(tdOut);
+                    if (i === 8) {
+                        const tdOut = document.createElement('td');
+                        tdOut.className = 'col-tot';
+                        tdOut.id = `out-${player.id}`;
+                        tdOut.textContent = out || '';
+                        tr.appendChild(tdOut);
+                    }
                 }
-            }
 
-            const tdIn = document.createElement('td');
-            tdIn.className = 'col-tot';
-            tdIn.id = `in-${player.id}`;
-            tdIn.textContent = inSum || '';
-            tr.appendChild(tdIn);
+                const tdIn = document.createElement('td');
+                tdIn.className = 'col-tot';
+                tdIn.id = `in-${player.id}`;
+                tdIn.textContent = inSum || '';
+                tr.appendChild(tdIn);
 
-            const tdTot = document.createElement('td');
-            tdTot.className = 'col-tot';
-            tdTot.id = `tot-${player.id}`;
-            tdTot.textContent = (out + inSum) || '';
-            tr.appendChild(tdTot);
+                const tdTot = document.createElement('td');
+                tdTot.className = 'col-tot';
+                tdTot.id = `tot-${player.id}`;
+                tdTot.textContent = (out + inSum) || '';
+                tr.appendChild(tdTot);
 
-            tbody.appendChild(tr);
-        });
+                tbody.appendChild(tr);
+            });
 
-        calculateParTotals();
-    }
-
-    function calculateParTotals() {
-        const out = pars.slice(0, 9).reduce((a, b) => a + (b || 0), 0);
-        const inSum = pars.slice(9, 18).reduce((a, b) => a + (b || 0), 0);
-        document.getElementById('par-out').textContent = out || '';
-        document.getElementById('par-in').textContent = inSum || '';
-        document.getElementById('par-tot').textContent = (out + inSum) || '';
-    }
-
-    function calculatePlayerTotals(playerId) {
-        const player = players.find(p => p.id === playerId);
-        if (!player) return;
-
-        let out = 0, inSum = 0;
-        player.scores.forEach((s, idx) => {
-            if (s) {
-                if (idx < 9) out += s;
-                else inSum += s;
-            }
-        });
-
-        const elOut = document.getElementById(`out-${playerId}`);
-        const elIn = document.getElementById(`in-${playerId}`);
-        const elTot = document.getElementById(`tot-${playerId}`);
-
-        if (elOut) elOut.textContent = out || '';
-        if (elIn) elIn.textContent = inSum || '';
-        if (elTot) elTot.textContent = (out + inSum) || '';
-    }
-
-    // Event Delegation for Table Inputs & Remove Button
-    document.getElementById('tbody-players').addEventListener('focusin', (e) => {
-        if (e.target.classList.contains('score-input')) {
-            e.target.select();
-        }
-    });
-
-    document.getElementById('tbody-players').addEventListener('click', (e) => {
-        const removeBtn = e.target.closest('.btn-remove-player');
-        if (removeBtn) {
-            const playerId = parseInt(removeBtn.dataset.id);
-            openRemoveModal(playerId);
-        }
-    });
-
-    document.getElementById('tbody-players').addEventListener('input', (e) => {
-        if (e.target.classList.contains('score-input')) {
-            const playerId = parseInt(e.target.dataset.playerId);
-            const hole = parseInt(e.target.dataset.hole);
-            const val = parseInt(e.target.value);
-
-            const player = players.find(p => p.id === playerId);
-            if (player) {
-                player.scores[hole] = isNaN(val) ? null : val;
-                calculatePlayerTotals(playerId);
-            }
-        } else if (e.target.classList.contains('player-name-input')) {
-            const playerId = parseInt(e.target.dataset.id);
-            const player = players.find(p => p.id === playerId);
-            if (player) player.name = e.target.value;
-        }
-    });
-
-    // Par Input changes
-    document.querySelectorAll('.par-input').forEach(input => {
-        input.addEventListener('input', (e) => {
-            const idx = parseInt(e.target.dataset.index);
-            const val = parseInt(e.target.value);
-            pars[idx] = isNaN(val) ? null : val;
             calculateParTotals();
+        }
+
+        function calculateParTotals() {
+            const out = pars.slice(0, 9).reduce((a, b) => a + (b || 0), 0);
+            const inSum = pars.slice(9, 18).reduce((a, b) => a + (b || 0), 0);
+            document.getElementById('par-out').textContent = out || '';
+            document.getElementById('par-in').textContent = inSum || '';
+            document.getElementById('par-tot').textContent = (out + inSum) || '';
+        }
+
+        function calculatePlayerTotals(playerId) {
+            const player = players.find(p => p.id === playerId);
+            if (!player) return;
+
+            let out = 0, inSum = 0;
+            player.scores.forEach((s, idx) => {
+                if (s) {
+                    if (idx < 9) out += s;
+                    else inSum += s;
+                }
+            });
+
+            const elOut = document.getElementById(`out-${playerId}`);
+            const elIn = document.getElementById(`in-${playerId}`);
+            const elTot = document.getElementById(`tot-${playerId}`);
+
+            if (elOut) elOut.textContent = out || '';
+            if (elIn) elIn.textContent = inSum || '';
+            if (elTot) elTot.textContent = (out + inSum) || '';
+        }
+
+        // Event Delegation for Table Inputs & Remove Button
+        document.getElementById('tbody-players').addEventListener('focusin', (e) => {
+            if (e.target.classList.contains('score-input')) {
+                e.target.select();
+            }
         });
-    });
 
-    // Add Player Button
-    document.getElementById('btn-add').onclick = () => {
-        players.push({ id: Date.now(), name: `Player ${players.length + 1}`, scores: Array(18).fill(null) });
-        render();
-    };
+        document.getElementById('tbody-players').addEventListener('click', (e) => {
+            const removeBtn = e.target.closest('.btn-remove-player');
+            if (removeBtn) {
+                const playerId = parseInt(removeBtn.dataset.id);
+                openRemoveModal(playerId);
+            }
+        });
 
-    // Clear Scores
-    document.getElementById('btn-clear').onclick = () => {
-        players.forEach(p => p.scores = Array(18).fill(null));
-        render();
-    };
+        document.getElementById('tbody-players').addEventListener('input', (e) => {
+            if (e.target.classList.contains('score-input')) {
+                const playerId = parseInt(e.target.dataset.playerId);
+                const hole = parseInt(e.target.dataset.hole);
+                const val = parseInt(e.target.value);
 
-    // Modal logic
-    const modalOverlay = document.getElementById('remove-modal');
-    const modalText = document.getElementById('remove-modal-text');
-    const modalCancelBtn = document.getElementById('modal-cancel-btn');
-    const modalConfirmBtn = document.getElementById('modal-confirm-btn');
+                const player = players.find(p => p.id === playerId);
+                if (player) {
+                    player.scores[hole] = isNaN(val) ? null : val;
+                    calculatePlayerTotals(playerId);
+                }
+            } else if (e.target.classList.contains('player-name-input')) {
+                const playerId = parseInt(e.target.dataset.id);
+                const player = players.find(p => p.id === playerId);
+                if (player) player.name = e.target.value;
+            }
+        });
 
-    function openRemoveModal(playerId) {
-        playerToRemoveId = playerId;
-        const player = players.find(p => p.id === playerId);
-        const name = player ? player.name.trim() || 'this player' : 'this player';
-        modalText.textContent = `Are you sure you want to remove ${name}?`;
-        modalOverlay.classList.add('active');
-    }
+        // Par Input changes
+        document.querySelectorAll('.par-input').forEach(input => {
+            input.addEventListener('input', (e) => {
+                const idx = parseInt(e.target.dataset.index);
+                const val = parseInt(e.target.value);
+                pars[idx] = isNaN(val) ? null : val;
+                calculateParTotals();
+            });
+        });
 
-    function closeRemoveModal() {
-        playerToRemoveId = null;
-        modalOverlay.classList.remove('active');
-    }
-
-    modalCancelBtn.onclick = closeRemoveModal;
-
-    modalOverlay.addEventListener('click', (e) => {
-        if (e.target === modalOverlay) {
-            closeRemoveModal();
-        }
-    });
-
-    modalConfirmBtn.onclick = () => {
-        if (playerToRemoveId !== null) {
-            players = players.filter(p => p.id !== playerToRemoveId);
-            closeRemoveModal();
+        // Add Player Button
+        document.getElementById('btn-add').onclick = () => {
+            players.push({ id: Date.now(), name: `Player ${players.length + 1}`, scores: Array(18).fill(null) });
             render();
+        };
+
+        // Clear Scores
+        document.getElementById('btn-clear').onclick = () => {
+            players.forEach(p => p.scores = Array(18).fill(null));
+            render();
+        };
+
+        // Modal logic
+        const modalOverlay = document.getElementById('remove-modal');
+        const modalText = document.getElementById('remove-modal-text');
+        const modalCancelBtn = document.getElementById('modal-cancel-btn');
+        const modalConfirmBtn = document.getElementById('modal-confirm-btn');
+
+        function openRemoveModal(playerId) {
+            playerToRemoveId = playerId;
+            const player = players.find(p => p.id === playerId);
+            const name = player ? player.name.trim() || 'this player' : 'this player';
+            modalText.textContent = `Are you sure you want to remove ${name}?`;
+            modalOverlay.classList.add('active');
         }
-    };
 
-    function escapeHtml(str) {
-        return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-    }
+        function closeRemoveModal() {
+            playerToRemoveId = null;
+            modalOverlay.classList.remove('active');
+        }
 
-    render();
-</script>
+        modalCancelBtn.onclick = closeRemoveModal;
+
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) {
+                closeRemoveModal();
+            }
+        });
+
+        modalConfirmBtn.onclick = () => {
+            if (playerToRemoveId !== null) {
+                players = players.filter(p => p.id !== playerToRemoveId);
+                closeRemoveModal();
+                render();
+            }
+        };
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        }
+
+        render();
+    </script>
 
 </body>
-</html>
 
+</html>
