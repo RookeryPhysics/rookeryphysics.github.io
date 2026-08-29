@@ -261,25 +261,40 @@
 
             <!-- Top Header Area -->
             <header
-                class="bg-[#1b4332] text-white px-4 pb-4 pt-6 flex justify-between items-center rounded-b-2xl shadow-sm z-10">
+                class="bg-[#1b4332] text-white px-4 pb-3.5 pt-5 flex flex-col gap-2 rounded-b-2xl shadow-sm z-10">
                 <!-- Brand Name and Logo -->
-                <div class="flex items-center gap-2.5 mt-1">
-                    <img src="logo.jpeg" alt="MULTIPLAYED Logo"
-                        class="w-10 h-10 rounded-full object-cover border border-white/20 shadow-sm">
-                    <div class="flex flex-col">
-                        <h1 id="multiplayed-text" class="multiplayed-title" onclick="triggerGolfBounce()"
-                            title="Click to bounce!">MULTIPLAYED</h1>
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-2.5">
+                        <img src="logo.jpeg" alt="MULTIPLAYED Logo"
+                            class="w-10 h-10 rounded-full object-cover border border-white/20 shadow-sm">
+                        <div class="flex flex-col">
+                            <h1 id="multiplayed-text" class="multiplayed-title" onclick="triggerGolfBounce()"
+                                title="Click to bounce!">MULTIPLAYED</h1>
+                        </div>
+                    </div>
+
+                    <!-- Points Area (Interactive) -->
+                    <div id="header-points-pill" onclick="handleHeaderPointsClick()"
+                        class="flex items-center bg-black/20 border border-yellow-500/30 px-3 py-1.5 rounded-full cursor-pointer hover:bg-black/30 transition-all hover:scale-105 active:scale-95 shadow-sm">
+                        <div id="header-points-avatar"
+                            class="bg-gradient-to-tr from-yellow-500 to-amber-300 rounded-full w-5 h-5 flex items-center justify-center mr-1.5 shadow-sm">
+                            <span id="header-points-avatar-char" class="text-[#1b4332] text-[10px] font-black">U</span>
+                        </div>
+                        <span id="header-points-val" class="font-bold text-sm tracking-tight text-amber-200">0 Points</span>
                     </div>
                 </div>
 
-                <!-- Points Area (Interactive) -->
-                <div id="header-points-pill" onclick="handleHeaderPointsClick()"
-                    class="flex items-center bg-black/20 border border-yellow-500/30 px-3 py-1.5 rounded-full cursor-pointer hover:bg-black/30 transition-all hover:scale-105 active:scale-95 shadow-sm">
-                    <div id="header-points-avatar"
-                        class="bg-gradient-to-tr from-yellow-500 to-amber-300 rounded-full w-5 h-5 flex items-center justify-center mr-1.5 shadow-sm">
-                        <span id="header-points-avatar-char" class="text-[#1b4332] text-[10px] font-black">U</span>
+                <!-- Sub-header: Welcome (userName) & Date -->
+                <div id="header-user-bar" class="flex justify-between items-center text-xs border-t border-white/10 pt-2 px-0.5 min-h-[26px]">
+                    <!-- Welcome message (shown only when logged in) -->
+                    <div id="welcome-message-container" class="hidden items-center font-semibold text-emerald-100 min-w-0 pr-2">
+                        <span class="truncate">Welcome, <span id="welcome-user-name" class="text-amber-300 font-bold"></span>!</span>
                     </div>
-                    <span id="header-points-val" class="font-bold text-sm tracking-tight text-amber-200">0 Points</span>
+                    <!-- Current Date -->
+                    <div id="header-date-container" class="text-[11px] text-emerald-200/90 font-medium ml-auto flex items-center gap-1 shrink-0">
+                        <i data-lucide="calendar" class="w-3 h-3 text-emerald-300"></i>
+                        <span id="header-current-date"></span>
+                    </div>
                 </div>
             </header>
 
@@ -309,6 +324,7 @@
                     </div>
                     <!-- Extra space at bottom to ensure content isn't hidden by nav bar -->
                     <div class="h-8"></div>
+                </div>
             </main>
 
             <!-- Bottom Navigation Bar based on sketch -->
@@ -480,18 +496,47 @@
             lucide.createIcons();
         }
 
-        // Sync header points display with Auth state
+        // Sync header points, welcome message, and date display with Auth state
         function updateHeaderPoints() {
             const valEl = document.getElementById('header-points-val');
             const avatarChar = document.getElementById('header-points-avatar-char');
+            const welcomeContainer = document.getElementById('welcome-message-container');
+            const welcomeUserName = document.getElementById('welcome-user-name');
+            const dateEl = document.getElementById('header-current-date');
+
+            // Format and display current date
+            if (dateEl) {
+                const now = new Date();
+                dateEl.textContent = now.toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                });
+            }
+
             const user = window.Auth ? window.Auth.getUser() : null;
 
             if (user && user.username) {
                 if (valEl) valEl.textContent = `${user.points || 0} Points`;
                 if (avatarChar) avatarChar.textContent = user.username.charAt(0).toUpperCase();
+                if (welcomeContainer) {
+                    welcomeContainer.classList.remove('hidden');
+                    welcomeContainer.classList.add('flex');
+                }
+                if (welcomeUserName) {
+                    welcomeUserName.textContent = user.username;
+                }
             } else {
                 if (valEl) valEl.textContent = 'Sign In';
                 if (avatarChar) avatarChar.textContent = '?';
+                if (welcomeContainer) {
+                    welcomeContainer.classList.add('hidden');
+                    welcomeContainer.classList.remove('flex');
+                }
+                if (welcomeUserName) {
+                    welcomeUserName.textContent = '';
+                }
             }
         }
 
@@ -854,6 +899,8 @@
         // Global auth change listener
         window.addEventListener('mpg-auth-change', updateHeaderPoints);
         document.addEventListener('DOMContentLoaded', updateHeaderPoints);
+        updateHeaderPoints();
+        lucide.createIcons();
     </script>
 </body>
 
