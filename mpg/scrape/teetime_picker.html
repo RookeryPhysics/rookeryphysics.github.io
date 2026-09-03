@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BC Golf Tee Times Scraper & Viewer</title>
+    <meta name="description" content="Select from British Columbia golf courses, sync live tee times and pricing directly into your Google Sheet, and view the scraped results.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: rgba(23, 32, 54, 0.75);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent: #10b981;
+            --accent-hover: #059669;
+            --accent-glow: rgba(16, 185, 129, 0.3);
+            --secondary: #3b82f6;
+            --secondary-hover: #2563eb;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --input-bg: rgba(15, 23, 42, 0.65);
+            --input-border: rgba(255, 255, 255, 0.12);
+            --input-focus: #10b981;
+            --danger: #ef4444;
+            --danger-bg: rgba(239, 68, 68, 0.15);
+            --success: #10b981;
+            --success-bg: rgba(16, 185, 129, 0.15);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            min-height: 100vh;
+            background: radial-gradient(circle at 50% 15%, #1e293b 0%, #0b0f19 85%);
+            color: var(--text-main);
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 2.5rem 1rem;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .ambient-glow {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.12) 0%, rgba(16, 185, 129, 0) 70%);
+            top: 25%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 820px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 2.5rem;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
+            position: relative;
+            z-index: 1;
+            margin-bottom: 3rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 1.75rem;
+        }
+
+        .header h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #ffffff 30%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 0;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #cbd5e1;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Course Selector Scrollable List */
+        .course-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.65rem;
+            max-height: 270px;
+            overflow-y: auto;
+            padding-right: 6px;
+        }
+
+        .course-grid::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .course-grid::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 8px;
+        }
+
+        .course-grid::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+        }
+
+        .course-grid::-webkit-scrollbar-thumb:hover {
+            background: var(--accent);
+        }
+
+        .course-card {
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .course-card:hover {
+            border-color: rgba(16, 185, 129, 0.4);
+            background: rgba(16, 185, 129, 0.05);
+            transform: translateY(-1px);
+        }
+
+        .course-card.active {
+            border-color: var(--accent);
+            background: rgba(16, 185, 129, 0.12);
+            box-shadow: 0 0 16px var(--accent-glow);
+        }
+
+        .course-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .course-name {
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--text-main);
+        }
+
+        .course-location {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .course-badge {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #cbd5e1;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .course-card.active .course-badge {
+            background: var(--accent);
+            color: #0b0f19;
+            border-color: var(--accent);
+            font-weight: 700;
+        }
+
+        /* Inputs */
+        .input-control {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 10px;
+            padding: 0.85rem 1rem;
+            color: var(--text-main);
+            font-size: 0.95rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+        }
+
+        .input-control:focus {
+            border-color: var(--input-focus);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        /* Button Group */
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        @media (max-width: 600px) {
+            .btn-group {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .btn {
+            border: none;
+            border-radius: 12px;
+            padding: 0.95rem;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            user-select: none;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #0b0f19;
+            box-shadow: 0 4px 15px var(--accent-glow);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-main);
+            border: 1px solid var(--card-border);
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.14);
+            border-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+        .spinner {
+            display: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid currentColor;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Status & Alert Box */
+        .status-box {
+            display: none;
+            margin-top: 1.5rem;
+            padding: 1.25rem;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .status-box.success {
+            display: block;
+            background: var(--success-bg);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #a7f3d0;
+        }
+
+        .status-box.error {
+            display: block;
+            background: var(--danger-bg);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+        }
+
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-num {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: #ffffff;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+
+        /* Results Display Section */
+        .results-section {
+            display: none;
+            margin-top: 2rem;
+            border-top: 1px solid var(--card-border);
+            padding-top: 1.75rem;
+            animation: fadeIn 0.35s ease;
+        }
+
+        .results-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .results-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .results-badge {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--accent);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            padding: 3px 10px;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        /* Filter Controls */
+        .filter-bar {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-input {
+            flex: 1;
+            min-width: 160px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+            padding: 0.5rem 0.75rem;
+            color: var(--text-main);
+            font-size: 0.85rem;
+            outline: none;
+        }
+
+        .filter-input:focus {
+            border-color: var(--accent);
+        }
+
+        /* Table Design */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid var(--card-border);
+            background: rgba(15, 23, 42, 0.4);
+        }
+
+        .tee-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+            text-align: left;
+        }
+
+        .tee-table th {
+            background: #1e293b;
+            color: #cbd5e1;
+            font-weight: 600;
+            padding: 0.85rem 1rem;
+            border-bottom: 1px solid var(--card-border);
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+        }
+
+        .tee-table td {
+            padding: 0.85rem 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            color: var(--text-main);
+        }
+
+        .tee-table tbody tr:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .time-cell {
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .price-badge {
+            display: inline-block;
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(16, 185, 129, 0.25);
+        }
+
+        .status-badge {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 2px 7px;
+            border-radius: 4px;
+        }
+
+        .status-open {
+            background: rgba(16, 185, 129, 0.2);
+            color: #6ee7b7;
+        }
+
+        .status-past {
+            background: rgba(148, 163, 184, 0.2);
+            color: #94a3b8;
+        }
+
+        .empty-state {
+            padding: 2.5rem 1rem;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            font-style: italic;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="ambient-glow"></div>
+
+    <div class="container">
+        <div class="header">
+            <h1>Chronoscraper</h1>
+        </div>
+
+        <form id="scrapeForm">
+            <!-- Scrollable Golf Course Selector with Search -->
+            <div class="form-group">
+                <div class="form-label">
+                    <span>Select Golf Course (<span id="courseCountBadge">27</span> in BC)</span>
+                </div>
+                <input type="text" id="courseSearchInput" class="input-control" style="margin-bottom: 0.65rem; padding: 0.65rem 0.85rem; font-size: 0.85rem;" placeholder="🔎 Search BC courses by name or city (e.g. Whistler, Kelowna, Victoria)...">
+                <div class="course-grid" id="courseGrid">
+                    <!-- Populated via JavaScript -->
+                </div>
+                <input type="hidden" id="selectedCourseSlug" name="course" required>
+            </div>
+
+            <!-- Play Date Selector -->
+            <div class="form-group">
+                <div class="form-label">
+                    <span>Target Date</span>
+                </div>
+                <input type="date" id="targetDate" class="input-control" required>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="btn-group">
+                <button type="submit" id="submitBtn" class="btn btn-primary">
+                    <span class="spinner" id="spinner"></span>
+                    <span id="btnText">🚀 Scrape & Update Sheet</span>
+                </button>
+
+                <button type="button" id="loadFromSheetBtn" class="btn btn-secondary">
+                    <span class="spinner" id="sheetSpinner"></span>
+                    <span id="sheetBtnText">📊 View Current Sheet Data</span>
+                </button>
+            </div>
+        </form>
+
+        <div id="statusBox" class="status-box"></div>
+
+        <!-- Scraped Tee Times Display Section -->
+        <div id="resultsSection" class="results-section">
+            <div class="results-header">
+                <div class="results-title">
+                    <span id="resultsClubName">⛳ Golf Course</span>
+                    <span id="resultsDateBadge" class="results-badge">Date</span>
+                </div>
+                <div id="resultsSlotCount" style="font-size: 0.85rem; color: var(--text-muted);"></div>
+            </div>
+
+            <!-- Live Search / Filter -->
+            <div class="filter-bar">
+                <input type="text" id="timeFilter" class="filter-input" placeholder="🔍 Filter by time (e.g. 08, 10, PM)...">
+                <input type="text" id="formatFilter" class="filter-input" placeholder="🔍 Filter by format/hole (e.g. 18, 9, Normal)...">
+            </div>
+
+            <div class="table-responsive">
+                <table class="tee-table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Hole</th>
+                            <th>Format</th>
+                            <th>Price / Player</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="teeTimesTableBody">
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dedicated Google Apps Script Web App Deployment URL
+        const APPS_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzix6ZwFnNDeMVjJ-Aj5VAgkqy22rnJqNb-xCfTtg0vYKYYUKw6w5IuDc4wfRYCb1Gefg/exec';
+
+        // Verified pool of 27 active British Columbia Chronogolf courses with live tee times
+        const BC_COURSES = [
+            { slug: 'arbutus-ridge-golf-club', name: 'Arbutus Ridge Golf Club', location: 'Cobble Hill, BC' },
+            { slug: 'bear-mountain-resort', name: 'Bear Mountain Golf & Tennis Club', location: 'Victoria, BC' },
+            { slug: 'big-sky-golf-club', name: 'Big Sky Golf Club', location: 'Pemberton, BC' },
+            { slug: 'sechelt-golf-country-club', name: 'Blue Ocean Golf Club', location: 'Sechelt, BC' },
+            { slug: 'country-meadows-golf-course', name: 'Country Meadows Golf Course', location: 'Richmond, BC' },
+            { slug: 'fairview-mountain-golf-club', name: 'Fairview Mountain Golf Club', location: 'Oliver, BC' },
+            { slug: 'fairmont-hot-springs', name: 'FHSR Mountainside & Creekside Golf Courses', location: 'Fairmont Hot Springs, BC' },
+            { slug: 'westwood-plateau-golf-country-club', name: 'Fine - Greentee Country Club Westwood Plateau', location: 'Coquitlam, BC' },
+            { slug: 'furry-creek-golf-country-club', name: 'Furry Creek Golf & Country Club', location: 'Furry Creek, BC' },
+            { slug: 'golden-eagle-golf-club', name: 'Golden Eagle Golf Club', location: 'Pitt Meadows, BC' },
+            { slug: 'greywolf-golf-course', name: 'Greywolf Golf Course', location: 'Panorama, BC' },
+            { slug: 'kamloops-golf-country-club', name: 'Kamloops Golf & Country Club', location: 'Kamloops, BC' },
+            { slug: 'kimberley-golf-club', name: 'Kimberley Golf Course', location: 'Kimberley, BC' },
+            { slug: 'mission-creek-golf-club', name: 'Mission Creek Golf Club', location: 'Kelowna, BC' },
+            { slug: 'morningstar-golf-club', name: 'Morningstar Golf Club', location: 'Parksville, BC' },
+            { slug: 'revelstoke-golf-club', name: 'Revelstoke Golf Club', location: 'Revelstoke, BC' },
+            { slug: 'sagebrush-golf-club', name: 'Sagebrush Golf Club', location: 'Quilchena, BC' },
+            { slug: 'savage-creek', name: 'Savage Creek', location: 'Richmond, BC' },
+            { slug: 'shuswap-national', name: 'Shuswap National', location: 'Salmon Arm, BC' },
+            { slug: 'summerland-golf-country-club', name: 'Summerland Golf & Country Club', location: 'Summerland, BC' },
+            { slug: 'the-links-at-hampton-cove', name: 'The Links at Hampton Cove', location: 'Delta, BC' },
+            { slug: 'crown-isle-resort-golf-community', name: 'The Park at Crown Isle', location: 'Comox, BC' },
+            { slug: 'the-rise-golf-course', name: 'The Rise Resort', location: 'Vernon, BC' },
+            { slug: 'tower-ranch-golf-club', name: 'Tower Ranch Golf Club', location: 'Kelowna, BC' },
+            { slug: 'tsawwassen-springs-golf', name: 'Tsawwassen Springs Golf', location: 'Delta, BC' },
+            { slug: 'university-golf-club', name: 'University Golf Club', location: 'Vancouver, BC' },
+            { slug: 'windermere-valley-golf-course', name: 'Windermere Valley Golf Course', location: 'Windermere, BC' }
+        ];
+
+        let selectedSlug = '';
+        let currentTeeTimesList = [];
+
+        function renderCourseCards(filterText = '') {
+            const container = document.getElementById('courseGrid');
+            container.innerHTML = '';
+
+            const query = filterText.toLowerCase().trim();
+            const matchingCourses = BC_COURSES.filter(c => 
+                !query || 
+                c.name.toLowerCase().includes(query) || 
+                c.location.toLowerCase().includes(query) || 
+                c.slug.toLowerCase().includes(query)
+            );
+
+            document.getElementById('courseCountBadge').textContent = matchingCourses.length;
+
+            if (matchingCourses.length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding: 1.5rem; color: var(--text-muted); font-size: 0.85rem;">No BC courses found matching "' + filterText + '"</div>';
+                return;
+            }
+
+            // Keep selected slug if visible in matches, otherwise default to first match
+            const hasSelected = matchingCourses.some(c => c.slug === selectedSlug);
+            if (!hasSelected) {
+                selectedSlug = matchingCourses[0].slug;
+                document.getElementById('selectedCourseSlug').value = selectedSlug;
+            }
+
+            matchingCourses.forEach((c) => {
+                const isSelected = (c.slug === selectedSlug);
+                const card = document.createElement('div');
+                card.className = `course-card ${isSelected ? 'active' : ''}`;
+                card.dataset.slug = c.slug;
+                card.innerHTML = `
+                    <div class="course-info">
+                        <span class="course-name">${c.name}</span>
+                        <span class="course-location">📍 ${c.location}</span>
+                    </div>
+                    <span class="course-badge">${c.slug}</span>
+                `;
+
+                card.addEventListener('click', () => {
+                    document.querySelectorAll('.course-card').forEach(el => el.classList.remove('active'));
+                    card.classList.add('active');
+                    selectedSlug = c.slug;
+                    document.getElementById('selectedCourseSlug').value = c.slug;
+                });
+
+                container.appendChild(card);
+            });
+        }
+
+        // Render Tee Times Table
+        function renderTeeTimesTable(teeTimes, meta) {
+            const resultsSection = document.getElementById('resultsSection');
+            const tbody = document.getElementById('teeTimesTableBody');
+            const clubNameEl = document.getElementById('resultsClubName');
+            const dateBadgeEl = document.getElementById('resultsDateBadge');
+            const countEl = document.getElementById('resultsSlotCount');
+
+            currentTeeTimesList = teeTimes || [];
+
+            clubNameEl.textContent = `⛳ ${meta.clubName || 'Golf Course'}`;
+            dateBadgeEl.textContent = meta.dateStr || 'Date';
+            countEl.textContent = `${currentTeeTimesList.length} open slots`;
+
+            resultsSection.style.display = 'block';
+            filterAndDisplayRows();
+        }
+
+        function filterAndDisplayRows() {
+            const tbody = document.getElementById('teeTimesTableBody');
+            tbody.innerHTML = '';
+
+            const timeQuery = document.getElementById('timeFilter').value.toLowerCase().trim();
+            const formatQuery = document.getElementById('formatFilter').value.toLowerCase().trim();
+
+            const filtered = currentTeeTimesList.filter(tt => {
+                const matchTime = !timeQuery || tt.time.toLowerCase().includes(timeQuery);
+                const matchFormat = !formatQuery || 
+                    tt.format.toLowerCase().includes(formatQuery) || 
+                    tt.hole.toLowerCase().includes(formatQuery);
+                return matchTime && matchFormat;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="empty-state">
+                            ${currentTeeTimesList.length === 0 ? 'No available tee times found for this date.' : 'No slots match your search filters.'}
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            filtered.forEach(tt => {
+                const tr = document.createElement('tr');
+                const price = tt.priceFormatted || (tt.price ? `$${Number(tt.price).toFixed(2)}` : 'N/A');
+                const isPast = tt.status && tt.status.toLowerCase() === 'past';
+                const statusClass = isPast ? 'status-past' : 'status-open';
+
+                tr.innerHTML = `
+                    <td class="time-cell">${tt.time}</td>
+                    <td>${tt.hole}</td>
+                    <td>${tt.format}</td>
+                    <td><span class="price-badge">${price} ${tt.currency || 'CAD'}</span></td>
+                    <td><span class="status-badge ${statusClass}">${tt.status || 'Open'}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Initialize form defaults
+        window.addEventListener('DOMContentLoaded', () => {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            document.getElementById('targetDate').value = `${year}-${month}-${day}`;
+
+            renderCourseCards();
+
+            // Course search bar listener
+            document.getElementById('courseSearchInput').addEventListener('input', (e) => {
+                renderCourseCards(e.target.value);
+            });
+
+            // Filter event listeners
+            document.getElementById('timeFilter').addEventListener('input', filterAndDisplayRows);
+            document.getElementById('formatFilter').addEventListener('input', filterAndDisplayRows);
+
+            // "View Current Sheet Data" button click
+            document.getElementById('loadFromSheetBtn').addEventListener('click', loadExistingSheetData);
+        });
+
+        // Load existing sheet data
+        async function loadExistingSheetData() {
+            const statusBox = document.getElementById('statusBox');
+            const sheetBtn = document.getElementById('loadFromSheetBtn');
+            const sheetSpinner = document.getElementById('sheetSpinner');
+            const sheetBtnText = document.getElementById('sheetBtnText');
+
+            sheetBtn.disabled = true;
+            sheetSpinner.style.display = 'inline-block';
+            sheetBtnText.textContent = 'Loading Sheet...';
+            statusBox.style.display = 'none';
+
+            try {
+                const requestUrl = `${APPS_SCRIPT_WEB_APP_URL}?action=read`;
+                const response = await fetch(requestUrl, { method: 'GET' });
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    const d = result.data;
+                    statusBox.className = 'status-box success';
+                    statusBox.innerHTML = `
+                        <strong>📊 Loaded From Google Sheet:</strong><br>
+                        Displaying <strong>${d.openSlots}</strong> tee times for <strong>${d.clubName}</strong> (${d.dateStr}).
+                    `;
+                    renderTeeTimesTable(d.teeTimes, d);
+                } else {
+                    throw new Error(result.message || 'Could not load sheet data.');
+                }
+            } catch (err) {
+                statusBox.className = 'status-box error';
+                statusBox.innerHTML = `<strong>❌ Failed to Load Sheet:</strong><br>${err.message}`;
+            } finally {
+                sheetBtn.disabled = false;
+                sheetSpinner.style.display = 'none';
+                sheetBtnText.textContent = '📊 View Current Sheet Data';
+            }
+        }
+
+        // Scrape Form Submission
+        document.getElementById('scrapeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const course = document.getElementById('selectedCourseSlug').value;
+            const date = document.getElementById('targetDate').value;
+
+            const statusBox = document.getElementById('statusBox');
+            const submitBtn = document.getElementById('submitBtn');
+            const spinner = document.getElementById('spinner');
+            const btnText = document.getElementById('btnText');
+
+            submitBtn.disabled = true;
+            spinner.style.display = 'inline-block';
+            btnText.textContent = 'Scraping & Updating Sheet...';
+            statusBox.style.display = 'none';
+
+            try {
+                const requestUrl = `${APPS_SCRIPT_WEB_APP_URL}?course=${encodeURIComponent(course)}&date=${encodeURIComponent(date)}`;
+                
+                const response = await fetch(requestUrl, {
+                    method: 'GET'
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    const d = result.data;
+                    statusBox.className = 'status-box success';
+                    statusBox.innerHTML = `
+                        <strong>🎉 Sheet Updated Successfully!</strong><br>
+                        Live tee times for <strong>${d.clubName}</strong> on <strong>${d.dateStr}</strong> have been saved to your Google Sheet tab <em>"Tee Times"</em>.
+                        <div class="summary-stats">
+                            <div class="stat-item">
+                                <div class="stat-num">${d.openSlots}</div>
+                                <div class="stat-label">Open Slots with Price</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-num">${d.soldOutCount}</div>
+                                <div class="stat-label">Sold Out / Frozen</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-num">${d.naPriceCount}</div>
+                                <div class="stat-label">Filtered N/A Prices</div>
+                            </div>
+                        </div>
+                    `;
+
+                    // Render table immediately with scraped results
+                    if (d.teeTimes && d.teeTimes.length > 0) {
+                        renderTeeTimesTable(d.teeTimes, d);
+                    } else {
+                        // Fallback: fetch freshly written sheet rows
+                        loadExistingSheetData();
+                    }
+                } else {
+                    throw new Error(result.message || 'Unknown error occurred in Apps Script.');
+                }
+            } catch (err) {
+                statusBox.className = 'status-box error';
+                statusBox.innerHTML = `
+                    <strong>❌ Scrape Request Failed:</strong><br>
+                    ${err.message}<br><br>
+                    <small>Tip: Ensure your Apps Script deployment is updated with the latest code as a "New version".</small>
+                `;
+            } finally {
+                submitBtn.disabled = false;
+                spinner.style.display = 'none';
+                btnText.textContent = '🚀 Scrape & Update Sheet';
+            }
+        });
+    </script>
+</body>
+</html>
