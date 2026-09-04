@@ -648,17 +648,11 @@
                                     class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1b4332] bg-gray-50/50">
                             </div>
 
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                            <div class="pt-1">
                                 <button type="submit" id="app-submit-scrape-btn"
                                     class="w-full py-2.5 px-3 bg-[#1b4332] hover:bg-[#143326] active:scale-95 text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-md transition-all flex items-center justify-center gap-2">
-                                    <span id="app-scrape-spinner" class="hidden w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                                    <span id="app-scrape-btn-text">🚀 Scrape & Sync</span>
-                                </button>
-
-                                <button type="button" id="app-load-sheet-btn" onclick="handleAppLoadFromSheet()"
-                                    class="w-full py-2.5 px-3 bg-gray-100 hover:bg-gray-200 active:scale-95 text-gray-800 border border-gray-200 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2">
-                                    <span id="app-sheet-spinner" class="hidden w-3.5 h-3.5 border-2 border-gray-700 border-t-transparent rounded-full animate-spin"></span>
-                                    <span id="app-sheet-btn-text">📊 View Sheet Data</span>
+                                    <span id="app-scrape-spinner" class="hidden w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin shrink-0"></span>
+                                    <span id="app-scrape-btn-text">View Tee Times</span>
                                 </button>
                             </div>
                         </form>
@@ -786,9 +780,9 @@
             });
         }
 
-        // Handle Scrape & Sync Submit
+        // Handle Scrape & Sync + View Sheet Data in sequence
         async function handleAppScrapeSubmit(e) {
-            e.preventDefault();
+            if (e) e.preventDefault();
             if (!selectedCourseObj) return;
 
             const dateInput = document.getElementById('app-target-date');
@@ -798,79 +792,95 @@
             const spinner = document.getElementById('app-scrape-spinner');
             const btnText = document.getElementById('app-scrape-btn-text');
 
-            if (submitBtn) submitBtn.disabled = true;
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.classList.add('opacity-80', 'cursor-wait');
+            }
             if (spinner) spinner.classList.remove('hidden');
-            if (btnText) btnText.textContent = 'Scraping...';
+            if (btnText) btnText.textContent = 'Loading Tee Times...';
             if (statusBox) statusBox.className = 'hidden';
 
             try {
-                const requestUrl = `${APPS_SCRIPT_WEB_APP_URL}?course=${encodeURIComponent(selectedCourseObj.slug)}&date=${encodeURIComponent(date)}`;
-                const response = await fetch(requestUrl, { method: 'GET' });
-                const result = await response.json();
+                // Step 1: Scrape Chronogolf & Sync to Google Sheet
+                const scrapeUrl = `${APPS_SCRIPT_WEB_APP_URL}?course=${encodeURIComponent(selectedCourseObj.slug)}&date=${encodeURIComponent(date)}`;
+                const scrapeResponse = await fetch(scrapeUrl, { method: 'GET' });
+                const scrapeResult = await scrapeResponse.json();
 
-                if (result.status === 'success') {
-                    const d = result.data;
-                    if (statusBox) {
-                        statusBox.className = 'rounded-2xl p-3.5 text-xs bg-emerald-50 text-emerald-900 border border-emerald-200 shadow-sm block animate-in fade-in duration-200';
-                        statusBox.innerHTML = `
-                            <div class="font-bold flex items-center gap-1.5 text-emerald-800 mb-1">
-                                <span>🎉</span> <span>Sheet Synced Successfully!</span>
-                            </div>
-                            <div class="text-[11px] text-emerald-700 mb-2">
-                                Live tee times for <strong>${d.clubName}</strong> (${d.dateStr}) saved to Google Sheet.
-                            </div>
-                            <div class="grid grid-cols-3 gap-1.5 pt-2 border-t border-emerald-200/70 text-center">
-                                <div class="bg-white/70 rounded-lg p-1.5">
-                                    <div class="font-black text-sm text-emerald-800">${d.openSlots}</div>
-                                    <div class="text-[9px] text-gray-500 font-semibold uppercase">Open</div>
-                                </div>
-                                <div class="bg-white/70 rounded-lg p-1.5">
-                                    <div class="font-black text-sm text-gray-700">${d.soldOutCount}</div>
-                                    <div class="text-[9px] text-gray-500 font-semibold uppercase">Sold Out</div>
-                                </div>
-                                <div class="bg-white/70 rounded-lg p-1.5">
-                                    <div class="font-black text-sm text-gray-700">${d.naPriceCount}</div>
-                                    <div class="text-[9px] text-gray-500 font-semibold uppercase">N/A Price</div>
-                                </div>
-                            </div>
-                        `;
-                    }
-
-                    if (d.teeTimes && d.teeTimes.length > 0) {
-                        renderAppTeeTimesTable(d.teeTimes, d);
-                    } else {
-                        handleAppLoadFromSheet();
-                    }
-                } else {
-                    throw new Error(result.message || 'Scrape service returned an error.');
+                if (scrapeResult.status !== 'success') {
+                    throw new Error(scrapeResult.message || 'Scrape service returned an error.');
                 }
+
+                const scrapeData = scrapeResult.data || {};
+
+                // Step 2: Read & View Sheet Data
+                if (btnText) btnText.textContent = 'Loading Tee Times...';
+
+                let sheetData = null;
+                try {
+                    const readUrl = `${APPS_SCRIPT_WEB_APP_URL}?action=read`;
+                    const readResponse = await fetch(readUrl, { method: 'GET' });
+                    const readResult = await readResponse.json();
+                    if (readResult.status === 'success' && readResult.data) {
+                        sheetData = readResult.data;
+                    }
+                } catch (readErr) {
+                    console.warn('Could not read sheet data directly, using scrape response:', readErr);
+                }
+
+                const d = sheetData || scrapeData;
+
+                if (statusBox) {
+                    statusBox.className = 'rounded-2xl p-3.5 text-xs bg-emerald-50 text-emerald-900 border border-emerald-200 shadow-sm block animate-in fade-in duration-200';
+                    statusBox.innerHTML = `
+                        <div class="font-bold flex items-center gap-1.5 text-emerald-800 mb-1">
+                            <span>🎉</span> <span>Tee Times Loaded Successfully!</span>
+                        </div>
+                        <div class="text-[11px] text-emerald-700 mb-2">
+                            Live tee times for <strong>${d.clubName || scrapeData.clubName || selectedCourseObj.name}</strong> (${d.dateStr || scrapeData.dateStr || date}) synced and loaded from Google Sheet.
+                        </div>
+                        <div class="grid grid-cols-3 gap-1.5 pt-2 border-t border-emerald-200/70 text-center">
+                            <div class="bg-white/70 rounded-lg p-1.5">
+                                <div class="font-black text-sm text-emerald-800">${d.openSlots !== undefined ? d.openSlots : (scrapeData.openSlots || 0)}</div>
+                                <div class="text-[9px] text-gray-500 font-semibold uppercase">Open</div>
+                            </div>
+                            <div class="bg-white/70 rounded-lg p-1.5">
+                                <div class="font-black text-sm text-gray-700">${scrapeData.soldOutCount !== undefined ? scrapeData.soldOutCount : '-'}</div>
+                                <div class="text-[9px] text-gray-500 font-semibold uppercase">Sold Out</div>
+                            </div>
+                            <div class="bg-white/70 rounded-lg p-1.5">
+                                <div class="font-black text-sm text-gray-700">${scrapeData.naPriceCount !== undefined ? scrapeData.naPriceCount : '-'}</div>
+                                <div class="text-[9px] text-gray-500 font-semibold uppercase">N/A Price</div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                const teeTimes = (d.teeTimes && d.teeTimes.length > 0) ? d.teeTimes : (scrapeData.teeTimes || []);
+                renderAppTeeTimesTable(teeTimes, d);
+
             } catch (err) {
                 if (statusBox) {
                     statusBox.className = 'rounded-2xl p-3.5 text-xs bg-red-50 text-red-900 border border-red-200 shadow-sm block animate-in fade-in duration-200';
                     statusBox.innerHTML = `
                         <div class="font-bold flex items-center gap-1.5 text-red-800 mb-0.5">
-                            <span>❌</span> <span>Scrape Failed</span>
+                            <span>❌</span> <span>Action Failed</span>
                         </div>
                         <div class="text-[11px] text-red-700">${err.message}</div>
                     `;
                 }
             } finally {
-                if (submitBtn) submitBtn.disabled = false;
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('opacity-80', 'cursor-wait');
+                }
                 if (spinner) spinner.classList.add('hidden');
-                if (btnText) btnText.textContent = '🚀 Scrape & Sync';
+                if (btnText) btnText.textContent = 'View Tee Times';
             }
         }
 
-        // Handle Read From Sheet
+        // Handle Read From Sheet (helper function)
         async function handleAppLoadFromSheet() {
             const statusBox = document.getElementById('app-scrape-status-box');
-            const sheetBtn = document.getElementById('app-load-sheet-btn');
-            const sheetSpinner = document.getElementById('app-sheet-spinner');
-            const sheetBtnText = document.getElementById('app-sheet-btn-text');
-
-            if (sheetBtn) sheetBtn.disabled = true;
-            if (sheetSpinner) sheetSpinner.classList.remove('hidden');
-            if (sheetBtnText) sheetBtnText.textContent = 'Loading...';
             if (statusBox) statusBox.className = 'hidden';
 
             try {
@@ -892,6 +902,7 @@
                         `;
                     }
                     renderAppTeeTimesTable(d.teeTimes, d);
+                    return d;
                 } else {
                     throw new Error(result.message || 'Could not read sheet data.');
                 }
@@ -905,10 +916,7 @@
                         <div class="text-[11px] text-red-700">${err.message}</div>
                     `;
                 }
-            } finally {
-                if (sheetBtn) sheetBtn.disabled = false;
-                if (sheetSpinner) sheetSpinner.classList.add('hidden');
-                if (sheetBtnText) sheetBtnText.textContent = '📊 View Sheet Data';
+                throw err;
             }
         }
 
