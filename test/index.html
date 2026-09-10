@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 
@@ -11,6 +10,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
     <style>
         :root {
@@ -1010,6 +1010,162 @@
             color: var(--text-main);
         }
 
+        .export-dialog-box {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: var(--radius-xl);
+            padding: 20px;
+            width: 92%;
+            max-width: 480px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 35px -5px rgba(0, 0, 0, 0.15);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .export-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 12px;
+        }
+
+        .export-title {
+            font-family: 'Outfit', -apple-system, sans-serif;
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .export-section {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: var(--radius-lg);
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .export-section-label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--text-muted);
+        }
+
+        .export-copy-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #ffffff;
+            border: 1px solid var(--input-border);
+            border-radius: var(--radius-md);
+            padding: 6px 10px;
+        }
+
+        .export-copy-val {
+            flex: 1;
+            font-size: 0.86rem;
+            color: var(--text-main);
+            font-weight: 600;
+            word-break: break-all;
+        }
+
+        .btn-copy-chip {
+            background: var(--primary-light);
+            border: 1px solid var(--primary-border);
+            color: var(--primary-text);
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 5px 9px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            flex-shrink: 0;
+            transition: all 0.15s ease;
+        }
+
+        .btn-copy-chip:hover {
+            background: #dbeafe;
+            color: var(--primary-hover);
+        }
+
+        .export-btn-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .export-btn-action {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px 12px;
+            border-radius: var(--radius-md);
+            font-size: 0.84rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            text-decoration: none;
+            text-align: center;
+        }
+
+        .btn-exp-zip {
+            background: var(--emerald-light);
+            border: 1px solid var(--emerald-border);
+            color: var(--emerald-text);
+            grid-column: 1 / -1;
+            padding: 12px;
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+
+        .btn-exp-zip:hover {
+            background: #d1fae5;
+            color: #047857;
+        }
+
+        .btn-exp-mail {
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            color: var(--text-main);
+        }
+
+        .btn-exp-mail:hover {
+            background: #e2e8f0;
+        }
+
+        .btn-exp-gmail {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #b91c1c;
+        }
+
+        .btn-exp-gmail:hover {
+            background: #fee2e2;
+        }
+
+        .btn-exp-outlook {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            color: #1d4ed8;
+        }
+
+        .btn-exp-outlook:hover {
+            background: #dbeafe;
+        }
+
         .hidden-file-input {
             display: none;
         }
@@ -1292,6 +1448,70 @@
         </div>
     </div>
 
+    <div class="modal" id="exportModal">
+        <div class="export-dialog-box">
+            <div class="export-header">
+                <div class="export-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+                        <polyline points="16 6 12 2 8 6"></polyline>
+                        <line x1="12" y1="2" x2="12" y2="15"></line>
+                    </svg>
+                    <span>Email & Export Options</span>
+                </div>
+                <button class="modal-close-btn" id="exportModalClose">&times;</button>
+            </div>
+
+            <!-- Subject Line Info & Copy -->
+            <div class="export-section">
+                <span class="export-section-label">Subject Line (Auto-generated)</span>
+                <div class="export-copy-row">
+                    <span class="export-copy-val" id="exportModalSubjectText">--</span>
+                    <button type="button" class="btn-copy-chip" id="btnCopySubject">
+                        <span>Copy</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Recipient Email Info & Copy -->
+            <div class="export-section">
+                <span class="export-section-label">Recipient Email</span>
+                <div class="export-copy-row">
+                    <span class="export-copy-val" id="exportModalEmailText">floodoffice@pheonixrestorations.com</span>
+                    <button type="button" class="btn-copy-chip" id="btnCopyEmail">
+                        <span>Copy</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Download Photos ZIP -->
+            <button type="button" class="export-btn-action btn-exp-zip" id="btnDownloadZip">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <span id="btnDownloadZipText">Download All Photos (.ZIP)</span>
+            </button>
+
+            <!-- Webmail / Mail Client Launch Options -->
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+                <span class="export-section-label" style="margin-left: 2px;">Compose in Email App</span>
+                <div class="export-btn-grid">
+                    <a href="#" id="linkLaunchMailApp" class="export-btn-action btn-exp-mail">
+                        <span>📧 Default Mail</span>
+                    </a>
+                    <a href="#" id="linkLaunchGmail" target="_blank" rel="noopener noreferrer" class="export-btn-action btn-exp-gmail">
+                        <span>✉️ Gmail Web</span>
+                    </a>
+                    <a href="#" id="linkLaunchOutlook" target="_blank" rel="noopener noreferrer" class="export-btn-action btn-exp-outlook" style="grid-column: 1 / -1;">
+                        <span>📮 Outlook Web</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notification Banner -->
     <div id="toastBox" class="toast-dialog">
         <span id="toastMessage">Message</span>
@@ -1347,9 +1567,42 @@
                     textarea.select();
                     document.execCommand('copy');
                     document.body.removeChild(textarea);
+                    return true;
                 } catch (e) {
                     console.warn('Clipboard copy fallback error', e);
+                    return false;
                 }
+            }
+
+            function buildReadingsSummaryText(unitsToSummarize = units) {
+                const lines = [];
+                if (jobNumber) lines.push(`Job Number: ${jobNumber}`);
+                if (address) lines.push(`Address: ${address}`);
+                lines.push(`Date: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`);
+                lines.push(`----------------------------------------\n`);
+
+                unitsToSummarize.forEach((unit, idx) => {
+                    lines.push(`UNIT: ${unit.name || 'Unit ' + (idx + 1)}`);
+                    lines.push(`Photos: ${(unit.images ? unit.images.length : 0)} attached`);
+                    if (unit.psychrometrics) {
+                        lines.push(`Psychrometric Readings:`);
+                        const cats = [
+                            { key: 'affected', label: '1. Affected Area' },
+                            { key: 'unaffected', label: '2. Unaffected Area' },
+                            { key: 'outside', label: '3. Outside' },
+                            { key: 'dehumidifier', label: '4. Dehumidifier Outlet' }
+                        ];
+                        cats.forEach(c => {
+                            const data = unit.psychrometrics[c.key];
+                            if (data && (data.temp || data.rh)) {
+                                const calcs = calcPsychrometrics(data.temp, data.rh);
+                                lines.push(`  ${c.label}: ${data.temp || '--'}°F | ${data.rh || '--'}% RH | ${calcs.gpp || '--'} GPP | DP: ${calcs.dp ? calcs.dp + '°F' : '--'}`);
+                            }
+                        });
+                    }
+                    lines.push(``);
+                });
+                return lines.join('\n');
             }
 
             /* Custom non-blocking confirmation dialog without native confirm() */
@@ -2093,6 +2346,106 @@
                 };
             }
 
+            let pendingExportUnits = [];
+            let pendingSharePayload = null;
+
+            function openExportModal(payload, targetUnits) {
+                pendingExportUnits = targetUnits;
+                pendingSharePayload = payload;
+
+                const exportModal = document.getElementById('exportModal');
+                const subjText = document.getElementById('exportModalSubjectText');
+                const emailText = document.getElementById('exportModalEmailText');
+                const linkLaunchMailApp = document.getElementById('linkLaunchMailApp');
+                const linkLaunchGmail = document.getElementById('linkLaunchGmail');
+                const linkLaunchOutlook = document.getElementById('linkLaunchOutlook');
+
+                subjText.textContent = payload.title;
+                emailText.textContent = TARGET_EMAIL;
+
+                const bodyText = buildReadingsSummaryText(targetUnits);
+
+                // Default mailto link
+                const mailtoUrl = `mailto:${encodeURIComponent(TARGET_EMAIL)}?subject=${encodeURIComponent(payload.title)}&body=${encodeURIComponent(bodyText)}`;
+                linkLaunchMailApp.href = mailtoUrl;
+
+                // Gmail Web Compose URL
+                const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(TARGET_EMAIL)}&su=${encodeURIComponent(payload.title)}&body=${encodeURIComponent(bodyText)}`;
+                linkLaunchGmail.href = gmailUrl;
+
+                // Outlook.com Compose URL
+                const outlookUrl = `https://outlook.live.com/mail/0/deeplink/compose?to=${encodeURIComponent(TARGET_EMAIL)}&subject=${encodeURIComponent(payload.title)}&body=${encodeURIComponent(bodyText)}`;
+                linkLaunchOutlook.href = outlookUrl;
+
+                exportModal.classList.add('active');
+            }
+
+            function closeExportModal() {
+                const exportModal = document.getElementById('exportModal');
+                exportModal.classList.remove('active');
+            }
+
+            document.getElementById('exportModalClose').addEventListener('click', closeExportModal);
+
+            document.getElementById('btnCopySubject').addEventListener('click', () => {
+                if (pendingSharePayload && pendingSharePayload.title) {
+                    copyToClipboard(pendingSharePayload.title);
+                    showToast('Subject line copied to clipboard!');
+                }
+            });
+
+            document.getElementById('btnCopyEmail').addEventListener('click', () => {
+                copyToClipboard(TARGET_EMAIL);
+                showToast('Email address copied to clipboard!');
+            });
+
+            // Download ZIP Handler
+            document.getElementById('btnDownloadZip').addEventListener('click', async () => {
+                if (!window.JSZip) {
+                    showToast('ZIP utility loading, please retry in a moment.');
+                    return;
+                }
+                const btn = document.getElementById('btnDownloadZip');
+                const btnText = document.getElementById('btnDownloadZipText');
+                const originalText = btnText.textContent;
+                btnText.textContent = 'Generating ZIP...';
+                btn.style.pointerEvents = 'none';
+
+                try {
+                    const zip = new JSZip();
+                    const cleanJobNumber = (jobNumber || 'Session').trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+
+                    // Add readings summary text file
+                    const summary = buildReadingsSummaryText(pendingExportUnits);
+                    zip.file(`Readings_Summary_${cleanJobNumber}.txt`, summary);
+
+                    // Add images
+                    if (pendingSharePayload && pendingSharePayload.files) {
+                        pendingSharePayload.files.forEach(file => {
+                            zip.file(file.name, file);
+                        });
+                    }
+
+                    const zipBlob = await zip.generateAsync({ type: 'blob' });
+                    const downloadUrl = URL.createObjectURL(zipBlob);
+                    const dlLink = document.createElement('a');
+                    dlLink.href = downloadUrl;
+                    dlLink.download = `${cleanJobNumber}_aquaLog_Photos.zip`;
+                    document.body.appendChild(dlLink);
+                    dlLink.click();
+                    document.body.removeChild(dlLink);
+                    setTimeout(() => URL.revokeObjectURL(downloadUrl), 4000);
+
+                    showToast('Downloaded ZIP of all photos!');
+                } catch (e) {
+                    console.error('Error generating ZIP', e);
+                    showToast('Could not generate ZIP file.');
+                } finally {
+                    btnText.textContent = originalText;
+                    btn.style.pointerEvents = 'auto';
+                }
+            });
+
             async function shareUnits(targetUnits, isAllUnits = false) {
                 if (!targetUnits || targetUnits.length === 0) {
                     showToast('No units available to share.');
@@ -2114,19 +2467,14 @@
                     return;
                 }
 
-                showToast('Preparing photos for email...');
-
-                // Small microtask tick to let UI paint toast
-                await new Promise(r => setTimeout(r, 60));
-
+                // Synchronously build share payload without setTimeout to protect browser transient user gesture
                 const sharePayload = buildShareData(targetUnits, !isAllUnits);
 
-                // Dynamically update document.title so that mobile share sheets (e.g. iOS Safari / Apple Mail)
-                // automatically use the generated subject line as the email's Subject field
+                // Set document.title so Apple Mail / Safari assigns it directly to the email Subject line
                 const originalDocumentTitle = document.title;
                 document.title = sharePayload.title;
 
-                // Also copy the subject line to clipboard automatically for convenient pasting if needed
+                // Copy subject line to clipboard immediately as safety net
                 copyToClipboard(sharePayload.title);
 
                 // Verify Web Share API availability with files
@@ -2142,19 +2490,17 @@
 
                     try {
                         if (canShareWithFiles) {
-                            // Passing title explicitly alongside text and files ensures platforms with EXTRA_SUBJECT
-                            // (like Android / Gmail) and Apple Mail (via document.title + title) fill the Subject header
                             await navigator.share({
                                 title: sharePayload.title,
-                                text: sharePayload.text,
+                                text: sharePayload.title,
                                 files: sharePayload.files
                             });
                             showToast('Email draft created with subject!');
                             return;
-                        } else {
+                        } else if (navigator.canShare && navigator.canShare({ title: sharePayload.title, text: sharePayload.title })) {
                             await navigator.share({
                                 title: sharePayload.title,
-                                text: sharePayload.text
+                                text: sharePayload.title
                             });
                             showToast('Shared successfully!');
                             return;
@@ -2164,19 +2510,16 @@
                             showToast('Sharing cancelled.');
                             return;
                         }
-                        console.warn('Navigator share error, falling back to mailto:', shareErr);
+                        console.warn('Native share failed or unsupported on this device:', shareErr);
                     } finally {
-                        // Restore document title after the share sheet has initialized
                         setTimeout(() => {
                             document.title = originalDocumentTitle;
                         }, 2500);
                     }
                 }
 
-                // Fallback for environments where Web Share with files is unsupported
-                const mailtoUrl = `mailto:${encodeURIComponent(TARGET_EMAIL)}?subject=${encodeURIComponent(sharePayload.title)}&body=${encodeURIComponent(sharePayload.text)}`;
-                window.location.href = mailtoUrl;
-                showToast(`Opened email composer for ${TARGET_EMAIL}`);
+                // If native share is unsupported or failed on this device, launch the export options modal
+                openExportModal(sharePayload, targetUnits);
             }
 
             document.getElementById('btnShareAll').addEventListener('click', () => {
@@ -2194,4 +2537,3 @@
 </body>
 
 </html>
-```
