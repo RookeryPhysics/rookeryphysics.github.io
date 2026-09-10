@@ -14,7 +14,6 @@
 
     <style>
         :root {
-            /* Theme Color Palette - Clean, Modern Data Collection */
             --bg-top-bar: #f1f5f9;
             --bg-top-border: #e2e8f0;
             --bg-main: #f8fafc;
@@ -1059,7 +1058,6 @@
         </div>
     </section>
 
-    <!-- Main Data Collection Area -->
     <main>
         <section id="unitsList" class="units-container">
             <!-- Dynamically populated or empty state -->
@@ -1087,7 +1085,6 @@
         </div>
     </nav>
 
-    <!-- Lightbox Modal -->
     <div class="modal" id="imageModal">
         <div class="modal-card" style="background: transparent; border: none; align-items: center;">
             <button class="modal-close-btn" id="modalClose"
@@ -1324,7 +1321,7 @@
             const jobNumberInput = document.getElementById('jobNumberInput');
             const addressInput = document.getElementById('addressInput');
 
-            /* Toast helper without native alert */
+            /* Toast notification helper without native alert */
             let toastTimer = null;
             function showToast(msg) {
                 const toast = document.getElementById('toastBox');
@@ -1335,6 +1332,24 @@
                 toastTimer = setTimeout(() => {
                     toast.classList.remove('active');
                 }, 3200);
+            }
+
+            /* Copy helper using document.execCommand for maximum compatibility */
+            function copyToClipboard(text) {
+                try {
+                    const textarea = document.createElement('textarea');
+                    textarea.value = text;
+                    textarea.style.position = 'fixed';
+                    textarea.style.left = '-9999px';
+                    textarea.style.top = '-9999px';
+                    textarea.setAttribute('readonly', '');
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                } catch (e) {
+                    console.warn('Clipboard copy fallback error', e);
+                }
             }
 
             /* Custom non-blocking confirmation dialog without native confirm() */
@@ -2073,7 +2088,7 @@
 
                 return {
                     title: emailSubject,
-                    text: emailSubject, // Supplying the subject as text ensures mobile mail clients populate Subject instead of leaving it blank
+                    text: emailSubject,
                     files: filesToShare
                 };
             }
@@ -2106,6 +2121,14 @@
 
                 const sharePayload = buildShareData(targetUnits, !isAllUnits);
 
+                // Dynamically update document.title so that mobile share sheets (e.g. iOS Safari / Apple Mail)
+                // automatically use the generated subject line as the email's Subject field
+                const originalDocumentTitle = document.title;
+                document.title = sharePayload.title;
+
+                // Also copy the subject line to clipboard automatically for convenient pasting if needed
+                copyToClipboard(sharePayload.title);
+
                 // Verify Web Share API availability with files
                 if (navigator.share) {
                     let canShareWithFiles = false;
@@ -2119,18 +2142,19 @@
 
                     try {
                         if (canShareWithFiles) {
-                            // Passing title as both title and text ensures mobile mail handlers populate the Subject field
+                            // Passing title explicitly alongside text and files ensures platforms with EXTRA_SUBJECT
+                            // (like Android / Gmail) and Apple Mail (via document.title + title) fill the Subject header
                             await navigator.share({
                                 title: sharePayload.title,
-                                text: sharePayload.title,
+                                text: sharePayload.text,
                                 files: sharePayload.files
                             });
-                            showToast('Email draft created!');
+                            showToast('Email draft created with subject!');
                             return;
                         } else {
                             await navigator.share({
                                 title: sharePayload.title,
-                                text: sharePayload.title
+                                text: sharePayload.text
                             });
                             showToast('Shared successfully!');
                             return;
@@ -2141,11 +2165,16 @@
                             return;
                         }
                         console.warn('Navigator share error, falling back to mailto:', shareErr);
+                    } finally {
+                        // Restore document title after the share sheet has initialized
+                        setTimeout(() => {
+                            document.title = originalDocumentTitle;
+                        }, 2500);
                     }
                 }
 
                 // Fallback for environments where Web Share with files is unsupported
-                const mailtoUrl = `mailto:${encodeURIComponent(TARGET_EMAIL)}?subject=${encodeURIComponent(sharePayload.title)}`;
+                const mailtoUrl = `mailto:${encodeURIComponent(TARGET_EMAIL)}?subject=${encodeURIComponent(sharePayload.title)}&body=${encodeURIComponent(sharePayload.text)}`;
                 window.location.href = mailtoUrl;
                 showToast(`Opened email composer for ${TARGET_EMAIL}`);
             }
