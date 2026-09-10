@@ -235,6 +235,7 @@
                 opacity: 0;
                 transform: translateY(8px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -564,8 +565,15 @@
         }
 
         @keyframes modalPop {
-            from { transform: scale(0.94); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
+            from {
+                transform: scale(0.94);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
         }
 
         .modal-header {
@@ -818,7 +826,7 @@
             border: 1px solid rgba(6, 182, 212, 0.4);
             border-radius: var(--radius-md);
             padding: 12px 18px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
             color: #fff;
             font-size: 0.88rem;
             z-index: 120;
@@ -922,8 +930,10 @@
     <!-- Lightbox Modal -->
     <div class="modal" id="imageModal">
         <div class="modal-card" style="background: transparent; border: none; align-items: center;">
-            <button class="modal-close-btn" id="modalClose" style="position: absolute; top: -35px; right: 0; color: #fff;">&times;</button>
-            <img id="modalImg" src="" alt="Preview" style="max-width: 90vw; max-height: 80vh; border-radius: var(--radius-md); object-fit: contain;">
+            <button class="modal-close-btn" id="modalClose"
+                style="position: absolute; top: -35px; right: 0; color: #fff;">&times;</button>
+            <img id="modalImg" src="" alt="Preview"
+                style="max-width: 90vw; max-height: 80vh; border-radius: var(--radius-md); object-fit: contain;">
         </div>
     </div>
 
@@ -932,7 +942,8 @@
         <div class="modal-card">
             <div class="modal-header">
                 <div class="modal-title">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
                         <path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"></path>
                     </svg>
                     <span id="psychoModalUnitTitle">Psychrometrics</span>
@@ -963,8 +974,11 @@
                     </div>
                     <div class="psycho-photo-zone">
                         <button type="button" class="btn-psycho-photo">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path
+                                    d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z">
+                                </path>
                                 <circle cx="12" cy="13" r="4"></circle>
                             </svg>
                             <span>Add Meter Photo</span>
@@ -1001,8 +1015,11 @@
                     </div>
                     <div class="psycho-photo-zone">
                         <button type="button" class="btn-psycho-photo">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path
+                                    d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z">
+                                </path>
                                 <circle cx="12" cy="13" r="4"></circle>
                             </svg>
                             <span>Add Meter Photo</span>
@@ -1039,8 +1056,11 @@
                     </div>
                     <div class="psycho-photo-zone">
                         <button type="button" class="btn-psycho-photo">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path
+                                    d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z">
+                                </path>
                                 <circle cx="12" cy="13" r="4"></circle>
                             </svg>
                             <span>Add Meter Photo</span>
@@ -1077,8 +1097,11 @@
                     </div>
                     <div class="psycho-photo-zone">
                         <button type="button" class="btn-psycho-photo">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <path
+                                    d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z">
+                                </path>
                                 <circle cx="12" cy="13" r="4"></circle>
                             </svg>
                             <span>Add Meter Photo</span>
@@ -1108,7 +1131,8 @@
             <p id="confirmMessage" style="font-size: 0.88rem; color: #94a3b8; margin-bottom: 18px;">Are you sure?</p>
             <div style="display: flex; gap: 10px; justify-content: center;">
                 <button type="button" id="confirmBtnCancel" class="btn-modal-cancel" style="flex: 1;">Cancel</button>
-                <button type="button" id="confirmBtnOk" class="btn-modal-save" style="flex: 1; background: #ef4444;">Confirm</button>
+                <button type="button" id="confirmBtnOk" class="btn-modal-save"
+                    style="flex: 1; background: #ef4444;">Confirm</button>
             </div>
         </div>
     </div>
@@ -1826,16 +1850,13 @@
             });
 
             // Generate .eml file content with RFC 2822 / MIME multipart format
-            function generateEmlContent(targetUnits = units, singleUnitName = null) {
+            function generateEmlContent() {
                 const boundary = "----=_Part_" + Math.random().toString(36).substring(2) + "_" + Date.now();
                 const now = new Date();
                 const dateStr = now.toUTCString();
 
                 const cleanJobNumber = (jobNumber || '').trim();
-                let photosTag = cleanJobNumber ? `***PHOTOS & PSYCHROMETRICS*** ${cleanJobNumber}` : `***PHOTOS & PSYCHROMETRICS***`;
-                if (singleUnitName) {
-                    photosTag += ` - ${singleUnitName}`;
-                }
+                const photosTag = cleanJobNumber ? `***PHOTOS*** ${cleanJobNumber}` : `***PHOTOS***`;
 
                 let eml = "";
                 eml += `To: floodoffice@pheonixrestorations.com\r\n`;
@@ -1974,7 +1995,7 @@
 
                 bodyHtml += `
     <div class="footer">
-        Generated by aquaLog Mobile Moisture & Psychrometric Collector
+        Generated by Mobile Unit Photo Collector
     </div>
 </div>
 </body>
@@ -2007,20 +2028,12 @@
                     .replace(/"/g, '&quot;');
             }
 
-            async function exportUnit(unit) {
+            function exportUnit(unit) {
                 const imgCount = (unit.images || []).length;
-                let psychoCount = 0;
-                if (unit.psychrometrics) {
-                    ['affected', 'unaffected', 'outside', 'dehumidifier'].forEach(cat => {
-                        if (unit.psychrometrics[cat]?.temp || unit.psychrometrics[cat]?.rh || unit.psychrometrics[cat]?.image) {
-                            psychoCount++;
-                        }
-                    });
-                }
-
-                if (imgCount === 0 && psychoCount === 0) {
-                    const confirmExport = await showConfirm(`Export ${unit.name}`, `No photos or psychrometrics recorded for "${unit.name}". Export empty unit report?`);
-                    if (!confirmExport) return;
+                if (imgCount === 0) {
+                    if (!confirm(`No photos taken for "${unit.name}". Export empty unit .eml?`)) {
+                        return;
+                    }
                 }
 
                 try {
@@ -2031,8 +2044,8 @@
                     const now = new Date();
                     const dateTag = now.toISOString().slice(0, 10);
                     const safeUnitName = (unit.name || 'Unit').replace(/[^a-zA-Z0-9_-]/g, '_');
-                    const cleanJobNumber = (jobNumber || 'EXPORT').trim().replace(/[^a-zA-Z0-9_-]/g, '_');
-                    const prefix = `AQUALOG_${cleanJobNumber}_${safeUnitName}`;
+                    const cleanJobNumber = (jobNumber || '').trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+                    const prefix = cleanJobNumber ? `PHOTOS_${cleanJobNumber}_${safeUnitName}` : `PHOTOS_${safeUnitName}`;
                     const filename = `${prefix}_${dateTag}.eml`;
 
                     const link = document.createElement('a');
@@ -2042,14 +2055,12 @@
                     link.click();
                     document.body.removeChild(link);
                     URL.revokeObjectURL(downloadUrl);
-                    showToast(`Export for "${unit.name}" generated!`);
                 } catch (e) {
                     console.error('Failed to export unit eml', e);
-                    showToast('Unit export failed: ' + e.message);
+                    alert('Unit export failed: ' + e.message);
                 }
             }
 
-            // Export button handler
             document.getElementById('btnExportEml').addEventListener('click', async () => {
                 if (units.length === 0) {
                     showToast('Please add at least one unit before exporting.');
@@ -2101,4 +2112,5 @@
         })();
     </script>
 </body>
+
 </html>
