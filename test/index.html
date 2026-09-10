@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 
@@ -2034,15 +2035,6 @@
                     emailSubject = suffix ? `***PHOTOS*** ${suffix}` : `***PHOTOS***`;
                 }
 
-                // Construct a detailed human-readable summary for the email body
-                let bodyLines = [];
-                bodyLines.push(`aquaLog Report`);
-                bodyLines.push(`Recipient: ${TARGET_EMAIL}`);
-                bodyLines.push(`Date: ${new Date().toLocaleString()}`);
-                if (cleanJobNumber) bodyLines.push(`Job #: ${cleanJobNumber}`);
-                if (cleanAddress) bodyLines.push(`Address: ${cleanAddress}`);
-                bodyLines.push('');
-
                 const filesToShare = [];
 
                 unitsToShare.forEach((unit, uIdx) => {
@@ -2050,68 +2042,38 @@
                     const safeUnitName = unitName.replace(/[^a-zA-Z0-9_-]/g, '_');
                     const imgList = unit.images || [];
 
-                    bodyLines.push(`----------------------------------------`);
-                    bodyLines.push(`📍 UNIT: ${unitName}`);
-
-                    // Append psychrometric readings if available
+                    // Convert meter photos
                     if (unit.psychrometrics) {
-                        bodyLines.push(`\nPsychrometric Readings:`);
-                        const categories = [
-                            { key: 'affected', label: '1. Affected Area' },
-                            { key: 'unaffected', label: '2. Unaffected Area' },
-                            { key: 'outside', label: '3. Outside' },
-                            { key: 'dehumidifier', label: '4. Dehumidifier Outlet' }
-                        ];
-
+                        const categories = ['affected', 'unaffected', 'outside', 'dehumidifier'];
                         categories.forEach(cat => {
-                            const entry = unit.psychrometrics[cat.key];
-                            if (entry && (entry.temp || entry.rh || entry.image)) {
-                                const calcs = calcPsychrometrics(entry.temp, entry.rh);
-                                const tempStr = entry.temp ? `${entry.temp}°F` : '--';
-                                const rhStr = entry.rh ? `${entry.rh}%` : '--';
-                                const gppStr = calcs.gpp !== null ? `${calcs.gpp} GPP` : '--';
-                                const dpStr = calcs.dp !== null ? `${calcs.dp}°F` : '--';
-
-                                let photoNote = '';
-                                if (entry.image && entry.image.dataUrl) {
-                                    const filename = `${safeUnitName}_Psychrometric_${cat.key}.jpg`;
-                                    photoNote = ` [Meter Photo: ${filename}]`;
-                                    try {
-                                        filesToShare.push(dataUrlToFile(entry.image.dataUrl, filename));
-                                    } catch (err) {
-                                        console.warn('Could not convert meter photo', err);
-                                    }
+                            const entry = unit.psychrometrics[cat];
+                            if (entry && entry.image && entry.image.dataUrl) {
+                                const filename = `${safeUnitName}_Psychrometric_${cat}.jpg`;
+                                try {
+                                    filesToShare.push(dataUrlToFile(entry.image.dataUrl, filename));
+                                } catch (err) {
+                                    console.warn('Could not convert meter photo', err);
                                 }
-
-                                bodyLines.push(`  • ${cat.label}: ${tempStr}, RH ${rhStr} | ${gppStr} | Dew Point: ${dpStr}${photoNote}`);
                             }
                         });
                     }
 
                     // Convert and attach general unit photos
                     if (imgList.length > 0) {
-                        bodyLines.push(`\nPhotos attached (${imgList.length}):`);
                         imgList.forEach((img, iIdx) => {
                             const filename = `${safeUnitName}_photo_${iIdx + 1}.jpg`;
-                            bodyLines.push(`  • ${filename}`);
                             try {
                                 filesToShare.push(dataUrlToFile(img.dataUrl, filename));
                             } catch (err) {
                                 console.warn('Could not convert photo to file', err);
                             }
                         });
-                    } else {
-                        bodyLines.push(`\nPhotos: None captured.`);
                     }
-
-                    bodyLines.push('');
                 });
-
-                bodyLines.push(`Sent from aquaLog Mobile Collector`);
 
                 return {
                     title: emailSubject,
-                    text: bodyLines.join('\n'),
+                    text: emailSubject, // Supplying the subject as text ensures mobile mail clients populate Subject instead of leaving it blank
                     files: filesToShare
                 };
             }
@@ -2133,20 +2095,19 @@
                 }, 0);
 
                 if (totalPhotos === 0) {
-                    const confirmEmpty = await showConfirm("Share Report", "No photos have been taken yet for this selection. Proceed to share empty report?");
-                    if (!confirmEmpty) return;
+                    showToast('No photos captured yet to export.');
+                    return;
                 }
 
-                showToast('Preparing photos for sharing...');
+                showToast('Preparing photos for email...');
 
                 // Small microtask tick to let UI paint toast
                 await new Promise(r => setTimeout(r, 60));
 
                 const sharePayload = buildShareData(targetUnits, !isAllUnits);
 
-                // Verify Web Share API availability
+                // Verify Web Share API availability with files
                 if (navigator.share) {
-                    // Test if sharing files is supported by this browser/OS
                     let canShareWithFiles = false;
                     try {
                         if (sharePayload.files.length > 0 && navigator.canShare && navigator.canShare({ files: sharePayload.files })) {
@@ -2158,21 +2119,20 @@
 
                     try {
                         if (canShareWithFiles) {
-                            // Full sharing with attachments and email title
+                            // Passing title as both title and text ensures mobile mail handlers populate the Subject field
                             await navigator.share({
                                 title: sharePayload.title,
-                                text: sharePayload.text,
+                                text: sharePayload.title,
                                 files: sharePayload.files
                             });
-                            showToast('Shared successfully!');
+                            showToast('Email draft created!');
                             return;
                         } else {
-                            // File sharing unsupported or 0 files: share title and detailed text summary
                             await navigator.share({
                                 title: sharePayload.title,
-                                text: sharePayload.text
+                                text: sharePayload.title
                             });
-                            showToast('Summary shared via system sheet!');
+                            showToast('Shared successfully!');
                             return;
                         }
                     } catch (shareErr) {
@@ -2184,8 +2144,8 @@
                     }
                 }
 
-                // Fallback for desktop or non-Web Share environments: mailto with prepopulated subject and body
-                const mailtoUrl = `mailto:${encodeURIComponent(TARGET_EMAIL)}?subject=${encodeURIComponent(sharePayload.title)}&body=${encodeURIComponent(sharePayload.text)}`;
+                // Fallback for environments where Web Share with files is unsupported
+                const mailtoUrl = `mailto:${encodeURIComponent(TARGET_EMAIL)}?subject=${encodeURIComponent(sharePayload.title)}`;
                 window.location.href = mailtoUrl;
                 showToast(`Opened email composer for ${TARGET_EMAIL}`);
             }
@@ -2205,3 +2165,4 @@
 </body>
 
 </html>
+```
