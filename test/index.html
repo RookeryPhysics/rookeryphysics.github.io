@@ -456,7 +456,6 @@
             transform: scale(0.98);
         }
 
-        /* Upload button beside take photo */
         .btn-upload {
             background: #f8fafc;
             border: 1px solid #cbd5e1;
@@ -1193,24 +1192,20 @@
         </div>
     </header>
 
-    <!-- Top Fields Area with Light Grey Background -->
     <section class="top-meta-container">
         <div class="top-meta-content">
-            <!-- Job Number Input -->
             <div class="job-number-bar">
                 <span class="job-number-label">Job Number</span>
                 <input type="text" id="jobNumberInput" class="job-input-field" placeholder="Enter job # (e.g. 26XX123)"
                     autocomplete="off">
             </div>
 
-            <!-- Address Input -->
             <div class="job-number-bar">
                 <span class="job-number-label">Address</span>
                 <input type="text" id="addressInput" class="job-input-field"
                     placeholder="Enter address (e.g. 123 Main St)" autocomplete="off">
             </div>
 
-            <!-- Unit Name Quick Input -->
             <div class="add-unit-bar">
                 <input type="text" id="newUnitInput" class="unit-input-field"
                     placeholder="Enter unit name (e.g. 101, CH02)" autocomplete="off">
@@ -1539,11 +1534,9 @@
         <span id="toastMessage">Message</span>
     </div>
 
-    <!-- Hidden File Input for Direct Mobile Camera Capture -->
+    <!-- Hidden File Inputs -->
     <input type="file" id="cameraInput" class="hidden-file-input" accept="image/*" capture="environment" multiple>
-    <!-- Hidden File Input for File / Photo Library Upload (without direct capture lock) -->
     <input type="file" id="uploadInput" class="hidden-file-input" accept="image/*" multiple>
-    <!-- Hidden File Input for Psychrometric Category Photo -->
     <input type="file" id="psychoCameraInput" class="hidden-file-input" accept="image/*" capture="environment">
 
     <script>
@@ -1787,7 +1780,6 @@
                     card.className = 'unit-card';
                     card.dataset.unitId = unit.id;
 
-                    // Unit Header (Title + Share button + Delete button)
                     const header = document.createElement('div');
                     header.className = 'unit-header';
 
@@ -1848,7 +1840,7 @@
                     const actionRow = document.createElement('div');
                     actionRow.className = 'unit-actions-row';
 
-                    // 1. Take Photo Button (Direct Camera Capture)
+                    // 1. Take Photo Button
                     const takePhotoBtn = document.createElement('button');
                     takePhotoBtn.className = 'btn-action btn-capture';
                     takePhotoBtn.type = 'button';
@@ -1867,7 +1859,7 @@
                         fileInput.click();
                     });
 
-                    // 2. Upload Button (Photo Gallery / File Picker)
+                    // 2. Upload Button
                     const uploadBtn = document.createElement('button');
                     uploadBtn.className = 'btn-action btn-upload';
                     uploadBtn.type = 'button';
@@ -2204,7 +2196,6 @@
                 });
             }
 
-            /* Reusable helper to process and append photos to the active target unit */
             async function handleIncomingUnitPhotos(fileList) {
                 if (!activeTargetUnitId || !fileList || fileList.length === 0) return;
 
@@ -2232,12 +2223,10 @@
                 }
             }
 
-            /* Listener for direct camera capture */
             document.getElementById('cameraInput').addEventListener('change', function (e) {
                 handleIncomingUnitPhotos(e.target.files);
             });
 
-            /* Listener for file picker / library upload */
             document.getElementById('uploadInput').addEventListener('change', function (e) {
                 handleIncomingUnitPhotos(e.target.files);
             });
@@ -2424,7 +2413,6 @@
                 const bodyText = buildReadingsSummaryText(targetUnits);
                 const recipientParam = TARGET_EMAILS.join(',');
 
-                // Default mailto link
                 const mailtoUrl = `mailto:${encodeURIComponent(recipientParam)}?subject=${encodeURIComponent(payload.title)}&body=${encodeURIComponent(bodyText)}`;
                 linkLaunchMailApp.href = mailtoUrl;
 
@@ -2456,7 +2444,6 @@
                 showToast('Summary copied! Paste into email body.');
             });
 
-            // Download ZIP Handler
             document.getElementById('btnDownloadZip').addEventListener('click', async () => {
                 if (!window.JSZip) {
                     showToast('ZIP utility loading, please retry in a moment.');
@@ -2472,11 +2459,7 @@
                     const zip = new JSZip();
                     const cleanJobNumber = (jobNumber || 'Session').trim().replace(/[^a-zA-Z0-9_-]/g, '_');
 
-                    // Add readings summary text file
-                    const summary = buildReadingsSummaryText(pendingExportUnits);
-                    zip.file(`Readings_Summary_${cleanJobNumber}.txt`, summary);
-
-                    // Add images
+                    // Add only images to the zip file (no text log included)
                     if (pendingSharePayload && pendingSharePayload.files) {
                         pendingSharePayload.files.forEach(file => {
                             zip.file(file.name, file);
