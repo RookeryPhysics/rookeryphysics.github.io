@@ -1165,33 +1165,17 @@
         }
 
         .btn-exp-mail {
-            background: #f1f5f9;
-            border: 1px solid #cbd5e1;
-            color: var(--text-main);
+            background: var(--primary);
+            border: 1px solid var(--primary-hover);
+            color: #ffffff;
+            font-size: 0.92rem;
+            font-weight: 700;
+            padding: 12px;
         }
 
         .btn-exp-mail:hover {
-            background: #e2e8f0;
-        }
-
-        .btn-exp-gmail {
-            background: #fef2f2;
-            border: 1px solid #fecaca;
-            color: #b91c1c;
-        }
-
-        .btn-exp-gmail:hover {
-            background: #fee2e2;
-        }
-
-        .btn-exp-outlook {
-            background: #eff6ff;
-            border: 1px solid #bfdbfe;
-            color: #1d4ed8;
-        }
-
-        .btn-exp-outlook:hover {
-            background: #dbeafe;
+            background: var(--primary-hover);
+            color: #ffffff;
         }
 
         .hidden-file-input {
@@ -1538,23 +1522,15 @@
                 <span id="btnDownloadZipText">Download Compressed Photos (.ZIP)</span>
             </button>
 
-            <!-- Webmail / Mail Client Launch Options -->
-            <div style="display: flex; flex-direction: column; gap: 6px;">
-                <span class="export-section-label" style="margin-left: 2px;">Compose in Email App</span>
-                <div class="export-btn-grid">
-                    <a href="#" id="linkLaunchMailApp" class="export-btn-action btn-exp-mail">
-                        <span>📧 Default Mail</span>
-                    </a>
-                    <a href="#" id="linkLaunchGmail" target="_blank" rel="noopener noreferrer"
-                        class="export-btn-action btn-exp-gmail">
-                        <span>✉️ Gmail Web</span>
-                    </a>
-                    <a href="#" id="linkLaunchOutlook" target="_blank" rel="noopener noreferrer"
-                        class="export-btn-action btn-exp-outlook" style="grid-column: 1 / -1;">
-                        <span>📮 Outlook Web</span>
-                    </a>
-                </div>
-            </div>
+            <!-- Email Launch / Send Button -->
+            <a href="#" id="linkLaunchMailApp" class="export-btn-action btn-exp-mail">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+                <span>Send</span>
+            </a>
         </div>
     </div>
 
@@ -2441,8 +2417,6 @@
                 const subjText = document.getElementById('exportModalSubjectText');
                 const emailText = document.getElementById('exportModalEmailText');
                 const linkLaunchMailApp = document.getElementById('linkLaunchMailApp');
-                const linkLaunchGmail = document.getElementById('linkLaunchGmail');
-                const linkLaunchOutlook = document.getElementById('linkLaunchOutlook');
 
                 subjText.textContent = payload.title;
                 emailText.textContent = TARGET_EMAILS.join(', ');
@@ -2453,14 +2427,6 @@
                 // Default mailto link
                 const mailtoUrl = `mailto:${encodeURIComponent(recipientParam)}?subject=${encodeURIComponent(payload.title)}&body=${encodeURIComponent(bodyText)}`;
                 linkLaunchMailApp.href = mailtoUrl;
-
-                // Gmail Web Compose URL
-                const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(recipientParam)}&su=${encodeURIComponent(payload.title)}&body=${encodeURIComponent(bodyText)}`;
-                linkLaunchGmail.href = gmailUrl;
-
-                // Outlook.com Compose URL
-                const outlookUrl = `https://outlook.live.com/mail/0/deeplink/compose?to=${encodeURIComponent(recipientParam)}&subject=${encodeURIComponent(payload.title)}&body=${encodeURIComponent(bodyText)}`;
-                linkLaunchOutlook.href = outlookUrl;
 
                 exportModal.classList.add('active');
             }
