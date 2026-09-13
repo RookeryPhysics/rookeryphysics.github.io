@@ -179,7 +179,7 @@
             <div id="aiLoadingIndicator" class="hidden flex-col items-center justify-center py-6 gap-3 text-slate-400">
               <div class="w-7 h-7 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
               <div class="flex flex-col items-center gap-1 text-center">
-                <span class="text-xs font-semibold text-slate-200">Analyzing image with Gemini 3 Flash...</span>
+                <span id="aiLoadingModelText" class="text-xs font-semibold text-slate-200">Analyzing image with Gemini...</span>
                 <span class="text-[11px] text-slate-500">Extracting subjects, color palette, lighting, textures, and fine visual features</span>
               </div>
             </div>
@@ -392,7 +392,7 @@
             Google Gemini API Key
           </label>
           <input type="password" id="customApiKeyInput" placeholder="AIzaSy..." class="w-full bg-slate-950 border border-slate-700/80 focus:border-indigo-500 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 font-mono focus:outline-none transition-colors" />
-          <p class="text-[11px] text-slate-500 mt-1.5">Get a free key at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="text-indigo-400 hover:underline">Google AI Studio</a>. Stored only in session memory.</p>
+          <p class="text-[11px] text-slate-500 mt-1.5">Get a free key at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="text-indigo-400 hover:underline">Google AI Studio</a>. Saved in your browser's localStorage for convenience.</p>
         </div>
 
         <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
@@ -424,7 +424,7 @@
       aiDescription: '',
       isGeneratingDesc: false,
       aiDescriptionFinished: false,
-      customApiKey: ''
+      customApiKey: localStorage.getItem('pixelcompress_gemini_api_key') || ''
     };
 
     // DOM Elements
@@ -445,6 +445,7 @@
     // AI Description DOM Elements
     const aiStatusBadge = document.getElementById('aiStatusBadge');
     const aiLoadingIndicator = document.getElementById('aiLoadingIndicator');
+    const aiLoadingModelText = document.getElementById('aiLoadingModelText');
     const aiDescriptionContent = document.getElementById('aiDescriptionContent');
     const aiDescSizeBadge = document.getElementById('aiDescSizeBadge');
 
@@ -479,6 +480,11 @@
 
     let modalParsedImage = null; // Stored { width, height, data: Uint8ClampedArray }
 
+    if (state.customApiKey) {
+      apiKeyBtnLabel.textContent = 'Key Saved ✓';
+      apiKeyBtnLabel.classList.add('text-emerald-400');
+    }
+
     function openApiKeyModal() {
       customApiKeyInput.value = state.customApiKey;
       apiKeyModal.classList.remove('opacity-0', 'pointer-events-none');
@@ -510,23 +516,26 @@
       const val = customApiKeyInput.value.trim();
       state.customApiKey = val;
       if (val) {
+        localStorage.setItem('pixelcompress_gemini_api_key', val);
         apiKeyBtnLabel.textContent = 'Key Saved ✓';
         apiKeyBtnLabel.classList.add('text-emerald-400');
-        showToast('API Key saved for this session!');
+        showToast('API Key saved!');
       } else {
+        localStorage.removeItem('pixelcompress_gemini_api_key');
         apiKeyBtnLabel.textContent = 'API Key';
         apiKeyBtnLabel.classList.remove('text-emerald-400');
         showToast('API Key cleared.');
       }
       closeApiKeyModal();
 
-      if (state.base64Data && (!state.aiDescription || state.aiDescription.startsWith('Unable to generate'))) {
+      if (state.base64Data && (!state.aiDescription || state.aiDescription.startsWith('Unable to generate') || state.aiDescription.includes('403') || state.aiDescription.includes('404'))) {
         analyzeUploadedImage(state.base64Data, state.imageMimeType);
       }
     });
 
     clearApiKeyBtn.addEventListener('click', () => {
       state.customApiKey = '';
+      localStorage.removeItem('pixelcompress_gemini_api_key');
       customApiKeyInput.value = '';
       apiKeyBtnLabel.textContent = 'API Key';
       apiKeyBtnLabel.classList.remove('text-emerald-400');
@@ -1079,9 +1088,17 @@
     }
 
     async function requestImageDescriptionWithBackoff(base64Data, mimeType) {
-      const apiKey = ""; // Canvas runtime injects key automatically when empty
-      const activeKey = state.customApiKey || apiKey;
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${activeKey}`;
+      const activeKey = state.customApiKey ? state.customApiKey.trim() : "";
+      if (!activeKey) {
+        throw new Error("No Gemini API key provided. Please click the 'API Key' button at the top to enter your key.");
+      }
+
+      // Ordered list of candidate models: if one returns 404 (not supported / shut down on that key tier), we seamlessly try the next
+      const candidateModels = [
+        'gemini-2.5-flash',
+        'gemini-2.0-flash',
+        'gemini-1.5-flash'
+      ];
 
       const prompt = `Analyze this image thoroughly and provide a structured, in-depth description with the following sections:
 1. Executive Summary: What the image depicts in 1-2 concise sentences.
@@ -1107,58 +1124,68 @@
         ]
       };
 
-      const maxRetries = 4;
-      let delay = 1000;
+      let lastError = null;
 
-      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      for (const model of candidateModels) {
+        aiLoadingModelText.textContent = `Analyzing image with ${model}...`;
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(activeKey)}`;
+
         try {
           const response = await fetch(apiUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              'x-goog-api-key': activeKey
+            },
             body: JSON.stringify(payload)
           });
 
-          if (!response.ok) {
-            if (response.status === 403) {
-              const errBody = await response.text().catch(() => '');
-              let reason = 'Google Gemini API returned 403 Forbidden.';
-              if (!state.customApiKey) {
-                reason = 'HTTP 403 Forbidden: No API key detected. Canvas auto-injects an API key during preview, but on GitHub you need to supply your Gemini API key via the "API Key" button in the top bar.';
-              } else if (errBody.includes('API_KEY_INVALID') || errBody.includes('not valid')) {
-                reason = 'HTTP 403 Forbidden: The provided Gemini API key is invalid. Please verify the key in Google AI Studio.';
-              } else if (errBody.includes('IP') || errBody.includes('referrer') || errBody.includes('origin')) {
-                reason = 'HTTP 403 Forbidden: Your API key has HTTP referrer or IP restrictions in Google Cloud that reject requests from this domain.';
-              }
-              throw new Error(reason);
-            }
-
-            if (response.status === 429 && attempt < maxRetries) {
-              await new Promise(r => setTimeout(r, delay));
-              delay *= 2;
-              continue;
-            }
-            throw new Error(`API returned status ${response.status}`);
+          if (response.ok) {
+            const result = await response.json();
+            const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (text) return text;
           }
 
-          const result = await response.json();
-          const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (text) {
-            return text;
+          const errText = await response.text().catch(() => '');
+          let errJson = null;
+          try { errJson = JSON.parse(errText); } catch(e) {}
+          const errorMsg = errJson?.error?.message || errText;
+
+          // 404 means this model name is not available for this project/region -> cascade to next model
+          if (response.status === 404) {
+            lastError = new Error(`Model ${model} returned 404 Not Found: ${errorMsg}`);
+            continue; 
           }
-          throw new Error('No description text returned by model.');
+
+          // 403 Forbidden: explain exact reason from Google's response
+          if (response.status === 403) {
+            let reason = `403 Forbidden: ${errorMsg || 'Permission denied.'}`;
+            if (errorMsg.includes('API_KEY_INVALID') || errorMsg.includes('not valid')) {
+              reason = '403 Forbidden: Your Gemini API key is invalid or misspelled. Please check Google AI Studio.';
+            } else if (errorMsg.includes('IP') || errorMsg.includes('referrer') || errorMsg.includes('referer')) {
+              reason = '403 Forbidden: Your API key has "HTTP Referrer" or "IP address" restrictions set in Google Cloud Console that block requests from this website.';
+            } else if (errorMsg.includes('Generative Language API has not been used') || errorMsg.includes('SERVICE_DISABLED')) {
+              reason = '403 Forbidden: "Generative Language API" is not enabled on your Google Cloud project. Enable it in Google Cloud Console.';
+            }
+            throw new Error(reason);
+          }
+
+          // 429 Rate Limit
+          if (response.status === 429) {
+            throw new Error(`429 Rate Limited: Quota exceeded for this API key. ${errorMsg}`);
+          }
+
+          throw new Error(`API HTTP ${response.status}: ${errorMsg || response.statusText}`);
         } catch (err) {
+          lastError = err;
+          // If it was 403, do not try other models as the credentials/permissions are invalid
           if (err.message && err.message.includes('403')) {
-            throw err;
-          }
-
-          if (attempt < maxRetries) {
-            await new Promise(r => setTimeout(r, delay));
-            delay *= 2;
-          } else {
             throw err;
           }
         }
       }
+
+      throw lastError || new Error('All Gemini model endpoints failed.');
     }
 
     async function analyzeUploadedImage(base64Data, mimeType) {
@@ -1194,19 +1221,19 @@
         state.isGeneratingDesc = false;
         state.aiDescriptionFinished = true;
 
-        const is403 = error.message && error.message.includes('403');
+        const isAuthOrQuota = error.message && (error.message.includes('403') || error.message.includes('No Gemini API key'));
         aiDescriptionContent.innerHTML = `<div class="space-y-2 text-rose-300">
-          <p class="font-semibold text-rose-400">${is403 ? 'Gemini API Authentication Required (403)' : 'Unable to generate AI description'}</p>
-          <p class="text-slate-400 leading-relaxed text-xs">${error.message || 'Network error'}</p>
-          ${is403 ? `<button onclick="document.getElementById('apiKeyModalBtn').click()" class="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-[11px] transition-colors cursor-pointer">
+          <p class="font-semibold text-rose-400">AI Description Generation Failed</p>
+          <p class="text-slate-300 leading-relaxed text-xs break-words bg-slate-900/90 border border-rose-900/50 p-3 rounded-lg font-mono">${error.message || 'Unknown network error'}</p>
+          ${isAuthOrQuota ? `<button onclick="document.getElementById('apiKeyModalBtn').click()" class="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-[11px] transition-colors cursor-pointer">
             <svg class="w-3.5 h-3.5 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-1.5 1.5L16 7l-1.5-1.5L13 7l-1.5-1.5L10 7 8.5 5.5 7 7l-5 5v5h5l7-7 2-2z"/></svg>
-            <span>Set Gemini API Key</span>
+            <span>Update / Check API Key</span>
           </button>` : ''}
         </div>`;
         aiDescriptionContent.classList.remove('hidden');
 
         aiStatusBadge.className = 'flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-rose-950/80 text-rose-400 border border-rose-800/60';
-        aiStatusBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span><span>Error 403</span>';
+        aiStatusBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span><span>API Error</span>';
         
         updateTextSizeDisplays();
         setExportButtonState(true);
@@ -1303,15 +1330,11 @@
       }
 
       const nicContent = buildNicContent();
-
-      // Using application/octet-stream (or application/x-nic) prevents browsers and OS file handlers
-      // from forcing a .txt extension or changing the file association to a plain text document.
       const blob = new Blob([nicContent], { type: 'application/octet-stream' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       
-      // Strip any accidental trailing extensions to guarantee a pure [filename].nic output
       const cleanBaseName = (state.fileName || 'compressed-image').replace(/\.(nic|txt|png|jpe?g|webp)$/i, '');
       const downloadFilename = `${cleanBaseName}.nic`;
       
