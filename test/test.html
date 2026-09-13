@@ -49,14 +49,23 @@
           </h1>
         </div>
       </div>
-      <button id="navOpenModalBtn" type="button" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 border border-slate-700 transition-colors cursor-pointer active:scale-95">
-        <svg class="w-3.5 h-3.5 text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-          <circle cx="8.5" cy="8.5" r="1.5"/>
-          <polyline points="21 15 16 10 5 21"/>
-        </svg>
-        <span>Text to Image Viewer</span>
-      </button>
+      <div class="flex items-center gap-2">
+        <button id="apiKeyModalBtn" type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-xs font-medium text-slate-300 border border-slate-700 transition-colors cursor-pointer active:scale-95" title="Configure Gemini API Key for GitHub / standalone hosting">
+          <svg class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 2l-2 2m-1.5 1.5L16 7l-1.5-1.5L13 7l-1.5-1.5L10 7 8.5 5.5 7 7l-5 5v5h5l7-7 2-2z"/>
+            <circle cx="7.5" cy="16.5" r="1.5"/>
+          </svg>
+          <span id="apiKeyBtnLabel">API Key</span>
+        </button>
+        <button id="navOpenModalBtn" type="button" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 border border-slate-700 transition-colors cursor-pointer active:scale-95">
+          <svg class="w-3.5 h-3.5 text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21 15 16 10 5 21"/>
+          </svg>
+          <span>Text to Image Viewer</span>
+        </button>
+      </div>
     </div>
   </header>
 
@@ -105,9 +114,9 @@
         </div>
 
         <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-3.5">
-          <span class="text-[11px] text-indigo-400 uppercase tracking-wider font-semibold">Generated Text Size</span>
+          <span class="text-[11px] text-indigo-400 uppercase tracking-wider font-semibold">Combined Text Size</span>
           <div id="statCompressedSize" class="text-sm font-bold text-indigo-300 font-mono mt-0.5">0.00 KB</div>
-          <span id="statOriginalSize" class="text-[11px] text-slate-500 font-mono">--</span>
+          <span id="statOriginalSize" class="text-[11px] text-slate-400 font-mono truncate block" title="Combined size: Pixel Data + AI Description">Pixel + Description</span>
         </div>
       </div>
 
@@ -129,7 +138,7 @@
             <div class="bg-checker p-2 rounded-lg border border-slate-800/80 w-full flex items-center justify-center min-h-[220px] max-h-[320px] overflow-hidden">
               <img id="originalImgPreview" src="" alt="Original Upload" class="max-h-[300px] max-w-full object-contain rounded" />
             </div>
-            <span class="text-[11px] text-slate-400 font-mono text-center">Full-resolution source input</span>
+            <span id="originalFileFooter" class="text-[11px] text-slate-400 font-mono text-center">Original file size: --</span>
           </div>
 
           <!-- 1000x Downsampled Pixelated Card -->
@@ -167,6 +176,7 @@
                 </svg>
               </div>
               <span class="text-xs font-semibold text-slate-200 uppercase tracking-wider">Multimodal AI Detailed Description</span>
+              <span id="aiDescSizeBadge" class="text-[11px] font-mono text-indigo-400 bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-800/50" title="Size of the AI description text">0.00 KB</span>
             </div>
             <div id="aiStatusBadge" class="flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
               <span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
@@ -187,17 +197,6 @@
             <div id="aiDescriptionContent" class="text-xs text-slate-300 leading-relaxed font-sans space-y-2 whitespace-pre-wrap">
               Upload an image to generate an in-depth AI visual description.
             </div>
-
-            <div id="aiActionToolbar" class="hidden mt-3 pt-3 border-t border-slate-800/80 flex items-center justify-between">
-              <span class="text-[11px] text-slate-500 font-mono">Generated via gemini-3-flash-preview</span>
-              <button id="copyDescriptionBtn" type="button" class="flex items-center gap-1.5 text-[11px] text-indigo-400 hover:text-indigo-300 font-medium transition-colors cursor-pointer">
-                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                  <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
-                </svg>
-                Copy Description
-              </button>
-            </div>
           </div>
         </div>
 
@@ -208,22 +207,22 @@
               <span id="pixelCountBadge" class="text-[11px] font-mono text-indigo-400 bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-800/50">0 pixels</span>
               <span id="pixelTextKbBadge" class="text-[11px] font-mono text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/50" title="Size of the raw RGB text">0.00 KB</span>
             </div>
-            <span class="text-[11px] font-mono text-slate-400 bg-slate-950/80 px-2.5 py-1 rounded border border-slate-800">Format: \n per row</span>
+            <span class="text-[11px] font-mono text-indigo-400 bg-indigo-950/80 px-2.5 py-1 rounded border border-indigo-800/60">Visible \n row endings</span>
           </div>
 
-          <!-- Text Preview Window -->
+          <!-- Text Preview Window (wrap=off preserves visible \n linebreaks) -->
           <div class="relative">
-            <textarea id="rgbOutputText" readonly rows="6" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3.5 font-mono text-xs text-slate-300 focus:outline-none focus:border-indigo-500/60 resize-none selection:bg-indigo-500 selection:text-white leading-relaxed tracking-tight whitespace-pre overflow-x-auto" placeholder="Pixel RGB sequence will appear here (\n per row)..."></textarea>
+            <textarea id="rgbOutputText" readonly wrap="off" rows="6" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3.5 font-mono text-xs text-slate-300 focus:outline-none focus:border-indigo-500/60 resize-none selection:bg-indigo-500 selection:text-white leading-relaxed tracking-tight whitespace-pre overflow-x-auto" placeholder="Pixel RGB sequence will appear here with visible \n at each row end..."></textarea>
           </div>
 
           <!-- Action Buttons -->
           <div class="flex flex-col sm:flex-row gap-3 w-full">
-            <button id="exportNicBtn" type="button" class="flex-1 py-3 px-5 rounded-xl bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-500 hover:to-sky-500 text-white font-semibold text-sm shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 transition-all transform active:scale-[0.98] cursor-pointer">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <button id="exportNicBtn" type="button" disabled class="flex-1 py-3 px-5 rounded-xl bg-slate-800/80 text-slate-500 font-semibold text-sm border border-slate-700/60 flex items-center justify-center gap-2 cursor-not-allowed opacity-50 shadow-none transition-all">
+              <svg id="exportNicIcon" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
               </svg>
-              <span>Export .nic File</span>
-              <span id="nicSizeBadge" class="text-[11px] font-mono bg-indigo-900/60 border border-indigo-400/40 text-indigo-200 px-2 py-0.5 rounded ml-1">0.00 KB</span>
+              <span id="exportNicBtnText">Waiting for AI Description...</span>
+              <span id="nicSizeBadge" class="text-[11px] font-mono bg-slate-900 border border-slate-700 text-slate-400 px-2 py-0.5 rounded ml-1">0.00 KB</span>
             </button>
             <button id="viewInModalBtn" type="button" class="py-3 px-5 rounded-xl bg-indigo-950/80 hover:bg-indigo-900/80 text-indigo-300 font-semibold text-sm border border-indigo-700/60 flex items-center justify-center gap-2 transition-all transform active:scale-[0.98] cursor-pointer">
               <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -273,7 +272,7 @@
               Insert current output
             </button>
           </div>
-          <textarea id="modalTextInput" rows="5" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 font-mono text-xs text-slate-300 focus:outline-none focus:border-indigo-500/70 resize-none placeholder:text-slate-600 whitespace-pre overflow-x-auto leading-relaxed" placeholder="e.g.&#10;(255,0,0),(0,255,0),(0,0,255)&#10;(255,255,0),(255,0,255),(0,255,255)"></textarea>
+          <textarea id="modalTextInput" rows="5" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 font-mono text-xs text-slate-300 focus:outline-none focus:border-indigo-500/70 resize-none placeholder:text-slate-600 whitespace-pre overflow-x-auto leading-relaxed" placeholder="e.g.&#10;(255,0,0),(0,255,0),(0,0,255)\n&#10;(255,255,0),(255,0,255),(0,255,255)\n"></textarea>
         </div>
 
         <div class="flex flex-wrap items-center justify-between gap-2">
@@ -322,6 +321,50 @@
     </div>
   </div>
 
+  <div id="apiKeyModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200">
+    <div class="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+      <div class="flex items-center justify-between px-5 py-3.5 border-b border-slate-800 bg-slate-950/50">
+        <div class="flex items-center gap-2.5">
+          <div class="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 2l-2 2m-1.5 1.5L16 7l-1.5-1.5L13 7l-1.5-1.5L10 7 8.5 5.5 7 7l-5 5v5h5l7-7 2-2z"/>
+              <circle cx="7.5" cy="16.5" r="1.5"/>
+            </svg>
+          </div>
+          <div>
+            <h2 class="text-sm font-semibold text-white">Gemini API Key Setup</h2>
+            <p class="text-[11px] text-slate-400">Required when running outside Canvas (e.g. on GitHub Pages)</p>
+          </div>
+        </div>
+        <button id="closeApiKeyModalBtn" type="button" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer" title="Close (Esc)">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="p-5 space-y-4">
+        <div>
+          <label for="customApiKeyInput" class="block text-xs font-medium text-slate-300 mb-1.5">
+            Google Gemini API Key
+          </label>
+          <input type="password" id="customApiKeyInput" placeholder="AIzaSy..." class="w-full bg-slate-950 border border-slate-700/80 focus:border-indigo-500 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 font-mono focus:outline-none transition-colors" />
+          <p class="text-[11px] text-slate-500 mt-1.5">Get a free key at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="text-indigo-400 hover:underline">Google AI Studio</a>. Stored only in session memory.</p>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+          <button id="clearApiKeyBtn" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer">
+            Clear Key
+          </button>
+          <button id="saveApiKeyBtn" type="button" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md transition-all cursor-pointer">
+            Apply Key
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     const state = {
       image: null,
@@ -336,7 +379,8 @@
       rgbString: '',
       base64Data: '',
       imageMimeType: 'image/jpeg',
-      aiDescription: ''
+      aiDescription: '',
+      customApiKey: ''
     };
 
     // DOM Elements
@@ -349,6 +393,8 @@
     const outputCanvas = document.getElementById('outputCanvas');
     const magnifiedCanvas = document.getElementById('magnifiedCanvas');
     const exportNicBtn = document.getElementById('exportNicBtn');
+    const exportNicBtnText = document.getElementById('exportNicBtnText');
+    const exportNicIcon = document.getElementById('exportNicIcon');
     const rgbOutputText = document.getElementById('rgbOutputText');
     const pixelCountBadge = document.getElementById('pixelCountBadge');
 
@@ -356,8 +402,7 @@
     const aiStatusBadge = document.getElementById('aiStatusBadge');
     const aiLoadingIndicator = document.getElementById('aiLoadingIndicator');
     const aiDescriptionContent = document.getElementById('aiDescriptionContent');
-    const aiActionToolbar = document.getElementById('aiActionToolbar');
-    const copyDescriptionBtn = document.getElementById('copyDescriptionBtn');
+    const aiDescSizeBadge = document.getElementById('aiDescSizeBadge');
 
     // Modal DOM Elements
     const viewerModal = document.getElementById('viewerModal');
@@ -374,7 +419,70 @@
     const modalDimensionsText = document.getElementById('modalDimensionsText');
     const modalDownloadPngBtn = document.getElementById('modalDownloadPngBtn');
 
+    const apiKeyModal = document.getElementById('apiKeyModal');
+    const apiKeyModalBtn = document.getElementById('apiKeyModalBtn');
+    const closeApiKeyModalBtn = document.getElementById('closeApiKeyModalBtn');
+    const customApiKeyInput = document.getElementById('customApiKeyInput');
+    const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
+    const clearApiKeyBtn = document.getElementById('clearApiKeyBtn');
+    const apiKeyBtnLabel = document.getElementById('apiKeyBtnLabel');
+
     let modalParsedImage = null; // Stored { width, height, data: Uint8ClampedArray }
+
+    function openApiKeyModal() {
+      customApiKeyInput.value = state.customApiKey;
+      apiKeyModal.classList.remove('opacity-0', 'pointer-events-none');
+      apiKeyModal.classList.add('opacity-100');
+    }
+
+    function closeApiKeyModal() {
+      apiKeyModal.classList.add('opacity-0', 'pointer-events-none');
+      apiKeyModal.classList.remove('opacity-100');
+    }
+
+    apiKeyModalBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openApiKeyModal();
+    });
+
+    closeApiKeyModalBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeApiKeyModal();
+    });
+
+    apiKeyModal.addEventListener('click', (e) => {
+      if (e.target === apiKeyModal) {
+        closeApiKeyModal();
+      }
+    });
+
+    saveApiKeyBtn.addEventListener('click', () => {
+      const val = customApiKeyInput.value.trim();
+      state.customApiKey = val;
+      if (val) {
+        apiKeyBtnLabel.textContent = 'Key Saved ✓';
+        apiKeyBtnLabel.classList.add('text-emerald-400');
+        showToast('API Key saved for this session!');
+      } else {
+        apiKeyBtnLabel.textContent = 'API Key';
+        apiKeyBtnLabel.classList.remove('text-emerald-400');
+        showToast('API Key cleared.');
+      }
+      closeApiKeyModal();
+
+      // If an image was already uploaded and description failed, automatically re-trigger
+      if (state.base64Data && (!state.aiDescription || state.aiDescription.startsWith('Unable to generate'))) {
+        analyzeUploadedImage(state.base64Data, state.imageMimeType);
+      }
+    });
+
+    clearApiKeyBtn.addEventListener('click', () => {
+      state.customApiKey = '';
+      customApiKeyInput.value = '';
+      apiKeyBtnLabel.textContent = 'API Key';
+      apiKeyBtnLabel.classList.remove('text-emerald-400');
+      showToast('API Key cleared.');
+    });
 
     function openModal() {
       viewerModal.classList.remove('opacity-0', 'pointer-events-none');
@@ -414,8 +522,9 @@
     });
 
     window.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && !viewerModal.classList.contains('pointer-events-none')) {
-        closeModal();
+      if (e.key === 'Escape') {
+        if (!viewerModal.classList.contains('pointer-events-none')) closeModal();
+        if (!apiKeyModal.classList.contains('pointer-events-none')) closeApiKeyModal();
       }
     });
 
@@ -442,18 +551,27 @@
       // Regex matching (r,g,b) with flexible spaces
       const rgbRegex = /\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)/g;
 
-      // Default to parsing each line separated by \n as a distinct row
-      const rawLines = textToParse.split(/\r?\n/);
+      // Handle split by real newline or explicit literal \n string
+      let rawLines = [];
+      if (textToParse.includes('\n')) {
+        rawLines = textToParse.split(/\r?\n/);
+      } else if (textToParse.includes('\\n')) {
+        rawLines = textToParse.split(/\\n/);
+      } else {
+        rawLines = [textToParse];
+      }
+
       const parsedRows = [];
 
       for (const line of rawLines) {
         const trimmed = line.trim();
         if (!trimmed) continue;
 
-        // Strip legacy prefixes/markers if present, ensuring backward compatibility
+        // Strip legacy prefixes or trailing literal \n or semicolons
         const cleanLine = trimmed
           .replace(/^\[Row\s*\d+\]/i, '')
           .replace(/^---\s*Row\s*\d+\s*---/i, '')
+          .replace(/\\n$/g, '')
           .replace(/;$/, '')
           .trim();
 
@@ -622,6 +740,24 @@
       return (bytes / Math.pow(k, i)).toFixed(1) + ' ' + sizes[i];
     }
 
+    function setExportButtonState(isEnabled, loadingMessage = 'Generating AI Description...') {
+      if (!exportNicBtn) return;
+
+      if (isEnabled) {
+        exportNicBtn.disabled = false;
+        exportNicBtn.className = "flex-1 py-3 px-5 rounded-xl bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-500 hover:to-sky-500 text-white font-semibold text-sm shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 transition-all transform active:scale-[0.98] cursor-pointer";
+        exportNicBtnText.textContent = "Export .nic File";
+        exportNicIcon.innerHTML = '<path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>';
+        nicSizeBadge.className = "text-[11px] font-mono bg-indigo-900/60 border border-indigo-400/40 text-indigo-200 px-2 py-0.5 rounded ml-1";
+      } else {
+        exportNicBtn.disabled = true;
+        exportNicBtn.className = "flex-1 py-3 px-5 rounded-xl bg-slate-800/80 text-slate-500 font-semibold text-sm border border-slate-700/60 flex items-center justify-center gap-2 cursor-not-allowed opacity-60 shadow-none transition-all";
+        exportNicBtnText.textContent = loadingMessage;
+        exportNicIcon.innerHTML = '<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" stroke-dasharray="14" class="animate-spin text-slate-400" fill="none"/>';
+        nicSizeBadge.className = "text-[11px] font-mono bg-slate-900 border border-slate-700 text-slate-500 px-2 py-0.5 rounded ml-1";
+      }
+    }
+
     function buildNicContent() {
       const descriptionText = state.aiDescription && state.aiDescription.trim()
         ? state.aiDescription.trim()
@@ -647,31 +783,46 @@
     }
 
     function updateTextSizeDisplays() {
+      // 1. Pixel Data block size (UTF-8 bytes)
       const rgbBlob = new Blob([state.rgbString || ''], { type: 'text/plain;charset=utf-8' });
-      const rgbKb = (rgbBlob.size / 1024).toFixed(2);
+      const rgbBytes = rgbBlob.size;
+      const rgbKb = (rgbBytes / 1024).toFixed(2);
 
+      // 2. AI Description block size (UTF-8 bytes)
+      const descBlob = new Blob([state.aiDescription || ''], { type: 'text/plain;charset=utf-8' });
+      const descBytes = descBlob.size;
+      const descKb = (descBytes / 1024).toFixed(2);
+
+      // 3. Combined size of both text blocks added together
+      const combinedBytes = rgbBytes + descBytes;
+      const combinedKb = (combinedBytes / 1024).toFixed(2);
+
+      // 4. Complete export package size (.nic)
       const nicContent = buildNicContent();
       const nicBlob = new Blob([nicContent], { type: 'text/plain;charset=utf-8' });
-      const totalKb = (nicBlob.size / 1024).toFixed(2);
+      const totalPkgKb = (nicBlob.size / 1024).toFixed(2);
 
-      const pixelTextKbBadge = document.getElementById('pixelTextKbBadge');
+      // Update UI elements
       if (pixelTextKbBadge) {
         pixelTextKbBadge.textContent = `${rgbKb} KB`;
       }
 
+      if (aiDescSizeBadge) {
+        aiDescSizeBadge.textContent = `${descKb} KB`;
+      }
+
       const statCompressedSize = document.getElementById('statCompressedSize');
       if (statCompressedSize) {
-        statCompressedSize.textContent = `${totalKb} KB`;
+        statCompressedSize.textContent = `${combinedKb} KB`;
       }
 
       const statOriginalSize = document.getElementById('statOriginalSize');
       if (statOriginalSize) {
-        statOriginalSize.textContent = `from ${formatBytes(state.originalSizeBytes)}`;
+        statOriginalSize.textContent = `${formatBytes(rgbBytes)} pixels + ${formatBytes(descBytes)} desc`;
       }
 
-      const nicSizeBadge = document.getElementById('nicSizeBadge');
       if (nicSizeBadge) {
-        nicSizeBadge.textContent = `${totalKb} KB`;
+        nicSizeBadge.textContent = `${totalPkgKb} KB`;
       }
     }
 
@@ -752,11 +903,11 @@
           const idx = rowOffset + x * 4;
           rowPixels.push(`(${data[idx]},${data[idx + 1]},${data[idx + 2]})`);
         }
-        // Always default to raw comma-separated pixels for each row
-        rows.push(rowPixels.join(','));
+        // Append explicit literal \n indicator to each row
+        rows.push(rowPixels.join(',') + '\\n');
       }
 
-      // Each row separated strictly by newline \n
+      // Each row placed on its own line in the textarea
       return rows.join('\n');
     }
 
@@ -798,12 +949,15 @@
       rgbOutputText.value = state.rgbString;
       pixelCountBadge.textContent = `${state.targetPixels.toLocaleString()} pixels (${state.targetWidth} × ${state.targetHeight})`;
 
+      // Keep export button greyed out until LLM completes
+      setExportButtonState(false, 'Generating AI Description...');
       updateTextSizeDisplays();
     }
 
     async function requestImageDescriptionWithBackoff(base64Data, mimeType) {
-      const apiKey = ""; // Canvas runtime injects key automatically
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+      const apiKey = ""; // Canvas runtime injects key automatically when empty
+      const activeKey = state.customApiKey || apiKey;
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${activeKey}`;
 
       const prompt = `Analyze this image thoroughly and provide a structured, in-depth description with the following sections:
 1. Executive Summary: What the image depicts in 1-2 concise sentences.
@@ -841,6 +995,19 @@
           });
 
           if (!response.ok) {
+            if (response.status === 403) {
+              const errBody = await response.text().catch(() => '');
+              let reason = 'Google Gemini API returned 403 Forbidden.';
+              if (!state.customApiKey) {
+                reason = 'HTTP 403 Forbidden: No API key detected. Canvas auto-injects an API key during preview, but on GitHub you need to supply your Gemini API key via the "API Key" button in the top bar.';
+              } else if (errBody.includes('API_KEY_INVALID') || errBody.includes('not valid')) {
+                reason = 'HTTP 403 Forbidden: The provided Gemini API key is invalid. Please verify the key in Google AI Studio.';
+              } else if (errBody.includes('IP') || errBody.includes('referrer') || errBody.includes('origin')) {
+                reason = 'HTTP 403 Forbidden: Your API key has HTTP referrer or IP restrictions in Google Cloud that reject requests from this domain.';
+              }
+              throw new Error(reason);
+            }
+
             if (response.status === 429 && attempt < maxRetries) {
               await new Promise(r => setTimeout(r, delay));
               delay *= 2;
@@ -856,6 +1023,11 @@
           }
           throw new Error('No description text returned by model.');
         } catch (err) {
+          // If it's a 403 or non-retriable auth error, do not keep repeating backoff retries
+          if (err.message && err.message.includes('403')) {
+            throw err;
+          }
+
           if (attempt < maxRetries) {
             await new Promise(r => setTimeout(r, delay));
             delay *= 2;
@@ -870,7 +1042,9 @@
       aiLoadingIndicator.classList.remove('hidden');
       aiLoadingIndicator.classList.add('flex');
       aiDescriptionContent.classList.add('hidden');
-      aiActionToolbar.classList.add('hidden');
+
+      // Keep export button greyed out while LLM is generating
+      setExportButtonState(false, 'Generating AI Description...');
 
       aiStatusBadge.className = 'flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-indigo-950/80 text-indigo-400 border border-indigo-800/60';
       aiStatusBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-ping"></span><span>Analyzing...</span>';
@@ -881,39 +1055,37 @@
 
         aiDescriptionContent.textContent = description;
         aiDescriptionContent.classList.remove('hidden');
-        aiActionToolbar.classList.remove('hidden');
 
         aiStatusBadge.className = 'flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-950/80 text-emerald-400 border border-emerald-800/60';
         aiStatusBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span><span>Analyzed</span>';
         showToast('AI visual description generated!');
+
+        // Update sizes and enable export button
         updateTextSizeDisplays();
+        setExportButtonState(true);
       } catch (error) {
-        aiDescriptionContent.textContent = 'Unable to generate description: ' + (error.message || 'Network error');
+        const is403 = error.message && error.message.includes('403');
+        aiDescriptionContent.innerHTML = `<div class="space-y-2 text-rose-300">
+          <p class="font-semibold text-rose-400">${is403 ? 'Gemini API Authentication Required (403)' : 'Unable to generate AI description'}</p>
+          <p class="text-slate-400 leading-relaxed text-xs">${error.message || 'Network error'}</p>
+          ${is403 ? `<button onclick="document.getElementById('apiKeyModalBtn').click()" class="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-[11px] transition-colors cursor-pointer">
+            <svg class="w-3.5 h-3.5 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-1.5 1.5L16 7l-1.5-1.5L13 7l-1.5-1.5L10 7 8.5 5.5 7 7l-5 5v5h5l7-7 2-2z"/></svg>
+            <span>Set Gemini API Key</span>
+          </button>` : ''}
+        </div>`;
         aiDescriptionContent.classList.remove('hidden');
 
         aiStatusBadge.className = 'flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-rose-950/80 text-rose-400 border border-rose-800/60';
-        aiStatusBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span><span>Error</span>';
+        aiStatusBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span><span>Error 403</span>';
+        
+        // Even on error, update sizes with available data and allow exporting pixel raster
         updateTextSizeDisplays();
+        setExportButtonState(true);
       } finally {
         aiLoadingIndicator.classList.add('hidden');
         aiLoadingIndicator.classList.remove('flex');
       }
     }
-
-    copyDescriptionBtn.addEventListener('click', () => {
-      if (!state.aiDescription) return;
-      const tempArea = document.createElement('textarea');
-      tempArea.value = state.aiDescription;
-      document.body.appendChild(tempArea);
-      tempArea.select();
-      try {
-        document.execCommand('copy');
-        showToast('Copied AI description to clipboard!');
-      } catch (err) {
-        showToast('Failed to copy description.', true);
-      }
-      document.body.removeChild(tempArea);
-    });
 
     function handleFile(file) {
       if (!file || !file.type.startsWith('image/')) {
@@ -924,6 +1096,12 @@
       state.originalSizeBytes = file.size;
       state.fileName = file.name.replace(/\.[^/.]+$/, "");
       state.imageMimeType = file.type || 'image/jpeg';
+
+      const originalFileFooter = document.getElementById('originalFileFooter');
+      if (originalFileFooter) {
+        originalFileFooter.textContent = `Original file size: ${formatBytes(state.originalSizeBytes)}`;
+        originalFileFooter.title = `${file.name} (${formatBytes(state.originalSizeBytes)})`;
+      }
 
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -954,26 +1132,37 @@
       reader.readAsDataURL(file);
     }
 
-    dropZone.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      dropZone.classList.add('border-indigo-500', 'bg-indigo-950/20');
+    ['dragenter', 'dragover'].forEach(name => {
+      dropZone.addEventListener(name, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.add('border-indigo-500', 'bg-indigo-950/20');
+      });
     });
 
-    dropZone.addEventListener('dragleave', () => {
-      dropZone.classList.remove('border-indigo-500', 'bg-indigo-950/20');
+    ['dragleave', 'dragend'].forEach(name => {
+      dropZone.addEventListener(name, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.remove('border-indigo-500', 'bg-indigo-950/20');
+      });
     });
 
     dropZone.addEventListener('drop', (e) => {
       e.preventDefault();
+      e.stopPropagation();
       dropZone.classList.remove('border-indigo-500', 'bg-indigo-950/20');
-      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-        handleFile(e.dataTransfer.files[0]);
+      const files = e.dataTransfer?.files;
+      if (files && files.length > 0) {
+        handleFile(files[0]);
       }
     });
 
     fileInput.addEventListener('change', (e) => {
       if (e.target.files && e.target.files.length > 0) {
         handleFile(e.target.files[0]);
+        // Reset input value so selecting the same file consecutively still triggers change
+        e.target.value = '';
       }
     });
 
