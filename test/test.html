@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>1000x Pixel Compressor</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .bg-checker {
+      background-color: #0b0f19;
+      background-image: 
+        linear-gradient(45deg, #161f30 25%, transparent 25%), 
+        linear-gradient(-45deg, #161f30 25%, transparent 25%), 
+        linear-gradient(45deg, transparent 75%, #161f30 75%), 
+        linear-gradient(-45deg, transparent 75%, #161f30 75%);
+      background-size: 16px 16px;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+    }
+    .crisp-pixel {
+      image-rendering: -moz-crisp-edges;
+      image-rendering: -webkit-crisp-edges;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
+
+  <header class="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0 z-40">
+    <div class="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="h-9 w-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-sky-400 p-0.5 shadow-lg shadow-indigo-500/20 flex items-center justify-center">
+          <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center font-mono font-bold text-xs text-indigo-400">
+            /1000
+          </div>
+        </div>
+        <div>
+          <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
+            PixelCompress
+          </h1>
+        </div>
+      </div>
+      <button id="navOpenModalBtn" type="button" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 border border-slate-700 transition-colors cursor-pointer active:scale-95">
+        <svg class="w-3.5 h-3.5 text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+          <circle cx="8.5" cy="8.5" r="1.5"/>
+          <polyline points="21 15 16 10 5 21"/>
+        </svg>
+        <span>Text to Image Viewer</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-4xl mx-auto w-full p-4 sm:p-6 flex flex-col gap-6">
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 pointer-events-none transition-all duration-300 bg-slate-800 border border-slate-700 text-white px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2.5 text-xs font-medium">
+      <div id="toastIcon" class="text-emerald-400"></div>
+      <span id="toastMessage"></span>
+    </div>
+
+    <!-- Upload Hero Zone -->
+    <div id="dropZone" class="relative group border-2 border-dashed border-slate-800 hover:border-indigo-500/80 rounded-2xl p-8 text-center transition-all bg-slate-900/30 hover:bg-slate-900/60 cursor-pointer">
+      <input type="file" id="fileInput" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-full">
+      <div class="flex flex-col items-center justify-center gap-3 pointer-events-none">
+        <div class="w-14 h-14 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center border border-indigo-500/20 group-hover:scale-105 transition-transform">
+          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+          </svg>
+        </div>
+        <div>
+          <p class="font-semibold text-slate-200 text-sm">Drop an image here or <span class="text-indigo-400 underline underline-offset-2">browse files</span></p>
+          <p class="text-xs text-slate-400 mt-1">Converts image to exactly 1000× fewer pixels with detail retention</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="workspace" class="hidden flex flex-col gap-5">
+      <!-- 1000x Pixel Reduction Metrics -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-3.5">
+          <span class="text-[11px] text-slate-400 uppercase tracking-wider font-semibold">Original Pixels</span>
+          <div id="statOriginalPixels" class="text-sm font-bold text-slate-200 font-mono mt-0.5">--</div>
+          <span id="statOriginalDim" class="text-[11px] text-slate-500 font-mono">0 × 0 px</span>
+        </div>
+
+        <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-3.5">
+          <span class="text-[11px] text-indigo-400 uppercase tracking-wider font-semibold">Compressed Pixels</span>
+          <div id="statCompressedPixels" class="text-sm font-bold text-indigo-300 font-mono mt-0.5">--</div>
+          <span id="statCompressedDim" class="text-[11px] text-indigo-400/80 font-mono">0 × 0 px</span>
+        </div>
+
+        <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-3.5">
+          <span class="text-[11px] text-emerald-400 uppercase tracking-wider font-semibold">Pixel Reduction</span>
+          <div id="statReductionFactor" class="text-sm font-bold text-emerald-400 font-mono mt-0.5">1000.0×</div>
+          <span class="text-[11px] text-emerald-500/80 font-mono">99.9% fewer pixels</span>
+        </div>
+
+        <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-3.5">
+          <span class="text-[11px] text-indigo-400 uppercase tracking-wider font-semibold">Generated Text Size</span>
+          <div id="statCompressedSize" class="text-sm font-bold text-indigo-300 font-mono mt-0.5">0.00 KB</div>
+          <span id="statOriginalSize" class="text-[11px] text-slate-500 font-mono">--</span>
+        </div>
+      </div>
+
+      <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 flex flex-col gap-6">
+        <div class="w-full flex items-center justify-between text-xs text-slate-400 border-b border-slate-800/80 pb-3">
+          <span class="font-medium text-slate-300">Side-by-Side: Original Upload & 1000× Pixelated</span>
+          <span class="font-mono text-indigo-400 bg-indigo-950/40 px-2 py-0.5 rounded border border-indigo-800/50">Dual Display</span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full items-start">
+          <!-- Original Image Preview Card -->
+          <div class="flex flex-col items-center gap-3 bg-slate-950/60 border border-slate-800/80 rounded-xl p-4">
+            <div class="w-full flex items-center justify-between text-xs pb-1 border-b border-slate-800/60">
+              <span class="font-semibold text-slate-300 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-sky-400"></span> Original Image
+              </span>
+              <span id="originalDisplayBadge" class="font-mono text-[11px] text-slate-400">0 × 0 px</span>
+            </div>
+            <div class="bg-checker p-2 rounded-lg border border-slate-800/80 w-full flex items-center justify-center min-h-[220px] max-h-[320px] overflow-hidden">
+              <img id="originalImgPreview" src="" alt="Original Upload" class="max-h-[300px] max-w-full object-contain rounded" />
+            </div>
+            <span class="text-[11px] text-slate-400 font-mono text-center">Full-resolution source input</span>
+          </div>
+
+          <!-- 1000x Downsampled Pixelated Card -->
+          <div class="flex flex-col items-center gap-3 bg-slate-950/60 border border-slate-800/80 rounded-xl p-4">
+            <div class="w-full flex items-center justify-between text-xs pb-1 border-b border-slate-800/60">
+              <span class="font-semibold text-indigo-300 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-indigo-400"></span> 1000× Pixelated
+              </span>
+              <span id="pixelatedDisplayBadge" class="font-mono text-[11px] text-indigo-400">0 × 0 px</span>
+            </div>
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4 w-full min-h-[220px] p-2 bg-checker rounded-lg border border-slate-800/80">
+              <!-- Magnified Canvas -->
+              <div class="flex flex-col items-center gap-1">
+                <canvas id="magnifiedCanvas" class="crisp-pixel block rounded max-h-[190px] max-w-full object-contain shadow-md"></canvas>
+                <span class="text-[10px] text-slate-400 font-mono">Magnified View</span>
+              </div>
+              <!-- 1:1 Scale Output Canvas -->
+              <div class="flex flex-col items-center gap-1">
+                <div class="bg-slate-950/80 p-2 rounded border border-slate-800 flex items-center justify-center min-w-[70px] min-h-[70px]">
+                  <canvas id="outputCanvas" class="crisp-pixel block rounded"></canvas>
+                </div>
+                <span class="text-[10px] text-slate-400 font-mono">Actual 1:1 Scale</span>
+              </div>
+            </div>
+            <span class="text-[11px] text-slate-400 font-mono text-center">Detail-preserved 99.9% downsampling</span>
+          </div>
+        </div>
+
+        <div class="w-full pt-4 border-t border-slate-800/80 flex flex-col gap-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/>
+                </svg>
+              </div>
+              <span class="text-xs font-semibold text-slate-200 uppercase tracking-wider">Multimodal AI Detailed Description</span>
+            </div>
+            <div id="aiStatusBadge" class="flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+              <span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
+              <span>Ready</span>
+            </div>
+          </div>
+
+          <!-- Description Output Box -->
+          <div id="aiDescriptionCard" class="relative bg-slate-950/80 border border-slate-800 rounded-xl p-4 sm:p-5 transition-all">
+            <div id="aiLoadingIndicator" class="hidden flex-col items-center justify-center py-6 gap-3 text-slate-400">
+              <div class="w-7 h-7 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+              <div class="flex flex-col items-center gap-1 text-center">
+                <span class="text-xs font-semibold text-slate-200">Analyzing image with Gemini 3 Flash...</span>
+                <span class="text-[11px] text-slate-500">Extracting subjects, color palette, lighting, textures, and fine visual features</span>
+              </div>
+            </div>
+
+            <div id="aiDescriptionContent" class="text-xs text-slate-300 leading-relaxed font-sans space-y-2 whitespace-pre-wrap">
+              Upload an image to generate an in-depth AI visual description.
+            </div>
+
+            <div id="aiActionToolbar" class="hidden mt-3 pt-3 border-t border-slate-800/80 flex items-center justify-between">
+              <span class="text-[11px] text-slate-500 font-mono">Generated via gemini-3-flash-preview</span>
+              <button id="copyDescriptionBtn" type="button" class="flex items-center gap-1.5 text-[11px] text-indigo-400 hover:text-indigo-300 font-medium transition-colors cursor-pointer">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                  <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                </svg>
+                Copy Description
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="w-full flex flex-col gap-3 pt-2">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-semibold text-slate-300 uppercase tracking-wider">Pixel RGB Sequence</span>
+              <span id="pixelCountBadge" class="text-[11px] font-mono text-indigo-400 bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-800/50">0 pixels</span>
+              <span id="pixelTextKbBadge" class="text-[11px] font-mono text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/50" title="Size of the raw RGB text">0.00 KB</span>
+            </div>
+            <span class="text-[11px] font-mono text-slate-400 bg-slate-950/80 px-2.5 py-1 rounded border border-slate-800">Format: \n per row</span>
+          </div>
+
+          <!-- Text Preview Window -->
+          <div class="relative">
+            <textarea id="rgbOutputText" readonly rows="6" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3.5 font-mono text-xs text-slate-300 focus:outline-none focus:border-indigo-500/60 resize-none selection:bg-indigo-500 selection:text-white leading-relaxed tracking-tight whitespace-pre overflow-x-auto" placeholder="Pixel RGB sequence will appear here (\n per row)..."></textarea>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex flex-col sm:flex-row gap-3 w-full">
+            <button id="exportNicBtn" type="button" class="flex-1 py-3 px-5 rounded-xl bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-500 hover:to-sky-500 text-white font-semibold text-sm shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 transition-all transform active:scale-[0.98] cursor-pointer">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+              </svg>
+              <span>Export .nic File</span>
+              <span id="nicSizeBadge" class="text-[11px] font-mono bg-indigo-900/60 border border-indigo-400/40 text-indigo-200 px-2 py-0.5 rounded ml-1">0.00 KB</span>
+            </button>
+            <button id="viewInModalBtn" type="button" class="py-3 px-5 rounded-xl bg-indigo-950/80 hover:bg-indigo-900/80 text-indigo-300 font-semibold text-sm border border-indigo-700/60 flex items-center justify-center gap-2 transition-all transform active:scale-[0.98] cursor-pointer">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              View in Modal
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="viewerModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200">
+    <div class="relative w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between px-5 py-3.5 border-b border-slate-800 bg-slate-950/50">
+        <div class="flex items-center gap-2.5">
+          <div class="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <polyline points="21 15 16 10 5 21"/>
+            </svg>
+          </div>
+          <div>
+            <h2 class="text-sm font-semibold text-white">RGB Text to Image Viewer</h2>
+            <p class="text-[11px] text-slate-400">Reconstructs visual raster directly from newline-separated (r,g,b) text</p>
+          </div>
+        </div>
+        <button id="closeModalBtn" type="button" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer" title="Close Modal (Esc)">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-5 overflow-y-auto space-y-4">
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label for="modalTextInput" class="text-xs font-semibold text-slate-300">Paste RGB Sequence Text (\n per row):</label>
+            <button id="modalLoadCurrentBtn" type="button" class="text-[11px] text-indigo-400 hover:text-indigo-300 underline underline-offset-2 font-mono cursor-pointer">
+              Insert current output
+            </button>
+          </div>
+          <textarea id="modalTextInput" rows="5" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 font-mono text-xs text-slate-300 focus:outline-none focus:border-indigo-500/70 resize-none placeholder:text-slate-600 whitespace-pre overflow-x-auto leading-relaxed" placeholder="e.g.&#10;(255,0,0),(0,255,0),(0,0,255)&#10;(255,255,0),(255,0,255),(0,255,255)"></textarea>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <button id="modalRenderBtn" type="button" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs shadow-md shadow-indigo-500/20 flex items-center gap-1.5 transition-all cursor-pointer">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+            Render Image
+          </button>
+          <div id="modalStatusBadge" class="text-[11px] font-mono text-slate-400 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800">
+            Waiting for input
+          </div>
+        </div>
+
+        <!-- Rendered Image Canvas Container -->
+        <div id="modalOutputContainer" class="hidden flex-col items-center gap-3 pt-2 border-t border-slate-800/80">
+          <div class="w-full flex items-center justify-between text-xs text-slate-400">
+            <span class="font-medium text-slate-300">Reconstructed Image</span>
+            <div class="flex items-center gap-2">
+              <label for="modalZoomSelect" class="text-[11px]">Magnification:</label>
+              <select id="modalZoomSelect" class="bg-slate-950 border border-slate-700 text-slate-300 text-[11px] rounded px-2 py-0.5 font-mono cursor-pointer">
+                <option value="4">4×</option>
+                <option value="8" selected>8×</option>
+                <option value="12">12×</option>
+                <option value="16">16×</option>
+                <option value="1">1× (True Size)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="bg-checker p-4 rounded-xl border border-slate-800 shadow-xl flex items-center justify-center max-w-full overflow-auto max-h-[300px]">
+            <canvas id="modalCanvas" class="crisp-pixel block rounded shadow"></canvas>
+          </div>
+
+          <div class="w-full flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+            <span id="modalDimensionsText" class="font-mono text-indigo-400 text-[11px]">0 × 0 px</span>
+            <button id="modalDownloadPngBtn" type="button" class="w-full sm:w-auto px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer">
+              <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+              </svg>
+              Download Reconstructed PNG
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      image: null,
+      fileName: 'compressed-image',
+      originalWidth: 0,
+      originalHeight: 0,
+      originalPixels: 0,
+      originalSizeBytes: 0,
+      targetWidth: 0,
+      targetHeight: 0,
+      targetPixels: 0,
+      rgbString: '',
+      base64Data: '',
+      imageMimeType: 'image/jpeg',
+      aiDescription: ''
+    };
+
+    // DOM Elements
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const workspace = document.getElementById('workspace');
+    const originalImgPreview = document.getElementById('originalImgPreview');
+    const originalDisplayBadge = document.getElementById('originalDisplayBadge');
+    const pixelatedDisplayBadge = document.getElementById('pixelatedDisplayBadge');
+    const outputCanvas = document.getElementById('outputCanvas');
+    const magnifiedCanvas = document.getElementById('magnifiedCanvas');
+    const exportNicBtn = document.getElementById('exportNicBtn');
+    const rgbOutputText = document.getElementById('rgbOutputText');
+    const pixelCountBadge = document.getElementById('pixelCountBadge');
+
+    // AI Description DOM Elements
+    const aiStatusBadge = document.getElementById('aiStatusBadge');
+    const aiLoadingIndicator = document.getElementById('aiLoadingIndicator');
+    const aiDescriptionContent = document.getElementById('aiDescriptionContent');
+    const aiActionToolbar = document.getElementById('aiActionToolbar');
+    const copyDescriptionBtn = document.getElementById('copyDescriptionBtn');
+
+    // Modal DOM Elements
+    const viewerModal = document.getElementById('viewerModal');
+    const navOpenModalBtn = document.getElementById('navOpenModalBtn');
+    const viewInModalBtn = document.getElementById('viewInModalBtn');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const modalTextInput = document.getElementById('modalTextInput');
+    const modalLoadCurrentBtn = document.getElementById('modalLoadCurrentBtn');
+    const modalRenderBtn = document.getElementById('modalRenderBtn');
+    const modalStatusBadge = document.getElementById('modalStatusBadge');
+    const modalOutputContainer = document.getElementById('modalOutputContainer');
+    const modalCanvas = document.getElementById('modalCanvas');
+    const modalZoomSelect = document.getElementById('modalZoomSelect');
+    const modalDimensionsText = document.getElementById('modalDimensionsText');
+    const modalDownloadPngBtn = document.getElementById('modalDownloadPngBtn');
+
+    let modalParsedImage = null; // Stored { width, height, data: Uint8ClampedArray }
+
+    function openModal() {
+      viewerModal.classList.remove('opacity-0', 'pointer-events-none');
+      viewerModal.classList.add('opacity-100');
+    }
+
+    function closeModal() {
+      viewerModal.classList.add('opacity-0', 'pointer-events-none');
+      viewerModal.classList.remove('opacity-100');
+    }
+
+    navOpenModalBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openModal();
+    });
+
+    viewInModalBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (state.rgbString) {
+        modalTextInput.value = state.rgbString;
+      }
+      openModal();
+      if (modalTextInput.value.trim().length > 0) {
+        parseAndRenderModalText();
+      }
+    });
+
+    closeModalBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeModal();
+    });
+
+    viewerModal.addEventListener('click', (e) => {
+      if (e.target === viewerModal) {
+        closeModal();
+      }
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !viewerModal.classList.contains('pointer-events-none')) {
+        closeModal();
+      }
+    });
+
+    modalLoadCurrentBtn.addEventListener('click', () => {
+      if (!state.rgbString) {
+        showToast('No active output string to copy into modal.', true);
+        return;
+      }
+      modalTextInput.value = state.rgbString;
+      parseAndRenderModalText();
+    });
+
+    function parseRgbText(rawText) {
+      if (!rawText || !rawText.trim()) {
+        throw new Error('Input text is empty.');
+      }
+
+      let textToParse = rawText;
+      if (rawText.includes('[PIXELS]')) {
+        const parts = rawText.split('[PIXELS]');
+        textToParse = parts.slice(1).join('[PIXELS]').trim();
+      }
+
+      // Regex matching (r,g,b) with flexible spaces
+      const rgbRegex = /\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)/g;
+
+      // Default to parsing each line separated by \n as a distinct row
+      const rawLines = textToParse.split(/\r?\n/);
+      const parsedRows = [];
+
+      for (const line of rawLines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+
+        // Strip legacy prefixes/markers if present, ensuring backward compatibility
+        const cleanLine = trimmed
+          .replace(/^\[Row\s*\d+\]/i, '')
+          .replace(/^---\s*Row\s*\d+\s*---/i, '')
+          .replace(/;$/, '')
+          .trim();
+
+        if (!cleanLine) continue;
+
+        const pixelsInRow = [];
+        let match;
+        // Reset regex state for each line
+        rgbRegex.lastIndex = 0;
+        while ((match = rgbRegex.exec(cleanLine)) !== null) {
+          const r = Math.min(255, Math.max(0, parseInt(match[1], 10)));
+          const g = Math.min(255, Math.max(0, parseInt(match[2], 10)));
+          const b = Math.min(255, Math.max(0, parseInt(match[3], 10)));
+          pixelsInRow.push([r, g, b]);
+        }
+
+        if (pixelsInRow.length > 0) {
+          parsedRows.push(pixelsInRow);
+        }
+      }
+
+      // Fallback: If no lines or single row, reconstruct aspect grid
+      if (parsedRows.length === 0) {
+        const allPixels = [];
+        let match;
+        rgbRegex.lastIndex = 0;
+        while ((match = rgbRegex.exec(rawText)) !== null) {
+          const r = Math.min(255, Math.max(0, parseInt(match[1], 10)));
+          const g = Math.min(255, Math.max(0, parseInt(match[2], 10)));
+          const b = Math.min(255, Math.max(0, parseInt(match[3], 10)));
+          allPixels.push([r, g, b]);
+        }
+
+        if (allPixels.length === 0) {
+          throw new Error('No valid (r,g,b) pixel tuples found.');
+        }
+
+        const width = Math.ceil(Math.sqrt(allPixels.length));
+        const height = Math.ceil(allPixels.length / width);
+        for (let y = 0; y < height; y++) {
+          parsedRows.push(allPixels.slice(y * width, (y + 1) * width));
+        }
+      }
+
+      const height = parsedRows.length;
+      const width = Math.max(...parsedRows.map(r => r.length));
+      const imgDataArray = new Uint8ClampedArray(width * height * 4);
+
+      for (let y = 0; y < height; y++) {
+        const row = parsedRows[y];
+        for (let x = 0; x < width; x++) {
+          const idx = (y * width + x) * 4;
+          if (x < row.length) {
+            imgDataArray[idx] = row[x][0];
+            imgDataArray[idx + 1] = row[x][1];
+            imgDataArray[idx + 2] = row[x][2];
+            imgDataArray[idx + 3] = 255;
+          } else {
+            imgDataArray[idx] = 0;
+            imgDataArray[idx + 1] = 0;
+            imgDataArray[idx + 2] = 0;
+            imgDataArray[idx + 3] = 255;
+          }
+        }
+      }
+
+      return {
+        width,
+        height,
+        totalPixels: width * height,
+        data: imgDataArray
+      };
+    }
+
+    function drawModalImage() {
+      if (!modalParsedImage) return;
+
+      const { width, height, data } = modalParsedImage;
+      const zoom = parseInt(modalZoomSelect.value, 10) || 8;
+
+      const baseCanvas = document.createElement('canvas');
+      baseCanvas.width = width;
+      baseCanvas.height = height;
+      const baseCtx = baseCanvas.getContext('2d');
+      const imgDataObj = new ImageData(data, width, height);
+      baseCtx.putImageData(imgDataObj, 0, 0);
+
+      modalCanvas.width = width * zoom;
+      modalCanvas.height = height * zoom;
+      const modalCtx = modalCanvas.getContext('2d');
+      modalCtx.imageSmoothingEnabled = false;
+      modalCtx.clearRect(0, 0, modalCanvas.width, modalCanvas.height);
+      modalCtx.drawImage(baseCanvas, 0, 0, modalCanvas.width, modalCanvas.height);
+
+      modalDimensionsText.textContent = `${width} × ${height} px (${(width * height).toLocaleString()} pixels total)`;
+    }
+
+    function parseAndRenderModalText() {
+      try {
+        const text = modalTextInput.value;
+        const result = parseRgbText(text);
+        modalParsedImage = result;
+        modalOutputContainer.classList.remove('hidden');
+        modalOutputContainer.classList.add('flex');
+        drawModalImage();
+        modalStatusBadge.textContent = `Parsed ${result.width}×${result.height} (${result.totalPixels} px)`;
+        modalStatusBadge.className = 'text-[11px] font-mono text-emerald-400 bg-emerald-950/60 px-2.5 py-1 rounded-lg border border-emerald-800/60';
+        showToast(`Image reconstructed: ${result.width} × ${result.height} px`);
+      } catch (err) {
+        modalStatusBadge.textContent = err.message || 'Parsing failed';
+        modalStatusBadge.className = 'text-[11px] font-mono text-rose-400 bg-rose-950/60 px-2.5 py-1 rounded-lg border border-rose-800/60';
+        showToast(err.message, true);
+      }
+    }
+
+    modalRenderBtn.addEventListener('click', parseAndRenderModalText);
+    modalZoomSelect.addEventListener('change', drawModalImage);
+
+    modalDownloadPngBtn.addEventListener('click', () => {
+      if (!modalParsedImage) return;
+      const exportCanvas = document.createElement('canvas');
+      exportCanvas.width = modalParsedImage.width;
+      exportCanvas.height = modalParsedImage.height;
+      const ctx = exportCanvas.getContext('2d');
+      const imgDataObj = new ImageData(modalParsedImage.data, modalParsedImage.width, modalParsedImage.height);
+      ctx.putImageData(imgDataObj, 0, 0);
+
+      exportCanvas.toBlob((blob) => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `reconstructed-${modalParsedImage.width}x${modalParsedImage.height}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        showToast('Downloaded reconstructed PNG image!');
+      }, 'image/png');
+    });
+
+    function showToast(message, isError = false) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toastMessage');
+      const toastIcon = document.getElementById('toastIcon');
+
+      toastIcon.innerHTML = isError 
+        ? '<svg class="w-4 h-4 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>'
+        : '<svg class="w-4 h-4 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>';
+
+      toastMsg.textContent = message;
+      toast.classList.remove('opacity-0', 'translate-y-20', 'pointer-events-none');
+      toast.classList.add('opacity-100', 'translate-y-0');
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-20', 'pointer-events-none');
+        toast.classList.remove('opacity-100', 'translate-y-0');
+      }, 3200);
+    }
+
+    function formatBytes(bytes) {
+      if (!bytes || bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return (bytes / Math.pow(k, i)).toFixed(1) + ' ' + sizes[i];
+    }
+
+    function buildNicContent() {
+      const descriptionText = state.aiDescription && state.aiDescription.trim()
+        ? state.aiDescription.trim()
+        : 'Description pending or unavailable.';
+
+      return [
+        '=== NIC IMAGE PACKAGE (.nic) ===',
+        '',
+        '[METADATA]',
+        `Filename: ${state.fileName}`,
+        `Original-Dimensions: ${state.originalWidth}x${state.originalHeight}`,
+        `Compressed-Dimensions: ${state.targetWidth}x${state.targetHeight}`,
+        `Total-Pixels: ${state.targetPixels}`,
+        `Reduction-Factor: ${(state.originalPixels / (state.targetPixels || 1)).toFixed(1)}x`,
+        `Export-Date: ${new Date().toISOString()}`,
+        '',
+        '[DESCRIPTION]',
+        descriptionText,
+        '',
+        '[PIXELS]',
+        state.rgbString || ''
+      ].join('\n');
+    }
+
+    function updateTextSizeDisplays() {
+      const rgbBlob = new Blob([state.rgbString || ''], { type: 'text/plain;charset=utf-8' });
+      const rgbKb = (rgbBlob.size / 1024).toFixed(2);
+
+      const nicContent = buildNicContent();
+      const nicBlob = new Blob([nicContent], { type: 'text/plain;charset=utf-8' });
+      const totalKb = (nicBlob.size / 1024).toFixed(2);
+
+      const pixelTextKbBadge = document.getElementById('pixelTextKbBadge');
+      if (pixelTextKbBadge) {
+        pixelTextKbBadge.textContent = `${rgbKb} KB`;
+      }
+
+      const statCompressedSize = document.getElementById('statCompressedSize');
+      if (statCompressedSize) {
+        statCompressedSize.textContent = `${totalKb} KB`;
+      }
+
+      const statOriginalSize = document.getElementById('statOriginalSize');
+      if (statOriginalSize) {
+        statOriginalSize.textContent = `from ${formatBytes(state.originalSizeBytes)}`;
+      }
+
+      const nicSizeBadge = document.getElementById('nicSizeBadge');
+      if (nicSizeBadge) {
+        nicSizeBadge.textContent = `${totalKb} KB`;
+      }
+    }
+
+    function steppedDownsample(sourceImg, targetW, targetH) {
+      let curW = sourceImg.naturalWidth || sourceImg.width;
+      let curH = sourceImg.naturalHeight || sourceImg.height;
+
+      let tempCanvas = document.createElement('canvas');
+      tempCanvas.width = curW;
+      tempCanvas.height = curH;
+      let tempCtx = tempCanvas.getContext('2d');
+      tempCtx.imageSmoothingEnabled = true;
+      tempCtx.imageSmoothingQuality = 'high';
+      tempCtx.drawImage(sourceImg, 0, 0, curW, curH);
+
+      while (curW * 0.5 > targetW && curH * 0.5 > targetH) {
+        const nextW = Math.round(curW * 0.5);
+        const nextH = Math.round(curH * 0.5);
+        const stepCanvas = document.createElement('canvas');
+        stepCanvas.width = nextW;
+        stepCanvas.height = nextH;
+        const stepCtx = stepCanvas.getContext('2d');
+        stepCtx.imageSmoothingEnabled = true;
+        stepCtx.imageSmoothingQuality = 'high';
+        stepCtx.drawImage(tempCanvas, 0, 0, curW, curH, 0, 0, nextW, nextH);
+
+        tempCanvas = stepCanvas;
+        curW = nextW;
+        curH = nextH;
+      }
+
+      const finalCanvas = document.createElement('canvas');
+      finalCanvas.width = targetW;
+      finalCanvas.height = targetH;
+      const finalCtx = finalCanvas.getContext('2d');
+      finalCtx.imageSmoothingEnabled = true;
+      finalCtx.imageSmoothingQuality = 'high';
+      finalCtx.drawImage(tempCanvas, 0, 0, curW, curH, 0, 0, targetW, targetH);
+
+      applyDetailEnhancement(finalCtx, targetW, targetH);
+      return finalCanvas;
+    }
+
+    function applyDetailEnhancement(ctx, width, height) {
+      const imgData = ctx.getImageData(0, 0, width, height);
+      const data = imgData.data;
+      const copy = new Uint8ClampedArray(data);
+      const amount = 0.38;
+
+      for (let y = 1; y < height - 1; y++) {
+        for (let x = 1; x < width - 1; x++) {
+          const idx = (y * width + x) * 4;
+          const top = ((y - 1) * width + x) * 4;
+          const bottom = ((y + 1) * width + x) * 4;
+          const left = (y * width + (x - 1)) * 4;
+          const right = (y * width + (x + 1)) * 4;
+
+          for (let c = 0; c < 3; c++) {
+            const neighborAvg = (copy[top + c] + copy[bottom + c] + copy[left + c] + copy[right + c]) / 4;
+            const diff = copy[idx + c] - neighborAvg;
+            data[idx + c] = Math.min(255, Math.max(0, copy[idx + c] + diff * amount));
+          }
+        }
+      }
+
+      ctx.putImageData(imgData, 0, 0);
+    }
+
+    function extractRgbPixelString(ctx, width, height) {
+      const imgData = ctx.getImageData(0, 0, width, height);
+      const data = imgData.data;
+      const rows = [];
+
+      for (let y = 0; y < height; y++) {
+        const rowPixels = [];
+        const rowOffset = y * width * 4;
+        for (let x = 0; x < width; x++) {
+          const idx = rowOffset + x * 4;
+          rowPixels.push(`(${data[idx]},${data[idx + 1]},${data[idx + 2]})`);
+        }
+        // Always default to raw comma-separated pixels for each row
+        rows.push(rowPixels.join(','));
+      }
+
+      // Each row separated strictly by newline \n
+      return rows.join('\n');
+    }
+
+    function compressImage1000x() {
+      if (!state.image) return;
+
+      const scaleFactor = Math.sqrt(1000);
+      state.targetWidth = Math.max(1, Math.round(state.originalWidth / scaleFactor));
+      state.targetHeight = Math.max(1, Math.round(state.originalHeight / scaleFactor));
+      state.targetPixels = state.targetWidth * state.targetHeight;
+
+      const compressedCanvas = steppedDownsample(state.image, state.targetWidth, state.targetHeight);
+
+      outputCanvas.width = state.targetWidth;
+      outputCanvas.height = state.targetHeight;
+      const outCtx = outputCanvas.getContext('2d');
+      outCtx.clearRect(0, 0, state.targetWidth, state.targetHeight);
+      outCtx.drawImage(compressedCanvas, 0, 0);
+
+      const previewScale = Math.max(1, Math.min(24, Math.floor(300 / Math.max(state.targetWidth, state.targetHeight))));
+      magnifiedCanvas.width = state.targetWidth * previewScale;
+      magnifiedCanvas.height = state.targetHeight * previewScale;
+      const magCtx = magnifiedCanvas.getContext('2d');
+      magCtx.imageSmoothingEnabled = false;
+      magCtx.clearRect(0, 0, magnifiedCanvas.width, magnifiedCanvas.height);
+      magCtx.drawImage(compressedCanvas, 0, 0, magnifiedCanvas.width, magnifiedCanvas.height);
+
+      document.getElementById('statOriginalPixels').textContent = state.originalPixels.toLocaleString() + ' px';
+      document.getElementById('statOriginalDim').textContent = `${state.originalWidth} × ${state.originalHeight}`;
+      
+      document.getElementById('statCompressedPixels').textContent = state.targetPixels.toLocaleString() + ' px';
+      document.getElementById('statCompressedDim').textContent = `${state.targetWidth} × ${state.targetHeight}`;
+
+      const exactRatio = (state.originalPixels / state.targetPixels).toFixed(1);
+      document.getElementById('statReductionFactor').textContent = `${exactRatio}×`;
+
+      // Extract pixel string separated strictly by newlines
+      state.rgbString = extractRgbPixelString(outCtx, state.targetWidth, state.targetHeight);
+      rgbOutputText.value = state.rgbString;
+      pixelCountBadge.textContent = `${state.targetPixels.toLocaleString()} pixels (${state.targetWidth} × ${state.targetHeight})`;
+
+      updateTextSizeDisplays();
+    }
+
+    async function requestImageDescriptionWithBackoff(base64Data, mimeType) {
+      const apiKey = ""; // Canvas runtime injects key automatically
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+      const prompt = `Analyze this image thoroughly and provide a structured, in-depth description with the following sections:
+1. Executive Summary: What the image depicts in 1-2 concise sentences.
+2. Subject & Key Elements: Detailed breakdown of the primary subjects, figures, or objects.
+3. Color Palette & Lighting: Dominant hues, contrast, illumination sources, and shadows.
+4. Setting & Background: Environment, surroundings, spatial depth, and contextual details.
+5. Textures & Micro-details: Specific fine details, materials, and stylistic nuances.`;
+
+      const payload = {
+        contents: [
+          {
+            role: "user",
+            parts: [
+              { text: prompt },
+              {
+                inlineData: {
+                  mimeType: mimeType || 'image/jpeg',
+                  data: base64Data
+                }
+              }
+            ]
+          }
+        ]
+      };
+
+      const maxRetries = 4;
+      let delay = 1000;
+
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+          const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          if (!response.ok) {
+            if (response.status === 429 && attempt < maxRetries) {
+              await new Promise(r => setTimeout(r, delay));
+              delay *= 2;
+              continue;
+            }
+            throw new Error(`API returned status ${response.status}`);
+          }
+
+          const result = await response.json();
+          const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) {
+            return text;
+          }
+          throw new Error('No description text returned by model.');
+        } catch (err) {
+          if (attempt < maxRetries) {
+            await new Promise(r => setTimeout(r, delay));
+            delay *= 2;
+          } else {
+            throw err;
+          }
+        }
+      }
+    }
+
+    async function analyzeUploadedImage(base64Data, mimeType) {
+      aiLoadingIndicator.classList.remove('hidden');
+      aiLoadingIndicator.classList.add('flex');
+      aiDescriptionContent.classList.add('hidden');
+      aiActionToolbar.classList.add('hidden');
+
+      aiStatusBadge.className = 'flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-indigo-950/80 text-indigo-400 border border-indigo-800/60';
+      aiStatusBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-ping"></span><span>Analyzing...</span>';
+
+      try {
+        const description = await requestImageDescriptionWithBackoff(base64Data, mimeType);
+        state.aiDescription = description;
+
+        aiDescriptionContent.textContent = description;
+        aiDescriptionContent.classList.remove('hidden');
+        aiActionToolbar.classList.remove('hidden');
+
+        aiStatusBadge.className = 'flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-950/80 text-emerald-400 border border-emerald-800/60';
+        aiStatusBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span><span>Analyzed</span>';
+        showToast('AI visual description generated!');
+        updateTextSizeDisplays();
+      } catch (error) {
+        aiDescriptionContent.textContent = 'Unable to generate description: ' + (error.message || 'Network error');
+        aiDescriptionContent.classList.remove('hidden');
+
+        aiStatusBadge.className = 'flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-rose-950/80 text-rose-400 border border-rose-800/60';
+        aiStatusBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span><span>Error</span>';
+        updateTextSizeDisplays();
+      } finally {
+        aiLoadingIndicator.classList.add('hidden');
+        aiLoadingIndicator.classList.remove('flex');
+      }
+    }
+
+    copyDescriptionBtn.addEventListener('click', () => {
+      if (!state.aiDescription) return;
+      const tempArea = document.createElement('textarea');
+      tempArea.value = state.aiDescription;
+      document.body.appendChild(tempArea);
+      tempArea.select();
+      try {
+        document.execCommand('copy');
+        showToast('Copied AI description to clipboard!');
+      } catch (err) {
+        showToast('Failed to copy description.', true);
+      }
+      document.body.removeChild(tempArea);
+    });
+
+    function handleFile(file) {
+      if (!file || !file.type.startsWith('image/')) {
+        showToast('Please provide a valid image file.', true);
+        return;
+      }
+
+      state.originalSizeBytes = file.size;
+      state.fileName = file.name.replace(/\.[^/.]+$/, "");
+      state.imageMimeType = file.type || 'image/jpeg';
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const fullDataUrl = e.target.result;
+        const base64Index = fullDataUrl.indexOf(',');
+        state.base64Data = base64Index !== -1 ? fullDataUrl.substring(base64Index + 1) : fullDataUrl;
+
+        originalImgPreview.src = fullDataUrl;
+
+        const img = new Image();
+        img.onload = () => {
+          state.image = img;
+          state.originalWidth = img.naturalWidth;
+          state.originalHeight = img.naturalHeight;
+          state.originalPixels = img.naturalWidth * img.naturalHeight;
+
+          originalDisplayBadge.textContent = `${state.originalWidth} × ${state.originalHeight} px`;
+
+          workspace.classList.remove('hidden');
+          compressImage1000x();
+          pixelatedDisplayBadge.textContent = `${state.targetWidth} × ${state.targetHeight} px`;
+
+          showToast(`Compressed to 1000× fewer pixels (${state.targetWidth} × ${state.targetHeight})`);
+          analyzeUploadedImage(state.base64Data, state.imageMimeType);
+        };
+        img.src = fullDataUrl;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('border-indigo-500', 'bg-indigo-950/20');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('border-indigo-500', 'bg-indigo-950/20');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('border-indigo-500', 'bg-indigo-950/20');
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        handleFile(e.dataTransfer.files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files.length > 0) {
+        handleFile(e.target.files[0]);
+      }
+    });
+
+    exportNicBtn.addEventListener('click', () => {
+      if (!state.rgbString) {
+        showToast('Please upload an image first.', true);
+        return;
+      }
+
+      const nicContent = buildNicContent();
+
+      const blob = new Blob([nicContent], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${state.fileName || 'compressed-image'}.nic`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      showToast('Exported .nic package file!');
+    });
+  </script>
+</body>
+</html>
