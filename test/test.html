@@ -57,13 +57,15 @@
           </svg>
           <span id="apiKeyBtnLabel">API Key</span>
         </button>
-        <button id="navOpenModalBtn" type="button" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 border border-slate-700 transition-colors cursor-pointer active:scale-95">
-          <svg class="w-3.5 h-3.5 text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-            <circle cx="8.5" cy="8.5" r="1.5"/>
-            <polyline points="21 15 16 10 5 21"/>
+        <button id="navOpenModalBtn" type="button" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-600/90 hover:bg-indigo-500 text-xs font-medium text-white border border-indigo-500/50 shadow-md shadow-indigo-500/20 transition-all cursor-pointer active:scale-95">
+          <svg class="w-3.5 h-3.5 text-indigo-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
           </svg>
-          <span>Text to Image Viewer</span>
+          <span>.nic File Viewer</span>
         </button>
       </div>
     </div>
@@ -93,30 +95,18 @@
     </div>
 
     <div id="workspace" class="hidden flex flex-col gap-5">
-      <!-- 1000x Pixel Reduction Metrics -->
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-3.5">
-          <span class="text-[11px] text-slate-400 uppercase tracking-wider font-semibold">Original Pixels</span>
-          <div id="statOriginalPixels" class="text-sm font-bold text-slate-200 font-mono mt-0.5">--</div>
-          <span id="statOriginalDim" class="text-[11px] text-slate-500 font-mono">0 × 0 px</span>
+      <!-- File Size Comparison (Original vs Final .nic) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
+          <span class="text-[11px] text-slate-400 uppercase tracking-wider font-semibold">Original File Size</span>
+          <div id="statOriginalFileSize" class="text-xl font-bold text-slate-100 font-mono mt-1">--</div>
+          <span id="statOriginalFileDetail" class="text-[11px] text-slate-500 font-mono mt-1">Source upload</span>
         </div>
 
-        <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-3.5">
-          <span class="text-[11px] text-indigo-400 uppercase tracking-wider font-semibold">Compressed Pixels</span>
-          <div id="statCompressedPixels" class="text-sm font-bold text-indigo-300 font-mono mt-0.5">--</div>
-          <span id="statCompressedDim" class="text-[11px] text-indigo-400/80 font-mono">0 × 0 px</span>
-        </div>
-
-        <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-3.5">
-          <span class="text-[11px] text-emerald-400 uppercase tracking-wider font-semibold">Pixel Reduction</span>
-          <div id="statReductionFactor" class="text-sm font-bold text-emerald-400 font-mono mt-0.5">1000.0×</div>
-          <span class="text-[11px] text-emerald-500/80 font-mono">99.9% fewer pixels</span>
-        </div>
-
-        <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-3.5">
-          <span class="text-[11px] text-indigo-400 uppercase tracking-wider font-semibold">Combined Text Size</span>
-          <div id="statCompressedSize" class="text-sm font-bold text-indigo-300 font-mono mt-0.5">0.00 KB</div>
-          <span id="statOriginalSize" class="text-[11px] text-slate-400 font-mono truncate block" title="Combined size: Pixel Data + AI Description">Pixel + Description</span>
+        <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
+          <span class="text-[11px] text-indigo-400 uppercase tracking-wider font-semibold">Final .nic File Size</span>
+          <div id="statNicFileSize" class="text-xl font-bold text-indigo-300 font-mono mt-1">--</div>
+          <span id="statNicFileStatus" class="text-[11px] text-slate-400 font-mono mt-1">Pending description generation</span>
         </div>
       </div>
 
@@ -215,21 +205,14 @@
             <textarea id="rgbOutputText" readonly wrap="off" rows="6" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3.5 font-mono text-xs text-slate-300 focus:outline-none focus:border-indigo-500/60 resize-none selection:bg-indigo-500 selection:text-white leading-relaxed tracking-tight whitespace-pre overflow-x-auto" placeholder="Pixel RGB sequence will appear here with visible \n at each row end..."></textarea>
           </div>
 
-          <!-- Action Buttons -->
-          <div class="flex flex-col sm:flex-row gap-3 w-full">
-            <button id="exportNicBtn" type="button" disabled class="flex-1 py-3 px-5 rounded-xl bg-slate-800/80 text-slate-500 font-semibold text-sm border border-slate-700/60 flex items-center justify-center gap-2 cursor-not-allowed opacity-50 shadow-none transition-all">
+          <!-- Action Button: Export .nic File (full width) -->
+          <div class="w-full">
+            <button id="exportNicBtn" type="button" disabled class="w-full py-3 px-5 rounded-xl bg-slate-800/80 text-slate-500 font-semibold text-sm border border-slate-700/60 flex items-center justify-center gap-2 cursor-not-allowed opacity-50 shadow-none transition-all">
               <svg id="exportNicIcon" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
               </svg>
               <span id="exportNicBtnText">Waiting for AI Description...</span>
               <span id="nicSizeBadge" class="text-[11px] font-mono bg-slate-900 border border-slate-700 text-slate-400 px-2 py-0.5 rounded ml-1">0.00 KB</span>
-            </button>
-            <button id="viewInModalBtn" type="button" class="py-3 px-5 rounded-xl bg-indigo-950/80 hover:bg-indigo-900/80 text-indigo-300 font-semibold text-sm border border-indigo-700/60 flex items-center justify-center gap-2 transition-all transform active:scale-[0.98] cursor-pointer">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                <circle cx="12" cy="12" r="3"/>
-              </svg>
-              View in Modal
             </button>
           </div>
         </div>
@@ -237,25 +220,31 @@
     </div>
   </main>
 
-  <div id="viewerModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200">
-    <div class="relative w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+  <!-- Dedicated .nic File Inspector & Viewer Modal -->
+  <div id="nicViewerModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-200">
+    <div class="relative w-full max-w-3xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
       
       <!-- Modal Header -->
-      <div class="flex items-center justify-between px-5 py-3.5 border-b border-slate-800 bg-slate-950/50">
+      <div class="flex items-center justify-between px-5 py-3.5 border-b border-slate-800 bg-slate-950/70">
         <div class="flex items-center gap-2.5">
-          <div class="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+          <div class="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-              <circle cx="8.5" cy="8.5" r="1.5"/>
-              <polyline points="21 15 16 10 5 21"/>
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10 9 9 9 8 9"/>
             </svg>
           </div>
           <div>
-            <h2 class="text-sm font-semibold text-white">RGB Text to Image Viewer</h2>
-            <p class="text-[11px] text-slate-400">Reconstructs visual raster directly from newline-separated (r,g,b) text</p>
+            <h2 class="text-sm font-semibold text-white flex items-center gap-2">
+              .nic File Viewer
+              <span id="nicLoadedBadge" class="hidden font-mono text-[10px] px-2 py-0.5 rounded bg-indigo-950/80 text-indigo-300 border border-indigo-700/60 font-normal"></span>
+            </h2>
+            <p class="text-[11px] text-slate-400">Inspect .nic packages, decode raster pixels, and read AI descriptions</p>
           </div>
         </div>
-        <button id="closeModalBtn" type="button" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer" title="Close Modal (Esc)">
+        <button id="closeNicViewerModalBtn" type="button" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer" title="Close Modal (Esc)">
           <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"/>
             <line x1="6" y1="6" x2="18" y2="18"/>
@@ -264,63 +253,116 @@
       </div>
 
       <!-- Modal Body -->
-      <div class="p-5 overflow-y-auto space-y-4">
-        <div>
-          <div class="flex items-center justify-between mb-1.5">
-            <label for="modalTextInput" class="text-xs font-semibold text-slate-300">Paste RGB Sequence Text (\n per row):</label>
-            <button id="modalLoadCurrentBtn" type="button" class="text-[11px] text-indigo-400 hover:text-indigo-300 underline underline-offset-2 font-mono cursor-pointer">
-              Insert current output
-            </button>
-          </div>
-          <textarea id="modalTextInput" rows="5" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 font-mono text-xs text-slate-300 focus:outline-none focus:border-indigo-500/70 resize-none placeholder:text-slate-600 whitespace-pre overflow-x-auto leading-relaxed" placeholder="e.g.&#10;(255,0,0),(0,255,0),(0,0,255)\n&#10;(255,255,0),(255,0,255),(0,255,255)\n"></textarea>
-        </div>
-
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <button id="modalRenderBtn" type="button" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs shadow-md shadow-indigo-500/20 flex items-center gap-1.5 transition-all cursor-pointer">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polygon points="5 3 19 12 5 21 5 3"/>
-            </svg>
-            Render Image
-          </button>
-          <div id="modalStatusBadge" class="text-[11px] font-mono text-slate-400 bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800">
-            Waiting for input
+      <div class="p-5 overflow-y-auto space-y-5">
+        
+        <!-- .nic Upload / Drop Zone -->
+        <div id="nicDropZone" class="relative group border-2 border-dashed border-slate-700/80 hover:border-indigo-500 rounded-xl p-5 text-center transition-all bg-slate-950/40 hover:bg-slate-950/80 cursor-pointer">
+          <input type="file" id="nicFileInput" accept=".nic,.txt" class="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-full">
+          <div class="flex items-center justify-center gap-3.5 pointer-events-none">
+            <div class="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center border border-indigo-500/20 group-hover:scale-105 transition-transform">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+            </div>
+            <div class="text-left">
+              <p class="font-medium text-slate-200 text-xs">Drop a <span class="font-mono text-indigo-300 font-semibold">.nic</span> file here or <span class="text-indigo-400 underline underline-offset-2">browse files</span></p>
+              <p class="text-[11px] text-slate-500 mt-0.5">Reads package metadata, restores pixel canvas, and displays description</p>
+            </div>
           </div>
         </div>
 
-        <!-- Rendered Image Canvas Container -->
-        <div id="modalOutputContainer" class="hidden flex-col items-center gap-3 pt-2 border-t border-slate-800/80">
-          <div class="w-full flex items-center justify-between text-xs text-slate-400">
-            <span class="font-medium text-slate-300">Reconstructed Image</span>
-            <div class="flex items-center gap-2">
-              <label for="modalZoomSelect" class="text-[11px]">Magnification:</label>
-              <select id="modalZoomSelect" class="bg-slate-950 border border-slate-700 text-slate-300 text-[11px] rounded px-2 py-0.5 font-mono cursor-pointer">
-                <option value="4">4×</option>
-                <option value="8" selected>8×</option>
-                <option value="12">12×</option>
-                <option value="16">16×</option>
-                <option value="1">1× (True Size)</option>
-              </select>
+        <!-- Loaded .nic Content Display -->
+        <div id="nicContentArea" class="hidden flex-col gap-4">
+          
+          <!-- Metadata Summary Row -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-2.5">
+              <span class="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">Dimensions</span>
+              <div id="nicMetaDim" class="font-mono text-xs font-bold text-slate-200 mt-0.5">--</div>
+            </div>
+            <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-2.5">
+              <span class="text-[10px] text-indigo-400 uppercase font-semibold tracking-wider">Total Pixels</span>
+              <div id="nicMetaPixels" class="font-mono text-xs font-bold text-indigo-300 mt-0.5">--</div>
+            </div>
+            <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-2.5">
+              <span class="text-[10px] text-emerald-400 uppercase font-semibold tracking-wider">Reduction Ratio</span>
+              <div id="nicMetaReduction" class="font-mono text-xs font-bold text-emerald-400 mt-0.5">--</div>
+            </div>
+            <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-2.5">
+              <span class="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">Export Date</span>
+              <div id="nicMetaDate" class="font-mono text-[11px] text-slate-300 mt-0.5 truncate">--</div>
             </div>
           </div>
 
-          <div class="bg-checker p-4 rounded-xl border border-slate-800 shadow-xl flex items-center justify-center max-w-full overflow-auto max-h-[300px]">
-            <canvas id="modalCanvas" class="crisp-pixel block rounded shadow"></canvas>
+          <!-- Reconstructed Image Canvas Card -->
+          <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 flex flex-col gap-3">
+            <div class="flex items-center justify-between text-xs pb-2 border-b border-slate-800/70">
+              <span class="font-semibold text-slate-200 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Reconstructed Image Raster
+              </span>
+              <div class="flex items-center gap-2">
+                <label for="nicModalZoomSelect" class="text-[11px] text-slate-400">Magnification:</label>
+                <select id="nicModalZoomSelect" class="bg-slate-900 border border-slate-700 text-slate-300 text-[11px] rounded px-2 py-0.5 font-mono cursor-pointer">
+                  <option value="4">4×</option>
+                  <option value="8" selected>8×</option>
+                  <option value="12">12×</option>
+                  <option value="16">16×</option>
+                  <option value="1">1× (True Size)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="bg-checker p-4 rounded-xl border border-slate-800 shadow-inner flex items-center justify-center max-w-full overflow-auto max-h-[260px]">
+              <canvas id="nicModalCanvas" class="crisp-pixel block rounded shadow-lg"></canvas>
+            </div>
+
+            <div class="flex items-center justify-between pt-1 text-xs">
+              <span id="nicModalDimensionsText" class="font-mono text-indigo-400 text-[11px]">0 × 0 px</span>
+              <button id="nicDownloadPngBtn" type="button" class="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer">
+                <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+                Download PNG
+              </button>
+            </div>
           </div>
 
-          <div class="w-full flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-            <span id="modalDimensionsText" class="font-mono text-indigo-400 text-[11px]">0 × 0 px</span>
-            <button id="modalDownloadPngBtn" type="button" class="w-full sm:w-auto px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer">
-              <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-              </svg>
-              Download Reconstructed PNG
-            </button>
+          <!-- AI Description in .nic File -->
+          <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 flex flex-col gap-2">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800/70">
+              <span class="text-xs font-semibold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/>
+                </svg>
+                Package Description
+              </span>
+              <span id="nicDescBadge" class="text-[10px] font-mono text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">Loaded</span>
+            </div>
+            <div id="nicDescriptionText" class="text-xs text-slate-300 leading-relaxed font-sans whitespace-pre-wrap max-h-44 overflow-y-auto pr-1">
+              --
+            </div>
           </div>
+
+          <!-- Pixel Data Inspection (Collapsible / Preview) -->
+          <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 flex flex-col gap-2">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800/70">
+              <span class="text-xs font-semibold text-slate-200 uppercase tracking-wider">
+                Pixel Data Sequence
+              </span>
+              <span id="nicPixelBadge" class="text-[10px] font-mono text-indigo-400 bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-800/50">0 rows</span>
+            </div>
+            <textarea id="nicPixelsText" readonly wrap="off" rows="5" class="w-full bg-slate-950 border border-slate-800/90 rounded-lg p-3 font-mono text-xs text-slate-400 focus:outline-none resize-none leading-relaxed tracking-tight whitespace-pre overflow-x-auto"></textarea>
+          </div>
+
         </div>
+
       </div>
     </div>
   </div>
 
+  <!-- API Key Setup Modal -->
   <div id="apiKeyModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200">
     <div class="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
       <div class="flex items-center justify-between px-5 py-3.5 border-b border-slate-800 bg-slate-950/50">
@@ -380,6 +422,8 @@
       base64Data: '',
       imageMimeType: 'image/jpeg',
       aiDescription: '',
+      isGeneratingDesc: false,
+      aiDescriptionFinished: false,
       customApiKey: ''
     };
 
@@ -404,21 +448,27 @@
     const aiDescriptionContent = document.getElementById('aiDescriptionContent');
     const aiDescSizeBadge = document.getElementById('aiDescSizeBadge');
 
-    // Modal DOM Elements
-    const viewerModal = document.getElementById('viewerModal');
+    // .nic Viewer Modal Elements
+    const nicViewerModal = document.getElementById('nicViewerModal');
     const navOpenModalBtn = document.getElementById('navOpenModalBtn');
-    const viewInModalBtn = document.getElementById('viewInModalBtn');
-    const closeModalBtn = document.getElementById('closeModalBtn');
-    const modalTextInput = document.getElementById('modalTextInput');
-    const modalLoadCurrentBtn = document.getElementById('modalLoadCurrentBtn');
-    const modalRenderBtn = document.getElementById('modalRenderBtn');
-    const modalStatusBadge = document.getElementById('modalStatusBadge');
-    const modalOutputContainer = document.getElementById('modalOutputContainer');
-    const modalCanvas = document.getElementById('modalCanvas');
-    const modalZoomSelect = document.getElementById('modalZoomSelect');
-    const modalDimensionsText = document.getElementById('modalDimensionsText');
-    const modalDownloadPngBtn = document.getElementById('modalDownloadPngBtn');
+    const closeNicViewerModalBtn = document.getElementById('closeNicViewerModalBtn');
+    const nicDropZone = document.getElementById('nicDropZone');
+    const nicFileInput = document.getElementById('nicFileInput');
+    const nicContentArea = document.getElementById('nicContentArea');
+    const nicLoadedBadge = document.getElementById('nicLoadedBadge');
+    const nicMetaDim = document.getElementById('nicMetaDim');
+    const nicMetaPixels = document.getElementById('nicMetaPixels');
+    const nicMetaReduction = document.getElementById('nicMetaReduction');
+    const nicMetaDate = document.getElementById('nicMetaDate');
+    const nicModalCanvas = document.getElementById('nicModalCanvas');
+    const nicModalZoomSelect = document.getElementById('nicModalZoomSelect');
+    const nicModalDimensionsText = document.getElementById('nicModalDimensionsText');
+    const nicDownloadPngBtn = document.getElementById('nicDownloadPngBtn');
+    const nicDescriptionText = document.getElementById('nicDescriptionText');
+    const nicPixelsText = document.getElementById('nicPixelsText');
+    const nicPixelBadge = document.getElementById('nicPixelBadge');
 
+    // API Key Modal Elements
     const apiKeyModal = document.getElementById('apiKeyModal');
     const apiKeyModalBtn = document.getElementById('apiKeyModalBtn');
     const closeApiKeyModalBtn = document.getElementById('closeApiKeyModalBtn');
@@ -470,7 +520,6 @@
       }
       closeApiKeyModal();
 
-      // If an image was already uploaded and description failed, automatically re-trigger
       if (state.base64Data && (!state.aiDescription || state.aiDescription.startsWith('Unable to generate'))) {
         analyzeUploadedImage(state.base64Data, state.imageMimeType);
       }
@@ -484,58 +533,75 @@
       showToast('API Key cleared.');
     });
 
-    function openModal() {
-      viewerModal.classList.remove('opacity-0', 'pointer-events-none');
-      viewerModal.classList.add('opacity-100');
+    function openNicModal() {
+      nicViewerModal.classList.remove('opacity-0', 'pointer-events-none');
+      nicViewerModal.classList.add('opacity-100');
     }
 
-    function closeModal() {
-      viewerModal.classList.add('opacity-0', 'pointer-events-none');
-      viewerModal.classList.remove('opacity-100');
+    function closeNicModal() {
+      nicViewerModal.classList.add('opacity-0', 'pointer-events-none');
+      nicViewerModal.classList.remove('opacity-100');
     }
 
     navOpenModalBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      openModal();
+      openNicModal();
     });
 
-    viewInModalBtn.addEventListener('click', (e) => {
+    closeNicViewerModalBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (state.rgbString) {
-        modalTextInput.value = state.rgbString;
-      }
-      openModal();
-      if (modalTextInput.value.trim().length > 0) {
-        parseAndRenderModalText();
-      }
+      closeNicModal();
     });
 
-    closeModalBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      closeModal();
-    });
-
-    viewerModal.addEventListener('click', (e) => {
-      if (e.target === viewerModal) {
-        closeModal();
+    nicViewerModal.addEventListener('click', (e) => {
+      if (e.target === nicViewerModal) {
+        closeNicModal();
       }
     });
 
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
-        if (!viewerModal.classList.contains('pointer-events-none')) closeModal();
+        if (!nicViewerModal.classList.contains('pointer-events-none')) closeNicModal();
         if (!apiKeyModal.classList.contains('pointer-events-none')) closeApiKeyModal();
       }
     });
 
-    modalLoadCurrentBtn.addEventListener('click', () => {
-      if (!state.rgbString) {
-        showToast('No active output string to copy into modal.', true);
-        return;
+    function parseNicContent(rawContent) {
+      if (!rawContent || !rawContent.trim()) {
+        throw new Error('The provided file is empty.');
       }
-      modalTextInput.value = state.rgbString;
-      parseAndRenderModalText();
-    });
+
+      const metadata = {};
+      let description = '';
+      let pixels = '';
+
+      const metaMatch = rawContent.match(/\[METADATA\]([\s\S]*?)(?=\[DESCRIPTION\]|\[PIXELS\]|$)/i);
+      if (metaMatch) {
+        const lines = metaMatch[1].trim().split('\n');
+        for (const line of lines) {
+          const colonIdx = line.indexOf(':');
+          if (colonIdx !== -1) {
+            const key = line.substring(0, colonIdx).trim().toLowerCase();
+            const val = line.substring(colonIdx + 1).trim();
+            metadata[key] = val;
+          }
+        }
+      }
+
+      const descMatch = rawContent.match(/\[DESCRIPTION\]([\s\S]*?)(?=\[PIXELS\]|$)/i);
+      if (descMatch) {
+        description = descMatch[1].trim();
+      }
+
+      const pixelMatch = rawContent.match(/\[PIXELS\]([\s\S]*)$/i);
+      if (pixelMatch) {
+        pixels = pixelMatch[1].trim();
+      } else {
+        pixels = rawContent.trim();
+      }
+
+      return { metadata, description, pixels };
+    }
 
     function parseRgbText(rawText) {
       if (!rawText || !rawText.trim()) {
@@ -548,10 +614,8 @@
         textToParse = parts.slice(1).join('[PIXELS]').trim();
       }
 
-      // Regex matching (r,g,b) with flexible spaces
       const rgbRegex = /\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)/g;
 
-      // Handle split by real newline or explicit literal \n string
       let rawLines = [];
       if (textToParse.includes('\n')) {
         rawLines = textToParse.split(/\r?\n/);
@@ -567,7 +631,6 @@
         const trimmed = line.trim();
         if (!trimmed) continue;
 
-        // Strip legacy prefixes or trailing literal \n or semicolons
         const cleanLine = trimmed
           .replace(/^\[Row\s*\d+\]/i, '')
           .replace(/^---\s*Row\s*\d+\s*---/i, '')
@@ -579,7 +642,6 @@
 
         const pixelsInRow = [];
         let match;
-        // Reset regex state for each line
         rgbRegex.lastIndex = 0;
         while ((match = rgbRegex.exec(cleanLine)) !== null) {
           const r = Math.min(255, Math.max(0, parseInt(match[1], 10)));
@@ -593,7 +655,6 @@
         }
       }
 
-      // Fallback: If no lines or single row, reconstruct aspect grid
       if (parsedRows.length === 0) {
         const allPixels = [];
         let match;
@@ -642,15 +703,16 @@
         width,
         height,
         totalPixels: width * height,
+        rowCount: parsedRows.length,
         data: imgDataArray
       };
     }
 
-    function drawModalImage() {
+    function drawNicModalImage() {
       if (!modalParsedImage) return;
 
       const { width, height, data } = modalParsedImage;
-      const zoom = parseInt(modalZoomSelect.value, 10) || 8;
+      const zoom = parseInt(nicModalZoomSelect.value, 10) || 8;
 
       const baseCanvas = document.createElement('canvas');
       baseCanvas.width = width;
@@ -659,38 +721,53 @@
       const imgDataObj = new ImageData(data, width, height);
       baseCtx.putImageData(imgDataObj, 0, 0);
 
-      modalCanvas.width = width * zoom;
-      modalCanvas.height = height * zoom;
-      const modalCtx = modalCanvas.getContext('2d');
+      nicModalCanvas.width = width * zoom;
+      nicModalCanvas.height = height * zoom;
+      const modalCtx = nicModalCanvas.getContext('2d');
       modalCtx.imageSmoothingEnabled = false;
-      modalCtx.clearRect(0, 0, modalCanvas.width, modalCanvas.height);
-      modalCtx.drawImage(baseCanvas, 0, 0, modalCanvas.width, modalCanvas.height);
+      modalCtx.clearRect(0, 0, nicModalCanvas.width, nicModalCanvas.height);
+      modalCtx.drawImage(baseCanvas, 0, 0, nicModalCanvas.width, nicModalCanvas.height);
 
-      modalDimensionsText.textContent = `${width} × ${height} px (${(width * height).toLocaleString()} pixels total)`;
+      nicModalDimensionsText.textContent = `${width} × ${height} px (${(width * height).toLocaleString()} pixels total)`;
     }
 
-    function parseAndRenderModalText() {
+    function displayParsedNicFile(fileContent, sourceName = 'file.nic') {
       try {
-        const text = modalTextInput.value;
-        const result = parseRgbText(text);
-        modalParsedImage = result;
-        modalOutputContainer.classList.remove('hidden');
-        modalOutputContainer.classList.add('flex');
-        drawModalImage();
-        modalStatusBadge.textContent = `Parsed ${result.width}×${result.height} (${result.totalPixels} px)`;
-        modalStatusBadge.className = 'text-[11px] font-mono text-emerald-400 bg-emerald-950/60 px-2.5 py-1 rounded-lg border border-emerald-800/60';
-        showToast(`Image reconstructed: ${result.width} × ${result.height} px`);
+        const { metadata, description, pixels } = parseNicContent(fileContent);
+        const parsedImage = parseRgbText(pixels);
+        modalParsedImage = parsedImage;
+
+        // Update Metadata displays
+        nicLoadedBadge.textContent = sourceName;
+        nicLoadedBadge.classList.remove('hidden');
+
+        nicMetaDim.textContent = metadata['compressed-dimensions'] || `${parsedImage.width} × ${parsedImage.height} px`;
+        nicMetaPixels.textContent = metadata['total-pixels'] || `${parsedImage.totalPixels.toLocaleString()} px`;
+        nicMetaReduction.textContent = metadata['reduction-factor'] || '99.9%';
+        nicMetaDate.textContent = metadata['export-date'] ? new Date(metadata['export-date']).toLocaleDateString() : 'N/A';
+        nicMetaDate.title = metadata['export-date'] || '';
+
+        // Update AI Description
+        nicDescriptionText.textContent = description || 'No description found in this .nic package.';
+
+        // Update Pixel Preview
+        nicPixelsText.value = pixels;
+        nicPixelBadge.textContent = `${parsedImage.rowCount} rows (${parsedImage.totalPixels} px)`;
+
+        // Render Canvas
+        drawNicModalImage();
+
+        nicContentArea.classList.remove('hidden');
+        nicContentArea.classList.add('flex');
+        showToast(`Loaded .nic package: ${parsedImage.width} × ${parsedImage.height} px`);
       } catch (err) {
-        modalStatusBadge.textContent = err.message || 'Parsing failed';
-        modalStatusBadge.className = 'text-[11px] font-mono text-rose-400 bg-rose-950/60 px-2.5 py-1 rounded-lg border border-rose-800/60';
-        showToast(err.message, true);
+        showToast(err.message || 'Failed to parse .nic file', true);
       }
     }
 
-    modalRenderBtn.addEventListener('click', parseAndRenderModalText);
-    modalZoomSelect.addEventListener('change', drawModalImage);
+    nicModalZoomSelect.addEventListener('change', drawNicModalImage);
 
-    modalDownloadPngBtn.addEventListener('click', () => {
+    nicDownloadPngBtn.addEventListener('click', () => {
       if (!modalParsedImage) return;
       const exportCanvas = document.createElement('canvas');
       exportCanvas.width = modalParsedImage.width;
@@ -711,6 +788,49 @@
         setTimeout(() => URL.revokeObjectURL(url), 1000);
         showToast('Downloaded reconstructed PNG image!');
       }, 'image/png');
+    });
+
+    function handleNicFile(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = e.target.result;
+        displayParsedNicFile(content, file.name);
+      };
+      reader.readAsText(file);
+    }
+
+    nicFileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files.length > 0) {
+        handleNicFile(e.target.files[0]);
+        e.target.value = '';
+      }
+    });
+
+    ['dragenter', 'dragover'].forEach(name => {
+      nicDropZone.addEventListener(name, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        nicDropZone.classList.add('border-indigo-500', 'bg-indigo-950/20');
+      });
+    });
+
+    ['dragleave', 'dragend'].forEach(name => {
+      nicDropZone.addEventListener(name, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        nicDropZone.classList.remove('border-indigo-500', 'bg-indigo-950/20');
+      });
+    });
+
+    nicDropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      nicDropZone.classList.remove('border-indigo-500', 'bg-indigo-950/20');
+      const files = e.dataTransfer?.files;
+      if (files && files.length > 0) {
+        handleNicFile(files[0]);
+      }
     });
 
     function showToast(message, isError = false) {
@@ -745,13 +865,13 @@
 
       if (isEnabled) {
         exportNicBtn.disabled = false;
-        exportNicBtn.className = "flex-1 py-3 px-5 rounded-xl bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-500 hover:to-sky-500 text-white font-semibold text-sm shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 transition-all transform active:scale-[0.98] cursor-pointer";
+        exportNicBtn.className = "w-full py-3 px-5 rounded-xl bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-500 hover:to-sky-500 text-white font-semibold text-sm shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 transition-all transform active:scale-[0.98] cursor-pointer";
         exportNicBtnText.textContent = "Export .nic File";
         exportNicIcon.innerHTML = '<path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>';
         nicSizeBadge.className = "text-[11px] font-mono bg-indigo-900/60 border border-indigo-400/40 text-indigo-200 px-2 py-0.5 rounded ml-1";
       } else {
         exportNicBtn.disabled = true;
-        exportNicBtn.className = "flex-1 py-3 px-5 rounded-xl bg-slate-800/80 text-slate-500 font-semibold text-sm border border-slate-700/60 flex items-center justify-center gap-2 cursor-not-allowed opacity-60 shadow-none transition-all";
+        exportNicBtn.className = "w-full py-3 px-5 rounded-xl bg-slate-800/80 text-slate-500 font-semibold text-sm border border-slate-700/60 flex items-center justify-center gap-2 cursor-not-allowed opacity-60 shadow-none transition-all";
         exportNicBtnText.textContent = loadingMessage;
         exportNicIcon.innerHTML = '<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" stroke-dasharray="14" class="animate-spin text-slate-400" fill="none"/>';
         nicSizeBadge.className = "text-[11px] font-mono bg-slate-900 border border-slate-700 text-slate-500 px-2 py-0.5 rounded ml-1";
@@ -783,26 +903,18 @@
     }
 
     function updateTextSizeDisplays() {
-      // 1. Pixel Data block size (UTF-8 bytes)
       const rgbBlob = new Blob([state.rgbString || ''], { type: 'text/plain;charset=utf-8' });
       const rgbBytes = rgbBlob.size;
       const rgbKb = (rgbBytes / 1024).toFixed(2);
 
-      // 2. AI Description block size (UTF-8 bytes)
       const descBlob = new Blob([state.aiDescription || ''], { type: 'text/plain;charset=utf-8' });
       const descBytes = descBlob.size;
       const descKb = (descBytes / 1024).toFixed(2);
 
-      // 3. Combined size of both text blocks added together
-      const combinedBytes = rgbBytes + descBytes;
-      const combinedKb = (combinedBytes / 1024).toFixed(2);
-
-      // 4. Complete export package size (.nic)
       const nicContent = buildNicContent();
       const nicBlob = new Blob([nicContent], { type: 'text/plain;charset=utf-8' });
       const totalPkgKb = (nicBlob.size / 1024).toFixed(2);
 
-      // Update UI elements
       if (pixelTextKbBadge) {
         pixelTextKbBadge.textContent = `${rgbKb} KB`;
       }
@@ -811,18 +923,43 @@
         aiDescSizeBadge.textContent = `${descKb} KB`;
       }
 
-      const statCompressedSize = document.getElementById('statCompressedSize');
-      if (statCompressedSize) {
-        statCompressedSize.textContent = `${combinedKb} KB`;
+      const statOriginalFileSize = document.getElementById('statOriginalFileSize');
+      if (statOriginalFileSize) {
+        statOriginalFileSize.textContent = formatBytes(state.originalSizeBytes);
+      }
+      const statOriginalFileDetail = document.getElementById('statOriginalFileDetail');
+      if (statOriginalFileDetail) {
+        statOriginalFileDetail.textContent = `${state.fileName} (${state.originalWidth} × ${state.originalHeight} px)`;
       }
 
-      const statOriginalSize = document.getElementById('statOriginalSize');
-      if (statOriginalSize) {
-        statOriginalSize.textContent = `${formatBytes(rgbBytes)} pixels + ${formatBytes(descBytes)} desc`;
+      const statNicFileSize = document.getElementById('statNicFileSize');
+      const statNicFileStatus = document.getElementById('statNicFileStatus');
+
+      if (statNicFileSize) {
+        if (state.isGeneratingDesc) {
+          statNicFileSize.innerHTML = `<span class="inline-flex items-center gap-2 text-amber-400 text-sm font-semibold"><svg class="w-4 h-4 animate-spin text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9" stroke-dasharray="14" fill="none"/></svg> Generating .nic...</span>`;
+          if (statNicFileStatus) {
+            statNicFileStatus.textContent = 'Calculating final package size upon AI description completion...';
+            statNicFileStatus.className = 'text-[11px] text-amber-400/80 font-mono mt-1';
+          }
+        } else if (state.aiDescriptionFinished) {
+          statNicFileSize.textContent = `${totalPkgKb} KB`;
+          if (statNicFileStatus) {
+            const savingsPercent = state.originalSizeBytes > 0 ? ((1 - (nicBlob.size / state.originalSizeBytes)) * 100).toFixed(1) : '0';
+            statNicFileStatus.textContent = `${formatBytes(nicBlob.size)} total package (${savingsPercent}% smaller than source)`;
+            statNicFileStatus.className = 'text-[11px] text-emerald-400 font-mono mt-1';
+          }
+        } else {
+          statNicFileSize.textContent = '--';
+          if (statNicFileStatus) {
+            statNicFileStatus.textContent = 'Upload image to compute';
+            statNicFileStatus.className = 'text-[11px] text-slate-500 font-mono mt-1';
+          }
+        }
       }
 
       if (nicSizeBadge) {
-        nicSizeBadge.textContent = `${totalPkgKb} KB`;
+        nicSizeBadge.textContent = state.isGeneratingDesc ? 'Waiting...' : `${totalPkgKb} KB`;
       }
     }
 
@@ -903,11 +1040,9 @@
           const idx = rowOffset + x * 4;
           rowPixels.push(`(${data[idx]},${data[idx + 1]},${data[idx + 2]})`);
         }
-        // Append explicit literal \n indicator to each row
         rows.push(rowPixels.join(',') + '\\n');
       }
 
-      // Each row placed on its own line in the textarea
       return rows.join('\n');
     }
 
@@ -935,21 +1070,10 @@
       magCtx.clearRect(0, 0, magnifiedCanvas.width, magnifiedCanvas.height);
       magCtx.drawImage(compressedCanvas, 0, 0, magnifiedCanvas.width, magnifiedCanvas.height);
 
-      document.getElementById('statOriginalPixels').textContent = state.originalPixels.toLocaleString() + ' px';
-      document.getElementById('statOriginalDim').textContent = `${state.originalWidth} × ${state.originalHeight}`;
-      
-      document.getElementById('statCompressedPixels').textContent = state.targetPixels.toLocaleString() + ' px';
-      document.getElementById('statCompressedDim').textContent = `${state.targetWidth} × ${state.targetHeight}`;
-
-      const exactRatio = (state.originalPixels / state.targetPixels).toFixed(1);
-      document.getElementById('statReductionFactor').textContent = `${exactRatio}×`;
-
-      // Extract pixel string separated strictly by newlines
       state.rgbString = extractRgbPixelString(outCtx, state.targetWidth, state.targetHeight);
       rgbOutputText.value = state.rgbString;
       pixelCountBadge.textContent = `${state.targetPixels.toLocaleString()} pixels (${state.targetWidth} × ${state.targetHeight})`;
 
-      // Keep export button greyed out until LLM completes
       setExportButtonState(false, 'Generating AI Description...');
       updateTextSizeDisplays();
     }
@@ -957,7 +1081,7 @@
     async function requestImageDescriptionWithBackoff(base64Data, mimeType) {
       const apiKey = ""; // Canvas runtime injects key automatically when empty
       const activeKey = state.customApiKey || apiKey;
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${activeKey}`;
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${activeKey}`;
 
       const prompt = `Analyze this image thoroughly and provide a structured, in-depth description with the following sections:
 1. Executive Summary: What the image depicts in 1-2 concise sentences.
@@ -1023,7 +1147,6 @@
           }
           throw new Error('No description text returned by model.');
         } catch (err) {
-          // If it's a 403 or non-retriable auth error, do not keep repeating backoff retries
           if (err.message && err.message.includes('403')) {
             throw err;
           }
@@ -1039,12 +1162,15 @@
     }
 
     async function analyzeUploadedImage(base64Data, mimeType) {
+      state.isGeneratingDesc = true;
+      state.aiDescriptionFinished = false;
+
       aiLoadingIndicator.classList.remove('hidden');
       aiLoadingIndicator.classList.add('flex');
       aiDescriptionContent.classList.add('hidden');
 
-      // Keep export button greyed out while LLM is generating
       setExportButtonState(false, 'Generating AI Description...');
+      updateTextSizeDisplays();
 
       aiStatusBadge.className = 'flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-indigo-950/80 text-indigo-400 border border-indigo-800/60';
       aiStatusBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-ping"></span><span>Analyzing...</span>';
@@ -1052,6 +1178,8 @@
       try {
         const description = await requestImageDescriptionWithBackoff(base64Data, mimeType);
         state.aiDescription = description;
+        state.isGeneratingDesc = false;
+        state.aiDescriptionFinished = true;
 
         aiDescriptionContent.textContent = description;
         aiDescriptionContent.classList.remove('hidden');
@@ -1060,10 +1188,12 @@
         aiStatusBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span><span>Analyzed</span>';
         showToast('AI visual description generated!');
 
-        // Update sizes and enable export button
         updateTextSizeDisplays();
         setExportButtonState(true);
       } catch (error) {
+        state.isGeneratingDesc = false;
+        state.aiDescriptionFinished = true;
+
         const is403 = error.message && error.message.includes('403');
         aiDescriptionContent.innerHTML = `<div class="space-y-2 text-rose-300">
           <p class="font-semibold text-rose-400">${is403 ? 'Gemini API Authentication Required (403)' : 'Unable to generate AI description'}</p>
@@ -1078,7 +1208,6 @@
         aiStatusBadge.className = 'flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-rose-950/80 text-rose-400 border border-rose-800/60';
         aiStatusBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span><span>Error 403</span>';
         
-        // Even on error, update sizes with available data and allow exporting pixel raster
         updateTextSizeDisplays();
         setExportButtonState(true);
       } finally {
@@ -1096,6 +1225,8 @@
       state.originalSizeBytes = file.size;
       state.fileName = file.name.replace(/\.[^/.]+$/, "");
       state.imageMimeType = file.type || 'image/jpeg';
+      state.isGeneratingDesc = true;
+      state.aiDescriptionFinished = false;
 
       const originalFileFooter = document.getElementById('originalFileFooter');
       if (originalFileFooter) {
@@ -1161,7 +1292,6 @@
     fileInput.addEventListener('change', (e) => {
       if (e.target.files && e.target.files.length > 0) {
         handleFile(e.target.files[0]);
-        // Reset input value so selecting the same file consecutively still triggers change
         e.target.value = '';
       }
     });
@@ -1174,16 +1304,24 @@
 
       const nicContent = buildNicContent();
 
-      const blob = new Blob([nicContent], { type: 'text/plain;charset=utf-8' });
+      // Using application/octet-stream (or application/x-nic) prevents browsers and OS file handlers
+      // from forcing a .txt extension or changing the file association to a plain text document.
+      const blob = new Blob([nicContent], { type: 'application/octet-stream' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${state.fileName || 'compressed-image'}.nic`;
+      
+      // Strip any accidental trailing extensions to guarantee a pure [filename].nic output
+      const cleanBaseName = (state.fileName || 'compressed-image').replace(/\.(nic|txt|png|jpe?g|webp)$/i, '');
+      const downloadFilename = `${cleanBaseName}.nic`;
+      
+      link.download = downloadFilename;
+      link.setAttribute('download', downloadFilename);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-      showToast('Exported .nic package file!');
+      showToast(`Exported ${downloadFilename}!`);
     });
   </script>
 </body>
