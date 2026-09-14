@@ -1066,12 +1066,15 @@
         ['"shot_type":', '\u000b'],
         ['"key_light_direction":', '\u000c'],
         ['"color_temperature":', '\u000e'],
-        ['"box_2d":', '\u000f'],
+<comment-tag id="4" text="Add the new, highly descriptive JSON keys to the codec dictionary. This ensures that even though we are extracting much more text metadata, the .nic package byte size remains extremely small." type="suggestion">        ['"box_2d":', '\u000f'],
         ['"material_finish":', '\u0010'],
         ['"visual_details":', '\u0011'],
+        ['"pose_and_expression":', '\u001a'],
+        ['"attire_and_styling":', '\u001b'],
+        ['"secondary_lights":', '\u001c'],
+        ['"motion_blur":', '\u001d'],
         ['\\n', '\u0012'],
-        ['Original-Dimensions:', '\u0014'],
-        ['Compressed-Dimensions:', '\u0015'],
+        ['Original-Dimensions:', '\u0014'],</comment-tag id="4" text="Add the new, highly descriptive JSON keys to the codec dictionary. This ensures that even though we are extracting much more text metadata, the .nic package byte size remains extremely small." type="suggestion">        ['Compressed-Dimensions:', '\u0015'],
         ['Total-Pixels:', '\u0016'],
         ['Reduction-Factor:', '\u0017'],
         ['Export-Date:', '\u0018'],
@@ -1419,16 +1422,18 @@
 
       container.innerHTML = `
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-          <div class="bg-[#0b0f18] p-3 rounded-lg border border-white/[0.06]">
+<comment-tag id="2" text="Update the visual summary rendering to display the newly added `motion_blur` and `secondary_lights` parameters so you can verify the AI is extracting them correctly." type="suggestion">          <div class="bg-[#0b0f18] p-3 rounded-lg border border-white/[0.06]">
             <span class="text-[10px] text-indigo-400 font-mono font-semibold uppercase">Optics & Shot</span>
             <div class="mt-1 text-slate-200">${cam.shot_type || 'N/A'} · ${cam.lens_fov || '50mm'}</div>
             <div class="text-[11px] text-slate-400 mt-0.5">Angle: ${cam.angle || 'eye-level'} | DOF: ${cam.depth_of_field || 'standard'}</div>
+            ${cam.motion_blur ? `<div class="text-[10px] text-slate-500 mt-1 italic">${cam.motion_blur}</div>` : ''}
           </div>
           <div class="bg-[#0b0f18] p-3 rounded-lg border border-white/[0.06]">
             <span class="text-[10px] text-amber-400 font-mono font-semibold uppercase">Illumination</span>
             <div class="mt-1 text-slate-200">${lgt.key_light_source || 'Ambient'} (${lgt.color_temperature || '5500K'})</div>
             <div class="text-[11px] text-slate-400 mt-0.5">Direction: ${lgt.key_light_direction || 'front'} | Shadows: ${lgt.shadow_depth || 'soft'}</div>
-          </div>
+            ${lgt.secondary_lights ? `<div class="text-[10px] text-slate-500 mt-1 italic">+ ${lgt.secondary_lights}</div>` : ''}
+          </div></comment-tag id="2" text="Update the visual summary rendering to display the newly added `motion_blur` and `secondary_lights` parameters so you can verify the AI is extracting them correctly." type="suggestion">
         </div>
 
         ${pal.length > 0 ? `
@@ -1451,15 +1456,17 @@
           <div class="space-y-2">
             ${subjs.map(s => `
               <div class="bg-black/30 p-2.5 rounded border border-white/5 flex flex-col gap-1 text-xs">
-                <div class="flex items-center justify-between">
+<comment-tag id="3" text="Split the generic `visual_details` field into the much more precise `pose_and_expression` and `attire_and_styling` fields in the UI renderer." type="suggestion">                <div class="flex items-center justify-between">
                   <span class="font-semibold text-white flex items-center gap-1.5">
                     <span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
                     ${s.label}
                   </span>
                   <span class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-indigo-300">[${s.box_2d ? s.box_2d.join(', ') : 'N/A'}]</span>
                 </div>
-                <div class="text-slate-400 text-[11px]">${s.visual_details || ''}</div>
-                ${s.material_finish ? `<div class="text-slate-500 text-[10px] font-mono">Shader: ${s.material_finish}</div>` : ''}
+                ${s.pose_and_expression ? `<div class="text-slate-300 text-[11px] mt-0.5"><span class="text-slate-500 font-medium">Pose:</span> ${s.pose_and_expression}</div>` : ''}
+                ${s.attire_and_styling ? `<div class="text-slate-300 text-[11px] mt-0.5"><span class="text-slate-500 font-medium">Style:</span> ${s.attire_and_styling}</div>` : ''}
+                ${s.visual_details ? `<div class="text-slate-400 text-[11px]">${s.visual_details}</div>` : ''}
+                ${s.material_finish ? `<div class="text-slate-500 text-[10px] font-mono mt-0.5">Shader: ${s.material_finish}</div>` : ''}</comment-tag id="3" text="Split the generic `visual_details` field into the much more precise `pose_and_expression` and `attire_and_styling` fields in the UI renderer." type="suggestion">
               </div>
             `).join('')}
           </div>
@@ -2142,8 +2149,8 @@ Ensure seamless alignment between the low-resolution color layout and the exact 
 
       const model = 'gemini-3.6-flash';
 
-      const extractionPrompt = `You are a precision computer vision analyzer for generative image decompression.
-Analyze the image and produce an ultra-dense JSON specification that can be used alongside a downsampled raster to reconstruct the scene with spatial fidelity.
+<comment-tag id="1" text="Expanding the JSON schema to request hyper-specific traits (like motion blur, secondary lighting, pose/kinematics, and distinct attire styling) forces the vision model to capture much finer entropy, resulting in a higher-fidelity reconstruction." type="suggestion">      const extractionPrompt = `You are a precision computer vision analyzer for generative image decompression.
+Analyze the image and produce an ultra-dense, hyper-detailed JSON specification that can be used alongside a downsampled raster to reconstruct the scene with microscopic spatial fidelity.
 
 Output ONLY valid JSON matching this exact structure:
 {
@@ -2151,37 +2158,40 @@ Output ONLY valid JSON matching this exact structure:
     "shot_type": "e.g., extreme close-up, medium shot, wide establishing",
     "angle": "e.g., low-angle 15 deg, eye-level, overhead top-down",
     "lens_fov": "e.g., 24mm wide, 50mm normal, 85mm portrait, telephoto",
-    "depth_of_field": "e.g., f/1.4 razor-thin bokeh, f/8 edge-to-edge sharp"
+    "depth_of_field": "e.g., f/1.4 razor-thin bokeh, f/8 edge-to-edge sharp",
+    "motion_blur": "e.g., perfectly still, panning background blur, fast subject motion blur"
   },
   "environment_lighting": {
     "key_light_source": "e.g., direct afternoon sunlight, soft studio softbox",
     "key_light_direction": "e.g., from upper-left at 45 degrees",
+    "secondary_lights": "e.g., harsh blue rim light from right, green ambient bounce from floor",
     "color_temperature": "e.g., ~2800K golden hour warm, 5500K neutral daylight",
     "shadow_depth": "e.g., hard dark cast shadows, diffuse soft ambient occlusion"
   },
   "palette_anchors": [
-    {"region": "e.g., sky top 30%", "primary_hex": "#RRGGBB", "secondary_hex": "#RRGGBB"}
+    {"region": "e.g., sky top 30%, or subject's left eye", "primary_hex": "#RRGGBB", "secondary_hex": "#RRGGBB"}
   ],
   "subjects_and_layout": [
     {
-      "label": "subject or object name",
+      "label": "highly specific subject or object name",
       "z_layer": "foreground | midground | background",
       "box_2d": [100, 200, 800, 700],
-      "visual_details": "exact shape, pose, attire, expression, or structure",
-      "material_finish": "e.g., brushed matte steel, porous clay, glossy lacquer"
+      "pose_and_expression": "exact posture, limb positioning, body language, facial expression, gaze direction",
+      "attire_and_styling": "clothing fabric, layers, weathering, specific props or accessories",
+      "material_finish": "e.g., brushed matte steel, wet reflective asphalt, translucent skin with subsurface scattering"
     }
   ],
   "background_and_atmosphere": {
     "horizon_y": 500,
-    "elements": "concise description of background objects",
-    "atmospheric_haze": "none | light | dense fog | particulate dust"
+    "elements": "exhaustive description of structural background, architecture, or landscape geometry",
+    "atmospheric_haze": "none | light | dense fog | heavy rain | particulate dust motes"
   },
   "micro_textures": [
-    "e.g., pore structure, fabric weave, surface scratches, film grain"
+    "e.g., individual skin pores and peach fuzz, microscopic rust pitting on metal, heavy canvas weave"
   ]
 }
 
-CRITICAL: The box_2d coordinates must be normalized integers from 0 to 1000 representing [ymin, xmin, ymax, xmax].`;
+CRITICAL: The box_2d coordinates must be normalized integers from 0 to 1000 representing [ymin, xmin, ymax, xmax]. Leave no ambiguity; detail every minute feature.`;</comment-tag id="1" text="Expanding the JSON schema to request hyper-specific traits (like motion blur, secondary lighting, pose/kinematics, and distinct attire styling) forces the vision model to capture much finer entropy, resulting in a higher-fidelity reconstruction." type="suggestion">
 
       const payload = {
         contents: [
