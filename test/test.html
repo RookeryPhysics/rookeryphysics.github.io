@@ -1072,7 +1072,7 @@
           }
         ],
         generationConfig: {
-          responseModalities: ["IMAGE", "TEXT"]
+          responseModalities: ["IMAGE"]
         }
       };
 
@@ -1089,6 +1089,7 @@
 
       if (response.ok) {
         const result = await response.json();
+        console.log("Gemini Regeneration Response:", result);
         const candidate = result?.candidates?.[0];
         const parts = candidate?.content?.parts || [];
 
@@ -1096,10 +1097,26 @@
         let textParts = [];
 
         for (const p of parts) {
-          if (p.inlineData && p.inlineData.data) {
-            imagePart = p.inlineData;
+          const inlineObj = p.inlineData || p.inline_data;
+          if (inlineObj && (inlineObj.data || inlineObj.inlineData)) {
+            imagePart = {
+              mimeType: inlineObj.mimeType || inlineObj.mime_type || 'image/jpeg',
+              data: inlineObj.data || inlineObj.inlineData
+            };
           } else if (p.text) {
             textParts.push(p.text);
+          }
+        }
+
+        // Fallback: If imagePart not directly in parts inlineData, inspect text for base64 or markdown image data
+        if (!imagePart && textParts.length > 0) {
+          const fullText = textParts.join('\n');
+          const dataUriMatch = fullText.match(/data:(image\/[a-zA-Z0-9.+_-]+);base64,([A-Za-z0-9+/=]+)/);
+          if (dataUriMatch) {
+            imagePart = {
+              mimeType: dataUriMatch[1],
+              data: dataUriMatch[2]
+            };
           }
         }
 
@@ -1198,13 +1215,16 @@
           };
           // Clear any lingering raw text if image succeeded
           nicRegenTextContent.innerHTML = '';
+
+          nicRegenStatusBadge.className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-400 border border-emerald-800/60';
+          nicRegenStatusBadge.textContent = 'Image Generated ✓';
+          showToast('Image regenerated with Gemini 3.6 Flash!');
         } else if (result.text) {
           nicRegenTextContent.innerHTML = `<div class="p-3 bg-slate-900/90 rounded-lg border border-slate-800 leading-relaxed text-xs text-slate-200 whitespace-pre-wrap font-mono">${result.text}</div>`;
+          nicRegenStatusBadge.className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-amber-950/80 text-amber-400 border border-amber-800/60';
+          nicRegenStatusBadge.textContent = 'Text Output';
+          showToast('Model returned text description.');
         }
-
-        nicRegenStatusBadge.className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-400 border border-emerald-800/60';
-        nicRegenStatusBadge.textContent = 'Generated ✓';
-        showToast('Regeneration completed with Gemini 3.6 Flash!');
       } catch (err) {
         nicRegenLoading.classList.add('hidden');
         nicRegenLoading.classList.remove('flex');
