@@ -1048,11 +1048,20 @@
 
       // Use gemini-3.1-flash-image specifically for image synthesis/regeneration
       const model = 'gemini-3.1-flash-image';
-      const systemInstruction = "Create a higher quality version of this image using the text description to add detail back.";
+      const systemInstruction = `You are an expert image reconstruction and super-resolution engine. Your task is to reconstruct a crisp, high-fidelity, high-resolution image from the provided low-resolution pixel raster and accompanying structured visual description.
+
+Adhere strictly to the five structured visual sections provided in the description:
+1. Executive Summary: Rebuild the overall scene composition, framing, and core subject matter.
+2. Subject & Key Elements: Restore crisp anatomical/structural features, expressions, contours, and relative scale of all primary subjects and objects.
+3. Color Palette & Lighting: Accurately match the dominant hues, contrast ratios, illumination directions, specular highlights, and shadow depths.
+4. Setting & Background: Recreate environmental context, spatial depth, perspective, and background elements faithful to the low-resolution color layout.
+5. Textures & Micro-details: Add back lost high-frequency details, sharp edges, natural surface textures, and materials.
+
+Synthesize a single, photorealistic, artifact-free image matching the spatial composition of the input raster while incorporating all fine details specified in the description.`;
 
       const promptText = descriptionText && descriptionText.trim()
-        ? `Generate and output a high-quality, high-detail photograph image recreating this scene:\n${descriptionText.trim()}`
-        : `Generate and output a high-quality, high-detail version of this image.`;
+        ? `Reconstruct and regenerate a high-resolution, high-detail version of this image using the structured visual description below to restore all fine detail, textures, and lighting:\n\n${descriptionText.trim()}`
+        : `Reconstruct and regenerate a high-resolution, high-detail version of this image, recovering crisp edges, natural textures, and clear visual fidelity.`;
 
       const payload = {
         systemInstruction: {
