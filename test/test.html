@@ -111,16 +111,28 @@
     </div>
 
     <div id="workspace" class="hidden flex flex-col gap-5">
-      <!-- File Size Comparison (Original vs Final .nic) -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <!-- File Size Comparison (Original vs Uncompressed vs Final Compressed .nic) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         <div class="bg-slate-900/70 backdrop-blur-md border border-slate-800/80 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
-          <span class="text-[11px] text-slate-400 uppercase tracking-wider font-semibold">Original File Size</span>
+          <span class="text-[11px] text-slate-400 uppercase tracking-wider font-semibold">Original Image File</span>
           <div id="statOriginalFileSize" class="text-xl font-bold text-slate-100 font-mono mt-1">--</div>
           <span id="statOriginalFileDetail" class="text-[11px] text-slate-500 font-mono mt-1">Source upload</span>
         </div>
 
         <div class="bg-slate-900/70 backdrop-blur-md border border-slate-800/80 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
-          <span class="text-[11px] text-indigo-400 uppercase tracking-wider font-semibold">Final .nic File Size</span>
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] text-slate-400 uppercase tracking-wider font-semibold">Uncompressed .nic</span>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">Raw Text</span>
+          </div>
+          <div id="statRawNicFileSize" class="text-xl font-bold text-slate-200 font-mono mt-1">--</div>
+          <span id="statRawNicFileStatus" class="text-[11px] text-slate-400 font-mono mt-1">Before extra compression</span>
+        </div>
+
+        <div class="bg-slate-900/70 backdrop-blur-md border border-indigo-500/30 rounded-2xl p-4 flex flex-col justify-between shadow-sm bg-gradient-to-b from-indigo-950/20 to-slate-900/70">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] text-indigo-400 uppercase tracking-wider font-semibold">Final Compressed .nic</span>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800/60 font-medium">NIC-C1 Codec</span>
+          </div>
           <div id="statNicFileSize" class="text-xl font-bold text-indigo-300 font-mono mt-1">--</div>
           <span id="statNicFileStatus" class="text-[11px] text-slate-400 font-mono mt-1">Pending description generation</span>
         </div>
@@ -293,7 +305,7 @@
         <div id="nicContentArea" class="hidden flex-col gap-4">
           
           <!-- Metadata Summary Row -->
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
             <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-2.5">
               <span class="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">Dimensions</span>
               <div id="nicMetaDim" class="font-mono text-xs font-bold text-slate-200 mt-0.5">--</div>
@@ -303,10 +315,14 @@
               <div id="nicMetaPixels" class="font-mono text-xs font-bold text-indigo-300 mt-0.5">--</div>
             </div>
             <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-2.5">
-              <span class="text-[10px] text-emerald-400 uppercase font-semibold tracking-wider">Reduction Ratio</span>
+              <span class="text-[10px] text-emerald-400 uppercase font-semibold tracking-wider">Pixel Reduction</span>
               <div id="nicMetaReduction" class="font-mono text-xs font-bold text-emerald-400 mt-0.5">--</div>
             </div>
             <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-2.5">
+              <span class="text-[10px] text-amber-400 uppercase font-semibold tracking-wider">Codec Format</span>
+              <div id="nicMetaFormat" class="font-mono text-xs font-bold text-amber-300 mt-0.5 truncate">NIC-C1</div>
+            </div>
+            <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-2.5 col-span-2 sm:col-span-1">
               <span class="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">Export Date</span>
               <div id="nicMetaDate" class="font-mono text-[11px] text-slate-300 mt-0.5 truncate">--</div>
             </div>
@@ -588,6 +604,7 @@
     const nicMetaDim = document.getElementById('nicMetaDim');
     const nicMetaPixels = document.getElementById('nicMetaPixels');
     const nicMetaReduction = document.getElementById('nicMetaReduction');
+    const nicMetaFormat = document.getElementById('nicMetaFormat');
     const nicMetaDate = document.getElementById('nicMetaDate');
     const nicModalCanvas = document.getElementById('nicModalCanvas');
     const nicModalZoomSelect = document.getElementById('nicModalZoomSelect');
@@ -813,16 +830,190 @@
       }
     });
 
+    // ==========================================
+    // NOVEL TEXT COMPRESSION ENGINE: NIC-C1
+    // (Syntactic Tokenization + Byte-Pair LZW Stream Encoder)
+    // ==========================================
+    const NIC_Codec = {
+      MAGIC_HEADER: '=== NIC COMPRESSED PACKAGE (NIC-C1) ===',
+
+      // Semantic syntactic token dictionary for high-frequency NIC markup & headers
+      SEMANTIC_TOKENS: [
+        ['=== NIC IMAGE PACKAGE (.nic) ===', '\u0001'],
+        ['[METADATA]', '\u0002'],
+        ['[DESCRIPTION]', '\u0003'],
+        ['[PIXELS]', '\u0004'],
+        ['1. Executive Summary:', '\u0005'],
+        ['2. Subject & Key Elements:', '\u0006'],
+        ['3. Color Palette & Lighting:', '\u0007'],
+        ['4. Setting & Background:', '\u0008'],
+        ['5. Textures & Micro-details:', '\u0009'],
+        ['Filename:', '\u000b'],
+        ['Original-Dimensions:', '\u000c'],
+        ['Compressed-Dimensions:', '\u000e'],
+        ['Total-Pixels:', '\u000f'],
+        ['Reduction-Factor:', '\u0010'],
+        ['Export-Date:', '\u0011'],
+        ['\\n', '\u0012']
+      ],
+
+      /**
+       * Compresses raw uncompressed .nic text package using NIC-C1 algorithm.
+       */
+      compress: function(rawText) {
+        if (!rawText || typeof rawText !== 'string') return '';
+
+        // Stage 1: Structural Token Replacement
+        let preprocessed = rawText;
+        for (let i = 0; i < this.SEMANTIC_TOKENS.length; i++) {
+          const pair = this.SEMANTIC_TOKENS[i];
+          preprocessed = preprocessed.split(pair[0]).join(pair[1]);
+        }
+
+        // Stage 2: Dense Binary Packing of Pixel Tuples (r,g,b) -> \x13 <R-byte> <G-byte> <B-byte>
+        preprocessed = preprocessed.replace(/\((\d{1,3}),(\d{1,3}),(\d{1,3})\)/g, function(m, rStr, gStr, bStr) {
+          const r = Math.min(255, Math.max(0, parseInt(rStr, 10)));
+          const g = Math.min(255, Math.max(0, parseInt(gStr, 10)));
+          const b = Math.min(255, Math.max(0, parseInt(bStr, 10)));
+          return String.fromCharCode(0x13) + String.fromCharCode(r) + String.fromCharCode(g) + String.fromCharCode(b);
+        });
+
+        // Stage 3: UTF-8 Stream Serialization
+        const utf8Bytes = (typeof TextEncoder !== 'undefined')
+          ? new TextEncoder().encode(preprocessed)
+          : new Uint8Array(Array.from(unescape(encodeURIComponent(preprocessed))).map(c => c.charCodeAt(0)));
+
+        // Stage 4: Dynamic Adaptive Sliding-Dictionary LZW Encoder
+        const dict = new Map();
+        for (let i = 0; i < 256; i++) {
+          dict.set(String.fromCharCode(i), i);
+        }
+
+        let curCode = 256;
+        let w = '';
+        const resultCodes = [];
+
+        for (let i = 0; i < utf8Bytes.length; i++) {
+          const c = String.fromCharCode(utf8Bytes[i]);
+          const wc = w + c;
+          if (dict.has(wc)) {
+            w = wc;
+          } else {
+            resultCodes.push(dict.get(w));
+            if (curCode < 65535) {
+              dict.set(wc, curCode++);
+            }
+            w = c;
+          }
+        }
+        if (w !== '') {
+          resultCodes.push(dict.get(w));
+        }
+
+        // Stage 5: Compact 16-bit binary payload encoding
+        const u16 = new Uint16Array(resultCodes.length);
+        for (let i = 0; i < resultCodes.length; i++) {
+          u16[i] = resultCodes[i];
+        }
+        const u8 = new Uint8Array(u16.buffer);
+
+        let binaryStr = '';
+        const CHUNK_SIZE = 8192;
+        for (let i = 0; i < u8.length; i += CHUNK_SIZE) {
+          const chunk = u8.subarray(i, i + CHUNK_SIZE);
+          binaryStr += String.fromCharCode.apply(null, chunk);
+        }
+
+        const b64 = btoa(binaryStr);
+        return this.MAGIC_HEADER + '\n' + b64;
+      },
+
+      /**
+       * Decompresses NIC-C1 payload back into exact raw uncompressed .nic package text.
+       * If input is already uncompressed, returns input directly (lossless & safe).
+       */
+      decompress: function(payload) {
+        if (!payload || typeof payload !== 'string') return '';
+        const trimmed = payload.trim();
+        if (!trimmed.startsWith(this.MAGIC_HEADER)) {
+          return payload;
+        }
+
+        const b64 = trimmed.substring(this.MAGIC_HEADER.length).trim();
+        const binaryStr = atob(b64);
+
+        const u8 = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) {
+          u8[i] = binaryStr.charCodeAt(i);
+        }
+        const u16 = new Uint16Array(u8.buffer);
+        const codes = Array.from(u16);
+
+        if (codes.length === 0) return '';
+
+        // Initialize dictionary with single-byte alphabet (0-255)
+        const dict = new Map();
+        for (let i = 0; i < 256; i++) {
+          dict.set(i, [i]);
+        }
+
+        let curCode = 256;
+        let w = dict.get(codes[0]);
+        if (!w) throw new Error('Invalid or corrupted NIC-C1 compression stream.');
+        const decompressedBytes = [...w];
+
+        for (let i = 1; i < codes.length; i++) {
+          const k = codes[i];
+          let entry;
+          if (dict.has(k)) {
+            entry = dict.get(k);
+          } else if (k === curCode) {
+            entry = [...w, w[0]];
+          } else {
+            throw new Error('Corrupted or unsupported compressed data stream in .nic package.');
+          }
+
+          decompressedBytes.push.apply(decompressedBytes, entry);
+          if (curCode < 65535) {
+            dict.set(curCode++, [...w, entry[0]]);
+          }
+          w = entry;
+        }
+
+        const uint8Result = new Uint8Array(decompressedBytes);
+        let restoredStr = (typeof TextDecoder !== 'undefined')
+          ? new TextDecoder('utf-8').decode(uint8Result)
+          : decodeURIComponent(escape(String.fromCharCode.apply(null, uint8Result)));
+
+        // Stage 2 inverse: unpack binary pixel markers back to (r,g,b)
+        restoredStr = restoredStr.replace(new RegExp(String.fromCharCode(0x13) + '([\\s\\S])([\\s\\S])([\\s\\S])', 'g'), function(m, r, g, b) {
+          return '(' + r.charCodeAt(0) + ',' + g.charCodeAt(0) + ',' + b.charCodeAt(0) + ')';
+        });
+
+        // Stage 1 inverse: replace semantic tokens back to full string headers
+        for (let i = this.SEMANTIC_TOKENS.length - 1; i >= 0; i--) {
+          const pair = this.SEMANTIC_TOKENS[i];
+          restoredStr = restoredStr.split(pair[1]).join(pair[0]);
+        }
+
+        return restoredStr;
+      }
+    };
+
     function parseNicContent(rawContent) {
       if (!rawContent || !rawContent.trim()) {
         throw new Error('The provided file is empty.');
       }
 
+      // Check if file is compressed with NIC-C1 and decompress transparently
+      const isCompressed = rawContent.trim().startsWith(NIC_Codec.MAGIC_HEADER);
+      const decompressedText = isCompressed ? NIC_Codec.decompress(rawContent) : rawContent;
+
       const metadata = {};
       let description = '';
       let pixels = '';
 
-      const metaMatch = rawContent.match(/\[METADATA\]([\s\S]*?)(?=\[DESCRIPTION\]|\[PIXELS\]|$)/i);
+      const metaMatch = decompressedText.match(/\[METADATA\]([\s\S]*?)(?=\[DESCRIPTION\]|\[PIXELS\]|$)/i);
       if (metaMatch) {
         const lines = metaMatch[1].trim().split('\n');
         for (const line of lines) {
@@ -835,19 +1026,19 @@
         }
       }
 
-      const descMatch = rawContent.match(/\[DESCRIPTION\]([\s\S]*?)(?=\[PIXELS\]|$)/i);
+      const descMatch = decompressedText.match(/\[DESCRIPTION\]([\s\S]*?)(?=\[PIXELS\]|$)/i);
       if (descMatch) {
         description = descMatch[1].trim();
       }
 
-      const pixelMatch = rawContent.match(/\[PIXELS\]([\s\S]*)$/i);
+      const pixelMatch = decompressedText.match(/\[PIXELS\]([\s\S]*)$/i);
       if (pixelMatch) {
         pixels = pixelMatch[1].trim();
       } else {
-        pixels = rawContent.trim();
+        pixels = decompressedText.trim();
       }
 
-      return { metadata, description, pixels };
+      return { metadata, description, pixels, isCompressed, rawUncompressedText: decompressedText };
     }
 
     function parseRgbText(rawText) {
@@ -980,7 +1171,7 @@
 
     function displayParsedNicFile(fileContent, sourceName = 'file.nic') {
       try {
-        const { metadata, description, pixels } = parseNicContent(fileContent);
+        const { metadata, description, pixels, isCompressed } = parseNicContent(fileContent);
         const parsedImage = parseRgbText(pixels);
         modalParsedImage = parsedImage;
 
@@ -991,6 +1182,12 @@
         nicMetaDim.textContent = metadata['compressed-dimensions'] || `${parsedImage.width} × ${parsedImage.height} px`;
         nicMetaPixels.textContent = metadata['total-pixels'] || `${parsedImage.totalPixels.toLocaleString()} px`;
         nicMetaReduction.textContent = metadata['reduction-factor'] || '99.9%';
+        if (nicMetaFormat) {
+          nicMetaFormat.textContent = isCompressed ? 'NIC-C1 (Compressed)' : 'Raw .nic (Uncompressed)';
+          nicMetaFormat.className = isCompressed 
+            ? 'font-mono text-xs font-bold text-amber-400 mt-0.5 truncate' 
+            : 'font-mono text-xs font-bold text-slate-400 mt-0.5 truncate';
+        }
         nicMetaDate.textContent = metadata['export-date'] ? new Date(metadata['export-date']).toLocaleDateString() : 'N/A';
         nicMetaDate.title = metadata['export-date'] || '';
 
@@ -1018,7 +1215,7 @@
 
         nicContentArea.classList.remove('hidden');
         nicContentArea.classList.add('flex');
-        showToast(`Loaded .nic package: ${parsedImage.width} × ${parsedImage.height} px`);
+        showToast(isCompressed ? `Decompressed NIC-C1: ${parsedImage.width} × ${parsedImage.height} px` : `Loaded .nic package: ${parsedImage.width} × ${parsedImage.height} px`);
       } catch (err) {
         showToast(err.message || 'Failed to parse .nic file', true);
       }
@@ -1370,12 +1567,12 @@ Synthesize a single, photorealistic, artifact-free image matching the spatial co
       }
     }
 
-    function buildNicContent() {
+    function buildNicContent(compressed = false) {
       const descriptionText = state.aiDescription && state.aiDescription.trim()
         ? state.aiDescription.trim()
         : 'Description pending or unavailable.';
 
-      return [
+      const rawPackage = [
         '=== NIC IMAGE PACKAGE (.nic) ===',
         '',
         '[METADATA]',
@@ -1392,6 +1589,8 @@ Synthesize a single, photorealistic, artifact-free image matching the spatial co
         '[PIXELS]',
         state.rgbString || ''
       ].join('\n');
+
+      return compressed ? NIC_Codec.compress(rawPackage) : rawPackage;
     }
 
     function updateTextSizeDisplays() {
@@ -1403,9 +1602,13 @@ Synthesize a single, photorealistic, artifact-free image matching the spatial co
       const descBytes = descBlob.size;
       const descKb = (descBytes / 1024).toFixed(2);
 
-      const nicContent = buildNicContent();
-      const nicBlob = new Blob([nicContent], { type: 'text/plain;charset=utf-8' });
-      const totalPkgKb = (nicBlob.size / 1024).toFixed(2);
+      const rawNicContent = buildNicContent(false);
+      const rawNicBlob = new Blob([rawNicContent], { type: 'text/plain;charset=utf-8' });
+      const rawPkgKb = (rawNicBlob.size / 1024).toFixed(2);
+
+      const compressedNicContent = buildNicContent(true);
+      const compressedNicBlob = new Blob([compressedNicContent], { type: 'text/plain;charset=utf-8' });
+      const compressedPkgKb = (compressedNicBlob.size / 1024).toFixed(2);
 
       if (pixelTextKbBadge) {
         pixelTextKbBadge.textContent = `${rgbKb} KB`;
@@ -1424,6 +1627,30 @@ Synthesize a single, photorealistic, artifact-free image matching the spatial co
         statOriginalFileDetail.textContent = `${state.fileName} (${state.originalWidth} × ${state.originalHeight} px)`;
       }
 
+      const statRawNicFileSize = document.getElementById('statRawNicFileSize');
+      const statRawNicFileStatus = document.getElementById('statRawNicFileStatus');
+      if (statRawNicFileSize) {
+        if (state.isGeneratingDesc) {
+          statRawNicFileSize.innerHTML = `<span class="text-xs text-amber-400 font-mono">Calculating...</span>`;
+          if (statRawNicFileStatus) {
+            statRawNicFileStatus.textContent = 'Awaiting description...';
+            statRawNicFileStatus.className = 'text-[11px] text-amber-400/80 font-mono mt-1';
+          }
+        } else if (state.aiDescriptionFinished) {
+          statRawNicFileSize.textContent = `${rawPkgKb} KB`;
+          if (statRawNicFileStatus) {
+            statRawNicFileStatus.textContent = `${formatBytes(rawNicBlob.size)} (uncompressed text)`;
+            statRawNicFileStatus.className = 'text-[11px] text-slate-400 font-mono mt-1';
+          }
+        } else {
+          statRawNicFileSize.textContent = '--';
+          if (statRawNicFileStatus) {
+            statRawNicFileStatus.textContent = 'Upload image to compute';
+            statRawNicFileStatus.className = 'text-[11px] text-slate-500 font-mono mt-1';
+          }
+        }
+      }
+
       const statNicFileSize = document.getElementById('statNicFileSize');
       const statNicFileStatus = document.getElementById('statNicFileStatus');
 
@@ -1431,15 +1658,20 @@ Synthesize a single, photorealistic, artifact-free image matching the spatial co
         if (state.isGeneratingDesc) {
           statNicFileSize.innerHTML = `<span class="inline-flex items-center gap-2 text-amber-400 text-sm font-semibold"><svg class="w-4 h-4 animate-spin text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9" stroke-dasharray="14" fill="none"/></svg> Generating .nic...</span>`;
           if (statNicFileStatus) {
-            statNicFileStatus.textContent = 'Calculating final package size upon AI description completion...';
+            statNicFileStatus.textContent = 'Compressing package upon AI description completion...';
             statNicFileStatus.className = 'text-[11px] text-amber-400/80 font-mono mt-1';
           }
         } else if (state.aiDescriptionFinished) {
-          statNicFileSize.textContent = `${totalPkgKb} KB`;
+          statNicFileSize.textContent = `${compressedPkgKb} KB`;
           if (statNicFileStatus) {
-            const savingsPercent = state.originalSizeBytes > 0 ? ((1 - (nicBlob.size / state.originalSizeBytes)) * 100).toFixed(1) : '0';
-            statNicFileStatus.textContent = `${formatBytes(nicBlob.size)} total package (${savingsPercent}% smaller than source)`;
-            statNicFileStatus.className = 'text-[11px] text-emerald-400 font-mono mt-1';
+            const extraSavings = rawNicBlob.size > 0 
+              ? ((1 - (compressedNicBlob.size / rawNicBlob.size)) * 100).toFixed(1) 
+              : '0';
+            const totalVsSource = state.originalSizeBytes > 0 
+              ? ((1 - (compressedNicBlob.size / state.originalSizeBytes)) * 100).toFixed(1) 
+              : '0';
+            statNicFileStatus.textContent = `${formatBytes(compressedNicBlob.size)} (${extraSavings}% extra compression, ${totalVsSource}% vs source)`;
+            statNicFileStatus.className = 'text-[11px] text-emerald-400 font-mono mt-1 font-medium';
           }
         } else {
           statNicFileSize.textContent = '--';
@@ -1451,7 +1683,7 @@ Synthesize a single, photorealistic, artifact-free image matching the spatial co
       }
 
       if (nicSizeBadge) {
-        nicSizeBadge.textContent = state.isGeneratingDesc ? 'Waiting...' : `${totalPkgKb} KB`;
+        nicSizeBadge.textContent = state.isGeneratingDesc ? 'Waiting...' : `${compressedPkgKb} KB`;
       }
     }
 
@@ -1796,7 +2028,7 @@ Synthesize a single, photorealistic, artifact-free image matching the spatial co
         return;
       }
 
-      const nicContent = buildNicContent();
+      const nicContent = buildNicContent(true);
       const blob = new Blob([nicContent], { type: 'application/octet-stream' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
