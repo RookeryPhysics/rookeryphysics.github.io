@@ -1,34 +1,40 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PixelCompress Studio</title>
+  <title>PixelCompress Studio — Ultra-Low Resolution Image Codec</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
     rel="stylesheet">
   <style>
+    :root {
+      color-scheme: dark;
+    }
+
     body {
-      font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
     .font-mono {
-      font-family: 'JetBrains Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     }
 
     .bg-checker {
-      background-color: #090d16;
+      background-color: #0b0f17;
       background-image:
-        linear-gradient(45deg, #131b2e 25%, transparent 25%),
-        linear-gradient(-45deg, #131b2e 25%, transparent 25%),
-        linear-gradient(45deg, transparent 75%, #131b2e 75%),
-        linear-gradient(-45deg, transparent 75%, #131b2e 75%);
-      background-size: 16px 16px;
-      background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+        linear-gradient(45deg, #131926 25%, transparent 25%),
+        linear-gradient(-45deg, #131926 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #131926 75%),
+        linear-gradient(-45deg, transparent 75%, #131926 75%);
+      background-size: 14px 14px;
+      background-position: 0 0, 0 7px, 7px -7px, -7px 0px;
     }
 
     .crisp-pixel {
@@ -38,53 +44,70 @@
       image-rendering: crisp-edges;
     }
 
-    /* Sleek custom scrollbars */
+    /* Professional custom scrollbars */
     ::-webkit-scrollbar {
       width: 6px;
       height: 6px;
     }
 
     ::-webkit-scrollbar-track {
-      background: rgba(15, 23, 42, 0.6);
+      background: #090d14;
     }
 
     ::-webkit-scrollbar-thumb {
-      background: rgba(71, 85, 105, 0.6);
+      background: #1e293b;
       border-radius: 9999px;
     }
 
     ::-webkit-scrollbar-thumb:hover {
-      background: rgba(99, 102, 241, 0.6);
+      background: #334155;
+    }
+
+    /* Subtle glow and utility transitions */
+    .glass-panel {
+      background: rgba(15, 20, 31, 0.75);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .glass-card {
+      background: rgba(11, 15, 23, 0.65);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.06);
     }
   </style>
 </head>
 
 <body
-  class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(99,102,241,0.14),rgba(255,255,255,0))]">
+  class="bg-[#07090e] text-slate-200 min-h-screen flex flex-col selection:bg-indigo-600 selection:text-white antialiased">
 
+  <!-- Subtle Top Gradient Glow -->
+  <div class="fixed inset-x-0 top-0 h-48 bg-gradient-to-b from-indigo-950/20 via-transparent to-transparent pointer-events-none z-0"></div>
+
+  <!-- App Header -->
   <header
-    class="border-b border-slate-800/80 bg-slate-950/75 backdrop-blur-xl sticky top-0 z-40 transition-colors shadow-sm shadow-black/20">
-    <div class="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
+    class="border-b border-white/[0.08] bg-[#090d15]/85 backdrop-blur-md sticky top-0 z-40 transition-colors">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 h-15 flex items-center justify-between">
       <div class="flex items-center gap-3">
         <div
-          class="h-9 w-9 rounded-xl bg-gradient-to-tr from-indigo-500 via-indigo-400 to-sky-400 p-0.5 shadow-lg shadow-indigo-500/25 flex items-center justify-center transition-transform hover:scale-105">
-          <div
-            class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center font-mono font-bold text-xs text-indigo-300">
-            NIC
-          </div>
+          class="h-8 w-8 rounded-lg bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400 font-mono font-bold text-xs shadow-sm">
+          PC
         </div>
-        <div>
-          <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
+        <div class="flex items-center gap-2">
+          <h1 class="text-sm font-semibold tracking-tight text-white">
             PixelCompress
-            <span
-              class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-950/80 text-indigo-300 border border-indigo-700/60 font-medium">Ultra
-              Studio</span>
           </h1>
+          <span class="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-white/[0.06] text-slate-400 border border-white/[0.08] font-medium tracking-wider">
+            Studio
+          </span>
         </div>
       </div>
-      <div class="flex items-center gap-2">
+
+      <div class="flex items-center gap-2.5">
         <button id="apiKeyModalBtn" type="button"
-          class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-xs font-medium text-slate-300 border border-slate-800 hover:border-slate-700 shadow-sm transition-all cursor-pointer active:scale-95"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-xs font-medium text-slate-300 border border-white/[0.08] hover:border-white/[0.15] transition-all cursor-pointer shadow-sm active:scale-95"
           title="Configure Google AI Studio API Key">
           <svg class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"
             stroke-width="2">
@@ -93,9 +116,10 @@
           </svg>
           <span id="apiKeyBtnLabel">API Key</span>
         </button>
+
         <button id="navOpenModalBtn" type="button"
-          class="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-xs font-medium text-white border border-indigo-400/40 shadow-md shadow-indigo-500/25 transition-all cursor-pointer active:scale-95">
-          <svg class="w-3.5 h-3.5 text-indigo-100" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs font-medium text-white shadow-sm shadow-indigo-950 transition-all cursor-pointer active:scale-95">
+          <svg class="w-3.5 h-3.5 text-indigo-200" viewBox="0 0 24 24" fill="none" stroke="currentColor"
             stroke-width="2">
             <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
             <polyline points="14 2 14 8 20 8" />
@@ -103,152 +127,180 @@
             <line x1="16" y1="17" x2="8" y2="17" />
             <polyline points="10 9 9 9 8 9" />
           </svg>
-          <span>.nic File Viewer</span>
+          <span>.nic Viewer</span>
         </button>
       </div>
     </div>
   </header>
 
-  <main class="flex-1 max-w-4xl mx-auto w-full p-4 sm:p-6 flex flex-col gap-6">
+  <!-- Main Container -->
+  <main class="flex-1 max-w-5xl mx-auto w-full p-4 sm:p-6 lg:p-8 flex flex-col gap-6 relative z-10">
     <!-- Notification Toast -->
     <div id="toast"
-      class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 pointer-events-none transition-all duration-300 bg-slate-900/90 backdrop-blur-md border border-slate-700/80 text-white px-4 py-2.5 rounded-xl shadow-2xl shadow-black/60 flex items-center gap-2.5 text-xs font-medium">
+      class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 pointer-events-none transition-all duration-300 bg-[#0f1420] border border-white/10 text-slate-100 px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2.5 text-xs font-medium">
       <div id="toastIcon" class="text-emerald-400"></div>
       <span id="toastMessage"></span>
     </div>
 
     <!-- Upload Hero Zone -->
     <div id="dropZone"
-      class="relative group border-2 border-dashed border-slate-800 hover:border-indigo-500/70 rounded-2xl p-8 text-center transition-all duration-300 bg-slate-900/40 hover:bg-slate-900/70 hover:shadow-xl hover:shadow-indigo-500/10 cursor-pointer backdrop-blur-sm">
+      class="relative group border border-dashed border-white/15 hover:border-indigo-500/80 rounded-2xl p-10 text-center transition-all duration-200 bg-[#0c101a]/60 hover:bg-[#0f1422]/80 cursor-pointer">
       <input type="file" id="fileInput" accept="image/*"
         class="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-full">
-      <div class="flex flex-col items-center justify-center gap-3 pointer-events-none">
+      <div class="flex flex-col items-center justify-center gap-3.5 pointer-events-none">
         <div
-          class="w-14 h-14 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center border border-indigo-500/25 group-hover:scale-110 group-hover:bg-indigo-500/15 group-hover:border-indigo-500/40 transition-all duration-300 shadow-inner">
-          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          class="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center border border-indigo-500/20 group-hover:scale-105 group-hover:bg-indigo-500/15 group-hover:border-indigo-500/40 transition-all duration-200">
+          <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
           </svg>
         </div>
         <div>
-          <p class="font-semibold text-slate-200 text-sm">Drop an image here or <span
-              class="text-indigo-400 underline underline-offset-4 decoration-indigo-500/40 group-hover:decoration-indigo-400 transition-colors">browse
-              files</span></p>
-          <p class="text-xs text-slate-400 mt-1">Converts image to an ultra-compressed pixel raster with detail retention</p>
+          <p class="font-medium text-slate-200 text-sm">
+            Drag & drop an image here, or <span class="text-indigo-400 underline underline-offset-4 decoration-indigo-500/40 group-hover:decoration-indigo-400 transition-colors">browse files</span>
+          </p>
+          <p class="text-xs text-slate-500 mt-1">
+            Supports PNG, JPEG, WEBP · Generates extreme pixel downsampling with AI detail preservation
+          </p>
         </div>
       </div>
     </div>
 
-    <div id="workspace" class="hidden flex flex-col gap-5">
-      <!-- File Size Comparison (Original vs Standard Compressed .nic) -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div
-          class="bg-slate-900/70 backdrop-blur-md border border-slate-800/80 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
-          <span class="text-[11px] text-slate-400 uppercase tracking-wider font-semibold">Original Image File</span>
-          <div id="statOriginalFileSize" class="text-xl font-bold text-slate-100 font-mono mt-1">--</div>
-          <span id="statOriginalFileDetail" class="text-[11px] text-slate-500 font-mono mt-1">Source upload</span>
+    <!-- Active Workspace Area -->
+    <div id="workspace" class="hidden flex flex-col gap-6">
+      
+      <!-- Metrics Overview Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <!-- Original File Card -->
+        <div class="glass-panel rounded-xl p-4.5 flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] text-slate-400 uppercase tracking-wider font-semibold">Original Image Source</span>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-white/[0.05] text-slate-400 border border-white/[0.08]">RAW INPUT</span>
+          </div>
+          <div id="statOriginalFileSize" class="text-2xl font-bold text-white font-mono mt-2">--</div>
+          <div id="statOriginalFileDetail" class="text-xs text-slate-400 font-mono mt-1 truncate">Source upload</div>
         </div>
 
-        <div
-          class="bg-slate-900/70 backdrop-blur-md border border-indigo-500/30 rounded-2xl p-4 flex flex-col justify-between shadow-sm bg-gradient-to-b from-indigo-950/20 to-slate-900/70">
+        <!-- .nic Compressed Package Card -->
+        <div class="glass-panel rounded-xl p-4.5 flex flex-col justify-between border-indigo-500/30 bg-gradient-to-br from-indigo-950/20 to-[#0b0f18]/80">
           <div class="flex items-center justify-between">
             <span class="text-[11px] text-indigo-400 uppercase tracking-wider font-semibold">Standard .nic Package</span>
-            <span
-              class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800/60 font-medium">NIC-C1</span>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-950/80 text-indigo-300 border border-indigo-800/60 font-medium">NIC-C1 CODEC</span>
           </div>
-          <div id="statNicFileSize" class="text-xl font-bold text-indigo-300 font-mono mt-1">--</div>
-          <span id="statNicFileStatus" class="text-[11px] text-slate-400 font-mono mt-1">Pending description
-            generation</span>
+          <div id="statNicFileSize" class="text-2xl font-bold text-indigo-300 font-mono mt-2">--</div>
+          <div id="statNicFileStatus" class="text-xs text-slate-400 font-mono mt-1 truncate">Pending description generation</div>
         </div>
       </div>
 
-      <div
-        class="bg-slate-900/70 backdrop-blur-md border border-slate-800/80 rounded-2xl p-6 flex flex-col gap-6 shadow-xl shadow-black/20">
-        <div class="w-full flex items-center justify-between text-xs text-slate-400 border-b border-slate-800/80 pb-3">
-          <span class="font-medium text-slate-300">Side-by-Side: Original Upload & Ultra-Compressed Raster</span>
-          <span class="font-mono text-indigo-400 bg-indigo-950/40 px-2 py-0.5 rounded border border-indigo-800/50">Dual
-            Display</span>
+      <!-- Main Dual Comparison & AI Analysis Workspace -->
+      <div class="glass-panel rounded-2xl p-5 sm:p-6 flex flex-col gap-6 shadow-xl">
+        
+        <!-- Header row of Side-by-Side -->
+        <div class="w-full flex items-center justify-between text-xs text-slate-400 border-b border-white/[0.08] pb-3.5">
+          <div class="flex items-center gap-2">
+            <span class="font-medium text-slate-200">Dual Visual Representation</span>
+            <span class="text-slate-500">·</span>
+            <span class="text-slate-400 text-[11px]">Original vs. 2500× Downsampled Raster</span>
+          </div>
+          <span class="font-mono text-indigo-400 text-[11px] bg-indigo-950/40 px-2 py-0.5 rounded border border-indigo-800/40">
+            Side-by-Side
+          </span>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full items-start">
+        <!-- Visual Previews Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 w-full items-start">
+          
           <!-- Original Image Preview Card -->
-          <div class="flex flex-col items-center gap-3 bg-slate-950/60 border border-slate-800/80 rounded-xl p-4">
-            <div class="w-full flex items-center justify-between text-xs pb-1 border-b border-slate-800/60">
-              <span class="font-semibold text-slate-300 flex items-center gap-1.5">
+          <div class="glass-card rounded-xl p-4 flex flex-col items-center gap-3">
+            <div class="w-full flex items-center justify-between text-xs pb-2 border-b border-white/[0.06]">
+              <span class="font-medium text-slate-300 flex items-center gap-2">
                 <span class="w-2 h-2 rounded-full bg-sky-400"></span> Original Image
               </span>
               <span id="originalDisplayBadge" class="font-mono text-[11px] text-slate-400">0 × 0 px</span>
             </div>
+            
             <div
-              class="bg-checker p-2 rounded-lg border border-slate-800/80 w-full flex items-center justify-center min-h-[220px] max-h-[320px] overflow-hidden">
+              class="bg-checker p-2.5 rounded-lg border border-white/[0.06] w-full flex items-center justify-center min-h-[220px] max-h-[300px] overflow-hidden">
               <img id="originalImgPreview" src="" alt="Original Upload"
-                class="max-h-[300px] max-w-full object-contain rounded" />
+                class="max-h-[280px] max-w-full object-contain rounded" />
             </div>
-            <span id="originalFileFooter" class="text-[11px] text-slate-400 font-mono text-center">Original file size:
-              --</span>
+            
+            <div id="originalFileFooter" class="text-[11px] text-slate-500 font-mono text-center truncate w-full">
+              Original file size: --
+            </div>
           </div>
 
-          <!-- Ultra-Compressed Downsampled Pixelated Card -->
-          <div class="flex flex-col items-center gap-3 bg-slate-950/60 border border-slate-800/80 rounded-xl p-4">
-            <div class="w-full flex items-center justify-between text-xs pb-1 border-b border-slate-800/60">
-              <span class="font-semibold text-indigo-300 flex items-center gap-1.5">
+          <!-- Ultra-Compressed Pixelated Raster Card -->
+          <div class="glass-card rounded-xl p-4 flex flex-col items-center gap-3">
+            <div class="w-full flex items-center justify-between text-xs pb-2 border-b border-white/[0.06]">
+              <span class="font-medium text-indigo-300 flex items-center gap-2">
                 <span class="w-2 h-2 rounded-full bg-indigo-400"></span> Ultra-Compressed Raster
               </span>
               <span id="pixelatedDisplayBadge" class="font-mono text-[11px] text-indigo-400">0 × 0 px</span>
             </div>
+            
             <div
-              class="flex flex-col sm:flex-row items-center justify-center gap-4 w-full min-h-[220px] p-2 bg-checker rounded-lg border border-slate-800/80">
+              class="flex flex-col sm:flex-row items-center justify-center gap-5 w-full min-h-[220px] p-3 bg-checker rounded-lg border border-white/[0.06]">
               <!-- Magnified Canvas -->
-              <div class="flex flex-col items-center gap-1">
+              <div class="flex flex-col items-center gap-1.5">
                 <canvas id="magnifiedCanvas"
-                  class="crisp-pixel block rounded max-h-[190px] max-w-full object-contain shadow-md"></canvas>
+                  class="crisp-pixel block rounded max-h-[175px] max-w-full object-contain shadow-md"></canvas>
                 <span class="text-[10px] text-slate-400 font-mono">Magnified View</span>
               </div>
+              
               <!-- 1:1 Scale Output Canvas -->
-              <div class="flex flex-col items-center gap-1">
+              <div class="flex flex-col items-center gap-1.5">
                 <div
-                  class="bg-slate-950/80 p-2 rounded border border-slate-800 flex items-center justify-center min-w-[70px] min-h-[70px]">
+                  class="bg-[#090d14] p-3 rounded-lg border border-white/[0.08] flex items-center justify-center min-w-[72px] min-h-[72px]">
                   <canvas id="outputCanvas" class="crisp-pixel block rounded"></canvas>
                 </div>
                 <span class="text-[10px] text-slate-400 font-mono">Actual 1:1 Scale</span>
               </div>
             </div>
-            <span class="text-[11px] text-slate-400 font-mono text-center">Detail-preserved ultra-low resolution raster</span>
+            
+            <div class="text-[11px] text-slate-500 font-mono text-center">
+              Detail-preserved ultra-low resolution pixel raster
+            </div>
           </div>
         </div>
 
-        <div class="w-full pt-4 border-t border-slate-800/80 flex flex-col gap-3">
+        <!-- AI Multimodal Structured Description Section -->
+        <div class="w-full pt-4 border-t border-white/[0.08] flex flex-col gap-3">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
               <div
-                class="w-6 h-6 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30">
+                class="w-6 h-6 rounded-md bg-indigo-500/15 text-indigo-400 flex items-center justify-center border border-indigo-500/25">
                 <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path
                     d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" />
                 </svg>
               </div>
-              <span class="text-xs font-semibold text-slate-200 uppercase tracking-wider">Multimodal AI Detailed
-                Description</span>
+              <span class="text-xs font-semibold text-slate-200 uppercase tracking-wider">
+                Multimodal AI Structured Analysis
+              </span>
               <span id="aiDescSizeBadge"
-                class="text-[11px] font-mono text-indigo-400 bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-800/50"
+                class="text-[11px] font-mono text-indigo-400 bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-800/40"
                 title="Size of the AI description text">0.00 KB</span>
             </div>
+            
             <div id="aiStatusBadge"
-              class="flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+              class="flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-white/[0.05] text-slate-400 border border-white/[0.08]">
               <span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
               <span>Ready</span>
             </div>
           </div>
 
-          <!-- Description Output Box -->
+          <!-- Description Output Card -->
           <div id="aiDescriptionCard"
-            class="relative bg-slate-950/80 border border-slate-800 rounded-xl p-4 sm:p-5 transition-all">
+            class="relative bg-[#090d15] border border-white/[0.08] rounded-xl p-4 sm:p-5 transition-all">
             <div id="aiLoadingIndicator" class="hidden flex-col items-center justify-center py-6 gap-3 text-slate-400">
-              <div class="w-7 h-7 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+              <div class="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
               <div class="flex flex-col items-center gap-1 text-center">
-                <span id="aiLoadingModelText" class="text-xs font-semibold text-slate-200">Analyzing image with
-                  Gemini...</span>
-                <span class="text-[11px] text-slate-500">Extracting subjects, color palette, lighting, textures, and
-                  fine visual features</span>
+                <span id="aiLoadingModelText" class="text-xs font-medium text-slate-200">
+                  Analyzing visual features with Gemini...
+                </span>
+                <span class="text-[11px] text-slate-500">
+                  Extracting subjects, color palette, lighting, textures, and fine nuances
+                </span>
               </div>
             </div>
 
@@ -259,59 +311,60 @@
           </div>
         </div>
 
+        <!-- Raw Pixel RGB Sequence Stream -->
         <div class="w-full flex flex-col gap-3 pt-2">
           <div class="flex items-center justify-between gap-2">
             <div class="flex items-center gap-2">
-              <span class="text-xs font-semibold text-slate-300 uppercase tracking-wider">Pixel RGB Sequence</span>
+              <span class="text-xs font-semibold text-slate-300 uppercase tracking-wider">Pixel RGB Matrix</span>
               <span id="pixelCountBadge"
-                class="text-[11px] font-mono text-indigo-400 bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-800/50">0
-                pixels</span>
+                class="text-[11px] font-mono text-indigo-400 bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-800/40">0 pixels</span>
               <span id="pixelTextKbBadge"
-                class="text-[11px] font-mono text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/50"
+                class="text-[11px] font-mono text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/40"
                 title="Size of the raw RGB text">0.00 KB</span>
             </div>
             <span
-              class="text-[11px] font-mono text-indigo-400 bg-indigo-950/80 px-2.5 py-1 rounded border border-indigo-800/60">Visible
-              \n row endings</span>
+              class="text-[11px] font-mono text-slate-400 bg-white/[0.04] px-2 py-0.5 rounded border border-white/[0.06]">
+              Explicit \n line breaks
+            </span>
           </div>
 
-          <!-- Text Preview Window (wrap=off preserves visible \n linebreaks) -->
+          <!-- Monospace Text Area -->
           <div class="relative">
-            <textarea id="rgbOutputText" readonly wrap="off" rows="6"
-              class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3.5 font-mono text-xs text-slate-300 focus:outline-none focus:border-indigo-500/60 resize-none selection:bg-indigo-500 selection:text-white leading-relaxed tracking-tight whitespace-pre overflow-x-auto"
+            <textarea id="rgbOutputText" readonly wrap="off" rows="5"
+              class="w-full bg-[#080b12] border border-white/[0.08] rounded-xl p-3 font-mono text-xs text-slate-300 focus:outline-none focus:border-indigo-500/60 resize-none selection:bg-indigo-600 selection:text-white leading-relaxed tracking-tight whitespace-pre overflow-x-auto"
               placeholder="Pixel RGB sequence will appear here with visible \n at each row end..."></textarea>
           </div>
 
-          <!-- Action Button: Export .nic File (full width) -->
-          <div class="w-full">
+          <!-- Primary Action CTA -->
+          <div class="w-full pt-1">
             <button id="exportNicBtn" type="button" disabled
-              class="w-full py-3 px-5 rounded-xl bg-slate-800/80 text-slate-500 font-semibold text-sm border border-slate-700/60 flex items-center justify-center gap-2 cursor-not-allowed opacity-50 shadow-none transition-all">
+              class="w-full py-3 px-5 rounded-xl bg-white/[0.04] text-slate-500 font-medium text-sm border border-white/[0.08] flex items-center justify-center gap-2 cursor-not-allowed opacity-60 shadow-none transition-all">
               <svg id="exportNicIcon" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                 stroke-width="2">
                 <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
               <span id="exportNicBtnText">Waiting for AI Description...</span>
               <span id="nicSizeBadge"
-                class="text-[11px] font-mono bg-slate-900 border border-slate-700 text-slate-400 px-2 py-0.5 rounded ml-1">0.00
-                KB</span>
+                class="text-[11px] font-mono bg-black/40 border border-white/10 text-slate-400 px-2 py-0.5 rounded ml-1">0.00 KB</span>
             </button>
           </div>
         </div>
+
       </div>
     </div>
   </main>
 
   <!-- Dedicated .nic File Inspector & Viewer Modal -->
   <div id="nicViewerModal"
-    class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-200">
+    class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200">
     <div
-      class="relative w-full max-w-3xl bg-slate-900/95 backdrop-blur-xl border border-slate-800/90 rounded-3xl shadow-2xl shadow-black/80 overflow-hidden flex flex-col max-h-[92vh]">
+      class="relative w-full max-w-3xl bg-[#0e131f] border border-white/[0.12] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
 
       <!-- Modal Header -->
-      <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800/80 bg-slate-950/80">
-        <div class="flex items-center gap-2.5">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-white/[0.08] bg-[#090d16]">
+        <div class="flex items-center gap-3">
           <div
-            class="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/25 flex items-center justify-center text-indigo-400">
+            class="w-8 h-8 rounded-lg bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
               <polyline points="14 2 14 8 20 8" />
@@ -322,16 +375,15 @@
           </div>
           <div>
             <h2 class="text-sm font-semibold text-white flex items-center gap-2">
-              .nic File Viewer
+              .nic Package Inspector
               <span id="nicLoadedBadge"
-                class="hidden font-mono text-[10px] px-2 py-0.5 rounded-full bg-indigo-950/80 text-indigo-300 border border-indigo-700/60 font-normal"></span>
+                class="hidden font-mono text-[10px] px-2 py-0.5 rounded bg-indigo-950/80 text-indigo-300 border border-indigo-700/60 font-normal"></span>
             </h2>
-            <p class="text-[11px] text-slate-400">Inspect .nic packages, decode raster pixels, and read AI descriptions
-            </p>
+            <p class="text-[11px] text-slate-400">Inspect .nic packages, decode raster pixels, and reconstruct visual assets</p>
           </div>
         </div>
         <button id="closeNicViewerModalBtn" type="button"
-          class="text-slate-400 hover:text-white p-1.5 rounded-xl hover:bg-slate-800/80 transition-colors cursor-pointer"
+          class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-white/[0.08] transition-colors cursor-pointer"
           title="Close Modal (Esc)">
           <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18" />
@@ -341,16 +393,16 @@
       </div>
 
       <!-- Modal Body -->
-      <div class="p-5 overflow-y-auto space-y-5">
+      <div class="p-5 sm:p-6 overflow-y-auto space-y-5">
 
         <!-- .nic Upload / Drop Zone -->
         <div id="nicDropZone"
-          class="relative group border-2 border-dashed border-slate-700/80 hover:border-indigo-500 rounded-xl p-5 text-center transition-all bg-slate-950/40 hover:bg-slate-950/80 cursor-pointer">
+          class="relative group border border-dashed border-white/15 hover:border-indigo-500 rounded-xl p-5 text-center transition-all bg-[#090d15]/60 hover:bg-[#090d15] cursor-pointer">
           <input type="file" id="nicFileInput" accept=".nic"
             class="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-full">
           <div class="flex items-center justify-center gap-3.5 pointer-events-none">
             <div
-              class="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center border border-indigo-500/20 group-hover:scale-105 transition-transform">
+              class="w-10 h-10 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center border border-indigo-500/20 group-hover:scale-105 transition-transform">
               <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
                 <polyline points="17 8 12 3 7 8" />
@@ -358,11 +410,10 @@
               </svg>
             </div>
             <div class="text-left">
-              <p class="font-medium text-slate-200 text-xs">Drop a <span
-                  class="font-mono text-indigo-300 font-semibold">.nic</span> file here or <span
-                  class="text-indigo-400 underline underline-offset-2">browse files</span></p>
-              <p class="text-[11px] text-slate-500 mt-0.5">Reads package metadata, restores pixel canvas, and displays
-                description</p>
+              <p class="font-medium text-slate-200 text-xs">
+                Drop a <span class="font-mono text-indigo-300 font-semibold">.nic</span> file here or <span class="text-indigo-400 underline underline-offset-2">browse files</span>
+              </p>
+              <p class="text-[11px] text-slate-500 mt-0.5">Reads package metadata, restores pixel canvas, and displays description</p>
             </div>
           </div>
         </div>
@@ -372,38 +423,38 @@
 
           <!-- Metadata Summary Row -->
           <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
-            <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-2.5">
+            <div class="bg-[#090d15] border border-white/[0.08] rounded-lg p-2.5">
               <span class="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">Dimensions</span>
-              <div id="nicMetaDim" class="font-mono text-xs font-bold text-slate-200 mt-0.5">--</div>
+              <div id="nicMetaDim" class="font-mono text-xs font-bold text-slate-200 mt-1">--</div>
             </div>
-            <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-2.5">
+            <div class="bg-[#090d15] border border-white/[0.08] rounded-lg p-2.5">
               <span class="text-[10px] text-indigo-400 uppercase font-semibold tracking-wider">Total Pixels</span>
-              <div id="nicMetaPixels" class="font-mono text-xs font-bold text-indigo-300 mt-0.5">--</div>
+              <div id="nicMetaPixels" class="font-mono text-xs font-bold text-indigo-300 mt-1">--</div>
             </div>
-            <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-2.5">
-              <span class="text-[10px] text-emerald-400 uppercase font-semibold tracking-wider">Pixel Reduction</span>
-              <div id="nicMetaReduction" class="font-mono text-xs font-bold text-emerald-400 mt-0.5">--</div>
+            <div class="bg-[#090d15] border border-white/[0.08] rounded-lg p-2.5">
+              <span class="text-[10px] text-emerald-400 uppercase font-semibold tracking-wider">Reduction</span>
+              <div id="nicMetaReduction" class="font-mono text-xs font-bold text-emerald-400 mt-1">--</div>
             </div>
-            <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-2.5">
+            <div class="bg-[#090d15] border border-white/[0.08] rounded-lg p-2.5">
               <span class="text-[10px] text-amber-400 uppercase font-semibold tracking-wider">Codec Format</span>
-              <div id="nicMetaFormat" class="font-mono text-xs font-bold text-amber-300 mt-0.5 truncate">NIC-C1</div>
+              <div id="nicMetaFormat" class="font-mono text-xs font-bold text-amber-300 mt-1 truncate">NIC-C1</div>
             </div>
-            <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-2.5 col-span-2 sm:col-span-1">
+            <div class="bg-[#090d15] border border-white/[0.08] rounded-lg p-2.5 col-span-2 sm:col-span-1">
               <span class="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">Export Date</span>
-              <div id="nicMetaDate" class="font-mono text-[11px] text-slate-300 mt-0.5 truncate">--</div>
+              <div id="nicMetaDate" class="font-mono text-[11px] text-slate-300 mt-1 truncate">--</div>
             </div>
           </div>
 
           <!-- Reconstructed Image Canvas Card -->
-          <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 flex flex-col gap-3">
-            <div class="flex items-center justify-between text-xs pb-2 border-b border-slate-800/70">
+          <div class="bg-[#090d15] border border-white/[0.08] rounded-xl p-4 flex flex-col gap-3">
+            <div class="flex items-center justify-between text-xs pb-2 border-b border-white/[0.08]">
               <span class="font-semibold text-slate-200 flex items-center gap-1.5">
                 <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Reconstructed Image Raster
               </span>
               <div class="flex items-center gap-2">
-                <label for="nicModalZoomSelect" class="text-[11px] text-slate-400">Magnification:</label>
+                <label for="nicModalZoomSelect" class="text-[11px] text-slate-400">Zoom:</label>
                 <select id="nicModalZoomSelect"
-                  class="bg-slate-900 border border-slate-700 text-slate-300 text-[11px] rounded px-2 py-0.5 font-mono cursor-pointer">
+                  class="bg-[#121826] border border-white/[0.1] text-slate-200 text-[11px] rounded px-2 py-0.5 font-mono cursor-pointer focus:outline-none">
                   <option value="4">4×</option>
                   <option value="8" selected>8×</option>
                   <option value="12">12×</option>
@@ -414,15 +465,15 @@
             </div>
 
             <div
-              class="bg-checker p-4 rounded-xl border border-slate-800 shadow-inner flex items-center justify-center max-w-full overflow-auto max-h-[260px]">
-              <canvas id="nicModalCanvas" class="crisp-pixel block rounded shadow-lg"></canvas>
+              class="bg-checker p-4 rounded-lg border border-white/[0.08] flex items-center justify-center max-w-full overflow-auto max-h-[260px]">
+              <canvas id="nicModalCanvas" class="crisp-pixel block rounded shadow-md"></canvas>
             </div>
 
             <div class="flex items-center justify-between pt-1 text-xs">
               <span id="nicModalDimensionsText" class="font-mono text-indigo-400 text-[11px]">0 × 0 px</span>
               <div class="flex items-center gap-2">
                 <button id="nicDownloadPngBtn" type="button"
-                  class="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer">
+                  class="px-3 py-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.09] text-slate-200 border border-white/[0.1] text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer">
                   <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                     stroke-width="2">
                     <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -430,7 +481,7 @@
                   Download PNG
                 </button>
                 <button id="nicRegenerateBtn" type="button"
-                  class="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-indigo-600 via-indigo-500 to-sky-500 hover:from-indigo-500 hover:to-sky-400 text-white border border-indigo-400/40 text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-indigo-500/20 transition-all cursor-pointer active:scale-95">
+                  class="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium flex items-center gap-1.5 shadow-sm transition-all cursor-pointer active:scale-95">
                   <svg id="nicRegenBtnIcon" class="w-3.5 h-3.5 text-amber-300" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2">
                     <path
@@ -444,11 +495,11 @@
 
           <!-- AI Regenerated / Enhanced Output Card -->
           <div id="nicRegenResultCard"
-            class="hidden bg-slate-950/80 border border-indigo-500/40 rounded-xl p-4 flex flex-col gap-3 shadow-lg shadow-indigo-500/10">
-            <div class="flex items-center justify-between pb-2 border-b border-slate-800/80">
+            class="hidden bg-[#090d15] border border-indigo-500/40 rounded-xl p-4 flex flex-col gap-3 shadow-lg">
+            <div class="flex items-center justify-between pb-2 border-b border-white/[0.08]">
               <div class="flex items-center gap-2">
                 <span class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span>
-                <span class="text-xs font-semibold text-white uppercase tracking-wider">AI Regenerated Image</span>
+                <span class="text-xs font-semibold text-white uppercase tracking-wider">AI Reconstructed Output</span>
               </div>
               <div id="nicRegenStatusBadge"
                 class="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-950/80 text-indigo-300 border border-indigo-800/60">
@@ -458,26 +509,25 @@
 
             <!-- Loading Spinner State -->
             <div id="nicRegenLoading" class="hidden flex-col items-center justify-center py-6 gap-3 text-slate-400">
-              <div class="w-7 h-7 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+              <div class="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
               <div class="flex flex-col items-center gap-1 text-center">
-                <span class="text-xs font-semibold text-slate-200">Synthesizing high-detail image...</span>
-                <span class="text-[11px] text-slate-500">Processing client-converted .jpg raster and description
-                  text</span>
+                <span class="text-xs font-medium text-slate-200">Synthesizing high-detail image...</span>
+                <span class="text-[11px] text-slate-500">Processing client raster and structured description</span>
               </div>
             </div>
 
             <!-- Result Output Box -->
             <div id="nicRegenOutputArea" class="flex flex-col gap-3">
               <div id="nicRegenImgContainer"
-                class="hidden bg-checker p-3 rounded-xl border border-slate-800 flex items-center justify-center min-h-[160px] max-h-[360px] overflow-hidden">
+                class="hidden bg-checker p-3 rounded-lg border border-white/[0.08] flex items-center justify-center min-h-[160px] max-h-[340px] overflow-hidden">
                 <img id="nicRegenImg" src="" alt="AI Regenerated"
-                  class="max-h-[340px] max-w-full object-contain rounded shadow-lg" />
+                  class="max-h-[320px] max-w-full object-contain rounded" />
               </div>
               <div id="nicRegenTextContent"
                 class="text-xs text-slate-300 leading-relaxed font-sans whitespace-pre-wrap"></div>
-              <div id="nicRegenActions" class="hidden items-center justify-end gap-2 pt-1 border-t border-slate-800/60">
+              <div id="nicRegenActions" class="hidden items-center justify-end gap-2 pt-1 border-t border-white/[0.08]">
                 <button id="nicRegenDownloadBtn" type="button"
-                  class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer">
+                  class="px-3 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.1] text-slate-200 border border-white/[0.1] text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer">
                   <svg class="w-3.5 h-3.5 text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                     stroke-width="2">
                     <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -489,8 +539,8 @@
           </div>
 
           <!-- AI Description in .nic File -->
-          <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 flex flex-col gap-2">
-            <div class="flex items-center justify-between pb-2 border-b border-slate-800/70">
+          <div class="bg-[#090d15] border border-white/[0.08] rounded-xl p-4 flex flex-col gap-2">
+            <div class="flex items-center justify-between pb-2 border-b border-white/[0.08]">
               <span class="text-xs font-semibold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
                 <svg class="w-3.5 h-3.5 text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                   stroke-width="2">
@@ -500,26 +550,25 @@
                 Package Description
               </span>
               <span id="nicDescBadge"
-                class="text-[10px] font-mono text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">Loaded</span>
+                class="text-[10px] font-mono text-slate-400 bg-white/[0.05] px-2 py-0.5 rounded border border-white/[0.08]">Loaded</span>
             </div>
             <div id="nicDescriptionText"
-              class="text-xs text-slate-300 leading-relaxed font-sans whitespace-pre-wrap max-h-44 overflow-y-auto pr-1">
+              class="text-xs text-slate-300 leading-relaxed font-sans whitespace-pre-wrap max-h-40 overflow-y-auto pr-1">
               --
             </div>
           </div>
 
           <!-- Pixel Data Inspection (Collapsible / Preview) -->
-          <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 flex flex-col gap-2">
-            <div class="flex items-center justify-between pb-2 border-b border-slate-800/70">
+          <div class="bg-[#090d15] border border-white/[0.08] rounded-xl p-4 flex flex-col gap-2">
+            <div class="flex items-center justify-between pb-2 border-b border-white/[0.08]">
               <span class="text-xs font-semibold text-slate-200 uppercase tracking-wider">
-                Pixel Data Sequence
+                Pixel Data Matrix
               </span>
               <span id="nicPixelBadge"
-                class="text-[10px] font-mono text-indigo-400 bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-800/50">0
-                rows</span>
+                class="text-[10px] font-mono text-indigo-400 bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-800/40">0 rows</span>
             </div>
-            <textarea id="nicPixelsText" readonly wrap="off" rows="5"
-              class="w-full bg-slate-950 border border-slate-800/90 rounded-lg p-3 font-mono text-xs text-slate-400 focus:outline-none resize-none leading-relaxed tracking-tight whitespace-pre overflow-x-auto"></textarea>
+            <textarea id="nicPixelsText" readonly wrap="off" rows="4"
+              class="w-full bg-[#07090e] border border-white/[0.06] rounded-lg p-3 font-mono text-xs text-slate-400 focus:outline-none resize-none leading-relaxed tracking-tight whitespace-pre overflow-x-auto"></textarea>
           </div>
 
         </div>
@@ -530,13 +579,15 @@
 
   <!-- API Key Setup Modal -->
   <div id="apiKeyModal"
-    class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-200">
+    class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200">
     <div
-      class="relative w-full max-w-lg bg-slate-900/95 backdrop-blur-xl border border-slate-800/90 rounded-3xl shadow-2xl shadow-black/80 overflow-hidden flex flex-col max-h-[92vh]">
-      <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800/80 bg-slate-950/80">
+      class="relative w-full max-w-lg bg-[#0e131f] border border-white/[0.12] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-white/[0.08] bg-[#090d16]">
         <div class="flex items-center gap-2.5">
           <div
-            class="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center text-amber-400">
+            class="w-8 h-8 rounded-lg bg-amber-500/15 border border-amber-500/25 flex items-center justify-center text-amber-400">
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 2l-2 2m-1.5 1.5L16 7l-1.5-1.5L13 7l-1.5-1.5L10 7 8.5 5.5 7 7l-5 5v5h5l7-7 2-2z" />
               <circle cx="7.5" cy="16.5" r="1.5" />
@@ -544,13 +595,13 @@
           </div>
           <div>
             <h2 class="text-sm font-semibold text-white flex items-center gap-2">
-              Google AI Studio API Setup
+              Google AI Studio Configuration
             </h2>
-            <p class="text-[11px] text-slate-400">Configure your Gemini API key</p>
+            <p class="text-[11px] text-slate-400">Configure Gemini API access key</p>
           </div>
         </div>
         <button id="closeApiKeyModalBtn" type="button"
-          class="text-slate-400 hover:text-white p-1.5 rounded-xl hover:bg-slate-800/80 transition-colors cursor-pointer"
+          class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-white/[0.08] transition-colors cursor-pointer"
           title="Close (Esc)">
           <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18" />
@@ -559,9 +610,10 @@
         </button>
       </div>
 
-      <div class="p-5 space-y-4 overflow-y-auto">
+      <!-- Modal Content -->
+      <div class="p-5 sm:p-6 space-y-4 overflow-y-auto">
         <!-- Google AI Studio Info Banner -->
-        <div class="bg-indigo-950/40 border border-indigo-800/60 rounded-xl p-3 flex items-start gap-3 text-xs">
+        <div class="bg-indigo-950/30 border border-indigo-800/40 rounded-xl p-3.5 flex items-start gap-3 text-xs">
           <div class="text-indigo-400 mt-0.5 shrink-0">
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10" />
@@ -572,7 +624,7 @@
           <div class="text-slate-300 leading-relaxed text-[11px]">
             Get a free API key directly from
             <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer"
-              class="text-indigo-400 hover:text-indigo-300 underline font-semibold inline-flex items-center gap-1">
+              class="text-indigo-400 hover:text-indigo-300 underline font-semibold inline-flex items-center gap-0.5">
               Google AI Studio
               <svg class="w-3 h-3 inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
@@ -580,23 +632,23 @@
                 <line x1="10" y1="14" x2="21" y2="3" />
               </svg>
             </a>.
-            Keys are securely stored in your browser's <code
-              class="text-slate-200 bg-slate-800 px-1 py-0.5 rounded font-mono">localStorage</code> and never sent to
-            external servers.
+            Keys are stored locally in your browser's <code
+              class="text-slate-200 bg-white/[0.08] px-1 py-0.5 rounded font-mono">localStorage</code> and never sent to
+            any third-party servers.
           </div>
         </div>
 
         <!-- API Key Input -->
         <div>
-          <label for="customApiKeyInput" class="block text-xs font-semibold text-slate-200 mb-1.5">
-            Google AI Studio API Key
+          <label for="customApiKeyInput" class="block text-xs font-medium text-slate-200 mb-1.5">
+            Gemini API Key
           </label>
           <div class="relative flex items-center">
             <input type="password" id="customApiKeyInput" placeholder="AIzaSy..."
-              class="w-full bg-slate-950 border border-slate-700 focus:border-indigo-500 rounded-xl pl-3.5 pr-20 py-2.5 text-xs text-slate-200 font-mono focus:outline-none transition-colors" />
-            <div class="absolute right-2 flex items-center gap-1">
+              class="w-full bg-[#080b12] border border-white/[0.1] focus:border-indigo-500 rounded-xl pl-3.5 pr-10 py-2.5 text-xs text-slate-200 font-mono focus:outline-none transition-colors" />
+            <div class="absolute right-2 flex items-center">
               <button id="toggleApiKeyVisibilityBtn" type="button"
-                class="p-1 text-slate-400 hover:text-slate-200 rounded hover:bg-slate-800 text-xs transition-colors"
+                class="p-1.5 text-slate-400 hover:text-slate-200 rounded hover:bg-white/[0.08] text-xs transition-colors"
                 title="Toggle visibility">
                 <svg id="eyeIcon" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                   stroke-width="2">
@@ -606,16 +658,15 @@
               </button>
             </div>
           </div>
-          <p class="text-[11px] text-slate-500 mt-1">Starts with <span class="font-mono text-slate-400">AIzaSy...</span>
-          </p>
+          <p class="text-[11px] text-slate-500 mt-1">Key format begins with <span class="font-mono text-slate-400">AIzaSy...</span></p>
         </div>
 
         <!-- Test Connection Section -->
-        <div class="border-t border-slate-800 pt-3">
+        <div class="border-t border-white/[0.08] pt-3.5">
           <div class="flex items-center justify-between">
             <span class="text-xs font-medium text-slate-300">Validate Setup</span>
             <button id="testApiKeyBtn" type="button"
-              class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-indigo-300 border border-slate-700 transition-colors flex items-center gap-1.5 cursor-pointer">
+              class="px-3 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.1] text-xs font-medium text-indigo-300 border border-white/[0.1] transition-colors flex items-center gap-1.5 cursor-pointer">
               <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                 <polyline points="22 4 12 14.01 9 11.01" />
@@ -623,24 +674,24 @@
               <span>Test Connection</span>
             </button>
           </div>
-          <div id="testResultBox" class="hidden mt-2 p-2.5 rounded-lg text-xs font-mono leading-relaxed break-words">
+          <div id="testResultBox" class="hidden mt-2.5 p-3 rounded-lg text-xs font-mono leading-relaxed break-words">
           </div>
         </div>
 
         <!-- Modal Footer Actions -->
-        <div class="flex items-center justify-between pt-3 border-t border-slate-800">
+        <div class="flex items-center justify-between pt-3.5 border-t border-white/[0.08]">
           <button id="clearApiKeyBtn" type="button"
             class="px-3 py-1.5 rounded-lg text-xs font-medium text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 border border-rose-900/40 transition-colors cursor-pointer">
             Clear Key
           </button>
           <div class="flex items-center gap-2">
             <button id="cancelApiKeyBtn" type="button"
-              class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer">
+              class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-white/[0.08] transition-colors cursor-pointer">
               Cancel
             </button>
             <button id="saveApiKeyBtn" type="button"
-              class="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-500 hover:to-sky-500 text-white text-xs font-semibold shadow-md transition-all cursor-pointer">
-              Save & Apply Settings
+              class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium shadow-sm transition-all cursor-pointer active:scale-95">
+              Save & Apply
             </button>
           </div>
         </div>
@@ -810,13 +861,13 @@
         const imageGenModel = 'gemini-3.1-flash-image';
 
         if (!key) {
-          testResultBox.className = 'mt-2 p-2.5 rounded-lg text-xs font-mono leading-relaxed bg-rose-950/60 border border-rose-800/80 text-rose-300';
+          testResultBox.className = 'mt-2.5 p-3 rounded-lg text-xs font-mono leading-relaxed bg-rose-950/60 border border-rose-800/80 text-rose-300';
           testResultBox.innerHTML = '❌ Please enter an API key first.';
           testResultBox.classList.remove('hidden');
           return;
         }
 
-        testResultBox.className = 'mt-2 p-2.5 rounded-lg text-xs font-mono leading-relaxed bg-slate-950 border border-indigo-800/50 text-indigo-300 flex items-center gap-2';
+        testResultBox.className = 'mt-2.5 p-3 rounded-lg text-xs font-mono leading-relaxed bg-[#090d15] border border-indigo-800/50 text-indigo-300 flex items-center gap-2';
         testResultBox.innerHTML = '<svg class="w-3.5 h-3.5 animate-spin text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9" stroke-dasharray="14" fill="none"/></svg> Validating connection (Analysis & Image Generation)...';
         testResultBox.classList.remove('hidden');
         testApiKeyBtn.disabled = true;
@@ -844,28 +895,28 @@
           const isImageGenOk = resImageGen.ok;
 
           if (isVisionOk && isImageGenOk) {
-            testResultBox.className = 'mt-2 p-2.5 rounded-lg text-xs font-mono leading-relaxed bg-emerald-950/60 border border-emerald-800/80 text-emerald-300';
+            testResultBox.className = 'mt-2.5 p-3 rounded-lg text-xs font-mono leading-relaxed bg-emerald-950/60 border border-emerald-800/80 text-emerald-300';
             testResultBox.innerHTML = `✅ <strong>Success (${elapsed}ms):</strong> Connected to Google AI Studio!<br/><span class="text-[11px] text-emerald-400/80">✓ Image Analysis Service: Ready<br/>✓ Image Generation Service: Ready</span>`;
           } else {
             let errorDetails = [];
             if (!isVisionOk) {
               const errBody = await resVision.text().catch(() => '');
               let msg = errBody;
-              try { msg = JSON.parse(errBody)?.error?.message || errBody; } catch(e) {}
+              try { msg = JSON.parse(errBody)?.error?.message || errBody; } catch (e) { }
               errorDetails.push(`Analysis Service Error (HTTP ${resVision.status}): ${msg}`);
             }
             if (!isImageGenOk) {
               const errBody = await resImageGen.text().catch(() => '');
               let msg = errBody;
-              try { msg = JSON.parse(errBody)?.error?.message || errBody; } catch(e) {}
+              try { msg = JSON.parse(errBody)?.error?.message || errBody; } catch (e) { }
               errorDetails.push(`Image Generation Service Error (HTTP ${resImageGen.status}): ${msg}`);
             }
 
-            testResultBox.className = 'mt-2 p-2.5 rounded-lg text-xs font-mono leading-relaxed bg-rose-950/60 border border-rose-800/80 text-rose-300';
+            testResultBox.className = 'mt-2.5 p-3 rounded-lg text-xs font-mono leading-relaxed bg-rose-950/60 border border-rose-800/80 text-rose-300';
             testResultBox.innerHTML = `❌ <strong>Error:</strong><br/>` + errorDetails.join('<br/>');
           }
         } catch (err) {
-          testResultBox.className = 'mt-2 p-2.5 rounded-lg text-xs font-mono leading-relaxed bg-rose-950/60 border border-rose-800/80 text-rose-300';
+          testResultBox.className = 'mt-2.5 p-3 rounded-lg text-xs font-mono leading-relaxed bg-rose-950/60 border border-rose-800/80 text-rose-300';
           testResultBox.innerHTML = `❌ <strong>Network / Fetch Error:</strong> ${err.message}`;
         } finally {
           testApiKeyBtn.disabled = false;
@@ -949,7 +1000,6 @@
     const NIC_Codec = {
       MAGIC_HEADER: '=== NIC COMPRESSED PACKAGE (NIC-C1) ===',
 
-      // Semantic syntactic token dictionary for high-frequency NIC markup & headers
       SEMANTIC_TOKENS: [
         ['=== NIC IMAGE PACKAGE (.nic) ===', '\u0001'],
         ['[METADATA]', '\u0002'],
@@ -975,14 +1025,12 @@
       compress: function (rawText) {
         if (!rawText || typeof rawText !== 'string') return '';
 
-        // Stage 1: Structural Token Replacement
         let preprocessed = rawText;
         for (let i = 0; i < this.SEMANTIC_TOKENS.length; i++) {
           const pair = this.SEMANTIC_TOKENS[i];
           preprocessed = preprocessed.split(pair[0]).join(pair[1]);
         }
 
-        // Stage 2: Dense Binary Packing of Pixel Tuples (r,g,b) -> \x13 <R-byte> <G-byte> <B-byte>
         preprocessed = preprocessed.replace(/\((\d{1,3}),(\d{1,3}),(\d{1,3})\)/g, function (m, rStr, gStr, bStr) {
           const r = Math.min(255, Math.max(0, parseInt(rStr, 10)));
           const g = Math.min(255, Math.max(0, parseInt(gStr, 10)));
@@ -990,12 +1038,10 @@
           return String.fromCharCode(0x13) + String.fromCharCode(r) + String.fromCharCode(g) + String.fromCharCode(b);
         });
 
-        // Stage 3: UTF-8 Stream Serialization
         const utf8Bytes = (typeof TextEncoder !== 'undefined')
           ? new TextEncoder().encode(preprocessed)
           : new Uint8Array(Array.from(unescape(encodeURIComponent(preprocessed))).map(c => c.charCodeAt(0)));
 
-        // Stage 4: Dynamic Adaptive Sliding-Dictionary LZW Encoder
         const dict = new Map();
         for (let i = 0; i < 256; i++) {
           dict.set(String.fromCharCode(i), i);
@@ -1022,7 +1068,6 @@
           resultCodes.push(dict.get(w));
         }
 
-        // Stage 5: Compact 16-bit binary payload encoding
         const u16 = new Uint16Array(resultCodes.length);
         for (let i = 0; i < resultCodes.length; i++) {
           u16[i] = resultCodes[i];
@@ -1062,7 +1107,6 @@
 
         if (codes.length === 0) return '';
 
-        // Initialize dictionary with single-byte alphabet (0-255)
         const dict = new Map();
         for (let i = 0; i < 256; i++) {
           dict.set(i, [i]);
@@ -1096,12 +1140,10 @@
           ? new TextDecoder('utf-8').decode(uint8Result)
           : decodeURIComponent(escape(String.fromCharCode.apply(null, uint8Result)));
 
-        // Stage 2 inverse: unpack binary pixel markers back to (r,g,b)
         restoredStr = restoredStr.replace(new RegExp(String.fromCharCode(0x13) + '([\\s\\S])([\\s\\S])([\\s\\S])', 'g'), function (m, r, g, b) {
           return '(' + r.charCodeAt(0) + ',' + g.charCodeAt(0) + ',' + b.charCodeAt(0) + ')';
         });
 
-        // Stage 1 inverse: replace semantic tokens back to full string headers
         for (let i = this.SEMANTIC_TOKENS.length - 1; i >= 0; i--) {
           const pair = this.SEMANTIC_TOKENS[i];
           restoredStr = restoredStr.split(pair[1]).join(pair[0]);
@@ -1298,7 +1340,7 @@
         nicMetaReduction.textContent = metadata['reduction-factor'] || '--';
         if (nicMetaFormat) {
           nicMetaFormat.textContent = 'NIC-C1 (Standard)';
-          nicMetaFormat.className = 'font-mono text-xs font-bold text-amber-400 mt-0.5 truncate';
+          nicMetaFormat.className = 'font-mono text-xs font-bold text-amber-400 mt-1 truncate';
         }
         nicMetaDate.textContent = metadata['export-date'] ? new Date(metadata['export-date']).toLocaleDateString() : 'N/A';
         nicMetaDate.title = metadata['export-date'] || '';
@@ -1355,7 +1397,6 @@
         throw new Error("No Google AI Studio API key configured. Please click 'Configure API Key' in the header to enter your API key.");
       }
 
-      // Use gemini-3.1-flash-image specifically for image synthesis/regeneration
       const model = 'gemini-3.1-flash-image';
       const negativeConstraints = 'Avoid: blurry artifacts, hallucinated objects not present in the low-res raster, color tone shift, distorted anatomy, warped horizon lines.';
 
@@ -1431,7 +1472,6 @@ Synthesize a single, photorealistic, artifact-free image matching the spatial co
           }
         }
 
-        // Fallback: If imagePart not directly in parts inlineData, inspect text for base64 or markdown image data
         if (!imagePart && textParts.length > 0) {
           const fullText = textParts.join('\n');
           const dataUriMatch = fullText.match(/data:(image\/[a-zA-Z0-9.+_-]+);base64,([A-Za-z0-9+/=]+)/);
@@ -1482,7 +1522,6 @@ Synthesize a single, photorealistic, artifact-free image matching the spatial co
         return;
       }
 
-      // Convert pixel data client-side to JPEG format
       const jpegBase64 = getParsedImageAsJpegBase64(modalParsedImage);
       if (!jpegBase64) {
         showToast('Could not convert canvas pixels to JPEG.', true);
@@ -1491,7 +1530,6 @@ Synthesize a single, photorealistic, artifact-free image matching the spatial co
 
       const descText = nicDescriptionText.textContent !== '--' ? nicDescriptionText.textContent : '';
 
-      // Set UI to loading state
       nicRegenerateBtn.disabled = true;
       nicRegenBtnText.textContent = 'Regenerating...';
       nicRegenBtnIcon.className = 'w-3.5 h-3.5 animate-spin text-amber-300';
@@ -1536,14 +1574,13 @@ Synthesize a single, photorealistic, artifact-free image matching the spatial co
             document.body.removeChild(link);
             showToast('Downloaded regenerated AI image!');
           };
-          // Clear any lingering raw text if image succeeded
           nicRegenTextContent.innerHTML = '';
 
           nicRegenStatusBadge.className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-400 border border-emerald-800/60';
           nicRegenStatusBadge.textContent = 'Image Generated ✓';
           showToast('Image regenerated successfully!');
         } else if (result.text) {
-          nicRegenTextContent.innerHTML = `<div class="p-3 bg-slate-900/90 rounded-lg border border-slate-800 leading-relaxed text-xs text-slate-200 whitespace-pre-wrap font-mono">${result.text}</div>`;
+          nicRegenTextContent.innerHTML = `<div class="p-3 bg-[#080b12] rounded-lg border border-white/[0.08] leading-relaxed text-xs text-slate-200 whitespace-pre-wrap font-mono">${result.text}</div>`;
           nicRegenStatusBadge.className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-amber-950/80 text-amber-400 border border-amber-800/60';
           nicRegenStatusBadge.textContent = 'Text Output';
           showToast('AI returned text description.');
@@ -1670,16 +1707,16 @@ Synthesize a single, photorealistic, artifact-free image matching the spatial co
 
       if (isEnabled) {
         exportNicBtn.disabled = false;
-        exportNicBtn.className = "w-full py-3 px-5 rounded-xl bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-500 hover:to-sky-500 text-white font-semibold text-sm shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 transition-all transform active:scale-[0.98] cursor-pointer";
+        exportNicBtn.className = "w-full py-3 px-5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-sm shadow-sm flex items-center justify-center gap-2 transition-all transform active:scale-[0.99] cursor-pointer";
         exportNicBtnText.textContent = "Export .nic File";
         exportNicIcon.innerHTML = '<path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>';
         nicSizeBadge.className = "text-[11px] font-mono bg-indigo-900/60 border border-indigo-400/40 text-indigo-200 px-2 py-0.5 rounded ml-1";
       } else {
         exportNicBtn.disabled = true;
-        exportNicBtn.className = "w-full py-3 px-5 rounded-xl bg-slate-800/80 text-slate-500 font-semibold text-sm border border-slate-700/60 flex items-center justify-center gap-2 cursor-not-allowed opacity-60 shadow-none transition-all";
+        exportNicBtn.className = "w-full py-3 px-5 rounded-xl bg-white/[0.04] text-slate-500 font-medium text-sm border border-white/[0.08] flex items-center justify-center gap-2 cursor-not-allowed opacity-60 shadow-none transition-all";
         exportNicBtnText.textContent = loadingMessage;
         exportNicIcon.innerHTML = '<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" stroke-dasharray="14" class="animate-spin text-slate-400" fill="none"/>';
-        nicSizeBadge.className = "text-[11px] font-mono bg-slate-900 border border-slate-700 text-slate-500 px-2 py-0.5 rounded ml-1";
+        nicSizeBadge.className = "text-[11px] font-mono bg-black/40 border border-white/10 text-slate-500 px-2 py-0.5 rounded ml-1";
       }
     }
 
@@ -1747,7 +1784,7 @@ Synthesize a single, photorealistic, artifact-free image matching the spatial co
           statNicFileSize.innerHTML = `<span class="inline-flex items-center gap-2 text-amber-400 text-sm font-semibold"><svg class="w-4 h-4 animate-spin text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9" stroke-dasharray="14" fill="none"/></svg> Generating .nic...</span>`;
           if (statNicFileStatus) {
             statNicFileStatus.textContent = 'Generating AI description & compressing package...';
-            statNicFileStatus.className = 'text-[11px] text-amber-400/80 font-mono mt-1';
+            statNicFileStatus.className = 'text-xs text-amber-400/80 font-mono mt-1';
           }
         } else if (state.aiDescriptionFinished) {
           statNicFileSize.textContent = `${compressedPkgKb} KB`;
@@ -1756,13 +1793,13 @@ Synthesize a single, photorealistic, artifact-free image matching the spatial co
               ? ((1 - (compressedNicBlob.size / state.originalSizeBytes)) * 100).toFixed(1)
               : '0';
             statNicFileStatus.textContent = `${formatBytes(compressedNicBlob.size)} (${totalVsSource}% reduction vs source)`;
-            statNicFileStatus.className = 'text-[11px] text-emerald-400 font-mono mt-1 font-medium';
+            statNicFileStatus.className = 'text-xs text-emerald-400 font-mono mt-1 font-medium';
           }
         } else {
           statNicFileSize.textContent = '--';
           if (statNicFileStatus) {
             statNicFileStatus.textContent = 'Upload image to compute';
-            statNicFileStatus.className = 'text-[11px] text-slate-500 font-mono mt-1';
+            statNicFileStatus.className = 'text-xs text-slate-500 font-mono mt-1';
           }
         }
       }
@@ -1895,7 +1932,6 @@ Synthesize a single, photorealistic, artifact-free image matching the spatial co
         throw new Error("No Google AI Studio API key configured. Please click 'Configure API Key' in the header to enter your API key.");
       }
 
-      // Exclusively use gemini-3.6-flash
       const model = 'gemini-3.6-flash';
 
       const prompt = `Analyze this image thoroughly and provide a structured, in-depth description with the following sections:
@@ -1950,7 +1986,6 @@ Synthesize a single, photorealistic, artifact-free image matching the spatial co
           throw new Error(`API returned 404 Not Found: ${errorMsg}`);
         }
 
-        // 403 Forbidden: explain exact reason from Google's response
         if (response.status === 403) {
           let reason = `403 Forbidden: ${errorMsg || 'Permission denied.'}`;
           if (errorMsg.includes('API_KEY_INVALID') || errorMsg.includes('not valid')) {
@@ -1963,7 +1998,6 @@ Synthesize a single, photorealistic, artifact-free image matching the spatial co
           throw new Error(reason);
         }
 
-        // 429 Rate Limit
         if (response.status === 429) {
           throw new Error(`429 Rate Limited: Quota exceeded for this API key. ${errorMsg}`);
         }
@@ -2010,7 +2044,7 @@ Synthesize a single, photorealistic, artifact-free image matching the spatial co
         const isAuthOrQuota = error.message && (error.message.includes('403') || error.message.includes('No Gemini API key'));
         aiDescriptionContent.innerHTML = `<div class="space-y-2 text-rose-300">
           <p class="font-semibold text-rose-400">AI Description Generation Failed</p>
-          <p class="text-slate-300 leading-relaxed text-xs break-words bg-slate-900/90 border border-rose-900/50 p-3 rounded-lg font-mono">${error.message || 'Unknown network error'}</p>
+          <p class="text-slate-300 leading-relaxed text-xs break-words bg-[#080b12] border border-rose-900/50 p-3 rounded-lg font-mono">${error.message || 'Unknown network error'}</p>
           ${isAuthOrQuota ? `<button onclick="document.getElementById('apiKeyModalBtn').click()" class="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-[11px] transition-colors cursor-pointer">
             <svg class="w-3.5 h-3.5 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-1.5 1.5L16 7l-1.5-1.5L13 7l-1.5-1.5L10 7 8.5 5.5 7 7l-5 5v5h5l7-7 2-2z"/></svg>
             <span>Update / Check API Key</span>
