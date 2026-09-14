@@ -50,7 +50,7 @@
         </div>
       </div>
       <div class="flex items-center gap-2">
-        <button id="apiKeyModalBtn" type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-xs font-medium text-slate-300 border border-slate-700 transition-colors cursor-pointer active:scale-95" title="Configure Gemini API Key for GitHub / standalone hosting">
+        <button id="apiKeyModalBtn" type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-xs font-medium text-slate-300 border border-slate-700 transition-colors cursor-pointer active:scale-95" title="Configure Google AI Studio API Key & Frontier Model">
           <svg class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 2l-2 2m-1.5 1.5L16 7l-1.5-1.5L13 7l-1.5-1.5L10 7 8.5 5.5 7 7l-5 5v5h5l7-7 2-2z"/>
             <circle cx="7.5" cy="16.5" r="1.5"/>
@@ -364,18 +364,21 @@
 
   <!-- API Key Setup Modal -->
   <div id="apiKeyModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200">
-    <div class="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
-      <div class="flex items-center justify-between px-5 py-3.5 border-b border-slate-800 bg-slate-950/50">
+    <div class="relative w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+      <div class="flex items-center justify-between px-5 py-3.5 border-b border-slate-800 bg-slate-950/70">
         <div class="flex items-center gap-2.5">
-          <div class="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+          <div class="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 2l-2 2m-1.5 1.5L16 7l-1.5-1.5L13 7l-1.5-1.5L10 7 8.5 5.5 7 7l-5 5v5h5l7-7 2-2z"/>
               <circle cx="7.5" cy="16.5" r="1.5"/>
             </svg>
           </div>
           <div>
-            <h2 class="text-sm font-semibold text-white">Gemini API Key Setup</h2>
-            <p class="text-[11px] text-slate-400">Required when running outside Canvas (e.g. on GitHub Pages)</p>
+            <h2 class="text-sm font-semibold text-white flex items-center gap-2">
+              Google AI Studio API Setup
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-700/60 font-medium">Frontier Models</span>
+            </h2>
+            <p class="text-[11px] text-slate-400">Configure your Gemini API key and frontier vision model</p>
           </div>
         </div>
         <button id="closeApiKeyModalBtn" type="button" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer" title="Close (Esc)">
@@ -386,22 +389,88 @@
         </button>
       </div>
 
-      <div class="p-5 space-y-4">
-        <div>
-          <label for="customApiKeyInput" class="block text-xs font-medium text-slate-300 mb-1.5">
-            Google Gemini API Key
-          </label>
-          <input type="password" id="customApiKeyInput" placeholder="AIzaSy..." class="w-full bg-slate-950 border border-slate-700/80 focus:border-indigo-500 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 font-mono focus:outline-none transition-colors" />
-          <p class="text-[11px] text-slate-500 mt-1.5">Get a free key at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="text-indigo-400 hover:underline">Google AI Studio</a>. Saved in your browser's localStorage for convenience.</p>
+      <div class="p-5 space-y-4 overflow-y-auto">
+        <!-- Google AI Studio Info Banner -->
+        <div class="bg-indigo-950/40 border border-indigo-800/60 rounded-xl p-3 flex items-start gap-3 text-xs">
+          <div class="text-indigo-400 mt-0.5 shrink-0">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="16" x2="12" y2="12"/>
+              <line x1="12" y1="8" x2="12.01" y2="8"/>
+            </svg>
+          </div>
+          <div class="text-slate-300 leading-relaxed text-[11px]">
+            Get a free API key directly from 
+            <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="text-indigo-400 hover:text-indigo-300 underline font-semibold inline-flex items-center gap-1">
+              Google AI Studio
+              <svg class="w-3 h-3 inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            </a>.
+            Keys are securely stored in your browser's <code class="text-slate-200 bg-slate-800 px-1 py-0.5 rounded font-mono">localStorage</code> and never sent to external servers.
+          </div>
         </div>
 
-        <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
-          <button id="clearApiKeyBtn" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer">
+        <!-- API Key Input -->
+        <div>
+          <label for="customApiKeyInput" class="block text-xs font-semibold text-slate-200 mb-1.5">
+            Google AI Studio API Key
+          </label>
+          <div class="relative flex items-center">
+            <input type="password" id="customApiKeyInput" placeholder="AIzaSy..." class="w-full bg-slate-950 border border-slate-700 focus:border-indigo-500 rounded-xl pl-3.5 pr-20 py-2.5 text-xs text-slate-200 font-mono focus:outline-none transition-colors" />
+            <div class="absolute right-2 flex items-center gap-1">
+              <button id="toggleApiKeyVisibilityBtn" type="button" class="p-1 text-slate-400 hover:text-slate-200 rounded hover:bg-slate-800 text-xs transition-colors" title="Toggle visibility">
+                <svg id="eyeIcon" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <p class="text-[11px] text-slate-500 mt-1">Starts with <span class="font-mono text-slate-400">AIzaSy...</span></p>
+        </div>
+
+        <!-- Frontier Model Selection -->
+        <div>
+          <label for="modelSelect" class="block text-xs font-semibold text-slate-200 mb-1.5">
+            Frontier Vision Model
+          </label>
+          <select id="modelSelect" class="w-full bg-slate-950 border border-slate-700 focus:border-indigo-500 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 font-mono focus:outline-none transition-colors cursor-pointer">
+            <option value="gemini-2.5-flash" selected>Gemini 2.5 Flash (Frontier Multimodal - Fast & Efficient) [Default]</option>
+            <option value="gemini-2.5-pro">Gemini 2.5 Pro (Frontier Multimodal - Deep Reasoning & Detail)</option>
+            <option value="gemini-2.0-flash">Gemini 2.0 Flash (Next-Gen Fast Multimodal)</option>
+            <option value="gemini-1.5-pro">Gemini 1.5 Pro (High-Capacity Complex Reasoning)</option>
+            <option value="gemini-1.5-flash">Gemini 1.5 Flash (Standard Lightweight)</option>
+          </select>
+          <p class="text-[11px] text-slate-500 mt-1">Automatic fallback cascade is applied if a model is unavailable or rate-limited.</p>
+        </div>
+
+        <!-- Test Connection Section -->
+        <div class="border-t border-slate-800 pt-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-medium text-slate-300">Validate Setup</span>
+            <button id="testApiKeyBtn" type="button" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-indigo-300 border border-slate-700 transition-colors flex items-center gap-1.5 cursor-pointer">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+              <span>Test Connection</span>
+            </button>
+          </div>
+          <div id="testResultBox" class="hidden mt-2 p-2.5 rounded-lg text-xs font-mono leading-relaxed break-words"></div>
+        </div>
+
+        <!-- Modal Footer Actions -->
+        <div class="flex items-center justify-between pt-3 border-t border-slate-800">
+          <button id="clearApiKeyBtn" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 border border-rose-900/40 transition-colors cursor-pointer">
             Clear Key
           </button>
-          <button id="saveApiKeyBtn" type="button" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md transition-all cursor-pointer">
-            Apply Key
-          </button>
+          <div class="flex items-center gap-2">
+            <button id="cancelApiKeyBtn" type="button" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors cursor-pointer">
+              Cancel
+            </button>
+            <button id="saveApiKeyBtn" type="button" class="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-500 hover:to-sky-500 text-white text-xs font-semibold shadow-md transition-all cursor-pointer">
+              Save & Apply Settings
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -424,7 +493,8 @@
       aiDescription: '',
       isGeneratingDesc: false,
       aiDescriptionFinished: false,
-      customApiKey: localStorage.getItem('pixelcompress_gemini_api_key') || ''
+      customApiKey: localStorage.getItem('pixelcompress_gemini_api_key') || '',
+      selectedModel: localStorage.getItem('pixelcompress_gemini_model') || 'gemini-2.5-flash'
     };
 
     // DOM Elements
@@ -473,20 +543,37 @@
     const apiKeyModal = document.getElementById('apiKeyModal');
     const apiKeyModalBtn = document.getElementById('apiKeyModalBtn');
     const closeApiKeyModalBtn = document.getElementById('closeApiKeyModalBtn');
+    const cancelApiKeyBtn = document.getElementById('cancelApiKeyBtn');
     const customApiKeyInput = document.getElementById('customApiKeyInput');
+    const modelSelect = document.getElementById('modelSelect');
     const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
     const clearApiKeyBtn = document.getElementById('clearApiKeyBtn');
+    const testApiKeyBtn = document.getElementById('testApiKeyBtn');
+    const testResultBox = document.getElementById('testResultBox');
+    const toggleApiKeyVisibilityBtn = document.getElementById('toggleApiKeyVisibilityBtn');
     const apiKeyBtnLabel = document.getElementById('apiKeyBtnLabel');
 
     let modalParsedImage = null; // Stored { width, height, data: Uint8ClampedArray }
 
-    if (state.customApiKey) {
-      apiKeyBtnLabel.textContent = 'Key Saved ✓';
-      apiKeyBtnLabel.classList.add('text-emerald-400');
+    function updateApiKeyButtonUI() {
+      if (state.customApiKey) {
+        const shortModelName = state.selectedModel.replace('gemini-', '');
+        apiKeyBtnLabel.textContent = `API Key (${shortModelName}) ✓`;
+        apiKeyBtnLabel.classList.add('text-emerald-400');
+      } else {
+        apiKeyBtnLabel.textContent = 'Configure API Key';
+        apiKeyBtnLabel.classList.remove('text-emerald-400');
+      }
     }
+    updateApiKeyButtonUI();
 
     function openApiKeyModal() {
       customApiKeyInput.value = state.customApiKey;
+      if (modelSelect) modelSelect.value = state.selectedModel;
+      if (testResultBox) {
+        testResultBox.className = 'hidden';
+        testResultBox.innerHTML = '';
+      }
       apiKeyModal.classList.remove('opacity-0', 'pointer-events-none');
       apiKeyModal.classList.add('opacity-100');
     }
@@ -494,6 +581,18 @@
     function closeApiKeyModal() {
       apiKeyModal.classList.add('opacity-0', 'pointer-events-none');
       apiKeyModal.classList.remove('opacity-100');
+    }
+
+    if (toggleApiKeyVisibilityBtn) {
+      toggleApiKeyVisibilityBtn.addEventListener('click', () => {
+        if (customApiKeyInput.type === 'password') {
+          customApiKeyInput.type = 'text';
+          toggleApiKeyVisibilityBtn.classList.add('text-indigo-400');
+        } else {
+          customApiKeyInput.type = 'password';
+          toggleApiKeyVisibilityBtn.classList.remove('text-indigo-400');
+        }
+      });
     }
 
     apiKeyModalBtn.addEventListener('click', (e) => {
@@ -506,29 +605,95 @@
       closeApiKeyModal();
     });
 
+    if (cancelApiKeyBtn) {
+      cancelApiKeyBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeApiKeyModal();
+      });
+    }
+
     apiKeyModal.addEventListener('click', (e) => {
       if (e.target === apiKeyModal) {
         closeApiKeyModal();
       }
     });
 
+    // Test API Key and Selected Model
+    if (testApiKeyBtn) {
+      testApiKeyBtn.addEventListener('click', async () => {
+        const key = customApiKeyInput.value.trim();
+        const model = modelSelect ? modelSelect.value : 'gemini-2.5-flash';
+
+        if (!key) {
+          testResultBox.className = 'mt-2 p-2.5 rounded-lg text-xs font-mono leading-relaxed bg-rose-950/60 border border-rose-800/80 text-rose-300';
+          testResultBox.innerHTML = '❌ Please enter an API key first.';
+          testResultBox.classList.remove('hidden');
+          return;
+        }
+
+        testResultBox.className = 'mt-2 p-2.5 rounded-lg text-xs font-mono leading-relaxed bg-slate-950 border border-indigo-800/50 text-indigo-300 flex items-center gap-2';
+        testResultBox.innerHTML = '<svg class="w-3.5 h-3.5 animate-spin text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9" stroke-dasharray="14" fill="none"/></svg> Connecting to Google AI Studio (' + model + ')...';
+        testResultBox.classList.remove('hidden');
+        testApiKeyBtn.disabled = true;
+
+        const startTime = Date.now();
+        try {
+          const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
+          const res = await fetch(testUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: 'Ping test. Reply with: OK' }] }]
+            })
+          });
+
+          const elapsed = Date.now() - startTime;
+
+          if (res.ok) {
+            const data = await res.json();
+            const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || 'OK';
+            testResultBox.className = 'mt-2 p-2.5 rounded-lg text-xs font-mono leading-relaxed bg-emerald-950/60 border border-emerald-800/80 text-emerald-300';
+            testResultBox.innerHTML = `✅ <strong>Success (${elapsed}ms):</strong> Connected to <strong>${model}</strong> via Google AI Studio!<br/><span class="text-[11px] text-emerald-400/80">Model Response: "${reply}"</span>`;
+          } else {
+            const errBody = await res.text();
+            let parsedMsg = errBody;
+            try {
+              const j = JSON.parse(errBody);
+              parsedMsg = j?.error?.message || errBody;
+            } catch(e) {}
+            
+            testResultBox.className = 'mt-2 p-2.5 rounded-lg text-xs font-mono leading-relaxed bg-rose-950/60 border border-rose-800/80 text-rose-300';
+            testResultBox.innerHTML = `❌ <strong>Error (HTTP ${res.status}):</strong> ${parsedMsg}`;
+          }
+        } catch (err) {
+          testResultBox.className = 'mt-2 p-2.5 rounded-lg text-xs font-mono leading-relaxed bg-rose-950/60 border border-rose-800/80 text-rose-300';
+          testResultBox.innerHTML = `❌ <strong>Network / Fetch Error:</strong> ${err.message}`;
+        } finally {
+          testApiKeyBtn.disabled = false;
+        }
+      });
+    }
+
     saveApiKeyBtn.addEventListener('click', () => {
       const val = customApiKeyInput.value.trim();
+      const chosenModel = modelSelect ? modelSelect.value : 'gemini-2.5-flash';
       state.customApiKey = val;
+      state.selectedModel = chosenModel;
+
+      localStorage.setItem('pixelcompress_gemini_model', chosenModel);
+
       if (val) {
         localStorage.setItem('pixelcompress_gemini_api_key', val);
-        apiKeyBtnLabel.textContent = 'Key Saved ✓';
-        apiKeyBtnLabel.classList.add('text-emerald-400');
-        showToast('API Key saved!');
+        updateApiKeyButtonUI();
+        showToast(`API Key saved with model ${chosenModel}!`);
       } else {
         localStorage.removeItem('pixelcompress_gemini_api_key');
-        apiKeyBtnLabel.textContent = 'API Key';
-        apiKeyBtnLabel.classList.remove('text-emerald-400');
+        updateApiKeyButtonUI();
         showToast('API Key cleared.');
       }
       closeApiKeyModal();
 
-      if (state.base64Data && (!state.aiDescription || state.aiDescription.startsWith('Unable to generate') || state.aiDescription.includes('403') || state.aiDescription.includes('404'))) {
+      if (state.base64Data && (!state.aiDescription || state.aiDescription.startsWith('Unable to generate') || state.aiDescription.includes('403') || state.aiDescription.includes('404') || state.aiDescription.includes('API key'))) {
         analyzeUploadedImage(state.base64Data, state.imageMimeType);
       }
     });
@@ -537,8 +702,11 @@
       state.customApiKey = '';
       localStorage.removeItem('pixelcompress_gemini_api_key');
       customApiKeyInput.value = '';
-      apiKeyBtnLabel.textContent = 'API Key';
-      apiKeyBtnLabel.classList.remove('text-emerald-400');
+      if (testResultBox) {
+        testResultBox.className = 'hidden';
+        testResultBox.innerHTML = '';
+      }
+      updateApiKeyButtonUI();
       showToast('API Key cleared.');
     });
 
@@ -1090,15 +1258,19 @@
     async function requestImageDescriptionWithBackoff(base64Data, mimeType) {
       const activeKey = state.customApiKey ? state.customApiKey.trim() : "";
       if (!activeKey) {
-        throw new Error("No Gemini API key provided. Please click the 'API Key' button at the top to enter your key.");
+        throw new Error("No Google AI Studio API key configured. Please click 'Configure API Key' in the header to enter your API key.");
       }
 
-      // Ordered list of candidate models: if one returns 404 (not supported / shut down on that key tier), we seamlessly try the next
-      const candidateModels = [
+      // Prioritize the user's selected frontier model from Google AI Studio, followed by fallback models
+      const preferred = state.selectedModel || 'gemini-2.5-flash';
+      const allAvailableModels = [
         'gemini-2.5-flash',
+        'gemini-2.5-pro',
         'gemini-2.0-flash',
+        'gemini-1.5-pro',
         'gemini-1.5-flash'
       ];
+      const candidateModels = [preferred, ...allAvailableModels.filter(m => m !== preferred)];
 
       const prompt = `Analyze this image thoroughly and provide a structured, in-depth description with the following sections:
 1. Executive Summary: What the image depicts in 1-2 concise sentences.
