@@ -16,12 +16,12 @@
       font-family: 'JetBrains Mono', monospace;
     }
     .bg-checker {
-      background-color: #0b0f19;
+      background-color: #090d16;
       background-image: 
-        linear-gradient(45deg, #161f30 25%, transparent 25%), 
-        linear-gradient(-45deg, #161f30 25%, transparent 25%), 
-        linear-gradient(45deg, transparent 75%, #161f30 75%), 
-        linear-gradient(-45deg, transparent 75%, #161f30 75%);
+        linear-gradient(45deg, #131b2e 25%, transparent 25%), 
+        linear-gradient(-45deg, #131b2e 25%, transparent 25%), 
+        linear-gradient(45deg, transparent 75%, #131b2e 75%), 
+        linear-gradient(-45deg, transparent 75%, #131b2e 75%);
       background-size: 16px 16px;
       background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
     }
@@ -31,34 +31,50 @@
       image-rendering: pixelated;
       image-rendering: crisp-edges;
     }
+    /* Sleek custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(71, 85, 105, 0.6);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(99, 102, 241, 0.6);
+    }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(99,102,241,0.14),rgba(255,255,255,0))]">
 
-  <header class="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0 z-40">
+  <header class="border-b border-slate-800/80 bg-slate-950/75 backdrop-blur-xl sticky top-0 z-40 transition-colors shadow-sm shadow-black/20">
     <div class="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
       <div class="flex items-center gap-3">
-        <div class="h-9 w-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-sky-400 p-0.5 shadow-lg shadow-indigo-500/20 flex items-center justify-center">
-          <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center font-mono font-bold text-xs text-indigo-400">
+        <div class="h-9 w-9 rounded-xl bg-gradient-to-tr from-indigo-500 via-indigo-400 to-sky-400 p-0.5 shadow-lg shadow-indigo-500/25 flex items-center justify-center transition-transform hover:scale-105">
+          <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center font-mono font-bold text-xs text-indigo-300">
             /1000
           </div>
         </div>
         <div>
           <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
             PixelCompress
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-950/80 text-indigo-300 border border-indigo-700/60 font-medium">1000× Studio</span>
           </h1>
         </div>
       </div>
       <div class="flex items-center gap-2">
-        <button id="apiKeyModalBtn" type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-xs font-medium text-slate-300 border border-slate-700 transition-colors cursor-pointer active:scale-95" title="Configure Google AI Studio API Key & Frontier Model">
+        <button id="apiKeyModalBtn" type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-xs font-medium text-slate-300 border border-slate-800 hover:border-slate-700 shadow-sm transition-all cursor-pointer active:scale-95" title="Configure Google AI Studio API Key & Frontier Model">
           <svg class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 2l-2 2m-1.5 1.5L16 7l-1.5-1.5L13 7l-1.5-1.5L10 7 8.5 5.5 7 7l-5 5v5h5l7-7 2-2z"/>
             <circle cx="7.5" cy="16.5" r="1.5"/>
           </svg>
           <span id="apiKeyBtnLabel">API Key</span>
         </button>
-        <button id="navOpenModalBtn" type="button" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-600/90 hover:bg-indigo-500 text-xs font-medium text-white border border-indigo-500/50 shadow-md shadow-indigo-500/20 transition-all cursor-pointer active:scale-95">
-          <svg class="w-3.5 h-3.5 text-indigo-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <button id="navOpenModalBtn" type="button" class="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-xs font-medium text-white border border-indigo-400/40 shadow-md shadow-indigo-500/25 transition-all cursor-pointer active:scale-95">
+          <svg class="w-3.5 h-3.5 text-indigo-100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
             <polyline points="14 2 14 8 20 8"/>
             <line x1="16" y1="13" x2="8" y2="13"/>
@@ -73,22 +89,22 @@
 
   <main class="flex-1 max-w-4xl mx-auto w-full p-4 sm:p-6 flex flex-col gap-6">
     <!-- Notification Toast -->
-    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 pointer-events-none transition-all duration-300 bg-slate-800 border border-slate-700 text-white px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2.5 text-xs font-medium">
+    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 pointer-events-none transition-all duration-300 bg-slate-900/90 backdrop-blur-md border border-slate-700/80 text-white px-4 py-2.5 rounded-xl shadow-2xl shadow-black/60 flex items-center gap-2.5 text-xs font-medium">
       <div id="toastIcon" class="text-emerald-400"></div>
       <span id="toastMessage"></span>
     </div>
 
     <!-- Upload Hero Zone -->
-    <div id="dropZone" class="relative group border-2 border-dashed border-slate-800 hover:border-indigo-500/80 rounded-2xl p-8 text-center transition-all bg-slate-900/30 hover:bg-slate-900/60 cursor-pointer">
+    <div id="dropZone" class="relative group border-2 border-dashed border-slate-800 hover:border-indigo-500/70 rounded-2xl p-8 text-center transition-all duration-300 bg-slate-900/40 hover:bg-slate-900/70 hover:shadow-xl hover:shadow-indigo-500/10 cursor-pointer backdrop-blur-sm">
       <input type="file" id="fileInput" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer z-10 w-full h-full">
       <div class="flex flex-col items-center justify-center gap-3 pointer-events-none">
-        <div class="w-14 h-14 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center border border-indigo-500/20 group-hover:scale-105 transition-transform">
+        <div class="w-14 h-14 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center border border-indigo-500/25 group-hover:scale-110 group-hover:bg-indigo-500/15 group-hover:border-indigo-500/40 transition-all duration-300 shadow-inner">
           <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
           </svg>
         </div>
         <div>
-          <p class="font-semibold text-slate-200 text-sm">Drop an image here or <span class="text-indigo-400 underline underline-offset-2">browse files</span></p>
+          <p class="font-semibold text-slate-200 text-sm">Drop an image here or <span class="text-indigo-400 underline underline-offset-4 decoration-indigo-500/40 group-hover:decoration-indigo-400 transition-colors">browse files</span></p>
           <p class="text-xs text-slate-400 mt-1">Converts image to exactly 1000× fewer pixels with detail retention</p>
         </div>
       </div>
@@ -97,20 +113,20 @@
     <div id="workspace" class="hidden flex flex-col gap-5">
       <!-- File Size Comparison (Original vs Final .nic) -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
+        <div class="bg-slate-900/70 backdrop-blur-md border border-slate-800/80 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
           <span class="text-[11px] text-slate-400 uppercase tracking-wider font-semibold">Original File Size</span>
           <div id="statOriginalFileSize" class="text-xl font-bold text-slate-100 font-mono mt-1">--</div>
           <span id="statOriginalFileDetail" class="text-[11px] text-slate-500 font-mono mt-1">Source upload</span>
         </div>
 
-        <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
+        <div class="bg-slate-900/70 backdrop-blur-md border border-slate-800/80 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
           <span class="text-[11px] text-indigo-400 uppercase tracking-wider font-semibold">Final .nic File Size</span>
           <div id="statNicFileSize" class="text-xl font-bold text-indigo-300 font-mono mt-1">--</div>
           <span id="statNicFileStatus" class="text-[11px] text-slate-400 font-mono mt-1">Pending description generation</span>
         </div>
       </div>
 
-      <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 flex flex-col gap-6">
+      <div class="bg-slate-900/70 backdrop-blur-md border border-slate-800/80 rounded-2xl p-6 flex flex-col gap-6 shadow-xl shadow-black/20">
         <div class="w-full flex items-center justify-between text-xs text-slate-400 border-b border-slate-800/80 pb-3">
           <span class="font-medium text-slate-300">Side-by-Side: Original Upload & 1000× Pixelated</span>
           <span class="font-mono text-indigo-400 bg-indigo-950/40 px-2 py-0.5 rounded border border-indigo-800/50">Dual Display</span>
@@ -221,13 +237,13 @@
   </main>
 
   <!-- Dedicated .nic File Inspector & Viewer Modal -->
-  <div id="nicViewerModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-200">
-    <div class="relative w-full max-w-3xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+  <div id="nicViewerModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-200">
+    <div class="relative w-full max-w-3xl bg-slate-900/95 backdrop-blur-xl border border-slate-800/90 rounded-3xl shadow-2xl shadow-black/80 overflow-hidden flex flex-col max-h-[92vh]">
       
       <!-- Modal Header -->
-      <div class="flex items-center justify-between px-5 py-3.5 border-b border-slate-800 bg-slate-950/70">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800/80 bg-slate-950/80">
         <div class="flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+          <div class="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/25 flex items-center justify-center text-indigo-400">
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
               <polyline points="14 2 14 8 20 8"/>
@@ -239,12 +255,12 @@
           <div>
             <h2 class="text-sm font-semibold text-white flex items-center gap-2">
               .nic File Viewer
-              <span id="nicLoadedBadge" class="hidden font-mono text-[10px] px-2 py-0.5 rounded bg-indigo-950/80 text-indigo-300 border border-indigo-700/60 font-normal"></span>
+              <span id="nicLoadedBadge" class="hidden font-mono text-[10px] px-2 py-0.5 rounded-full bg-indigo-950/80 text-indigo-300 border border-indigo-700/60 font-normal"></span>
             </h2>
             <p class="text-[11px] text-slate-400">Inspect .nic packages, decode raster pixels, and read AI descriptions</p>
           </div>
         </div>
-        <button id="closeNicViewerModalBtn" type="button" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer" title="Close Modal (Esc)">
+        <button id="closeNicViewerModalBtn" type="button" class="text-slate-400 hover:text-white p-1.5 rounded-xl hover:bg-slate-800/80 transition-colors cursor-pointer" title="Close Modal (Esc)">
           <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"/>
             <line x1="6" y1="6" x2="18" y2="18"/>
@@ -363,11 +379,11 @@
   </div>
 
   <!-- API Key Setup Modal -->
-  <div id="apiKeyModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200">
-    <div class="relative w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
-      <div class="flex items-center justify-between px-5 py-3.5 border-b border-slate-800 bg-slate-950/70">
+  <div id="apiKeyModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-200">
+    <div class="relative w-full max-w-lg bg-slate-900/95 backdrop-blur-xl border border-slate-800/90 rounded-3xl shadow-2xl shadow-black/80 overflow-hidden flex flex-col max-h-[92vh]">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800/80 bg-slate-950/80">
         <div class="flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+          <div class="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center text-amber-400">
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 2l-2 2m-1.5 1.5L16 7l-1.5-1.5L13 7l-1.5-1.5L10 7 8.5 5.5 7 7l-5 5v5h5l7-7 2-2z"/>
               <circle cx="7.5" cy="16.5" r="1.5"/>
@@ -376,12 +392,12 @@
           <div>
             <h2 class="text-sm font-semibold text-white flex items-center gap-2">
               Google AI Studio API Setup
-              <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-700/60 font-medium">Frontier Models</span>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-700/60 font-medium">Frontier Models</span>
             </h2>
             <p class="text-[11px] text-slate-400">Configure your Gemini API key and frontier vision model</p>
           </div>
         </div>
-        <button id="closeApiKeyModalBtn" type="button" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer" title="Close (Esc)">
+        <button id="closeApiKeyModalBtn" type="button" class="text-slate-400 hover:text-white p-1.5 rounded-xl hover:bg-slate-800/80 transition-colors cursor-pointer" title="Close (Esc)">
           <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="18" y1="6" x2="6" y2="18"/>
             <line x1="6" y1="6" x2="18" y2="18"/>
