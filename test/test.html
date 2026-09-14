@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>1000x Pixel Compressor</title>
+  <title>PixelCompress Studio</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -70,14 +70,14 @@
           class="h-9 w-9 rounded-xl bg-gradient-to-tr from-indigo-500 via-indigo-400 to-sky-400 p-0.5 shadow-lg shadow-indigo-500/25 flex items-center justify-center transition-transform hover:scale-105">
           <div
             class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center font-mono font-bold text-xs text-indigo-300">
-            /1000
+            NIC
           </div>
         </div>
         <div>
           <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
             PixelCompress
             <span
-              class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-950/80 text-indigo-300 border border-indigo-700/60 font-medium">1000×
+              class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-950/80 text-indigo-300 border border-indigo-700/60 font-medium">Ultra
               Studio</span>
           </h1>
         </div>
@@ -133,7 +133,7 @@
           <p class="font-semibold text-slate-200 text-sm">Drop an image here or <span
               class="text-indigo-400 underline underline-offset-4 decoration-indigo-500/40 group-hover:decoration-indigo-400 transition-colors">browse
               files</span></p>
-          <p class="text-xs text-slate-400 mt-1">Converts image to exactly 1000× fewer pixels with detail retention</p>
+          <p class="text-xs text-slate-400 mt-1">Converts image to an ultra-compressed pixel raster with detail retention</p>
         </div>
       </div>
     </div>
@@ -164,7 +164,7 @@
       <div
         class="bg-slate-900/70 backdrop-blur-md border border-slate-800/80 rounded-2xl p-6 flex flex-col gap-6 shadow-xl shadow-black/20">
         <div class="w-full flex items-center justify-between text-xs text-slate-400 border-b border-slate-800/80 pb-3">
-          <span class="font-medium text-slate-300">Side-by-Side: Original Upload & 1000× Pixelated</span>
+          <span class="font-medium text-slate-300">Side-by-Side: Original Upload & Ultra-Compressed Raster</span>
           <span class="font-mono text-indigo-400 bg-indigo-950/40 px-2 py-0.5 rounded border border-indigo-800/50">Dual
             Display</span>
         </div>
@@ -187,11 +187,11 @@
               --</span>
           </div>
 
-          <!-- 1000x Downsampled Pixelated Card -->
+          <!-- Ultra-Compressed Downsampled Pixelated Card -->
           <div class="flex flex-col items-center gap-3 bg-slate-950/60 border border-slate-800/80 rounded-xl p-4">
             <div class="w-full flex items-center justify-between text-xs pb-1 border-b border-slate-800/60">
               <span class="font-semibold text-indigo-300 flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-indigo-400"></span> 1000× Pixelated
+                <span class="w-2 h-2 rounded-full bg-indigo-400"></span> Ultra-Compressed Raster
               </span>
               <span id="pixelatedDisplayBadge" class="font-mono text-[11px] text-indigo-400">0 × 0 px</span>
             </div>
@@ -212,7 +212,7 @@
                 <span class="text-[10px] text-slate-400 font-mono">Actual 1:1 Scale</span>
               </div>
             </div>
-            <span class="text-[11px] text-slate-400 font-mono text-center">Detail-preserved 99.9% downsampling</span>
+            <span class="text-[11px] text-slate-400 font-mono text-center">Detail-preserved ultra-low resolution raster</span>
           </div>
         </div>
 
@@ -1295,7 +1295,7 @@
 
         nicMetaDim.textContent = metadata['compressed-dimensions'] || `${parsedImage.width} × ${parsedImage.height} px`;
         nicMetaPixels.textContent = metadata['total-pixels'] || `${parsedImage.totalPixels.toLocaleString()} px`;
-        nicMetaReduction.textContent = metadata['reduction-factor'] || '99.9%';
+        nicMetaReduction.textContent = metadata['reduction-factor'] || '--';
         if (nicMetaFormat) {
           nicMetaFormat.textContent = 'NIC-C1 (Standard)';
           nicMetaFormat.className = 'font-mono text-xs font-bold text-amber-400 mt-0.5 truncate';
@@ -1855,10 +1855,12 @@ Synthesize a single, photorealistic, artifact-free image matching the spatial co
       return rows.join('\n');
     }
 
-    function compressImage1000x() {
+    const PIXEL_REDUCTION_FACTOR = 2500;
+
+    function compressImageUltra() {
       if (!state.image) return;
 
-      const scaleFactor = Math.sqrt(1000);
+      const scaleFactor = Math.sqrt(PIXEL_REDUCTION_FACTOR);
       state.targetWidth = Math.max(1, Math.round(state.originalWidth / scaleFactor));
       state.targetHeight = Math.max(1, Math.round(state.originalHeight / scaleFactor));
       state.targetPixels = state.targetWidth * state.targetHeight;
@@ -2063,10 +2065,10 @@ Synthesize a single, photorealistic, artifact-free image matching the spatial co
           originalDisplayBadge.textContent = `${state.originalWidth} × ${state.originalHeight} px`;
 
           workspace.classList.remove('hidden');
-          compressImage1000x();
+          compressImageUltra();
           pixelatedDisplayBadge.textContent = `${state.targetWidth} × ${state.targetHeight} px`;
 
-          showToast(`Compressed to 1000× fewer pixels (${state.targetWidth} × ${state.targetHeight})`);
+          showToast(`Image compressed (${state.targetWidth} × ${state.targetHeight} px)`);
           analyzeUploadedImage(state.base64Data, state.imageMimeType);
         };
         img.src = fullDataUrl;
