@@ -1245,6 +1245,8 @@
 
       // Use gemini-3.1-flash-image specifically for image synthesis/regeneration
       const model = 'gemini-3.1-flash-image';
+      const negativeConstraints = 'Avoid: blurry artifacts, hallucinated objects not present in the low-res raster, color tone shift, distorted anatomy, warped horizon lines.';
+
       const systemInstruction = `You are an expert image reconstruction and super-resolution engine. Your task is to reconstruct a crisp, high-fidelity, high-resolution image from the provided low-resolution pixel raster and accompanying structured visual description.
 
 Adhere strictly to the five structured visual sections provided in the description:
@@ -1254,11 +1256,13 @@ Adhere strictly to the five structured visual sections provided in the descripti
 4. Setting & Background: Recreate environmental context, spatial depth, perspective, and background elements faithful to the low-resolution color layout.
 5. Textures & Micro-details: Add back lost high-frequency details, sharp edges, natural surface textures, and materials.
 
+Negative Constraints: ${negativeConstraints}
+
 Synthesize a single, photorealistic, artifact-free image matching the spatial composition of the input raster while incorporating all fine details specified in the description.`;
 
       const promptText = descriptionText && descriptionText.trim()
-        ? `Reconstruct and regenerate a high-resolution, high-detail version of this image using the structured visual description below to restore all fine detail, textures, and lighting:\n\n${descriptionText.trim()}`
-        : `Reconstruct and regenerate a high-resolution, high-detail version of this image, recovering crisp edges, natural textures, and clear visual fidelity.`;
+        ? `Reconstruct and regenerate a high-resolution, high-detail version of this image using the structured visual description below to restore all fine detail, textures, and lighting:\n\n${descriptionText.trim()}\n\nNegative Constraints: ${negativeConstraints}`
+        : `Reconstruct and regenerate a high-resolution, high-detail version of this image, recovering crisp edges, natural textures, and clear visual fidelity.\n\nNegative Constraints: ${negativeConstraints}`;
 
       const payload = {
         systemInstruction: {
