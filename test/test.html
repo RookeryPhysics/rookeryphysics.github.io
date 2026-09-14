@@ -85,7 +85,7 @@
       <div class="flex items-center gap-2">
         <button id="apiKeyModalBtn" type="button"
           class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-xs font-medium text-slate-300 border border-slate-800 hover:border-slate-700 shadow-sm transition-all cursor-pointer active:scale-95"
-          title="Configure Google AI Studio API Key & Frontier Model">
+          title="Configure Google AI Studio API Key">
           <svg class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"
             stroke-width="2">
             <path d="M21 2l-2 2m-1.5 1.5L16 7l-1.5-1.5L13 7l-1.5-1.5L10 7 8.5 5.5 7 7l-5 5v5h5l7-7 2-2z" />
@@ -463,8 +463,7 @@
             <div class="flex items-center justify-between pb-2 border-b border-slate-800/80">
               <div class="flex items-center gap-2">
                 <span class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span>
-                <span class="text-xs font-semibold text-white uppercase tracking-wider">AI Regenerated Image
-                  (gemini-3.1-flash-image)</span>
+                <span class="text-xs font-semibold text-white uppercase tracking-wider">AI Regenerated Image</span>
               </div>
               <div id="nicRegenStatusBadge"
                 class="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-950/80 text-indigo-300 border border-indigo-800/60">
@@ -476,8 +475,7 @@
             <div id="nicRegenLoading" class="hidden flex-col items-center justify-center py-6 gap-3 text-slate-400">
               <div class="w-7 h-7 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
               <div class="flex flex-col items-center gap-1 text-center">
-                <span class="text-xs font-semibold text-slate-200">Synthesizing high-detail image with Gemini 3.1 Flash
-                  Image...</span>
+                <span class="text-xs font-semibold text-slate-200">Synthesizing high-detail image...</span>
                 <span class="text-[11px] text-slate-500">Processing client-converted .jpg raster and description
                   text</span>
               </div>
@@ -562,9 +560,6 @@
           <div>
             <h2 class="text-sm font-semibold text-white flex items-center gap-2">
               Google AI Studio API Setup
-              <span
-                class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-700/60 font-medium">Frontier
-                Models</span>
             </h2>
             <p class="text-[11px] text-slate-400">Configure your Gemini API key</p>
           </div>
@@ -822,11 +817,12 @@
       }
     });
 
-    // Test API Key and Selected Model
+    // Test API Key with both Vision / Image Analysis and Image Generation Models
     if (testApiKeyBtn) {
       testApiKeyBtn.addEventListener('click', async () => {
         const key = customApiKeyInput.value.trim();
-        const model = 'gemini-3.6-flash';
+        const visionModel = 'gemini-3.6-flash';
+        const imageGenModel = 'gemini-3.1-flash-image';
 
         if (!key) {
           testResultBox.className = 'mt-2 p-2.5 rounded-lg text-xs font-mono leading-relaxed bg-rose-950/60 border border-rose-800/80 text-rose-300';
@@ -836,14 +832,14 @@
         }
 
         testResultBox.className = 'mt-2 p-2.5 rounded-lg text-xs font-mono leading-relaxed bg-slate-950 border border-indigo-800/50 text-indigo-300 flex items-center gap-2';
-        testResultBox.innerHTML = '<svg class="w-3.5 h-3.5 animate-spin text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9" stroke-dasharray="14" fill="none"/></svg> Connecting to Google AI Studio (' + model + ')...';
+        testResultBox.innerHTML = '<svg class="w-3.5 h-3.5 animate-spin text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9" stroke-dasharray="14" fill="none"/></svg> Validating connection (Analysis & Image Generation)...';
         testResultBox.classList.remove('hidden');
         testApiKeyBtn.disabled = true;
 
         const startTime = Date.now();
         try {
-          const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
-          const res = await fetch(testUrl, {
+          // Validate Vision/Analysis model
+          const visionPromise = fetch(`https://generativelanguage.googleapis.com/v1beta/models/${visionModel}:generateContent?key=${encodeURIComponent(key)}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -851,23 +847,37 @@
             })
           });
 
+          // Validate Image Generation model
+          const imageGenPromise = fetch(`https://generativelanguage.googleapis.com/v1beta/models/${imageGenModel}?key=${encodeURIComponent(key)}`, {
+            method: 'GET'
+          });
+
+          const [resVision, resImageGen] = await Promise.all([visionPromise, imageGenPromise]);
           const elapsed = Date.now() - startTime;
 
-          if (res.ok) {
-            const data = await res.json();
-            const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || 'OK';
+          const isVisionOk = resVision.ok;
+          const isImageGenOk = resImageGen.ok;
+
+          if (isVisionOk && isImageGenOk) {
             testResultBox.className = 'mt-2 p-2.5 rounded-lg text-xs font-mono leading-relaxed bg-emerald-950/60 border border-emerald-800/80 text-emerald-300';
-            testResultBox.innerHTML = `✅ <strong>Success (${elapsed}ms):</strong> Connected to <strong>${model}</strong> via Google AI Studio!<br/><span class="text-[11px] text-emerald-400/80">Model Response: "${reply}"</span>`;
+            testResultBox.innerHTML = `✅ <strong>Success (${elapsed}ms):</strong> Connected to Google AI Studio!<br/><span class="text-[11px] text-emerald-400/80">✓ Image Analysis Service: Ready<br/>✓ Image Generation Service: Ready</span>`;
           } else {
-            const errBody = await res.text();
-            let parsedMsg = errBody;
-            try {
-              const j = JSON.parse(errBody);
-              parsedMsg = j?.error?.message || errBody;
-            } catch (e) { }
+            let errorDetails = [];
+            if (!isVisionOk) {
+              const errBody = await resVision.text().catch(() => '');
+              let msg = errBody;
+              try { msg = JSON.parse(errBody)?.error?.message || errBody; } catch(e) {}
+              errorDetails.push(`Analysis Service Error (HTTP ${resVision.status}): ${msg}`);
+            }
+            if (!isImageGenOk) {
+              const errBody = await resImageGen.text().catch(() => '');
+              let msg = errBody;
+              try { msg = JSON.parse(errBody)?.error?.message || errBody; } catch(e) {}
+              errorDetails.push(`Image Generation Service Error (HTTP ${resImageGen.status}): ${msg}`);
+            }
 
             testResultBox.className = 'mt-2 p-2.5 rounded-lg text-xs font-mono leading-relaxed bg-rose-950/60 border border-rose-800/80 text-rose-300';
-            testResultBox.innerHTML = `❌ <strong>Error (HTTP ${res.status}):</strong> ${parsedMsg}`;
+            testResultBox.innerHTML = `❌ <strong>Error:</strong><br/>` + errorDetails.join('<br/>');
           }
         } catch (err) {
           testResultBox.className = 'mt-2 p-2.5 rounded-lg text-xs font-mono leading-relaxed bg-rose-950/60 border border-rose-800/80 text-rose-300';
@@ -889,7 +899,7 @@
       if (val) {
         localStorage.setItem('pixelcompress_gemini_api_key', val);
         updateApiKeyButtonUI();
-        showToast(`API Key saved with model ${chosenModel}!`);
+        showToast('API Key saved successfully!');
       } else {
         localStorage.removeItem('pixelcompress_gemini_api_key');
         updateApiKeyButtonUI();
@@ -1546,12 +1556,12 @@ Synthesize a single, photorealistic, artifact-free image matching the spatial co
 
           nicRegenStatusBadge.className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-400 border border-emerald-800/60';
           nicRegenStatusBadge.textContent = 'Image Generated ✓';
-          showToast('Image regenerated with Gemini 3.1 Flash Image!');
+          showToast('Image regenerated successfully!');
         } else if (result.text) {
           nicRegenTextContent.innerHTML = `<div class="p-3 bg-slate-900/90 rounded-lg border border-slate-800 leading-relaxed text-xs text-slate-200 whitespace-pre-wrap font-mono">${result.text}</div>`;
           nicRegenStatusBadge.className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-amber-950/80 text-amber-400 border border-amber-800/60';
           nicRegenStatusBadge.textContent = 'Text Output';
-          showToast('Model returned text description.');
+          showToast('AI returned text description.');
         }
       } catch (err) {
         nicRegenLoading.classList.add('hidden');
@@ -1956,7 +1966,7 @@ Synthesize a single, photorealistic, artifact-free image matching the spatial co
         ]
       };
 
-      aiLoadingModelText.textContent = `Analyzing image with ${model}...`;
+      aiLoadingModelText.textContent = `Analyzing image...`;
       const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(activeKey)}`;
 
       try {
@@ -1981,7 +1991,7 @@ Synthesize a single, photorealistic, artifact-free image matching the spatial co
         const errorMsg = errJson?.error?.message || errText;
 
         if (response.status === 404) {
-          throw new Error(`Model ${model} returned 404 Not Found: ${errorMsg}`);
+          throw new Error(`API returned 404 Not Found: ${errorMsg}`);
         }
 
         // 403 Forbidden: explain exact reason from Google's response
