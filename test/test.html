@@ -1050,8 +1050,8 @@
       const systemInstruction = "Create a higher quality version of this image using the text description to add detail back.";
 
       const promptText = descriptionText && descriptionText.trim()
-        ? `Here is the detailed visual description of the original high-resolution scene:\n\n${descriptionText.trim()}\n\nPlease synthesize and regenerate a crisp, high-quality, high-detail version of this image, recovering fine textures, edges, and features that were lost during downsampling.`
-        : `Please synthesize and regenerate a crisp, high-quality, high-detail version of this image, restoring clarity, sharp edges, and missing visual detail.`;
+        ? `Generate and output a high-quality, high-detail photograph image recreating this scene:\n${descriptionText.trim()}`
+        : `Generate and output a high-quality, high-detail version of this image.`;
 
       const payload = {
         systemInstruction: {
@@ -1070,7 +1070,10 @@
               }
             ]
           }
-        ]
+        ],
+        generationConfig: {
+          responseModalities: ["IMAGE", "TEXT"]
+        }
       };
 
       const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(activeKey)}`;
@@ -1193,10 +1196,10 @@
             document.body.removeChild(link);
             showToast('Downloaded regenerated AI image!');
           };
-        }
-
-        if (result.text) {
-          nicRegenTextContent.innerHTML = `<div class="p-3 bg-slate-900/90 rounded-lg border border-slate-800 leading-relaxed text-xs text-slate-200">${result.text}</div>`;
+          // Clear any lingering raw text if image succeeded
+          nicRegenTextContent.innerHTML = '';
+        } else if (result.text) {
+          nicRegenTextContent.innerHTML = `<div class="p-3 bg-slate-900/90 rounded-lg border border-slate-800 leading-relaxed text-xs text-slate-200 whitespace-pre-wrap font-mono">${result.text}</div>`;
         }
 
         nicRegenStatusBadge.className = 'text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-400 border border-emerald-800/60';
