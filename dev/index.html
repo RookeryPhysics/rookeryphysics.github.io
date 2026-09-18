@@ -71,7 +71,6 @@
       height: 100% !important;
     }
 
-    /* Cohesive scrollbars */
     ::-webkit-scrollbar {
       width: 5px;
       height: 5px;
@@ -102,13 +101,13 @@
 
 <body class="select-none text-slate-200 flex flex-col app-viewport w-screen overflow-hidden bg-[#090c12]">
   
-  <!-- Subtle ambient line -->
+  <!-- Ambient line -->
   <div class="h-[2px] w-full bg-gradient-to-r from-indigo-500 via-indigo-400 to-indigo-600 shrink-0 opacity-80"></div>
 
   <!-- Top App Header -->
   <header class="h-14 px-3 sm:px-4 shrink-0 bg-[#0f131c]/95 backdrop-blur-md border-b border-slate-800/80 flex items-center justify-between z-20">
     
-    <!-- Top Left: App Mark & Clean Export -->
+    <!-- Top Left: App Mark & Export -->
     <div class="flex items-center gap-2.5 sm:gap-3">
       <div class="flex items-center gap-2">
         <div class="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-sm shadow-indigo-600/30">
@@ -119,7 +118,7 @@
 
       <div class="h-4 w-px bg-slate-800 hidden sm:block"></div>
 
-      <!-- Export Button: Shortened and matching GUI button token -->
+      <!-- Export Button -->
       <button id="export-standalone-btn" title="Export clean standalone .html game"
         class="h-8 px-2.5 sm:px-3 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 hover:border-slate-700 active:scale-95 text-xs font-medium transition flex items-center gap-1.5 shadow-sm">
         <i class="fa-solid fa-file-arrow-down text-slate-400 text-xs"></i>
@@ -129,13 +128,11 @@
 
     <!-- Top Right: Undo/Redo & History Drawer Trigger -->
     <div class="flex items-center gap-1.5">
-      <!-- Undo / Previous Version -->
       <button id="quick-undo-btn" title="Revert to previous version (Ctrl+Z)"
         class="h-8 w-8 rounded-lg flex items-center justify-center bg-slate-900/80 text-slate-300 hover:text-white hover:bg-slate-800 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition border border-slate-800 hover:border-slate-700">
         <i class="fa-solid fa-arrow-rotate-left text-xs"></i>
       </button>
 
-      <!-- Redo / Next Version -->
       <button id="quick-redo-btn" title="Forward to next version (Ctrl+Y)"
         class="h-8 w-8 rounded-lg flex items-center justify-center bg-slate-900/80 text-slate-300 hover:text-white hover:bg-slate-800 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition border border-slate-800 hover:border-slate-700">
         <i class="fa-solid fa-arrow-rotate-right text-xs"></i>
@@ -143,7 +140,6 @@
 
       <div class="w-px h-4 bg-slate-800 mx-0.5"></div>
 
-      <!-- History Drawer Toggle: Renamed to History and styled consistently -->
       <button id="toggle-history-btn"
         class="h-8 px-2.5 sm:px-3 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 hover:border-slate-700 active:scale-95 text-xs font-medium transition flex items-center gap-1.5 shadow-sm">
         <i class="fa-solid fa-clock-rotate-left text-indigo-400 text-xs"></i>
@@ -160,11 +156,10 @@
   <!-- Bottom Workspace Toolbar & Prompt Dock -->
   <footer class="chat-footer shrink-0 bg-[#0f131c]/95 backdrop-blur-md border-t border-slate-800/80 py-2.5 z-20">
     <div class="max-w-3xl mx-auto">
-      <!-- Main Input Command Bar -->
       <div class="flex items-center gap-2 bg-[#131824] border border-slate-800 rounded-xl p-1.5 transition-all focus-within:border-indigo-500/70 focus-within:ring-2 focus-within:ring-indigo-500/20 shadow-lg">
 
         <!-- Status Indicator Pill -->
-        <div id="status-badge" class="flex items-center gap-1.5 h-7 px-2 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-[10px] font-mono font-medium shrink-0" title="Engine Status">
+        <div id="status-badge" class="flex items-center gap-1.5 h-7 px-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-[10px] font-mono font-medium shrink-0" title="Engine Status">
           <div id="status-indicator" class="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
           <span id="status-text" class="hidden sm:inline">Ready</span>
         </div>
@@ -224,21 +219,28 @@
     </div>
 
     <!-- History List Container -->
-    <div id="timeline-list" class="flex-1 overflow-y-auto p-4 space-y-3">
-      <!-- Dynamically generated version items appear here -->
-    </div>
+    <div id="timeline-list" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
   </aside>
 
-  <!-- Code Viewer Modal -->
+  <!-- Code & Reasoning Viewer Modal -->
   <div id="code-modal"
     class="fixed inset-0 bg-black/70 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-200 z-50 flex items-center justify-center p-4">
     <div
       class="bg-[#111520] border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+      
       <div class="p-3.5 bg-[#0e121a] border-b border-slate-800 flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <i class="fa-solid fa-code text-indigo-400 text-xs"></i>
-          <span id="modal-code-title" class="text-xs font-semibold text-slate-200 font-mono">Version Code</span>
+        <div class="flex items-center gap-3">
+          <div class="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-lg p-0.5 text-xs">
+            <button id="tab-code-btn" class="px-2.5 py-1 rounded bg-indigo-600 text-white font-medium transition">
+              <i class="fa-solid fa-code text-[10px] mr-1"></i> Code
+            </button>
+            <button id="tab-reasoning-btn" class="px-2.5 py-1 rounded text-slate-400 hover:text-slate-200 font-medium transition">
+              <i class="fa-solid fa-brain text-[10px] mr-1"></i> Reasoning
+            </button>
+          </div>
+          <span id="modal-code-title" class="text-xs font-semibold text-slate-300 font-mono truncate max-w-[200px] sm:max-w-xs">Version Info</span>
         </div>
+
         <div class="flex items-center gap-2">
           <button id="copy-code-btn"
             class="h-7 px-2.5 text-[11px] rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 transition flex items-center gap-1.5 font-medium">
@@ -250,8 +252,12 @@
           </button>
         </div>
       </div>
+
+      <!-- Tab Contents -->
       <div class="flex-1 overflow-auto p-4 bg-[#090c12] font-mono text-xs text-slate-200 leading-relaxed whitespace-pre"
         id="modal-code-content"></div>
+      <div class="hidden flex-1 overflow-auto p-4 bg-[#090c12] text-xs text-slate-300 leading-relaxed whitespace-pre-wrap font-sans"
+        id="modal-reasoning-content"></div>
     </div>
   </div>
 
@@ -356,13 +362,13 @@
 
       const voxelBoxGeo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
       const palmMaterials = [
-        new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.9, metalness: 0.1 }), // Bark dark
-        new THREE.MeshStandardMaterial({ color: 0x92400e, roughness: 0.85, metalness: 0.1 }), // Bark mid
-        new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.8, metalness: 0.1 }), // Bark light
-        new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.6 }), // Leaf dark green
-        new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.55 }), // Leaf emerald
-        new THREE.MeshStandardMaterial({ color: 0x4ade80, roughness: 0.5 }), // Leaf light green
-        new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.8 })  // Coconuts
+        new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.9, metalness: 0.1 }),
+        new THREE.MeshStandardMaterial({ color: 0x92400e, roughness: 0.85, metalness: 0.1 }),
+        new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.8, metalness: 0.1 }),
+        new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.6 }),
+        new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.55 }),
+        new THREE.MeshStandardMaterial({ color: 0x4ade80, roughness: 0.5 }),
+        new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.8 })
       ];
 
       function addVoxel(parent, x, y, z, matIndex, scale = 1) {
@@ -375,7 +381,7 @@
         return mesh;
       }
 
-      // Trunk - with a gentle natural tropical curve
+      // Trunk
       const trunkSteps = 12;
       let topX = 0, topZ = 0, topY = 0;
       for (let i = 0; i < trunkSteps; i++) {
@@ -385,7 +391,6 @@
         const yPos = 0.25 + i * 0.45;
         const matIdx = i % 3;
         
-        // Base roots flare on the first 2 levels
         if (i === 0) {
           addVoxel(treeGroup, xOffset + 0.35, yPos, zOffset, 0, 0.9);
           addVoxel(treeGroup, xOffset - 0.35, yPos, zOffset, 1, 0.9);
@@ -416,7 +421,6 @@
         const cos = Math.cos(angle);
         const sin = Math.sin(angle);
 
-        // Arc steps for each leaf
         const leafSegments = [
           { dist: 0.4, dy: 0.15, mat: 3, w: 0 },
           { dist: 0.85, dy: 0.32, mat: 4, w: 1 },
@@ -431,7 +435,6 @@
           const lz = sin * seg.dist;
           addVoxel(crownGroup, lx, seg.dy, lz, seg.mat, 0.85);
 
-          // Lateral leaflets for volume
           if (seg.w > 0) {
             const perpX = -sin * 0.35 * seg.w;
             const perpZ = cos * 0.35 * seg.w;
@@ -453,7 +456,6 @@
         cube.rotation.y += delta * 0.5;
         cube.rotation.x += delta * 0.2;
 
-        // Subtle organic palm crown sway
         crownGroup.rotation.z = Math.sin(elapsed * 1.6) * 0.04;
         crownGroup.rotation.x = Math.cos(elapsed * 1.3) * 0.03;
 
@@ -490,17 +492,32 @@
   </script>
 
   <script>
-    /* Version Control & Studio Controller */
-    const SYSTEM_PROMPT = `You are an expert Three.js and WebGL game engine programmer. 
-Your task is to modify or extend the provided JavaScript Three.js game code based on the user's prompt.
+    /* Two-Phase AI Generation Engine & Version Control */
+
+    // System prompt for Phase 1: Architectural Reasoning & Planning
+    const REASONING_SYSTEM_PROMPT = `You are an elite 3D WebGL and Three.js engine architect.
+Your job is to analyze the user's requested modification to the existing Three.js game code and produce a rigorous, structured internal thinking and architectural plan.
+
+In your thinking block:
+1. Deconstruct the user's request into precise technical requirements.
+2. Formulate the architectural changes:
+   - Identify which Three.js geometries, materials, meshes, lights, or physics variables are needed.
+   - Outline the mathematical logic, event listeners, or animation loop updates.
+   - Plan proper disposal in window.__cleanupGame to avoid WebGL memory leaks.
+3. Formulate step-by-step implementation instructions.
+
+Output ONLY your analytical thinking and architectural plan. Do not output raw runnable code fences in this phase.`;
+
+    // System prompt for Phase 2: Code Synthesis using the Thinking Block Context
+    const CODE_SYSTEM_PROMPT = `You are an expert Three.js and WebGL game engine programmer.
+Your task is to produce the final, complete JavaScript Three.js game code using the provided architectural reasoning plan.
 
 Rules:
-1. Return ONLY pure, runnable JavaScript code. Do not include markdown code fences (no \`\`\`javascript or \`\`\`), commentary, or explanations.
-2. The code will be executed in a live browser context where THREE and OrbitControls are globally available.
-3. Always implement proper teardown: define \`window.__cleanupGame = function() { ... }\` that cancels active \`requestAnimationFrame\`, removes window event listeners (keydown, resize, etc.), and disposes of materials/geometries so it can hot-reload seamlessly.
-4. Maintain a visually pleasing, polished aesthetic with smooth colors, proper lighting, and shadow casting.
-5. If the user asks for mechanics (e.g. movement, keyboard controls, bouncing, physics, particles, colors, lighting), integrate them directly into the scene and animation loop.
-6. Target the canvas container '#canvas-container'. Always size the renderer and camera aspect ratio using container.clientWidth and container.clientHeight instead of window.innerWidth/innerHeight.`;
+1. Return ONLY pure, runnable JavaScript code. Do not include markdown fences (no \`\`\`javascript or \`\`\`), commentary, or conversational filler.
+2. The code will execute in a live browser context with THREE and OrbitControls globally available.
+3. Always implement proper teardown: define \`window.__cleanupGame = function() { ... }\` that cancels active \`requestAnimationFrame\`, removes all window event listeners (keydown, resize, etc.), and disposes of materials/geometries.
+4. Target '#canvas-container'. Always size renderer and camera aspect using container.clientWidth and container.clientHeight.
+5. Strictly adhere to the plan laid out in the architectural thinking block.`;
 
     const versionStore = {
       commits: [],
@@ -527,6 +544,8 @@ Rules:
     const btnText = document.getElementById('btn-text');
     const btnSpinner = document.getElementById('btn-spinner');
     const statusDot = document.getElementById('status-indicator');
+    const statusBadge = document.getElementById('status-badge');
+    const statusText = document.getElementById('status-text');
     const toast = document.getElementById('toast');
 
     const versionCountBadge = document.getElementById('version-count-badge');
@@ -545,10 +564,15 @@ Rules:
     const codeModal = document.getElementById('code-modal');
     const modalCodeTitle = document.getElementById('modal-code-title');
     const modalCodeContent = document.getElementById('modal-code-content');
+    const modalReasoningContent = document.getElementById('modal-reasoning-content');
+    const tabCodeBtn = document.getElementById('tab-code-btn');
+    const tabReasoningBtn = document.getElementById('tab-reasoning-btn');
     const copyCodeBtn = document.getElementById('copy-code-btn');
     const closeCodeModalBtn = document.getElementById('close-code-modal-btn');
 
     let viewedCodeString = '';
+    let viewedReasoningString = '';
+    let currentModalTab = 'code';
 
     function showToast(msg, isError = false) {
       toast.textContent = msg;
@@ -605,7 +629,7 @@ Rules:
       document.body.appendChild(newScript);
     }
 
-    function recordCommit(code, message, type = 'prompt') {
+    function recordCommit(code, message, type = 'prompt', thinking = '') {
       const commitNumber = versionStore.commits.length + 1;
       const newCommit = {
         id: `v${commitNumber}`,
@@ -614,6 +638,7 @@ Rules:
         timestamp: new Date(),
         message: message.trim() || `Snapshot #${commitNumber}`,
         code: code,
+        thinking: thinking,
         type: type
       };
 
@@ -683,12 +708,10 @@ Rules:
         const nodeColor = isHead ? 'bg-indigo-500 ring-4 ring-indigo-500/20' : 'bg-slate-700';
 
         item.innerHTML = `
-          <!-- History Marker -->
           <div class="absolute -left-[9px] top-1.5 w-4 h-4 rounded-full ${nodeColor} flex items-center justify-center transition-all">
             ${isHead ? '<div class="w-1.5 h-1.5 rounded-full bg-slate-950"></div>' : ''}
           </div>
 
-          <!-- Commit Card with cohesive slate border and tokens -->
           <div class="bg-[#121622] hover:bg-[#151a28] border ${
             isHead ? 'border-indigo-500/50 shadow-md shadow-indigo-950/20' : 'border-slate-800'
           } rounded-xl p-3 transition">
@@ -714,7 +737,7 @@ Rules:
                   data-view-index="${i}"
                   class="view-code-btn h-6 px-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white text-[11px] font-medium transition flex items-center gap-1 border border-slate-800 hover:border-slate-700"
                 >
-                  <i class="fa-solid fa-code text-[10px] text-slate-400"></i> Code
+                  <i class="fa-solid fa-code text-[10px] text-slate-400"></i> Code & Plan
                 </button>
               </div>
 
@@ -763,14 +786,33 @@ Rules:
       historyBackdrop.classList.add('opacity-0', 'pointer-events-none');
     }
 
+    function switchModalTab(tab) {
+      currentModalTab = tab;
+      if (tab === 'code') {
+        tabCodeBtn.className = "px-2.5 py-1 rounded bg-indigo-600 text-white font-medium transition";
+        tabReasoningBtn.className = "px-2.5 py-1 rounded text-slate-400 hover:text-slate-200 font-medium transition";
+        modalCodeContent.classList.remove('hidden');
+        modalReasoningContent.classList.add('hidden');
+      } else {
+        tabReasoningBtn.className = "px-2.5 py-1 rounded bg-indigo-600 text-white font-medium transition";
+        tabCodeBtn.className = "px-2.5 py-1 rounded text-slate-400 hover:text-slate-200 font-medium transition";
+        modalReasoningContent.classList.remove('hidden');
+        modalCodeContent.classList.add('hidden');
+      }
+    }
+
     function openCodeModal(index) {
       const commit = versionStore.commits[index];
       if (!commit) return;
 
       modalCodeTitle.textContent = `${commit.id} (${commit.hash}) - ${commit.message}`;
       viewedCodeString = commit.code;
-      modalCodeContent.textContent = commit.code;
+      viewedReasoningString = commit.thinking || "No reasoning plan logged for this snapshot (initial or direct checkout).";
+      
+      modalCodeContent.textContent = viewedCodeString;
+      modalReasoningContent.textContent = viewedReasoningString;
 
+      switchModalTab('code');
       codeModal.classList.remove('opacity-0', 'pointer-events-none');
     }
 
@@ -778,29 +820,47 @@ Rules:
       codeModal.classList.add('opacity-0', 'pointer-events-none');
     }
 
-    function setGenerating(isGenerating) {
-      submitBtn.disabled = isGenerating;
-      input.disabled = isGenerating;
-      const statusBadge = document.getElementById('status-badge');
-      const statusText = document.getElementById('status-text');
+    tabCodeBtn.addEventListener('click', () => switchModalTab('code'));
+    tabReasoningBtn.addEventListener('click', () => switchModalTab('reasoning'));
 
-      if (isGenerating) {
-        btnText.textContent = "Updating...";
+    function setEngineStage(stage, label) {
+      if (stage === 'reasoning') {
+        submitBtn.disabled = true;
+        input.disabled = true;
+        btnText.textContent = "Reasoning...";
         btnSpinner.classList.remove('hidden');
-        statusDot.className = "w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping";
-        if (statusBadge) statusBadge.className = "flex items-center gap-1.5 h-7 px-2 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-300 text-[10px] font-mono font-medium shrink-0";
-        if (statusText) statusText.textContent = "Updating";
-      } else {
+        statusDot.className = "w-1.5 h-1.5 rounded-full bg-violet-400 animate-ping";
+        statusBadge.className = "flex items-center gap-1.5 h-7 px-2.5 rounded-lg bg-violet-500/10 border border-violet-500/25 text-violet-300 text-[10px] font-mono font-medium shrink-0";
+        statusText.textContent = label || "Thinking";
+      } else if (stage === 'coding') {
+        submitBtn.disabled = true;
+        input.disabled = true;
+        btnText.textContent = "Synthesizing...";
+        btnSpinner.classList.remove('hidden');
+        statusDot.className = "w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse";
+        statusBadge.className = "flex items-center gap-1.5 h-7 px-2.5 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-300 text-[10px] font-mono font-medium shrink-0";
+        statusText.textContent = label || "Writing Code";
+      } else if (stage === 'ready') {
+        submitBtn.disabled = false;
+        input.disabled = false;
         btnText.textContent = "Apply";
         btnSpinner.classList.add('hidden');
         statusDot.className = "w-1.5 h-1.5 rounded-full bg-emerald-400";
-        if (statusBadge) statusBadge.className = "flex items-center gap-1.5 h-7 px-2 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-[10px] font-mono font-medium shrink-0";
-        if (statusText) statusText.textContent = "Ready";
+        statusBadge.className = "flex items-center gap-1.5 h-7 px-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-[10px] font-mono font-medium shrink-0";
+        statusText.textContent = "Ready";
+      } else if (stage === 'error') {
+        submitBtn.disabled = false;
+        input.disabled = false;
+        btnText.textContent = "Apply";
+        btnSpinner.classList.add('hidden');
+        statusDot.className = "w-1.5 h-1.5 rounded-full bg-rose-500";
+        statusBadge.className = "flex items-center gap-1.5 h-7 px-2.5 rounded-lg bg-rose-500/10 border border-rose-500/25 text-rose-300 text-[10px] font-mono font-medium shrink-0";
+        statusText.textContent = "Error";
       }
     }
 
     async function callGemini(payload, maxRetries = 3, initialDelay = 1000) {
-      const apiKey = ""; // Runtime environment
+      const apiKey = "";
       const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
       let delay = initialDelay;
 
@@ -826,53 +886,75 @@ Rules:
       }
     }
 
+    /* Two-Phase Execution Pipeline: Hidden Reasoning -> Synthesis with Reasoning Context */
     async function applyUserPrompt(promptText) {
       if (!promptText.trim()) return;
 
       const activeCommit = versionStore.commits[versionStore.currentHeadIndex];
       const currentCode = activeCommit ? activeCommit.code : (document.getElementById('game-logic')?.textContent || '');
 
-      setGenerating(true);
-
-      const userContent = `Here is the current Three.js engine code:\n\n\`\`\`javascript\n${currentCode}\n\`\`\`\n\nRequested modification:\n${promptText}\n\nReturn the complete updated runnable JavaScript code including window.__cleanupGame.`;
-
-      const payload = {
-        contents: [{ parts: [{ text: userContent }] }],
-        systemInstruction: {
-          parts: [{ text: SYSTEM_PROMPT }]
-        }
-      };
-
       try {
-        const data = await callGemini(payload);
-        const rawCode = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        // ==========================================
+        // PHASE 1: Hidden Architectural Reasoning
+        // ==========================================
+        setEngineStage('reasoning', 'Reasoning');
+
+        const reasoningPrompt = `Current Three.js engine code:\n\`\`\`javascript\n${currentCode}\n\`\`\`\n\nUser's requested modification:\n"${promptText}"\n\nProduce your architectural thinking block and implementation strategy.`;
+
+        const reasoningPayload = {
+          contents: [{ parts: [{ text: reasoningPrompt }] }],
+          systemInstruction: {
+            parts: [{ text: REASONING_SYSTEM_PROMPT }]
+          }
+        };
+
+        const reasoningData = await callGemini(reasoningPayload);
+        const thinkingBlock = reasoningData.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (!thinkingBlock) {
+          throw new Error("Reasoning phase failed to generate a plan.");
+        }
+
+        // ==========================================
+        // PHASE 2: Code Synthesis with Thinking Context
+        // ==========================================
+        setEngineStage('coding', 'Writing Code');
+
+        const synthesisPrompt = `Current Three.js engine code:\n\`\`\`javascript\n${currentCode}\n\`\`\`\n\nUser Request:\n"${promptText}"\n\n[ARCHITECTURAL REASONING & EXECUTION PLAN]:\n${thinkingBlock}\n\nExecute the above architectural plan and return the complete updated runnable JavaScript code including window.__cleanupGame.`;
+
+        const codePayload = {
+          contents: [{ parts: [{ text: synthesisPrompt }] }],
+          systemInstruction: {
+            parts: [{ text: CODE_SYSTEM_PROMPT }]
+          }
+        };
+
+        const codeData = await callGemini(codePayload);
+        const rawCode = codeData.candidates?.[0]?.content?.parts?.[0]?.text;
 
         if (!rawCode) {
-          throw new Error("No code returned from model.");
+          throw new Error("Synthesis phase failed to return runnable code.");
         }
 
         const generatedCode = extractExecutableCode(rawCode);
 
+        // Pre-validate syntax
         const syntaxErr = testSyntax(generatedCode);
         if (syntaxErr) {
-          throw new Error(`Generated script syntax error: ${syntaxErr.message}`);
+          throw new Error(`Generated code syntax error: ${syntaxErr.message}`);
         }
 
+        // Apply and commit
         executeEngineCode(generatedCode);
-        recordCommit(generatedCode, promptText, 'prompt');
+        recordCommit(generatedCode, promptText, 'prompt', thinkingBlock);
 
         input.value = '';
-        showToast("Engine updated and committed to history");
+        showToast("Engine updated via reasoned plan");
+        setEngineStage('ready');
       } catch (err) {
-        console.error("Engine update failed:", err);
+        console.error("Engine pipeline failed:", err);
         showToast(err.message || "Failed to update scene", true);
-        const statusBadge = document.getElementById('status-badge');
-        const statusText = document.getElementById('status-text');
-        statusDot.className = "w-1.5 h-1.5 rounded-full bg-rose-500";
-        if (statusBadge) statusBadge.className = "flex items-center gap-1.5 h-7 px-2 rounded-lg bg-rose-500/10 border border-rose-500/25 text-rose-300 text-[10px] font-mono font-medium shrink-0";
-        if (statusText) statusText.textContent = "Error";
-      } finally {
-        setGenerating(false);
+        setEngineStage('error');
       }
     }
 
@@ -905,16 +987,17 @@ Rules:
     });
 
     copyCodeBtn.addEventListener('click', () => {
+      const textToCopy = currentModalTab === 'code' ? viewedCodeString : viewedReasoningString;
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(viewedCodeString)
-          .then(() => showToast("Code copied to clipboard"))
+        navigator.clipboard.writeText(textToCopy)
+          .then(() => showToast(currentModalTab === 'code' ? "Code copied" : "Reasoning copied"))
           .catch(() => {
             document.execCommand('copy');
-            showToast("Code copied to clipboard");
+            showToast("Copied to clipboard");
           });
       } else {
         document.execCommand('copy');
-        showToast("Code copied to clipboard");
+        showToast("Copied to clipboard");
       }
     });
 
@@ -1010,16 +1093,6 @@ ${gameCode}
       }
     });
 
-    document.querySelectorAll('.chip-btn').forEach(chip => {
-      chip.addEventListener('click', () => {
-        const prompt = chip.getAttribute('data-prompt');
-        if (prompt) {
-          input.value = prompt;
-          input.focus();
-        }
-      });
-    });
-
     function updateAppHeight() {
       const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
       document.documentElement.style.setProperty('--app-height', `${h}px`);
@@ -1039,7 +1112,7 @@ ${gameCode}
       updateAppHeight();
       const initialScript = document.getElementById('game-logic');
       const initialCode = initialScript ? initialScript.textContent : '';
-      recordCommit(initialCode, "Initial Scene (Red Cube & Voxel Palm Tree)", "init");
+      recordCommit(initialCode, "Initial Scene (Red Cube & Voxel Palm Tree)", "init", "Initial base scene setup.");
     });
   </script>
 </body>
