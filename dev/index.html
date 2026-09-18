@@ -1,18 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
-  <title>Three.js Engine with Version Logging</title>
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
+  <title>Three.js Engine Studio</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
       --app-height: 100dvh;
     }
-    body, html {
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body,
+    html {
       margin: 0;
       padding: 0;
       width: 100%;
@@ -22,9 +34,14 @@
       min-height: 100%;
       min-height: -webkit-fill-available;
       overflow: hidden;
-      background-color: #0b0d13;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #0b0e14;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
+
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
     .app-viewport {
       height: 100%;
       height: 100dvh;
@@ -32,11 +49,13 @@
       max-height: 100dvh;
       max-height: var(--app-height, 100dvh);
     }
+
     .chat-footer {
-      padding-bottom: max(0.625rem, env(safe-area-inset-bottom, 0.625rem));
-      padding-left: max(0.625rem, env(safe-area-inset-left, 0.625rem));
-      padding-right: max(0.625rem, env(safe-area-inset-right, 0.625rem));
+      padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0.5rem));
+      padding-left: max(0.75rem, env(safe-area-inset-left, 0.75rem));
+      padding-right: max(0.75rem, env(safe-area-inset-right, 0.75rem));
     }
+
     #canvas-container {
       position: relative;
       width: 100%;
@@ -45,139 +64,179 @@
       min-height: 0;
       outline: none;
     }
+
     canvas {
       display: block;
       width: 100% !important;
       height: 100% !important;
     }
-    /* Custom scrollbars for version history */
+
+    /* Subtle scrollbar */
     ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
+      width: 5px;
+      height: 5px;
     }
+
     ::-webkit-scrollbar-track {
-      background: rgba(15, 23, 42, 0.6);
+      background: rgba(11, 14, 20, 0.7);
     }
+
     ::-webkit-scrollbar-thumb {
-      background: rgba(100, 116, 139, 0.4);
+      background: rgba(79, 70, 229, 0.35);
       border-radius: 9999px;
     }
+
     ::-webkit-scrollbar-thumb:hover {
-      background: rgba(148, 163, 184, 0.6);
+      background: rgba(99, 102, 241, 0.6);
+    }
+
+    /* Quick chip pills */
+    .chip-btn {
+      white-space: nowrap;
+      transition: all 0.15s ease;
     }
   </style>
 </head>
-<body class="select-none text-slate-200 flex flex-col app-viewport w-screen overflow-hidden bg-slate-950">
-  <!-- Top App Header: Completely outside the game viewport -->
-  <header class="h-13 py-2 px-4 shrink-0 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 flex items-center justify-between z-20">
-    <!-- Top Left: Standalone Game Export Button -->
-    <div class="flex items-center gap-3">
-      <button 
-        id="export-standalone-btn" 
-        title="Export clean, self-contained .html game"
-        class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 active:scale-95 text-xs font-medium transition shadow-sm"
-      >
-        <i class="fa-solid fa-download text-emerald-400 text-xs"></i>
-        <span>Export</span>
-      </button>
 
-      <span class="text-xs text-slate-400 font-mono hidden sm:inline-flex items-center gap-1.5 pl-2 border-l border-slate-800">
-        <i class="fa-solid fa-cube text-cyan-400 text-[11px]"></i>
-        <span>Game Viewport</span>
-      </span>
+<body class="select-none text-slate-100 flex flex-col app-viewport w-screen overflow-hidden bg-[#0b0e14]">
+  
+  <!-- Subtle top ambient accent line -->
+  <div class="h-[2px] w-full bg-gradient-to-r from-indigo-500 via-purple-500 via-pink-500 to-amber-400 shrink-0"></div>
+
+  <!-- Top App Header: Clean, colorful, professional -->
+  <header class="h-13 py-2 px-3 sm:px-4 shrink-0 bg-[#10141d]/95 backdrop-blur-md border-b border-[#1c2331] flex items-center justify-between z-20">
+    
+    <!-- Top Left: Brand / Viewport Info & Export -->
+    <div class="flex items-center gap-2.5 sm:gap-3">
+      <!-- App Brand Mark -->
+      <div class="flex items-center gap-2">
+        <div class="w-7 h-7 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-sm shadow-indigo-500/30">
+          <i class="fa-solid fa-cube text-xs"></i>
+        </div>
+        <span class="font-bold text-xs sm:text-sm tracking-tight text-white hidden xs:inline">Engine<span class="text-indigo-400">Lab</span></span>
+      </div>
+
+      <div class="h-4 w-px bg-[#1e2637] hidden sm:block"></div>
+
+      <!-- Export Standalone Button (Emerald Green Accent) -->
+      <button id="export-standalone-btn" title="Export clean, self-contained .html game"
+        class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 hover:text-emerald-200 border border-emerald-500/30 active:scale-95 text-xs font-semibold transition shadow-sm">
+        <i class="fa-solid fa-file-arrow-down text-emerald-400 text-xs"></i>
+        <span>Export HTML</span>
+      </button>
     </div>
 
-    <!-- Top Right: Quick Version Step Controls & History Drawer Trigger -->
-    <div class="flex items-center gap-1.5">
+    <!-- Top Right: Undo/Redo & History Drawer Trigger -->
+    <div class="flex items-center gap-1.5 sm:gap-2">
       <!-- Undo / Previous Version -->
-      <button 
-        id="quick-undo-btn" 
-        title="Revert to previous version (Ctrl+Z)"
-        class="w-8 h-8 rounded-xl flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-800 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition border border-slate-800/80"
-      >
+      <button id="quick-undo-btn" title="Revert to previous version (Ctrl+Z)"
+        class="w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center bg-[#151a26] text-slate-300 hover:text-white hover:bg-[#1d2436] active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition border border-[#222c40]">
         <i class="fa-solid fa-arrow-rotate-left text-xs"></i>
       </button>
 
       <!-- Redo / Next Version -->
-      <button 
-        id="quick-redo-btn" 
-        title="Forward to next version (Ctrl+Y)"
-        class="w-8 h-8 rounded-xl flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-800 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition border border-slate-800/80"
-      >
+      <button id="quick-redo-btn" title="Forward to next version (Ctrl+Y)"
+        class="w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center bg-[#151a26] text-slate-300 hover:text-white hover:bg-[#1d2436] active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition border border-[#222c40]">
         <i class="fa-solid fa-arrow-rotate-right text-xs"></i>
       </button>
 
-      <div class="w-px h-5 bg-slate-800 mx-1"></div>
+      <div class="w-px h-4 bg-[#1e2637] mx-0.5"></div>
 
-      <!-- Full History Drawer Toggle -->
-      <button 
-        id="toggle-history-btn" 
-        class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 active:scale-95 text-xs font-medium transition shadow-sm"
-      >
-        <i class="fa-solid fa-code-commit text-cyan-400"></i>
-        <span>History</span>
-        <span id="version-count-badge" class="ml-1 px-1.5 py-0.2 bg-cyan-900/80 text-cyan-200 text-[10px] rounded-full border border-cyan-700/50">1</span>
+      <!-- Full History Drawer Toggle (Purple / Violet Accent) -->
+      <button id="toggle-history-btn"
+        class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-violet-500/10 hover:bg-violet-500/20 text-violet-200 hover:text-white border border-violet-500/30 active:scale-95 text-xs font-semibold transition shadow-sm">
+        <i class="fa-solid fa-code-branch text-violet-400"></i>
+        <span>Timeline</span>
+        <span id="version-count-badge"
+          class="ml-0.5 px-1.5 py-0.2 bg-violet-600 text-white font-mono text-[10px] font-bold rounded-md">1</span>
       </button>
     </div>
   </header>
 
-  <!-- Dedicated Game Canvas Viewport: Completely clear of any overlay widgets -->
-  <main id="canvas-container" class="relative flex-1 w-full h-full min-h-0 bg-[#0e1117]"></main>
+  <!-- Dedicated Game Canvas Viewport -->
+  <main id="canvas-container" class="relative flex-1 w-full h-full min-h-0 bg-[#0d1017]"></main>
 
-  <!-- Bottom Workspace Toolbar: Outside the game window -->
-  <footer class="chat-footer shrink-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 p-2.5 z-20">
-    <div class="max-w-3xl mx-auto flex items-center gap-2 bg-slate-950/70 border border-slate-800 rounded-xl p-1.5 transition-all focus-within:border-cyan-500/70 focus-within:ring-2 focus-within:ring-cyan-500/20">
+  <!-- Bottom Workspace Toolbar & Prompt Dock -->
+  <footer class="chat-footer shrink-0 bg-[#10141d]/95 backdrop-blur-md border-t border-[#1c2331] pt-2 z-20">
+    <div class="max-w-3xl mx-auto space-y-1.5">
       
-      <!-- Status Indicator Dot -->
-      <div id="status-indicator" class="w-2.5 h-2.5 rounded-full bg-emerald-400 ml-2.5 shrink-0 transition-colors duration-300" title="Ready"></div>
+      <!-- Quick Prompt Suggestion Chips -->
+      <div class="flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar text-[11px]">
+        <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400 mr-0.5 shrink-0 hidden xs:inline">Ideas:</span>
+        
+        <button type="button" class="chip-btn shrink-0 px-2 py-0.5 rounded-md bg-[#161c28] hover:bg-indigo-950/60 text-slate-300 hover:text-indigo-200 border border-[#232c3f] hover:border-indigo-500/40 text-[11px]" data-prompt="add bouncing physics to the cube">
+          🏀 Bounce Physics
+        </button>
+        <button type="button" class="chip-btn shrink-0 px-2 py-0.5 rounded-md bg-[#161c28] hover:bg-violet-950/60 text-slate-300 hover:text-violet-200 border border-[#232c3f] hover:border-violet-500/40 text-[11px]" data-prompt="add orbiting glowing spheres with neon lights">
+          🪐 Neon Spheres
+        </button>
+        <button type="button" class="chip-btn shrink-0 px-2 py-0.5 rounded-md bg-[#161c28] hover:bg-cyan-950/60 text-slate-300 hover:text-cyan-200 border border-[#232c3f] hover:border-cyan-500/40 text-[11px]" data-prompt="add keyboard WASD movement for the cube">
+          🎮 WASD Controls
+        </button>
+        <button type="button" class="chip-btn shrink-0 px-2 py-0.5 rounded-md bg-[#161c28] hover:bg-pink-950/60 text-slate-300 hover:text-pink-200 border border-[#232c3f] hover:border-pink-500/40 text-[11px]" data-prompt="add a particle starfield and colorful fog">
+          ✨ Particle Field
+        </button>
+      </div>
 
-      <input 
-        id="prompt-input" 
-        type="text" 
-        placeholder="Modify scene (e.g. 'make the cube bounce', 'add floating spheres')..." 
-        class="flex-1 bg-transparent px-3 py-1.5 text-xs sm:text-sm text-slate-100 placeholder-slate-400 focus:outline-none"
-        autocomplete="off"
-      />
+      <!-- Main Input Command Bar -->
+      <div class="flex items-center gap-2 bg-[#141924] border border-[#222b3d] rounded-xl p-1.5 transition-all focus-within:border-indigo-500/80 focus-within:ring-2 focus-within:ring-indigo-500/25 shadow-lg">
 
-      <button 
-        id="submit-btn" 
-        class="shrink-0 flex items-center justify-center px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white text-xs font-semibold rounded-lg transition duration-150 shadow-md disabled:opacity-50 disabled:pointer-events-none"
-      >
-        <span id="btn-text">Apply</span>
-        <svg id="btn-spinner" class="hidden animate-spin h-3.5 w-3.5 ml-1 text-white" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-      </button>
+        <!-- Status Indicator Pill -->
+        <div id="status-badge" class="flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[10px] font-mono font-medium shrink-0" title="Engine Status">
+          <div id="status-indicator" class="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
+          <span id="status-text" class="hidden sm:inline">Ready</span>
+        </div>
+
+        <input id="prompt-input" type="text" placeholder="Describe change (e.g. 'add neon rings', 'jump on spacebar')..."
+          class="flex-1 bg-transparent px-2.5 py-1.5 text-xs sm:text-sm text-slate-100 placeholder-slate-400 focus:outline-none"
+          autocomplete="off" />
+
+        <button id="submit-btn"
+          class="shrink-0 flex items-center justify-center gap-1.5 px-3.5 sm:px-4 py-1.5 bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-600 hover:from-indigo-400 hover:via-purple-500 hover:to-pink-500 active:scale-95 text-white text-xs font-semibold rounded-lg transition duration-150 shadow-md shadow-indigo-900/30 disabled:opacity-50 disabled:pointer-events-none">
+          <span id="btn-text">Apply</span>
+          <svg id="btn-spinner" class="hidden animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+            </path>
+          </svg>
+        </button>
+      </div>
     </div>
   </footer>
 
   <!-- Slide-out Git / Version History Drawer -->
-  <div id="history-backdrop" class="fixed inset-0 bg-black/50 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 z-40"></div>
-  
-  <aside id="history-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-slate-900/95 backdrop-blur-2xl border-l border-slate-800 shadow-2xl z-50 transform translate-x-full transition-transform duration-300 ease-out flex flex-col">
+  <div id="history-backdrop"
+    class="fixed inset-0 bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 z-40">
+  </div>
+
+  <aside id="history-drawer"
+    class="fixed top-0 right-0 h-full w-full max-w-md bg-[#10141d]/98 backdrop-blur-2xl border-l border-[#1f2738] shadow-2xl z-50 transform translate-x-full transition-transform duration-300 ease-out flex flex-col">
+    
     <!-- Drawer Header -->
-    <div class="p-4 border-b border-slate-800 flex items-center justify-between">
-      <div class="flex items-center gap-2">
-        <div class="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-xs">
-          <i class="fa-solid fa-timeline"></i>
+    <div class="p-4 border-b border-[#1c2331] flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-violet-500/15 border border-violet-500/30 flex items-center justify-center text-violet-400 text-sm">
+          <i class="fa-solid fa-code-branch"></i>
         </div>
         <div>
-          <h2 class="text-sm font-semibold text-white">Version Timeline</h2>
-          <p class="text-[11px] text-slate-400">Time-travel and revert to any saved state</p>
+          <h2 class="text-sm font-bold text-white tracking-tight">Timeline & History</h2>
+          <p class="text-[11px] text-slate-400">Revert or inspect any previous engine state</p>
         </div>
       </div>
-      <button id="close-history-btn" class="w-7 h-7 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 flex items-center justify-center transition">
+      <button id="close-history-btn"
+        class="w-7 h-7 rounded-lg text-slate-400 hover:text-white hover:bg-[#1a2130] flex items-center justify-center transition">
         <i class="fa-solid fa-xmark text-sm"></i>
       </button>
     </div>
 
     <!-- Drawer Toolbar -->
-    <div class="px-4 py-2.5 bg-slate-950/40 border-b border-slate-800/80 flex items-center justify-between text-xs">
-      <span id="history-summary" class="text-slate-400 text-[11px]">1 version saved</span>
+    <div class="px-4 py-2.5 bg-[#0c0f16] border-b border-[#1c2331] flex items-center justify-between text-xs">
+      <span id="history-summary" class="text-slate-400 font-mono text-[11px]">1 version saved</span>
       <div class="flex items-center gap-2">
-        <button id="export-history-btn" class="text-[11px] text-slate-300 hover:text-cyan-400 transition flex items-center gap-1">
-          <i class="fa-solid fa-file-export text-[10px]"></i> Export Log
+        <button id="export-history-btn"
+          class="text-[11px] text-indigo-300 hover:text-indigo-200 font-medium transition flex items-center gap-1.5 px-2 py-0.5 rounded bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20">
+          <i class="fa-solid fa-file-arrow-down text-[10px]"></i> Export Log (JSON)
         </button>
       </div>
     </div>
@@ -189,157 +248,164 @@
   </aside>
 
   <!-- Code Viewer Modal -->
-  <div id="code-modal" class="fixed inset-0 bg-black/60 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-200 z-50 flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl">
-      <div class="p-3.5 border-b border-slate-800 flex items-center justify-between">
+  <div id="code-modal"
+    class="fixed inset-0 bg-black/70 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-200 z-50 flex items-center justify-center p-4">
+    <div
+      class="bg-[#121620] border border-[#232c3f] rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+      <div class="p-3.5 bg-[#10141d] border-b border-[#1c2331] flex items-center justify-between">
         <div class="flex items-center gap-2">
-          <i class="fa-solid fa-code text-cyan-400 text-xs"></i>
-          <span id="modal-code-title" class="text-xs font-semibold text-slate-200">Version Code</span>
+          <i class="fa-solid fa-code text-indigo-400 text-xs"></i>
+          <span id="modal-code-title" class="text-xs font-semibold text-slate-200 font-mono">Version Code</span>
         </div>
         <div class="flex items-center gap-2">
-          <button id="copy-code-btn" class="px-2.5 py-1 text-[11px] rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition">
-            <i class="fa-regular fa-copy mr-1"></i> Copy
+          <button id="copy-code-btn"
+            class="px-2.5 py-1 text-[11px] rounded-lg bg-[#18202e] hover:bg-[#202a3d] text-indigo-300 hover:text-indigo-200 border border-indigo-500/30 transition flex items-center gap-1">
+            <i class="fa-regular fa-copy text-[10px]"></i> Copy
           </button>
-          <button id="close-code-modal-btn" class="w-6 h-6 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition">
+          <button id="close-code-modal-btn"
+            class="w-6 h-6 rounded-lg hover:bg-[#18202e] text-slate-400 hover:text-white flex items-center justify-center transition">
             <i class="fa-solid fa-xmark text-xs"></i>
           </button>
         </div>
       </div>
-      <div class="flex-1 overflow-auto p-4 bg-slate-950 font-mono text-xs text-slate-300 leading-relaxed whitespace-pre" id="modal-code-content"></div>
+      <div class="flex-1 overflow-auto p-4 bg-[#0a0d13] font-mono text-xs text-indigo-100 leading-relaxed whitespace-pre"
+        id="modal-code-content"></div>
     </div>
   </div>
 
   <!-- Toast notification for error/status -->
-  <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl text-xs backdrop-blur-md transition-opacity duration-300 pointer-events-none opacity-0 z-50"></div>
+  <div id="toast"
+    class="fixed top-5 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl text-xs backdrop-blur-md transition-opacity duration-300 pointer-events-none opacity-0 z-50 shadow-xl font-medium">
+  </div>
 
   <!-- Target Script Tag that gets executed and updated -->
   <script id="game-logic">
-/* Clean up any running instance */
-if (window.__cleanupGame) {
-  try { window.__cleanupGame(); } catch (e) { console.warn(e); }
-}
+    /* Clean up any running instance */
+    if (window.__cleanupGame) {
+      try { window.__cleanupGame(); } catch (e) { console.warn(e); }
+    }
 
-(function() {
-  const container = document.getElementById('canvas-container');
-  container.innerHTML = '';
+    (function () {
+      const container = document.getElementById('canvas-container');
+      container.innerHTML = '';
 
-  const width = container.clientWidth || window.innerWidth;
-  const height = container.clientHeight || (window.innerHeight - 100);
+      const width = container.clientWidth || window.innerWidth;
+      const height = container.clientHeight || (window.innerHeight - 100);
 
-  // Scene setup
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0e1117);
-  scene.fog = new THREE.FogExp2(0x0e1117, 0.035);
+      // Scene setup
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x0e1117);
+      scene.fog = new THREE.FogExp2(0x0e1117, 0.035);
 
-  // Camera setup
-  const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-  camera.position.set(0, 3, 7);
+      // Camera setup
+      const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+      camera.position.set(0, 3, 7);
 
-  // Renderer setup
-  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-  renderer.setSize(width, height);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.0;
-  container.appendChild(renderer.domElement);
+      // Renderer setup
+      const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.0;
+      container.appendChild(renderer.domElement);
 
-  // Orbit controls
-  const controls = new THREE.OrbitControls(camera, renderer.domElement);
-  controls.enableDamping = true;
-  controls.dampingFactor = 0.05;
-  controls.maxPolarAngle = Math.PI / 2 - 0.02;
+      // Orbit controls
+      const controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.maxPolarAngle = Math.PI / 2 - 0.02;
 
-  // Lighting
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
-  scene.add(ambientLight);
+      // Lighting
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+      scene.add(ambientLight);
 
-  const dirLight = new THREE.DirectionalLight(0xfff3e0, 1.2);
-  dirLight.position.set(5, 8, 4);
-  dirLight.castShadow = true;
-  dirLight.shadow.mapSize.width = 1024;
-  dirLight.shadow.mapSize.height = 1024;
-  dirLight.shadow.camera.near = 0.5;
-  dirLight.shadow.camera.far = 25;
-  dirLight.shadow.camera.left = -5;
-  dirLight.shadow.camera.right = 5;
-  dirLight.shadow.camera.top = 5;
-  dirLight.shadow.camera.bottom = -5;
-  dirLight.shadow.bias = -0.0005;
-  scene.add(dirLight);
+      const dirLight = new THREE.DirectionalLight(0xfff3e0, 1.2);
+      dirLight.position.set(5, 8, 4);
+      dirLight.castShadow = true;
+      dirLight.shadow.mapSize.width = 1024;
+      dirLight.shadow.mapSize.height = 1024;
+      dirLight.shadow.camera.near = 0.5;
+      dirLight.shadow.camera.far = 25;
+      dirLight.shadow.camera.left = -5;
+      dirLight.shadow.camera.right = 5;
+      dirLight.shadow.camera.top = 5;
+      dirLight.shadow.camera.bottom = -5;
+      dirLight.shadow.bias = -0.0005;
+      scene.add(dirLight);
 
-  const fillLight = new THREE.DirectionalLight(0x60a5fa, 0.4);
-  fillLight.position.set(-5, 3, -3);
-  scene.add(fillLight);
+      const fillLight = new THREE.DirectionalLight(0x60a5fa, 0.4);
+      fillLight.position.set(-5, 3, -3);
+      scene.add(fillLight);
 
-  // Flat Plane
-  const planeGeo = new THREE.PlaneGeometry(30, 30);
-  const planeMat = new THREE.MeshStandardMaterial({
-    color: 0x1a202c,
-    roughness: 0.8,
-    metalness: 0.1
-  });
-  const plane = new THREE.Mesh(planeGeo, planeMat);
-  plane.rotation.x = -Math.PI / 2;
-  plane.receiveShadow = true;
-  scene.add(plane);
+      // Flat Plane
+      const planeGeo = new THREE.PlaneGeometry(30, 30);
+      const planeMat = new THREE.MeshStandardMaterial({
+        color: 0x1a202c,
+        roughness: 0.8,
+        metalness: 0.1
+      });
+      const plane = new THREE.Mesh(planeGeo, planeMat);
+      plane.rotation.x = -Math.PI / 2;
+      plane.receiveShadow = true;
+      scene.add(plane);
 
-  // Grid helper on the plane
-  const grid = new THREE.GridHelper(30, 30, 0x2d3748, 0x1f2937);
-  grid.position.y = 0.001;
-  scene.add(grid);
+      // Grid helper on the plane
+      const grid = new THREE.GridHelper(30, 30, 0x2d3748, 0x1f2937);
+      grid.position.y = 0.001;
+      scene.add(grid);
 
-  // Cube
-  const cubeGeo = new THREE.BoxGeometry(1.4, 1.4, 1.4);
-  const cubeMat = new THREE.MeshStandardMaterial({
-    color: 0xef4444,
-    roughness: 0.25,
-    metalness: 0.2
-  });
-  const cube = new THREE.Mesh(cubeGeo, cubeMat);
-  cube.position.y = 0.7;
-  cube.castShadow = true;
-  cube.receiveShadow = true;
-  scene.add(cube);
+      // Cube
+      const cubeGeo = new THREE.BoxGeometry(1.4, 1.4, 1.4);
+      const cubeMat = new THREE.MeshStandardMaterial({
+        color: 0xef4444,
+        roughness: 0.25,
+        metalness: 0.2
+      });
+      const cube = new THREE.Mesh(cubeGeo, cubeMat);
+      cube.position.y = 0.7;
+      cube.castShadow = true;
+      cube.receiveShadow = true;
+      scene.add(cube);
 
-  // Animation Loop
-  let animId;
-  const clock = new THREE.Clock();
+      // Animation Loop
+      let animId;
+      const clock = new THREE.Clock();
 
-  function animate() {
-    animId = requestAnimationFrame(animate);
-    const delta = clock.getDelta();
-    cube.rotation.y += delta * 0.5;
-    cube.rotation.x += delta * 0.2;
-    controls.update();
-    renderer.render(scene, camera);
-  }
-  animate();
+      function animate() {
+        animId = requestAnimationFrame(animate);
+        const delta = clock.getDelta();
+        cube.rotation.y += delta * 0.5;
+        cube.rotation.x += delta * 0.2;
+        controls.update();
+        renderer.render(scene, camera);
+      }
+      animate();
 
-  // Resize Handler
-  function onResize() {
-    const w = container.clientWidth;
-    const h = container.clientHeight;
-    if (!w || !h) return;
-    camera.aspect = w / h;
-    camera.updateProjectionMatrix();
-    renderer.setSize(w, h);
-  }
-  window.addEventListener('resize', onResize);
+      // Resize Handler
+      function onResize() {
+        const w = container.clientWidth;
+        const h = container.clientHeight;
+        if (!w || !h) return;
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+      }
+      window.addEventListener('resize', onResize);
 
-  // Global Cleanup Handle
-  window.__cleanupGame = function() {
-    cancelAnimationFrame(animId);
-    window.removeEventListener('resize', onResize);
-    controls.dispose();
-    cubeGeo.dispose();
-    cubeMat.dispose();
-    planeGeo.dispose();
-    planeMat.dispose();
-    renderer.dispose();
-  };
-})();
+      // Global Cleanup Handle
+      window.__cleanupGame = function () {
+        cancelAnimationFrame(animId);
+        window.removeEventListener('resize', onResize);
+        controls.dispose();
+        cubeGeo.dispose();
+        cubeMat.dispose();
+        planeGeo.dispose();
+        planeMat.dispose();
+        renderer.dispose();
+      };
+    })();
   </script>
 
   <script>
@@ -411,8 +477,10 @@ Rules:
 
     function showToast(msg, isError = false) {
       toast.textContent = msg;
-      toast.className = `fixed top-5 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl text-xs backdrop-blur-md transition-opacity duration-300 pointer-events-none z-50 opacity-100 ${
-        isError ? 'bg-rose-950/90 text-rose-200 border border-rose-800 shadow-xl' : 'bg-slate-800/90 text-emerald-300 border border-slate-700 shadow-xl'
+      toast.className = `fixed top-4 left-1/2 -translate-x-1/2 px-3.5 py-1.5 rounded-xl text-xs backdrop-blur-md transition-all duration-300 pointer-events-none z-50 opacity-100 shadow-xl border ${
+        isError
+          ? 'bg-rose-950/95 text-rose-200 border-rose-500/40 shadow-rose-950/50'
+          : 'bg-[#151b27]/95 text-emerald-300 border-emerald-500/40 shadow-indigo-950/50'
       }`;
       setTimeout(() => {
         toast.classList.replace('opacity-100', 'opacity-0');
@@ -445,10 +513,10 @@ Rules:
     function executeEngineCode(code) {
       // 1. Cleanup running instance if defined
       if (typeof window.__cleanupGame === 'function') {
-        try { 
-          window.__cleanupGame(); 
-        } catch (e) { 
-          console.warn("Teardown warning:", e); 
+        try {
+          window.__cleanupGame();
+        } catch (e) {
+          console.warn("Teardown warning:", e);
         }
       }
 
@@ -537,54 +605,70 @@ Rules:
 
         const item = document.createElement('div');
         item.className = `relative pl-6 pb-4 border-l-2 transition-colors ${
-          isHead ? 'border-cyan-500' : 'border-slate-800 hover:border-slate-700'
+          isHead ? 'border-violet-500' : 'border-[#1e2636] hover:border-[#2b374d]'
         }`;
 
+        // Color coding by type
+        let typeBadgeClass = 'bg-purple-500/15 border-purple-500/30 text-purple-300';
+        let typeIcon = '<i class="fa-solid fa-wand-magic-sparkles text-[9px]"></i>';
+        
+        if (commit.type === 'init') {
+          typeBadgeClass = 'bg-sky-500/15 border-sky-500/30 text-sky-300';
+          typeIcon = '<i class="fa-solid fa-cube text-[9px]"></i>';
+        } else if (commit.type === 'revert') {
+          typeBadgeClass = 'bg-amber-500/15 border-amber-500/30 text-amber-300';
+          typeIcon = '<i class="fa-solid fa-arrow-rotate-left text-[9px]"></i>';
+        }
+
         // Node dot
-        const nodeColor = isHead ? 'bg-cyan-400 ring-4 ring-cyan-500/20' : 'bg-slate-700';
+        const nodeColor = isHead ? 'bg-violet-400 ring-4 ring-violet-500/20' : 'bg-slate-700';
 
         item.innerHTML = `
           <!-- Timeline Marker -->
-          <div class="absolute -left-[9px] top-1 w-4 h-4 rounded-full ${nodeColor} flex items-center justify-center transition-all">
+          <div class="absolute -left-[9px] top-1.5 w-4 h-4 rounded-full ${nodeColor} flex items-center justify-center transition-all">
             ${isHead ? '<div class="w-1.5 h-1.5 rounded-full bg-slate-900"></div>' : ''}
           </div>
 
           <!-- Commit Card -->
-          <div class="bg-slate-800/70 hover:bg-slate-800 border ${
-            isHead ? 'border-cyan-500/50 bg-slate-800/90 shadow-lg shadow-cyan-950/40' : 'border-slate-700/60'
+          <div class="bg-[#141924] hover:bg-[#181e2b] border ${
+            isHead ? 'border-violet-500/50 bg-[#171d2b] shadow-lg shadow-violet-950/30' : 'border-[#222b3d]'
           } rounded-xl p-3 transition">
             
             <div class="flex items-center justify-between gap-2 mb-1.5">
               <div class="flex items-center gap-1.5">
-                <span class="text-xs font-mono font-bold ${isHead ? 'text-cyan-300' : 'text-slate-300'}">${commit.id}</span>
-                <span class="text-[10px] font-mono text-slate-400 bg-slate-900/60 px-1.5 py-0.5 rounded border border-slate-700/60">${commit.hash}</span>
-                ${isHead ? '<span class="text-[9px] font-semibold uppercase tracking-wider bg-cyan-500 text-slate-950 px-1.5 py-0.2 rounded font-mono">HEAD</span>' : ''}
+                <span class="text-xs font-mono font-bold ${isHead ? 'text-violet-300' : 'text-slate-200'}">${commit.id}</span>
+                <span class="text-[10px] font-mono text-slate-400 bg-[#0d1117] px-1.5 py-0.5 rounded border border-[#232c3f]">${commit.hash}</span>
+                <span class="inline-flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded border ${typeBadgeClass}">
+                  ${typeIcon}
+                  <span>${commit.type || 'prompt'}</span>
+                </span>
+                ${isHead ? '<span class="text-[9px] font-bold uppercase tracking-wider bg-violet-500 text-white px-1.5 py-0.5 rounded font-mono shadow-sm">ACTIVE</span>' : ''}
               </div>
-              <span class="text-[10px] text-slate-400">${formatRelativeTime(commit.timestamp)}</span>
+              <span class="text-[10px] text-slate-400 font-mono">${formatRelativeTime(commit.timestamp)}</span>
             </div>
 
             <p class="text-xs text-slate-200 font-medium mb-3 break-words line-clamp-2">${commit.message}</p>
 
-            <div class="flex items-center justify-between pt-2 border-t border-slate-700/50">
+            <div class="flex items-center justify-between pt-2 border-t border-[#1e2638]">
               <div class="flex items-center gap-1.5">
                 <button 
                   data-view-index="${i}"
-                  class="view-code-btn px-2 py-1 rounded-lg bg-slate-900/80 hover:bg-slate-700 text-slate-300 hover:text-white text-[11px] transition flex items-center gap-1"
+                  class="view-code-btn px-2 py-1 rounded-md bg-[#192130] hover:bg-[#222c40] text-indigo-300 hover:text-indigo-100 text-[11px] font-medium transition flex items-center gap-1 border border-indigo-500/20"
                 >
-                  <i class="fa-solid fa-code text-[10px]"></i> Code
+                  <i class="fa-solid fa-code text-[10px]"></i> View Code
                 </button>
               </div>
 
               ${!isHead ? `
                 <button 
                   data-checkout-index="${i}"
-                  class="checkout-btn px-2.5 py-1 rounded-lg bg-cyan-600/90 hover:bg-cyan-500 text-white font-medium text-[11px] transition flex items-center gap-1 shadow"
+                  class="checkout-btn px-2.5 py-1 rounded-md bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 hover:text-amber-200 border border-amber-500/30 font-medium text-[11px] transition flex items-center gap-1 shadow-sm active:scale-95"
                 >
                   <i class="fa-solid fa-rotate-left text-[10px]"></i> Revert
                 </button>
               ` : `
-                <span class="text-[10px] font-medium text-cyan-400 flex items-center gap-1">
-                  <i class="fa-solid fa-check text-[9px]"></i> Active
+                <span class="text-[10px] font-semibold text-emerald-400 flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30">
+                  <i class="fa-solid fa-check text-[9px]"></i> Live State
                 </span>
               `}
             </div>
@@ -639,14 +723,21 @@ Rules:
     function setGenerating(isGenerating) {
       submitBtn.disabled = isGenerating;
       input.disabled = isGenerating;
+      const statusBadge = document.getElementById('status-badge');
+      const statusText = document.getElementById('status-text');
+
       if (isGenerating) {
-        btnText.textContent = "Updating";
+        btnText.textContent = "Updating...";
         btnSpinner.classList.remove('hidden');
-        statusDot.className = "w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse ml-2";
+        statusDot.className = "w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping";
+        if (statusBadge) statusBadge.className = "flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[10px] font-mono font-medium shrink-0";
+        if (statusText) statusText.textContent = "Updating";
       } else {
         btnText.textContent = "Apply";
         btnSpinner.classList.add('hidden');
-        statusDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 ml-2";
+        statusDot.className = "w-1.5 h-1.5 rounded-full bg-emerald-400";
+        if (statusBadge) statusBadge.className = "flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[10px] font-mono font-medium shrink-0";
+        if (statusText) statusText.textContent = "Ready";
       }
     }
 
@@ -723,7 +814,11 @@ Rules:
       } catch (err) {
         console.error("Engine update failed:", err);
         showToast(err.message || "Failed to update scene", true);
-        statusDot.className = "w-2.5 h-2.5 rounded-full bg-rose-500 ml-2";
+        const statusBadge = document.getElementById('status-badge');
+        const statusText = document.getElementById('status-text');
+        statusDot.className = "w-1.5 h-1.5 rounded-full bg-rose-500";
+        if (statusBadge) statusBadge.className = "flex items-center gap-1.5 px-2 py-1 rounded-md bg-rose-500/10 border border-rose-500/30 text-rose-300 text-[10px] font-mono font-medium shrink-0";
+        if (statusText) statusText.textContent = "Error";
       } finally {
         setGenerating(false);
       }
@@ -874,6 +969,17 @@ ${gameCode}
       }
     });
 
+    // Suggestion chip quick prompt triggers
+    document.querySelectorAll('.chip-btn').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const prompt = chip.getAttribute('data-prompt');
+        if (prompt) {
+          input.value = prompt;
+          input.focus();
+        }
+      });
+    });
+
     // Mobile viewport & keyboard height synchronization
     function updateAppHeight() {
       const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
@@ -899,4 +1005,5 @@ ${gameCode}
     });
   </script>
 </body>
+
 </html>
