@@ -34,7 +34,7 @@
       min-height: 100%;
       min-height: -webkit-fill-available;
       overflow: hidden;
-      background-color: #0b0e14;
+      background-color: #090c12;
       font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
 
@@ -51,7 +51,7 @@
     }
 
     .chat-footer {
-      padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0.5rem));
+      padding-bottom: max(0.6rem, env(safe-area-inset-bottom, 0.6rem));
       padding-left: max(0.75rem, env(safe-area-inset-left, 0.75rem));
       padding-right: max(0.75rem, env(safe-area-inset-right, 0.75rem));
     }
@@ -71,128 +71,110 @@
       height: 100% !important;
     }
 
-    /* Subtle scrollbar */
+    /* Cohesive scrollbars */
     ::-webkit-scrollbar {
       width: 5px;
       height: 5px;
     }
 
     ::-webkit-scrollbar-track {
-      background: rgba(11, 14, 20, 0.7);
+      background: rgba(13, 17, 26, 0.8);
     }
 
     ::-webkit-scrollbar-thumb {
-      background: rgba(79, 70, 229, 0.35);
+      background: rgba(99, 102, 241, 0.3);
       border-radius: 9999px;
     }
 
     ::-webkit-scrollbar-thumb:hover {
-      background: rgba(99, 102, 241, 0.6);
+      background: rgba(99, 102, 241, 0.55);
     }
 
-    /* Quick chip pills */
-    .chip-btn {
-      white-space: nowrap;
-      transition: all 0.15s ease;
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
     }
   </style>
 </head>
 
-<body class="select-none text-slate-100 flex flex-col app-viewport w-screen overflow-hidden bg-[#0b0e14]">
+<body class="select-none text-slate-200 flex flex-col app-viewport w-screen overflow-hidden bg-[#090c12]">
   
-  <!-- Subtle top ambient accent line -->
-  <div class="h-[2px] w-full bg-gradient-to-r from-indigo-500 via-purple-500 via-pink-500 to-amber-400 shrink-0"></div>
+  <!-- Subtle ambient line -->
+  <div class="h-[2px] w-full bg-gradient-to-r from-indigo-500 via-indigo-400 to-indigo-600 shrink-0 opacity-80"></div>
 
-  <!-- Top App Header: Clean, colorful, professional -->
-  <header class="h-13 py-2 px-3 sm:px-4 shrink-0 bg-[#10141d]/95 backdrop-blur-md border-b border-[#1c2331] flex items-center justify-between z-20">
+  <!-- Top App Header -->
+  <header class="h-14 px-3 sm:px-4 shrink-0 bg-[#0f131c]/95 backdrop-blur-md border-b border-slate-800/80 flex items-center justify-between z-20">
     
-    <!-- Top Left: Brand / Viewport Info & Export -->
+    <!-- Top Left: App Mark & Clean Export -->
     <div class="flex items-center gap-2.5 sm:gap-3">
-      <!-- App Brand Mark -->
       <div class="flex items-center gap-2">
-        <div class="w-7 h-7 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-sm shadow-indigo-500/30">
+        <div class="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-sm shadow-indigo-600/30">
           <i class="fa-solid fa-cube text-xs"></i>
         </div>
         <span class="font-bold text-xs sm:text-sm tracking-tight text-white hidden xs:inline">Engine<span class="text-indigo-400">Lab</span></span>
       </div>
 
-      <div class="h-4 w-px bg-[#1e2637] hidden sm:block"></div>
+      <div class="h-4 w-px bg-slate-800 hidden sm:block"></div>
 
-      <!-- Export Standalone Button (Emerald Green Accent) -->
-      <button id="export-standalone-btn" title="Export clean, self-contained .html game"
-        class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 hover:text-emerald-200 border border-emerald-500/30 active:scale-95 text-xs font-semibold transition shadow-sm">
-        <i class="fa-solid fa-file-arrow-down text-emerald-400 text-xs"></i>
-        <span>Export HTML</span>
+      <!-- Export Button: Shortened and matching GUI button token -->
+      <button id="export-standalone-btn" title="Export clean standalone .html game"
+        class="h-8 px-2.5 sm:px-3 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 hover:border-slate-700 active:scale-95 text-xs font-medium transition flex items-center gap-1.5 shadow-sm">
+        <i class="fa-solid fa-file-arrow-down text-slate-400 text-xs"></i>
+        <span>Export</span>
       </button>
     </div>
 
     <!-- Top Right: Undo/Redo & History Drawer Trigger -->
-    <div class="flex items-center gap-1.5 sm:gap-2">
+    <div class="flex items-center gap-1.5">
       <!-- Undo / Previous Version -->
       <button id="quick-undo-btn" title="Revert to previous version (Ctrl+Z)"
-        class="w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center bg-[#151a26] text-slate-300 hover:text-white hover:bg-[#1d2436] active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition border border-[#222c40]">
+        class="h-8 w-8 rounded-lg flex items-center justify-center bg-slate-900/80 text-slate-300 hover:text-white hover:bg-slate-800 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition border border-slate-800 hover:border-slate-700">
         <i class="fa-solid fa-arrow-rotate-left text-xs"></i>
       </button>
 
       <!-- Redo / Next Version -->
       <button id="quick-redo-btn" title="Forward to next version (Ctrl+Y)"
-        class="w-7.5 h-7.5 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center bg-[#151a26] text-slate-300 hover:text-white hover:bg-[#1d2436] active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition border border-[#222c40]">
+        class="h-8 w-8 rounded-lg flex items-center justify-center bg-slate-900/80 text-slate-300 hover:text-white hover:bg-slate-800 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition border border-slate-800 hover:border-slate-700">
         <i class="fa-solid fa-arrow-rotate-right text-xs"></i>
       </button>
 
-      <div class="w-px h-4 bg-[#1e2637] mx-0.5"></div>
+      <div class="w-px h-4 bg-slate-800 mx-0.5"></div>
 
-      <!-- Full History Drawer Toggle (Purple / Violet Accent) -->
+      <!-- History Drawer Toggle: Renamed to History and styled consistently -->
       <button id="toggle-history-btn"
-        class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-violet-500/10 hover:bg-violet-500/20 text-violet-200 hover:text-white border border-violet-500/30 active:scale-95 text-xs font-semibold transition shadow-sm">
-        <i class="fa-solid fa-code-branch text-violet-400"></i>
-        <span>Timeline</span>
+        class="h-8 px-2.5 sm:px-3 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 hover:border-slate-700 active:scale-95 text-xs font-medium transition flex items-center gap-1.5 shadow-sm">
+        <i class="fa-solid fa-clock-rotate-left text-indigo-400 text-xs"></i>
+        <span>History</span>
         <span id="version-count-badge"
-          class="ml-0.5 px-1.5 py-0.2 bg-violet-600 text-white font-mono text-[10px] font-bold rounded-md">1</span>
+          class="ml-0.5 px-1.5 py-0.2 bg-indigo-600/80 text-indigo-100 font-mono text-[10px] font-semibold rounded">1</span>
       </button>
     </div>
   </header>
 
   <!-- Dedicated Game Canvas Viewport -->
-  <main id="canvas-container" class="relative flex-1 w-full h-full min-h-0 bg-[#0d1017]"></main>
+  <main id="canvas-container" class="relative flex-1 w-full h-full min-h-0 bg-[#0c1017]"></main>
 
   <!-- Bottom Workspace Toolbar & Prompt Dock -->
-  <footer class="chat-footer shrink-0 bg-[#10141d]/95 backdrop-blur-md border-t border-[#1c2331] pt-2 z-20">
-    <div class="max-w-3xl mx-auto space-y-1.5">
-      
-      <!-- Quick Prompt Suggestion Chips -->
-      <div class="flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar text-[11px]">
-        <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400 mr-0.5 shrink-0 hidden xs:inline">Ideas:</span>
-        
-        <button type="button" class="chip-btn shrink-0 px-2 py-0.5 rounded-md bg-[#161c28] hover:bg-indigo-950/60 text-slate-300 hover:text-indigo-200 border border-[#232c3f] hover:border-indigo-500/40 text-[11px]" data-prompt="add bouncing physics to the cube">
-          🏀 Bounce Physics
-        </button>
-        <button type="button" class="chip-btn shrink-0 px-2 py-0.5 rounded-md bg-[#161c28] hover:bg-violet-950/60 text-slate-300 hover:text-violet-200 border border-[#232c3f] hover:border-violet-500/40 text-[11px]" data-prompt="add orbiting glowing spheres with neon lights">
-          🪐 Neon Spheres
-        </button>
-        <button type="button" class="chip-btn shrink-0 px-2 py-0.5 rounded-md bg-[#161c28] hover:bg-cyan-950/60 text-slate-300 hover:text-cyan-200 border border-[#232c3f] hover:border-cyan-500/40 text-[11px]" data-prompt="add keyboard WASD movement for the cube">
-          🎮 WASD Controls
-        </button>
-        <button type="button" class="chip-btn shrink-0 px-2 py-0.5 rounded-md bg-[#161c28] hover:bg-pink-950/60 text-slate-300 hover:text-pink-200 border border-[#232c3f] hover:border-pink-500/40 text-[11px]" data-prompt="add a particle starfield and colorful fog">
-          ✨ Particle Field
-        </button>
-      </div>
-
+  <footer class="chat-footer shrink-0 bg-[#0f131c]/95 backdrop-blur-md border-t border-slate-800/80 py-2.5 z-20">
+    <div class="max-w-3xl mx-auto">
       <!-- Main Input Command Bar -->
-      <div class="flex items-center gap-2 bg-[#141924] border border-[#222b3d] rounded-xl p-1.5 transition-all focus-within:border-indigo-500/80 focus-within:ring-2 focus-within:ring-indigo-500/25 shadow-lg">
+      <div class="flex items-center gap-2 bg-[#131824] border border-slate-800 rounded-xl p-1.5 transition-all focus-within:border-indigo-500/70 focus-within:ring-2 focus-within:ring-indigo-500/20 shadow-lg">
 
         <!-- Status Indicator Pill -->
-        <div id="status-badge" class="flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[10px] font-mono font-medium shrink-0" title="Engine Status">
+        <div id="status-badge" class="flex items-center gap-1.5 h-7 px-2 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-[10px] font-mono font-medium shrink-0" title="Engine Status">
           <div id="status-indicator" class="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
           <span id="status-text" class="hidden sm:inline">Ready</span>
         </div>
 
-        <input id="prompt-input" type="text" placeholder="Describe change (e.g. 'add neon rings', 'jump on spacebar')..."
-          class="flex-1 bg-transparent px-2.5 py-1.5 text-xs sm:text-sm text-slate-100 placeholder-slate-400 focus:outline-none"
+        <input id="prompt-input" type="text" placeholder="Describe changes..."
+          class="flex-1 bg-transparent px-2.5 py-1 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none"
           autocomplete="off" />
 
         <button id="submit-btn"
-          class="shrink-0 flex items-center justify-center gap-1.5 px-3.5 sm:px-4 py-1.5 bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-600 hover:from-indigo-400 hover:via-purple-500 hover:to-pink-500 active:scale-95 text-white text-xs font-semibold rounded-lg transition duration-150 shadow-md shadow-indigo-900/30 disabled:opacity-50 disabled:pointer-events-none">
+          class="h-7 shrink-0 flex items-center justify-center gap-1.5 px-3 sm:px-3.5 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-xs font-semibold rounded-lg transition duration-150 shadow-sm disabled:opacity-40 disabled:pointer-events-none">
           <span id="btn-text">Apply</span>
           <svg id="btn-spinner" class="hidden animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -205,45 +187,45 @@
     </div>
   </footer>
 
-  <!-- Slide-out Git / Version History Drawer -->
+  <!-- Slide-out History Drawer -->
   <div id="history-backdrop"
-    class="fixed inset-0 bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 z-40">
+    class="fixed inset-0 bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200 z-40">
   </div>
 
   <aside id="history-drawer"
-    class="fixed top-0 right-0 h-full w-full max-w-md bg-[#10141d]/98 backdrop-blur-2xl border-l border-[#1f2738] shadow-2xl z-50 transform translate-x-full transition-transform duration-300 ease-out flex flex-col">
+    class="fixed top-0 right-0 h-full w-full max-w-md bg-[#0f131c]/98 backdrop-blur-2xl border-l border-slate-800 shadow-2xl z-50 transform translate-x-full transition-transform duration-250 ease-out flex flex-col">
     
-    <!-- Drawer Header -->
-    <div class="p-4 border-b border-[#1c2331] flex items-center justify-between">
+    <!-- History Drawer Header -->
+    <div class="h-14 px-4 border-b border-slate-800 flex items-center justify-between">
       <div class="flex items-center gap-2.5">
-        <div class="w-8 h-8 rounded-lg bg-violet-500/15 border border-violet-500/30 flex items-center justify-center text-violet-400 text-sm">
-          <i class="fa-solid fa-code-branch"></i>
+        <div class="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 text-xs">
+          <i class="fa-solid fa-clock-rotate-left"></i>
         </div>
         <div>
-          <h2 class="text-sm font-bold text-white tracking-tight">Timeline & History</h2>
-          <p class="text-[11px] text-slate-400">Revert or inspect any previous engine state</p>
+          <h2 class="text-sm font-semibold text-white tracking-tight">History</h2>
+          <p class="text-[11px] text-slate-400">Revert or inspect previous engine states</p>
         </div>
       </div>
       <button id="close-history-btn"
-        class="w-7 h-7 rounded-lg text-slate-400 hover:text-white hover:bg-[#1a2130] flex items-center justify-center transition">
-        <i class="fa-solid fa-xmark text-sm"></i>
+        class="w-8 h-8 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/80 flex items-center justify-center transition border border-transparent hover:border-slate-800">
+        <i class="fa-solid fa-xmark text-xs"></i>
       </button>
     </div>
 
-    <!-- Drawer Toolbar -->
-    <div class="px-4 py-2.5 bg-[#0c0f16] border-b border-[#1c2331] flex items-center justify-between text-xs">
+    <!-- History Drawer Toolbar -->
+    <div class="px-4 py-2 bg-[#0a0d14] border-b border-slate-800/80 flex items-center justify-between text-xs">
       <span id="history-summary" class="text-slate-400 font-mono text-[11px]">1 version saved</span>
       <div class="flex items-center gap-2">
         <button id="export-history-btn"
-          class="text-[11px] text-indigo-300 hover:text-indigo-200 font-medium transition flex items-center gap-1.5 px-2 py-0.5 rounded bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20">
-          <i class="fa-solid fa-file-arrow-down text-[10px]"></i> Export Log (JSON)
+          class="h-6 text-[11px] text-slate-300 hover:text-white font-medium transition flex items-center gap-1.5 px-2 rounded-lg bg-slate-900 border border-slate-800 hover:border-slate-700">
+          <i class="fa-solid fa-file-arrow-down text-[10px] text-slate-400"></i> Export Log (JSON)
         </button>
       </div>
     </div>
 
-    <!-- Version List Timeline Container -->
+    <!-- History List Container -->
     <div id="timeline-list" class="flex-1 overflow-y-auto p-4 space-y-3">
-      <!-- Dynamically generated version items will appear here -->
+      <!-- Dynamically generated version items appear here -->
     </div>
   </aside>
 
@@ -251,31 +233,31 @@
   <div id="code-modal"
     class="fixed inset-0 bg-black/70 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-200 z-50 flex items-center justify-center p-4">
     <div
-      class="bg-[#121620] border border-[#232c3f] rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
-      <div class="p-3.5 bg-[#10141d] border-b border-[#1c2331] flex items-center justify-between">
+      class="bg-[#111520] border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+      <div class="p-3.5 bg-[#0e121a] border-b border-slate-800 flex items-center justify-between">
         <div class="flex items-center gap-2">
           <i class="fa-solid fa-code text-indigo-400 text-xs"></i>
           <span id="modal-code-title" class="text-xs font-semibold text-slate-200 font-mono">Version Code</span>
         </div>
         <div class="flex items-center gap-2">
           <button id="copy-code-btn"
-            class="px-2.5 py-1 text-[11px] rounded-lg bg-[#18202e] hover:bg-[#202a3d] text-indigo-300 hover:text-indigo-200 border border-indigo-500/30 transition flex items-center gap-1">
-            <i class="fa-regular fa-copy text-[10px]"></i> Copy
+            class="h-7 px-2.5 text-[11px] rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 transition flex items-center gap-1.5 font-medium">
+            <i class="fa-regular fa-copy text-[10px] text-slate-400"></i> Copy
           </button>
           <button id="close-code-modal-btn"
-            class="w-6 h-6 rounded-lg hover:bg-[#18202e] text-slate-400 hover:text-white flex items-center justify-center transition">
+            class="w-7 h-7 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition border border-transparent hover:border-slate-800">
             <i class="fa-solid fa-xmark text-xs"></i>
           </button>
         </div>
       </div>
-      <div class="flex-1 overflow-auto p-4 bg-[#0a0d13] font-mono text-xs text-indigo-100 leading-relaxed whitespace-pre"
+      <div class="flex-1 overflow-auto p-4 bg-[#090c12] font-mono text-xs text-slate-200 leading-relaxed whitespace-pre"
         id="modal-code-content"></div>
     </div>
   </div>
 
-  <!-- Toast notification for error/status -->
+  <!-- Toast notification -->
   <div id="toast"
-    class="fixed top-5 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl text-xs backdrop-blur-md transition-opacity duration-300 pointer-events-none opacity-0 z-50 shadow-xl font-medium">
+    class="fixed top-4 left-1/2 -translate-x-1/2 px-3.5 py-1.5 rounded-xl text-xs backdrop-blur-md transition-opacity duration-200 pointer-events-none opacity-0 z-50 shadow-xl font-medium border">
   </div>
 
   <!-- Target Script Tag that gets executed and updated -->
@@ -294,12 +276,12 @@
 
       // Scene setup
       const scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x0e1117);
-      scene.fog = new THREE.FogExp2(0x0e1117, 0.035);
+      scene.background = new THREE.Color(0x0c1017);
+      scene.fog = new THREE.FogExp2(0x0c1017, 0.035);
 
       // Camera setup
       const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-      camera.position.set(0, 3, 7);
+      camera.position.set(-2, 7, 16);
 
       // Renderer setup
       const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -316,33 +298,31 @@
       controls.enableDamping = true;
       controls.dampingFactor = 0.05;
       controls.maxPolarAngle = Math.PI / 2 - 0.02;
+      controls.target.set(3.5, 1.8, -3.5);
+      controls.update();
 
       // Lighting
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.45);
       scene.add(ambientLight);
 
-      const dirLight = new THREE.DirectionalLight(0xfff3e0, 1.2);
+      const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
       dirLight.position.set(5, 8, 4);
       dirLight.castShadow = true;
       dirLight.shadow.mapSize.width = 1024;
       dirLight.shadow.mapSize.height = 1024;
       dirLight.shadow.camera.near = 0.5;
       dirLight.shadow.camera.far = 25;
-      dirLight.shadow.camera.left = -5;
-      dirLight.shadow.camera.right = 5;
-      dirLight.shadow.camera.top = 5;
-      dirLight.shadow.camera.bottom = -5;
       dirLight.shadow.bias = -0.0005;
       scene.add(dirLight);
 
-      const fillLight = new THREE.DirectionalLight(0x60a5fa, 0.4);
+      const fillLight = new THREE.DirectionalLight(0x6366f1, 0.4);
       fillLight.position.set(-5, 3, -3);
       scene.add(fillLight);
 
       // Flat Plane
       const planeGeo = new THREE.PlaneGeometry(30, 30);
       const planeMat = new THREE.MeshStandardMaterial({
-        color: 0x1a202c,
+        color: 0x141a24,
         roughness: 0.8,
         metalness: 0.1
       });
@@ -352,7 +332,7 @@
       scene.add(plane);
 
       // Grid helper on the plane
-      const grid = new THREE.GridHelper(30, 30, 0x2d3748, 0x1f2937);
+      const grid = new THREE.GridHelper(30, 30, 0x242d3d, 0x161c28);
       grid.position.y = 0.001;
       scene.add(grid);
 
@@ -369,6 +349,98 @@
       cube.receiveShadow = true;
       scene.add(cube);
 
+      // Voxel Palm Tree
+      const treeGroup = new THREE.Group();
+      treeGroup.position.set(8.5, 0, -7.5);
+      scene.add(treeGroup);
+
+      const voxelBoxGeo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+      const palmMaterials = [
+        new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.9, metalness: 0.1 }), // Bark dark
+        new THREE.MeshStandardMaterial({ color: 0x92400e, roughness: 0.85, metalness: 0.1 }), // Bark mid
+        new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.8, metalness: 0.1 }), // Bark light
+        new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.6 }), // Leaf dark green
+        new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.55 }), // Leaf emerald
+        new THREE.MeshStandardMaterial({ color: 0x4ade80, roughness: 0.5 }), // Leaf light green
+        new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.8 })  // Coconuts
+      ];
+
+      function addVoxel(parent, x, y, z, matIndex, scale = 1) {
+        const mesh = new THREE.Mesh(voxelBoxGeo, palmMaterials[matIndex]);
+        mesh.position.set(x, y, z);
+        if (scale !== 1) mesh.scale.setScalar(scale);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        parent.add(mesh);
+        return mesh;
+      }
+
+      // Trunk - with a gentle natural tropical curve
+      const trunkSteps = 12;
+      let topX = 0, topZ = 0, topY = 0;
+      for (let i = 0; i < trunkSteps; i++) {
+        const progress = i / trunkSteps;
+        const xOffset = -Math.pow(progress, 1.4) * 1.5;
+        const zOffset = Math.sin(progress * Math.PI) * 0.6;
+        const yPos = 0.25 + i * 0.45;
+        const matIdx = i % 3;
+        
+        // Base roots flare on the first 2 levels
+        if (i === 0) {
+          addVoxel(treeGroup, xOffset + 0.35, yPos, zOffset, 0, 0.9);
+          addVoxel(treeGroup, xOffset - 0.35, yPos, zOffset, 1, 0.9);
+          addVoxel(treeGroup, xOffset, yPos, zOffset + 0.35, 2, 0.9);
+          addVoxel(treeGroup, xOffset, yPos, zOffset - 0.35, 0, 0.9);
+        }
+        
+        addVoxel(treeGroup, xOffset, yPos, zOffset, matIdx, 1.05 - progress * 0.2);
+        topX = xOffset;
+        topY = yPos + 0.3;
+        topZ = zOffset;
+      }
+
+      // Palm Crown Sub-group for wind sway
+      const crownGroup = new THREE.Group();
+      crownGroup.position.set(topX, topY, topZ);
+      treeGroup.add(crownGroup);
+
+      // Coconuts under the crown
+      addVoxel(crownGroup, 0.28, -0.15, 0.15, 6, 0.7);
+      addVoxel(crownGroup, -0.28, -0.12, 0.2, 6, 0.7);
+      addVoxel(crownGroup, 0.0, -0.18, -0.3, 6, 0.75);
+
+      // 6 Cascading Palm Fronds arching outward
+      const frondCount = 6;
+      for (let f = 0; f < frondCount; f++) {
+        const angle = (f / frondCount) * Math.PI * 2 + (f % 2 === 0 ? 0.1 : -0.1);
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+
+        // Arc steps for each leaf
+        const leafSegments = [
+          { dist: 0.4, dy: 0.15, mat: 3, w: 0 },
+          { dist: 0.85, dy: 0.32, mat: 4, w: 1 },
+          { dist: 1.35, dy: 0.36, mat: 5, w: 1 },
+          { dist: 1.85, dy: 0.22, mat: 4, w: 1 },
+          { dist: 2.3, dy: -0.05, mat: 3, w: 0.5 },
+          { dist: 2.7, dy: -0.45, mat: 4, w: 0 }
+        ];
+
+        leafSegments.forEach(seg => {
+          const lx = cos * seg.dist;
+          const lz = sin * seg.dist;
+          addVoxel(crownGroup, lx, seg.dy, lz, seg.mat, 0.85);
+
+          // Lateral leaflets for volume
+          if (seg.w > 0) {
+            const perpX = -sin * 0.35 * seg.w;
+            const perpZ = cos * 0.35 * seg.w;
+            addVoxel(crownGroup, lx + perpX, seg.dy - 0.08, lz + perpZ, (seg.mat === 5 ? 4 : 3), 0.65);
+            addVoxel(crownGroup, lx - perpX, seg.dy - 0.08, lz - perpZ, (seg.mat === 5 ? 4 : 3), 0.65);
+          }
+        });
+      }
+
       // Animation Loop
       let animId;
       const clock = new THREE.Clock();
@@ -376,8 +448,15 @@
       function animate() {
         animId = requestAnimationFrame(animate);
         const delta = clock.getDelta();
+        const elapsed = clock.getElapsedTime();
+
         cube.rotation.y += delta * 0.5;
         cube.rotation.x += delta * 0.2;
+
+        // Subtle organic palm crown sway
+        crownGroup.rotation.z = Math.sin(elapsed * 1.6) * 0.04;
+        crownGroup.rotation.x = Math.cos(elapsed * 1.3) * 0.03;
+
         controls.update();
         renderer.render(scene, camera);
       }
@@ -401,6 +480,8 @@
         controls.dispose();
         cubeGeo.dispose();
         cubeMat.dispose();
+        voxelBoxGeo.dispose();
+        palmMaterials.forEach(mat => mat.dispose());
         planeGeo.dispose();
         planeMat.dispose();
         renderer.dispose();
@@ -409,9 +490,7 @@
   </script>
 
   <script>
-    /* -------------------------------------------------------------
-       1. VERSION CONTROL ENGINE (Git-like Commits & Time-Travel)
-       ------------------------------------------------------------- */
+    /* Version Control & Studio Controller */
     const SYSTEM_PROMPT = `You are an expert Three.js and WebGL game engine programmer. 
 Your task is to modify or extend the provided JavaScript Three.js game code based on the user's prompt.
 
@@ -423,18 +502,15 @@ Rules:
 5. If the user asks for mechanics (e.g. movement, keyboard controls, bouncing, physics, particles, colors, lighting), integrate them directly into the scene and animation loop.
 6. Target the canvas container '#canvas-container'. Always size the renderer and camera aspect ratio using container.clientWidth and container.clientHeight instead of window.innerWidth/innerHeight.`;
 
-    // State
     const versionStore = {
-      commits: [],       // Array of commit objects
-      currentHeadIndex: 0 // Index in commits of active version
+      commits: [],
+      currentHeadIndex: 0
     };
 
-    // Helper to generate short pseudo-git hash
     function generateCommitHash() {
       return Math.random().toString(36).substring(2, 9);
     }
 
-    // Helper to format timestamps
     function formatRelativeTime(date) {
       const seconds = Math.floor((new Date() - date) / 1000);
       if (seconds < 15) return 'Just now';
@@ -446,7 +522,6 @@ Rules:
       return date.toLocaleDateString();
     }
 
-    // DOM elements
     const input = document.getElementById('prompt-input');
     const submitBtn = document.getElementById('submit-btn');
     const btnText = document.getElementById('btn-text');
@@ -477,29 +552,25 @@ Rules:
 
     function showToast(msg, isError = false) {
       toast.textContent = msg;
-      toast.className = `fixed top-4 left-1/2 -translate-x-1/2 px-3.5 py-1.5 rounded-xl text-xs backdrop-blur-md transition-all duration-300 pointer-events-none z-50 opacity-100 shadow-xl border ${
+      toast.className = `fixed top-4 left-1/2 -translate-x-1/2 px-3.5 py-1.5 rounded-xl text-xs backdrop-blur-md transition-all duration-200 pointer-events-none z-50 opacity-100 shadow-xl border ${
         isError
-          ? 'bg-rose-950/95 text-rose-200 border-rose-500/40 shadow-rose-950/50'
-          : 'bg-[#151b27]/95 text-emerald-300 border-emerald-500/40 shadow-indigo-950/50'
+          ? 'bg-rose-950/90 text-rose-200 border-rose-500/30 shadow-rose-950/40'
+          : 'bg-slate-900/95 text-slate-200 border-slate-700/80 shadow-slate-950/50'
       }`;
       setTimeout(() => {
         toast.classList.replace('opacity-100', 'opacity-0');
-      }, 3000);
+      }, 2600);
     }
 
-    // Helper to reliably extract executable code from markdown fences or text
     function extractExecutableCode(rawText) {
       if (!rawText) return '';
-      // Look for ```javascript or ``` blocks first
       const blockMatch = rawText.match(/```(?:javascript|js)?\s*([\s\S]*?)```/i);
       if (blockMatch && blockMatch[1]) {
         return blockMatch[1].trim();
       }
-      // Fallback: strip leading/trailing fences if present
       return rawText.replace(/^```(?:javascript|js)?\n?/i, '').replace(/\n?```$/i, '').trim();
     }
 
-    // Helper to validate syntax before injecting into the DOM
     function testSyntax(code) {
       try {
         new Function(code);
@@ -509,9 +580,7 @@ Rules:
       }
     }
 
-    // Hot-reload code into DOM
     function executeEngineCode(code) {
-      // 1. Cleanup running instance if defined
       if (typeof window.__cleanupGame === 'function') {
         try {
           window.__cleanupGame();
@@ -520,26 +589,22 @@ Rules:
         }
       }
 
-      // 2. Clear canvas container cleanly
       const container = document.getElementById('canvas-container');
       if (container) {
         container.innerHTML = '';
       }
 
-      // 3. Remove previous script tag
       const currentScriptElem = document.getElementById('game-logic');
       if (currentScriptElem) {
         currentScriptElem.remove();
       }
 
-      // 4. Inject and run new script
       const newScript = document.createElement('script');
       newScript.id = 'game-logic';
       newScript.textContent = code;
       document.body.appendChild(newScript);
     }
 
-    // Record a new version commit
     function recordCommit(code, message, type = 'prompt') {
       const commitNumber = versionStore.commits.length + 1;
       const newCommit = {
@@ -549,7 +614,7 @@ Rules:
         timestamp: new Date(),
         message: message.trim() || `Snapshot #${commitNumber}`,
         code: code,
-        type: type // 'init' | 'prompt' | 'snapshot' | 'revert'
+        type: type
       };
 
       versionStore.commits.push(newCommit);
@@ -558,7 +623,6 @@ Rules:
       return newCommit;
     }
 
-    // Revert/Checkout specific commit by index
     function checkoutCommit(index, notify = true) {
       if (index < 0 || index >= versionStore.commits.length) return;
 
@@ -568,7 +632,7 @@ Rules:
       try {
         executeEngineCode(targetCommit.code);
         if (notify) {
-          showToast(`Switched to ${targetCommit.id} (${targetCommit.hash})`);
+          showToast(`Checked out ${targetCommit.id} (${targetCommit.hash})`);
         }
       } catch (err) {
         console.error("Execution error on checkout:", err);
@@ -578,7 +642,6 @@ Rules:
       updateUI();
     }
 
-    // Refresh UI elements (Header, Quick buttons, Timeline drawer)
     function updateUI() {
       const current = versionStore.commits[versionStore.currentHeadIndex];
       const total = versionStore.commits.length;
@@ -588,87 +651,83 @@ Rules:
       versionCountBadge.textContent = total;
       historySummary.textContent = `${total} version${total === 1 ? '' : 's'} recorded`;
 
-      // Quick Undo/Redo button states
       quickUndoBtn.disabled = versionStore.currentHeadIndex <= 0;
       quickRedoBtn.disabled = versionStore.currentHeadIndex >= total - 1;
 
-      renderTimeline();
+      renderHistoryList();
     }
 
-    function renderTimeline() {
+    function renderHistoryList() {
       timelineList.innerHTML = '';
 
-      // Render in reverse order (newest first)
       for (let i = versionStore.commits.length - 1; i >= 0; i--) {
         const commit = versionStore.commits[i];
         const isHead = (i === versionStore.currentHeadIndex);
 
         const item = document.createElement('div');
-        item.className = `relative pl-6 pb-4 border-l-2 transition-colors ${
-          isHead ? 'border-violet-500' : 'border-[#1e2636] hover:border-[#2b374d]'
+        item.className = `relative pl-5 pb-3 border-l-2 transition-colors ${
+          isHead ? 'border-indigo-500' : 'border-slate-800'
         }`;
 
-        // Color coding by type
-        let typeBadgeClass = 'bg-purple-500/15 border-purple-500/30 text-purple-300';
+        let typeBadgeClass = 'bg-slate-800/80 border-slate-700 text-slate-300';
         let typeIcon = '<i class="fa-solid fa-wand-magic-sparkles text-[9px]"></i>';
         
         if (commit.type === 'init') {
-          typeBadgeClass = 'bg-sky-500/15 border-sky-500/30 text-sky-300';
+          typeBadgeClass = 'bg-slate-800/80 border-slate-700 text-slate-300';
           typeIcon = '<i class="fa-solid fa-cube text-[9px]"></i>';
         } else if (commit.type === 'revert') {
-          typeBadgeClass = 'bg-amber-500/15 border-amber-500/30 text-amber-300';
+          typeBadgeClass = 'bg-slate-800/80 border-slate-700 text-slate-300';
           typeIcon = '<i class="fa-solid fa-arrow-rotate-left text-[9px]"></i>';
         }
 
-        // Node dot
-        const nodeColor = isHead ? 'bg-violet-400 ring-4 ring-violet-500/20' : 'bg-slate-700';
+        const nodeColor = isHead ? 'bg-indigo-500 ring-4 ring-indigo-500/20' : 'bg-slate-700';
 
         item.innerHTML = `
-          <!-- Timeline Marker -->
+          <!-- History Marker -->
           <div class="absolute -left-[9px] top-1.5 w-4 h-4 rounded-full ${nodeColor} flex items-center justify-center transition-all">
-            ${isHead ? '<div class="w-1.5 h-1.5 rounded-full bg-slate-900"></div>' : ''}
+            ${isHead ? '<div class="w-1.5 h-1.5 rounded-full bg-slate-950"></div>' : ''}
           </div>
 
-          <!-- Commit Card -->
-          <div class="bg-[#141924] hover:bg-[#181e2b] border ${
-            isHead ? 'border-violet-500/50 bg-[#171d2b] shadow-lg shadow-violet-950/30' : 'border-[#222b3d]'
+          <!-- Commit Card with cohesive slate border and tokens -->
+          <div class="bg-[#121622] hover:bg-[#151a28] border ${
+            isHead ? 'border-indigo-500/50 shadow-md shadow-indigo-950/20' : 'border-slate-800'
           } rounded-xl p-3 transition">
             
             <div class="flex items-center justify-between gap-2 mb-1.5">
               <div class="flex items-center gap-1.5">
-                <span class="text-xs font-mono font-bold ${isHead ? 'text-violet-300' : 'text-slate-200'}">${commit.id}</span>
-                <span class="text-[10px] font-mono text-slate-400 bg-[#0d1117] px-1.5 py-0.5 rounded border border-[#232c3f]">${commit.hash}</span>
-                <span class="inline-flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded border ${typeBadgeClass}">
+                <span class="text-xs font-mono font-semibold ${isHead ? 'text-indigo-400' : 'text-slate-200'}">${commit.id}</span>
+                <span class="text-[10px] font-mono text-slate-400 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">${commit.hash}</span>
+                <span class="inline-flex items-center gap-1 text-[9px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded border ${typeBadgeClass}">
                   ${typeIcon}
                   <span>${commit.type || 'prompt'}</span>
                 </span>
-                ${isHead ? '<span class="text-[9px] font-bold uppercase tracking-wider bg-violet-500 text-white px-1.5 py-0.5 rounded font-mono shadow-sm">ACTIVE</span>' : ''}
+                ${isHead ? '<span class="text-[9px] font-semibold uppercase tracking-wider bg-indigo-600 text-white px-1.5 py-0.5 rounded font-mono shadow-sm">ACTIVE</span>' : ''}
               </div>
               <span class="text-[10px] text-slate-400 font-mono">${formatRelativeTime(commit.timestamp)}</span>
             </div>
 
             <p class="text-xs text-slate-200 font-medium mb-3 break-words line-clamp-2">${commit.message}</p>
 
-            <div class="flex items-center justify-between pt-2 border-t border-[#1e2638]">
+            <div class="flex items-center justify-between pt-2 border-t border-slate-800/80">
               <div class="flex items-center gap-1.5">
                 <button 
                   data-view-index="${i}"
-                  class="view-code-btn px-2 py-1 rounded-md bg-[#192130] hover:bg-[#222c40] text-indigo-300 hover:text-indigo-100 text-[11px] font-medium transition flex items-center gap-1 border border-indigo-500/20"
+                  class="view-code-btn h-6 px-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white text-[11px] font-medium transition flex items-center gap-1 border border-slate-800 hover:border-slate-700"
                 >
-                  <i class="fa-solid fa-code text-[10px]"></i> View Code
+                  <i class="fa-solid fa-code text-[10px] text-slate-400"></i> Code
                 </button>
               </div>
 
               ${!isHead ? `
                 <button 
                   data-checkout-index="${i}"
-                  class="checkout-btn px-2.5 py-1 rounded-md bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 hover:text-amber-200 border border-amber-500/30 font-medium text-[11px] transition flex items-center gap-1 shadow-sm active:scale-95"
+                  class="checkout-btn h-6 px-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 hover:border-slate-700 font-medium text-[11px] transition flex items-center gap-1 shadow-sm active:scale-95"
                 >
-                  <i class="fa-solid fa-rotate-left text-[10px]"></i> Revert
+                  <i class="fa-solid fa-rotate-left text-[10px] text-slate-400"></i> Revert
                 </button>
               ` : `
-                <span class="text-[10px] font-semibold text-emerald-400 flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30">
-                  <i class="fa-solid fa-check text-[9px]"></i> Live State
+                <span class="text-[10px] font-medium text-emerald-400 flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-500/10 border border-emerald-500/25">
+                  <i class="fa-solid fa-check text-[9px]"></i> Current
                 </span>
               `}
             </div>
@@ -678,7 +737,6 @@ Rules:
         timelineList.appendChild(item);
       }
 
-      // Bind dynamic buttons
       timelineList.querySelectorAll('.checkout-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           const idx = parseInt(btn.getAttribute('data-checkout-index'), 10);
@@ -697,7 +755,7 @@ Rules:
     function openHistoryDrawer() {
       historyDrawer.classList.remove('translate-x-full');
       historyBackdrop.classList.remove('opacity-0', 'pointer-events-none');
-      renderTimeline();
+      renderHistoryList();
     }
 
     function closeHistoryDrawer() {
@@ -730,19 +788,19 @@ Rules:
         btnText.textContent = "Updating...";
         btnSpinner.classList.remove('hidden');
         statusDot.className = "w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping";
-        if (statusBadge) statusBadge.className = "flex items-center gap-1.5 px-2 py-1 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[10px] font-mono font-medium shrink-0";
+        if (statusBadge) statusBadge.className = "flex items-center gap-1.5 h-7 px-2 rounded-lg bg-amber-500/10 border border-amber-500/25 text-amber-300 text-[10px] font-mono font-medium shrink-0";
         if (statusText) statusText.textContent = "Updating";
       } else {
         btnText.textContent = "Apply";
         btnSpinner.classList.add('hidden');
         statusDot.className = "w-1.5 h-1.5 rounded-full bg-emerald-400";
-        if (statusBadge) statusBadge.className = "flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[10px] font-mono font-medium shrink-0";
+        if (statusBadge) statusBadge.className = "flex items-center gap-1.5 h-7 px-2 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-[10px] font-mono font-medium shrink-0";
         if (statusText) statusText.textContent = "Ready";
       }
     }
 
     async function callGemini(payload, maxRetries = 3, initialDelay = 1000) {
-      const apiKey = ""; // Provided by runtime environment
+      const apiKey = ""; // Runtime environment
       const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
       let delay = initialDelay;
 
@@ -771,7 +829,6 @@ Rules:
     async function applyUserPrompt(promptText) {
       if (!promptText.trim()) return;
 
-      // Use active HEAD's code as baseline for modifications
       const activeCommit = versionStore.commits[versionStore.currentHeadIndex];
       const currentCode = activeCommit ? activeCommit.code : (document.getElementById('game-logic')?.textContent || '');
 
@@ -794,37 +851,31 @@ Rules:
           throw new Error("No code returned from model.");
         }
 
-        // Clean any markdown formatting or conversational prefix
         const generatedCode = extractExecutableCode(rawCode);
 
-        // Pre-validate syntax before injecting to prevent breaking the engine
         const syntaxErr = testSyntax(generatedCode);
         if (syntaxErr) {
           throw new Error(`Generated script syntax error: ${syntaxErr.message}`);
         }
 
-        // 1. Hot replace live script
         executeEngineCode(generatedCode);
-
-        // 2. Commit this version
         recordCommit(generatedCode, promptText, 'prompt');
 
         input.value = '';
-        showToast("Engine updated & committed to history");
+        showToast("Engine updated and committed to history");
       } catch (err) {
         console.error("Engine update failed:", err);
         showToast(err.message || "Failed to update scene", true);
         const statusBadge = document.getElementById('status-badge');
         const statusText = document.getElementById('status-text');
         statusDot.className = "w-1.5 h-1.5 rounded-full bg-rose-500";
-        if (statusBadge) statusBadge.className = "flex items-center gap-1.5 px-2 py-1 rounded-md bg-rose-500/10 border border-rose-500/30 text-rose-300 text-[10px] font-mono font-medium shrink-0";
+        if (statusBadge) statusBadge.className = "flex items-center gap-1.5 h-7 px-2 rounded-lg bg-rose-500/10 border border-rose-500/25 text-rose-300 text-[10px] font-mono font-medium shrink-0";
         if (statusText) statusText.textContent = "Error";
       } finally {
         setGenerating(false);
       }
     }
 
-    // Input Submissions
     submitBtn.addEventListener('click', () => applyUserPrompt(input.value));
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
@@ -832,12 +883,10 @@ Rules:
       }
     });
 
-    // Drawer triggers
     toggleHistoryBtn.addEventListener('click', openHistoryDrawer);
     closeHistoryBtn.addEventListener('click', closeHistoryDrawer);
     historyBackdrop.addEventListener('click', closeHistoryDrawer);
 
-    // Quick Undo / Redo
     quickUndoBtn.addEventListener('click', () => {
       if (versionStore.currentHeadIndex > 0) {
         checkoutCommit(versionStore.currentHeadIndex - 1);
@@ -850,7 +899,6 @@ Rules:
       }
     });
 
-    // Code Modal
     closeCodeModalBtn.addEventListener('click', closeCodeModal);
     codeModal.addEventListener('click', (e) => {
       if (e.target === codeModal) closeCodeModal();
@@ -859,18 +907,17 @@ Rules:
     copyCodeBtn.addEventListener('click', () => {
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(viewedCodeString)
-          .then(() => showToast("Code copied to clipboard!"))
+          .then(() => showToast("Code copied to clipboard"))
           .catch(() => {
             document.execCommand('copy');
-            showToast("Code copied!");
+            showToast("Code copied to clipboard");
           });
       } else {
         document.execCommand('copy');
-        showToast("Code copied!");
+        showToast("Code copied to clipboard");
       }
     });
 
-    // Export Version Log as JSON file
     exportHistoryBtn.addEventListener('click', () => {
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(versionStore.commits, null, 2));
       const downloadAnchor = document.createElement('a');
@@ -882,7 +929,6 @@ Rules:
       showToast("History exported as JSON");
     });
 
-    // Export clean standalone HTML file (scene & gameplay only, zero editor/version overhead)
     exportStandaloneBtn.addEventListener('click', () => {
       const activeCommit = versionStore.commits[versionStore.currentHeadIndex];
       const gameCode = activeCommit ? activeCommit.code : (document.getElementById('game-logic')?.textContent || '');
@@ -936,30 +982,25 @@ ${gameCode}
       downloadAnchor.click();
       downloadAnchor.remove();
       URL.revokeObjectURL(blobUrl);
-      showToast("Standalone game exported as .html");
+      showToast("Game exported as .html");
     });
 
-    // Keyboard shortcuts (Cmd/Ctrl + Z, Cmd/Ctrl + Shift + Z / Y)
     window.addEventListener('keydown', (e) => {
-      // Ignore if typing inside input
       if (document.activeElement === input) return;
 
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') {
         e.preventDefault();
         if (e.shiftKey) {
-          // Redo
           if (versionStore.currentHeadIndex < versionStore.commits.length - 1) {
             checkoutCommit(versionStore.currentHeadIndex + 1);
           }
         } else {
-          // Undo
           if (versionStore.currentHeadIndex > 0) {
             checkoutCommit(versionStore.currentHeadIndex - 1);
           }
         }
       } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'y') {
         e.preventDefault();
-        // Redo
         if (versionStore.currentHeadIndex < versionStore.commits.length - 1) {
           checkoutCommit(versionStore.currentHeadIndex + 1);
         }
@@ -969,7 +1010,6 @@ ${gameCode}
       }
     });
 
-    // Suggestion chip quick prompt triggers
     document.querySelectorAll('.chip-btn').forEach(chip => {
       chip.addEventListener('click', () => {
         const prompt = chip.getAttribute('data-prompt');
@@ -980,7 +1020,6 @@ ${gameCode}
       });
     });
 
-    // Mobile viewport & keyboard height synchronization
     function updateAppHeight() {
       const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
       document.documentElement.style.setProperty('--app-height', `${h}px`);
@@ -996,12 +1035,11 @@ ${gameCode}
     });
     updateAppHeight();
 
-    // Initialize initial scene as version v1
     window.addEventListener('load', () => {
       updateAppHeight();
       const initialScript = document.getElementById('game-logic');
       const initialCode = initialScript ? initialScript.textContent : '';
-      recordCommit(initialCode, "Initial Scene (Red Cube & Lighting)", "init");
+      recordCommit(initialCode, "Initial Scene (Red Cube & Voxel Palm Tree)", "init");
     });
   </script>
 </body>
