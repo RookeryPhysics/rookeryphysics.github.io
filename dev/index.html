@@ -2,21 +2,40 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
   <title>Three.js Engine with Version Logging</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
+    :root {
+      --app-height: 100dvh;
+    }
     body, html {
       margin: 0;
       padding: 0;
       width: 100%;
       height: 100%;
+      height: 100dvh;
+      height: var(--app-height, 100dvh);
+      min-height: 100%;
+      min-height: -webkit-fill-available;
       overflow: hidden;
       background-color: #0b0d13;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .app-viewport {
+      height: 100%;
+      height: 100dvh;
+      height: var(--app-height, 100dvh);
+      max-height: 100dvh;
+      max-height: var(--app-height, 100dvh);
+    }
+    .chat-footer {
+      padding-bottom: max(0.625rem, env(safe-area-inset-bottom, 0.625rem));
+      padding-left: max(0.625rem, env(safe-area-inset-left, 0.625rem));
+      padding-right: max(0.625rem, env(safe-area-inset-right, 0.625rem));
     }
     #canvas-container {
       position: relative;
@@ -48,7 +67,7 @@
     }
   </style>
 </head>
-<body class="select-none text-slate-200 flex flex-col h-screen w-screen overflow-hidden bg-slate-950">
+<body class="select-none text-slate-200 flex flex-col app-viewport w-screen overflow-hidden bg-slate-950">
   <!-- Top App Header: Completely outside the game viewport -->
   <header class="h-13 py-2 px-4 shrink-0 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 flex items-center justify-between z-20">
     <!-- Top Left: Standalone Game Export Button -->
@@ -106,7 +125,7 @@
   <main id="canvas-container" class="relative flex-1 w-full h-full min-h-0 bg-[#0e1117]"></main>
 
   <!-- Bottom Workspace Toolbar: Outside the game window -->
-  <footer class="shrink-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 p-2.5 z-20">
+  <footer class="chat-footer shrink-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 p-2.5 z-20">
     <div class="max-w-3xl mx-auto flex items-center gap-2 bg-slate-950/70 border border-slate-800 rounded-xl p-1.5 transition-all focus-within:border-cyan-500/70 focus-within:ring-2 focus-within:ring-cyan-500/20">
       
       <!-- Status Indicator Dot -->
@@ -855,8 +874,25 @@ ${gameCode}
       }
     });
 
+    // Mobile viewport & keyboard height synchronization
+    function updateAppHeight() {
+      const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      document.documentElement.style.setProperty('--app-height', `${h}px`);
+    }
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', updateAppHeight);
+      window.visualViewport.addEventListener('scroll', updateAppHeight);
+    }
+    window.addEventListener('resize', updateAppHeight);
+    window.addEventListener('orientationchange', () => {
+      setTimeout(updateAppHeight, 150);
+    });
+    updateAppHeight();
+
     // Initialize initial scene as version v1
     window.addEventListener('load', () => {
+      updateAppHeight();
       const initialScript = document.getElementById('game-logic');
       const initialCode = initialScript ? initialScript.textContent : '';
       recordCommit(initialCode, "Initial Scene (Red Cube & Lighting)", "init");
