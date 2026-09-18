@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Three.js Engine with Version Logging</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #0b0d13;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    #canvas-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      flex: 1;
+      min-height: 0;
+      outline: none;
+    }
+    canvas {
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
+    }
+    /* Custom scrollbars for version history */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(100, 116, 139, 0.4);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(148, 163, 184, 0.6);
+    }
+  </style>
+</head>
+<body class="select-none text-slate-200 flex flex-col h-screen w-screen overflow-hidden bg-slate-950">
+  <!-- Top App Header: Completely outside the game viewport -->
+  <header class="h-13 py-2 px-4 shrink-0 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 flex items-center justify-between z-20">
+    <!-- Top Left: Standalone Game Export Button -->
+    <div class="flex items-center gap-3">
+      <button 
+        id="export-standalone-btn" 
+        title="Export clean, self-contained .html game"
+        class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 active:scale-95 text-xs font-medium transition shadow-sm"
+      >
+        <i class="fa-solid fa-download text-emerald-400 text-xs"></i>
+        <span>Export</span>
+      </button>
+
+      <span class="text-xs text-slate-400 font-mono hidden sm:inline-flex items-center gap-1.5 pl-2 border-l border-slate-800">
+        <i class="fa-solid fa-cube text-cyan-400 text-[11px]"></i>
+        <span>Game Viewport</span>
+      </span>
+    </div>
+
+    <!-- Top Right: Quick Version Step Controls & History Drawer Trigger -->
+    <div class="flex items-center gap-1.5">
+      <!-- Undo / Previous Version -->
+      <button 
+        id="quick-undo-btn" 
+        title="Revert to previous version (Ctrl+Z)"
+        class="w-8 h-8 rounded-xl flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-800 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition border border-slate-800/80"
+      >
+        <i class="fa-solid fa-arrow-rotate-left text-xs"></i>
+      </button>
+
+      <!-- Redo / Next Version -->
+      <button 
+        id="quick-redo-btn" 
+        title="Forward to next version (Ctrl+Y)"
+        class="w-8 h-8 rounded-xl flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-800 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition border border-slate-800/80"
+      >
+        <i class="fa-solid fa-arrow-rotate-right text-xs"></i>
+      </button>
+
+      <div class="w-px h-5 bg-slate-800 mx-1"></div>
+
+      <!-- Full History Drawer Toggle -->
+      <button 
+        id="toggle-history-btn" 
+        class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 active:scale-95 text-xs font-medium transition shadow-sm"
+      >
+        <i class="fa-solid fa-code-commit text-cyan-400"></i>
+        <span>History</span>
+        <span id="version-count-badge" class="ml-1 px-1.5 py-0.2 bg-cyan-900/80 text-cyan-200 text-[10px] rounded-full border border-cyan-700/50">1</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Dedicated Game Canvas Viewport: Completely clear of any overlay widgets -->
+  <main id="canvas-container" class="relative flex-1 w-full h-full min-h-0 bg-[#0e1117]"></main>
+
+  <!-- Bottom Workspace Toolbar: Outside the game window -->
+  <footer class="shrink-0 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 p-2.5 z-20">
+    <div class="max-w-3xl mx-auto flex items-center gap-2 bg-slate-950/70 border border-slate-800 rounded-xl p-1.5 transition-all focus-within:border-cyan-500/70 focus-within:ring-2 focus-within:ring-cyan-500/20">
+      
+      <!-- Status Indicator Dot -->
+      <div id="status-indicator" class="w-2.5 h-2.5 rounded-full bg-emerald-400 ml-2.5 shrink-0 transition-colors duration-300" title="Ready"></div>
+
+      <input 
+        id="prompt-input" 
+        type="text" 
+        placeholder="Modify scene (e.g. 'make the cube bounce', 'add floating spheres')..." 
+        class="flex-1 bg-transparent px-3 py-1.5 text-xs sm:text-sm text-slate-100 placeholder-slate-400 focus:outline-none"
+        autocomplete="off"
+      />
+
+      <button 
+        id="submit-btn" 
+        class="shrink-0 flex items-center justify-center px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white text-xs font-semibold rounded-lg transition duration-150 shadow-md disabled:opacity-50 disabled:pointer-events-none"
+      >
+        <span id="btn-text">Apply</span>
+        <svg id="btn-spinner" class="hidden animate-spin h-3.5 w-3.5 ml-1 text-white" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+      </button>
+    </div>
+  </footer>
+
+  <!-- Slide-out Git / Version History Drawer -->
+  <div id="history-backdrop" class="fixed inset-0 bg-black/50 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 z-40"></div>
+  
+  <aside id="history-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-slate-900/95 backdrop-blur-2xl border-l border-slate-800 shadow-2xl z-50 transform translate-x-full transition-transform duration-300 ease-out flex flex-col">
+    <!-- Drawer Header -->
+    <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-7 h-7 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 text-xs">
+          <i class="fa-solid fa-timeline"></i>
+        </div>
+        <div>
+          <h2 class="text-sm font-semibold text-white">Version Timeline</h2>
+          <p class="text-[11px] text-slate-400">Time-travel and revert to any saved state</p>
+        </div>
+      </div>
+      <button id="close-history-btn" class="w-7 h-7 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 flex items-center justify-center transition">
+        <i class="fa-solid fa-xmark text-sm"></i>
+      </button>
+    </div>
+
+    <!-- Drawer Toolbar -->
+    <div class="px-4 py-2.5 bg-slate-950/40 border-b border-slate-800/80 flex items-center justify-between text-xs">
+      <span id="history-summary" class="text-slate-400 text-[11px]">1 version saved</span>
+      <div class="flex items-center gap-2">
+        <button id="export-history-btn" class="text-[11px] text-slate-300 hover:text-cyan-400 transition flex items-center gap-1">
+          <i class="fa-solid fa-file-export text-[10px]"></i> Export Log
+        </button>
+      </div>
+    </div>
+
+    <!-- Version List Timeline Container -->
+    <div id="timeline-list" class="flex-1 overflow-y-auto p-4 space-y-3">
+      <!-- Dynamically generated version items will appear here -->
+    </div>
+  </aside>
+
+  <!-- Code Viewer Modal -->
+  <div id="code-modal" class="fixed inset-0 bg-black/60 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-200 z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl">
+      <div class="p-3.5 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-code text-cyan-400 text-xs"></i>
+          <span id="modal-code-title" class="text-xs font-semibold text-slate-200">Version Code</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="copy-code-btn" class="px-2.5 py-1 text-[11px] rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition">
+            <i class="fa-regular fa-copy mr-1"></i> Copy
+          </button>
+          <button id="close-code-modal-btn" class="w-6 h-6 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition">
+            <i class="fa-solid fa-xmark text-xs"></i>
+          </button>
+        </div>
+      </div>
+      <div class="flex-1 overflow-auto p-4 bg-slate-950 font-mono text-xs text-slate-300 leading-relaxed whitespace-pre" id="modal-code-content"></div>
+    </div>
+  </div>
+
+  <!-- Toast notification for error/status -->
+  <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl text-xs backdrop-blur-md transition-opacity duration-300 pointer-events-none opacity-0 z-50"></div>
+
+  <!-- Target Script Tag that gets executed and updated -->
+  <script id="game-logic">
+/* Clean up any running instance */
+if (window.__cleanupGame) {
+  try { window.__cleanupGame(); } catch (e) { console.warn(e); }
+}
+
+(function() {
+  const container = document.getElementById('canvas-container');
+  container.innerHTML = '';
+
+  const width = container.clientWidth || window.innerWidth;
+  const height = container.clientHeight || (window.innerHeight - 100);
+
+  // Scene setup
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0e1117);
+  scene.fog = new THREE.FogExp2(0x0e1117, 0.035);
+
+  // Camera setup
+  const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+  camera.position.set(0, 3, 7);
+
+  // Renderer setup
+  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+  renderer.setSize(width, height);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.0;
+  container.appendChild(renderer.domElement);
+
+  // Orbit controls
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.05;
+  controls.maxPolarAngle = Math.PI / 2 - 0.02;
+
+  // Lighting
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+  scene.add(ambientLight);
+
+  const dirLight = new THREE.DirectionalLight(0xfff3e0, 1.2);
+  dirLight.position.set(5, 8, 4);
+  dirLight.castShadow = true;
+  dirLight.shadow.mapSize.width = 1024;
+  dirLight.shadow.mapSize.height = 1024;
+  dirLight.shadow.camera.near = 0.5;
+  dirLight.shadow.camera.far = 25;
+  dirLight.shadow.camera.left = -5;
+  dirLight.shadow.camera.right = 5;
+  dirLight.shadow.camera.top = 5;
+  dirLight.shadow.camera.bottom = -5;
+  dirLight.shadow.bias = -0.0005;
+  scene.add(dirLight);
+
+  const fillLight = new THREE.DirectionalLight(0x60a5fa, 0.4);
+  fillLight.position.set(-5, 3, -3);
+  scene.add(fillLight);
+
+  // Flat Plane
+  const planeGeo = new THREE.PlaneGeometry(30, 30);
+  const planeMat = new THREE.MeshStandardMaterial({
+    color: 0x1a202c,
+    roughness: 0.8,
+    metalness: 0.1
+  });
+  const plane = new THREE.Mesh(planeGeo, planeMat);
+  plane.rotation.x = -Math.PI / 2;
+  plane.receiveShadow = true;
+  scene.add(plane);
+
+  // Grid helper on the plane
+  const grid = new THREE.GridHelper(30, 30, 0x2d3748, 0x1f2937);
+  grid.position.y = 0.001;
+  scene.add(grid);
+
+  // Cube
+  const cubeGeo = new THREE.BoxGeometry(1.4, 1.4, 1.4);
+  const cubeMat = new THREE.MeshStandardMaterial({
+    color: 0xef4444,
+    roughness: 0.25,
+    metalness: 0.2
+  });
+  const cube = new THREE.Mesh(cubeGeo, cubeMat);
+  cube.position.y = 0.7;
+  cube.castShadow = true;
+  cube.receiveShadow = true;
+  scene.add(cube);
+
+  // Animation Loop
+  let animId;
+  const clock = new THREE.Clock();
+
+  function animate() {
+    animId = requestAnimationFrame(animate);
+    const delta = clock.getDelta();
+    cube.rotation.y += delta * 0.5;
+    cube.rotation.x += delta * 0.2;
+    controls.update();
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  // Resize Handler
+  function onResize() {
+    const w = container.clientWidth;
+    const h = container.clientHeight;
+    if (!w || !h) return;
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h);
+  }
+  window.addEventListener('resize', onResize);
+
+  // Global Cleanup Handle
+  window.__cleanupGame = function() {
+    cancelAnimationFrame(animId);
+    window.removeEventListener('resize', onResize);
+    controls.dispose();
+    cubeGeo.dispose();
+    cubeMat.dispose();
+    planeGeo.dispose();
+    planeMat.dispose();
+    renderer.dispose();
+  };
+})();
+  </script>
+
+  <script>
+    /* -------------------------------------------------------------
+       1. VERSION CONTROL ENGINE (Git-like Commits & Time-Travel)
+       ------------------------------------------------------------- */
+    const SYSTEM_PROMPT = `You are an expert Three.js and WebGL game engine programmer. 
+Your task is to modify or extend the provided JavaScript Three.js game code based on the user's prompt.
+
+Rules:
+1. Return ONLY pure, runnable JavaScript code. Do not include markdown code fences (no \`\`\`javascript or \`\`\`), commentary, or explanations.
+2. The code will be executed in a live browser context where THREE and OrbitControls are globally available.
+3. Always implement proper teardown: define \`window.__cleanupGame = function() { ... }\` that cancels active \`requestAnimationFrame\`, removes window event listeners (keydown, resize, etc.), and disposes of materials/geometries so it can hot-reload seamlessly.
+4. Maintain a visually pleasing, polished aesthetic with smooth colors, proper lighting, and shadow casting.
+5. If the user asks for mechanics (e.g. movement, keyboard controls, bouncing, physics, particles, colors, lighting), integrate them directly into the scene and animation loop.
+6. Target the canvas container '#canvas-container'. Always size the renderer and camera aspect ratio using container.clientWidth and container.clientHeight instead of window.innerWidth/innerHeight.`;
+
+    // State
+    const versionStore = {
+      commits: [],       // Array of commit objects
+      currentHeadIndex: 0 // Index in commits of active version
+    };
+
+    // Helper to generate short pseudo-git hash
+    function generateCommitHash() {
+      return Math.random().toString(36).substring(2, 9);
+    }
+
+    // Helper to format timestamps
+    function formatRelativeTime(date) {
+      const seconds = Math.floor((new Date() - date) / 1000);
+      if (seconds < 15) return 'Just now';
+      if (seconds < 60) return `${seconds}s ago`;
+      const minutes = Math.floor(seconds / 60);
+      if (minutes < 60) return `${minutes}m ago`;
+      const hours = Math.floor(minutes / 60);
+      if (hours < 24) return `${hours}h ago`;
+      return date.toLocaleDateString();
+    }
+
+    // DOM elements
+    const input = document.getElementById('prompt-input');
+    const submitBtn = document.getElementById('submit-btn');
+    const btnText = document.getElementById('btn-text');
+    const btnSpinner = document.getElementById('btn-spinner');
+    const statusDot = document.getElementById('status-indicator');
+    const toast = document.getElementById('toast');
+
+    const versionCountBadge = document.getElementById('version-count-badge');
+    const quickUndoBtn = document.getElementById('quick-undo-btn');
+    const quickRedoBtn = document.getElementById('quick-redo-btn');
+
+    const historyDrawer = document.getElementById('history-drawer');
+    const historyBackdrop = document.getElementById('history-backdrop');
+    const toggleHistoryBtn = document.getElementById('toggle-history-btn');
+    const closeHistoryBtn = document.getElementById('close-history-btn');
+    const timelineList = document.getElementById('timeline-list');
+    const historySummary = document.getElementById('history-summary');
+    const exportHistoryBtn = document.getElementById('export-history-btn');
+    const exportStandaloneBtn = document.getElementById('export-standalone-btn');
+
+    const codeModal = document.getElementById('code-modal');
+    const modalCodeTitle = document.getElementById('modal-code-title');
+    const modalCodeContent = document.getElementById('modal-code-content');
+    const copyCodeBtn = document.getElementById('copy-code-btn');
+    const closeCodeModalBtn = document.getElementById('close-code-modal-btn');
+
+    let viewedCodeString = '';
+
+    function showToast(msg, isError = false) {
+      toast.textContent = msg;
+      toast.className = `fixed top-5 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl text-xs backdrop-blur-md transition-opacity duration-300 pointer-events-none z-50 opacity-100 ${
+        isError ? 'bg-rose-950/90 text-rose-200 border border-rose-800 shadow-xl' : 'bg-slate-800/90 text-emerald-300 border border-slate-700 shadow-xl'
+      }`;
+      setTimeout(() => {
+        toast.classList.replace('opacity-100', 'opacity-0');
+      }, 3000);
+    }
+
+    // Helper to reliably extract executable code from markdown fences or text
+    function extractExecutableCode(rawText) {
+      if (!rawText) return '';
+      // Look for ```javascript or ``` blocks first
+      const blockMatch = rawText.match(/```(?:javascript|js)?\s*([\s\S]*?)```/i);
+      if (blockMatch && blockMatch[1]) {
+        return blockMatch[1].trim();
+      }
+      // Fallback: strip leading/trailing fences if present
+      return rawText.replace(/^```(?:javascript|js)?\n?/i, '').replace(/\n?```$/i, '').trim();
+    }
+
+    // Helper to validate syntax before injecting into the DOM
+    function testSyntax(code) {
+      try {
+        new Function(code);
+        return null;
+      } catch (err) {
+        return err;
+      }
+    }
+
+    // Hot-reload code into DOM
+    function executeEngineCode(code) {
+      // 1. Cleanup running instance if defined
+      if (typeof window.__cleanupGame === 'function') {
+        try { 
+          window.__cleanupGame(); 
+        } catch (e) { 
+          console.warn("Teardown warning:", e); 
+        }
+      }
+
+      // 2. Clear canvas container cleanly
+      const container = document.getElementById('canvas-container');
+      if (container) {
+        container.innerHTML = '';
+      }
+
+      // 3. Remove previous script tag
+      const currentScriptElem = document.getElementById('game-logic');
+      if (currentScriptElem) {
+        currentScriptElem.remove();
+      }
+
+      // 4. Inject and run new script
+      const newScript = document.createElement('script');
+      newScript.id = 'game-logic';
+      newScript.textContent = code;
+      document.body.appendChild(newScript);
+    }
+
+    // Record a new version commit
+    function recordCommit(code, message, type = 'prompt') {
+      const commitNumber = versionStore.commits.length + 1;
+      const newCommit = {
+        id: `v${commitNumber}`,
+        hash: generateCommitHash(),
+        versionNumber: commitNumber,
+        timestamp: new Date(),
+        message: message.trim() || `Snapshot #${commitNumber}`,
+        code: code,
+        type: type // 'init' | 'prompt' | 'snapshot' | 'revert'
+      };
+
+      versionStore.commits.push(newCommit);
+      versionStore.currentHeadIndex = versionStore.commits.length - 1;
+      updateUI();
+      return newCommit;
+    }
+
+    // Revert/Checkout specific commit by index
+    function checkoutCommit(index, notify = true) {
+      if (index < 0 || index >= versionStore.commits.length) return;
+
+      versionStore.currentHeadIndex = index;
+      const targetCommit = versionStore.commits[index];
+
+      try {
+        executeEngineCode(targetCommit.code);
+        if (notify) {
+          showToast(`Switched to ${targetCommit.id} (${targetCommit.hash})`);
+        }
+      } catch (err) {
+        console.error("Execution error on checkout:", err);
+        showToast("Error executing version code", true);
+      }
+
+      updateUI();
+    }
+
+    // Refresh UI elements (Header, Quick buttons, Timeline drawer)
+    function updateUI() {
+      const current = versionStore.commits[versionStore.currentHeadIndex];
+      const total = versionStore.commits.length;
+
+      if (!current) return;
+
+      versionCountBadge.textContent = total;
+      historySummary.textContent = `${total} version${total === 1 ? '' : 's'} recorded`;
+
+      // Quick Undo/Redo button states
+      quickUndoBtn.disabled = versionStore.currentHeadIndex <= 0;
+      quickRedoBtn.disabled = versionStore.currentHeadIndex >= total - 1;
+
+      renderTimeline();
+    }
+
+    function renderTimeline() {
+      timelineList.innerHTML = '';
+
+      // Render in reverse order (newest first)
+      for (let i = versionStore.commits.length - 1; i >= 0; i--) {
+        const commit = versionStore.commits[i];
+        const isHead = (i === versionStore.currentHeadIndex);
+
+        const item = document.createElement('div');
+        item.className = `relative pl-6 pb-4 border-l-2 transition-colors ${
+          isHead ? 'border-cyan-500' : 'border-slate-800 hover:border-slate-700'
+        }`;
+
+        // Node dot
+        const nodeColor = isHead ? 'bg-cyan-400 ring-4 ring-cyan-500/20' : 'bg-slate-700';
+
+        item.innerHTML = `
+          <!-- Timeline Marker -->
+          <div class="absolute -left-[9px] top-1 w-4 h-4 rounded-full ${nodeColor} flex items-center justify-center transition-all">
+            ${isHead ? '<div class="w-1.5 h-1.5 rounded-full bg-slate-900"></div>' : ''}
+          </div>
+
+          <!-- Commit Card -->
+          <div class="bg-slate-800/70 hover:bg-slate-800 border ${
+            isHead ? 'border-cyan-500/50 bg-slate-800/90 shadow-lg shadow-cyan-950/40' : 'border-slate-700/60'
+          } rounded-xl p-3 transition">
+            
+            <div class="flex items-center justify-between gap-2 mb-1.5">
+              <div class="flex items-center gap-1.5">
+                <span class="text-xs font-mono font-bold ${isHead ? 'text-cyan-300' : 'text-slate-300'}">${commit.id}</span>
+                <span class="text-[10px] font-mono text-slate-400 bg-slate-900/60 px-1.5 py-0.5 rounded border border-slate-700/60">${commit.hash}</span>
+                ${isHead ? '<span class="text-[9px] font-semibold uppercase tracking-wider bg-cyan-500 text-slate-950 px-1.5 py-0.2 rounded font-mono">HEAD</span>' : ''}
+              </div>
+              <span class="text-[10px] text-slate-400">${formatRelativeTime(commit.timestamp)}</span>
+            </div>
+
+            <p class="text-xs text-slate-200 font-medium mb-3 break-words line-clamp-2">${commit.message}</p>
+
+            <div class="flex items-center justify-between pt-2 border-t border-slate-700/50">
+              <div class="flex items-center gap-1.5">
+                <button 
+                  data-view-index="${i}"
+                  class="view-code-btn px-2 py-1 rounded-lg bg-slate-900/80 hover:bg-slate-700 text-slate-300 hover:text-white text-[11px] transition flex items-center gap-1"
+                >
+                  <i class="fa-solid fa-code text-[10px]"></i> Code
+                </button>
+              </div>
+
+              ${!isHead ? `
+                <button 
+                  data-checkout-index="${i}"
+                  class="checkout-btn px-2.5 py-1 rounded-lg bg-cyan-600/90 hover:bg-cyan-500 text-white font-medium text-[11px] transition flex items-center gap-1 shadow"
+                >
+                  <i class="fa-solid fa-rotate-left text-[10px]"></i> Revert
+                </button>
+              ` : `
+                <span class="text-[10px] font-medium text-cyan-400 flex items-center gap-1">
+                  <i class="fa-solid fa-check text-[9px]"></i> Active
+                </span>
+              `}
+            </div>
+          </div>
+        `;
+
+        timelineList.appendChild(item);
+      }
+
+      // Bind dynamic buttons
+      timelineList.querySelectorAll('.checkout-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = parseInt(btn.getAttribute('data-checkout-index'), 10);
+          checkoutCommit(idx);
+        });
+      });
+
+      timelineList.querySelectorAll('.view-code-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = parseInt(btn.getAttribute('data-view-index'), 10);
+          openCodeModal(idx);
+        });
+      });
+    }
+
+    function openHistoryDrawer() {
+      historyDrawer.classList.remove('translate-x-full');
+      historyBackdrop.classList.remove('opacity-0', 'pointer-events-none');
+      renderTimeline();
+    }
+
+    function closeHistoryDrawer() {
+      historyDrawer.classList.add('translate-x-full');
+      historyBackdrop.classList.add('opacity-0', 'pointer-events-none');
+    }
+
+    function openCodeModal(index) {
+      const commit = versionStore.commits[index];
+      if (!commit) return;
+
+      modalCodeTitle.textContent = `${commit.id} (${commit.hash}) - ${commit.message}`;
+      viewedCodeString = commit.code;
+      modalCodeContent.textContent = commit.code;
+
+      codeModal.classList.remove('opacity-0', 'pointer-events-none');
+    }
+
+    function closeCodeModal() {
+      codeModal.classList.add('opacity-0', 'pointer-events-none');
+    }
+
+    function setGenerating(isGenerating) {
+      submitBtn.disabled = isGenerating;
+      input.disabled = isGenerating;
+      if (isGenerating) {
+        btnText.textContent = "Updating";
+        btnSpinner.classList.remove('hidden');
+        statusDot.className = "w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse ml-2";
+      } else {
+        btnText.textContent = "Apply";
+        btnSpinner.classList.add('hidden');
+        statusDot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 ml-2";
+      }
+    }
+
+    async function callGemini(payload, maxRetries = 3, initialDelay = 1000) {
+      const apiKey = ""; // Provided by runtime environment
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+      let delay = initialDelay;
+
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+          const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          if (!response.ok) {
+            const errJson = await response.json().catch(() => ({}));
+            throw new Error(errJson.error?.message || `API error: ${response.status} ${response.statusText}`);
+          }
+
+          return await response.json();
+        } catch (error) {
+          if (attempt === maxRetries - 1) throw error;
+          await new Promise(resolve => setTimeout(resolve, delay));
+          delay *= 2;
+        }
+      }
+    }
+
+    async function applyUserPrompt(promptText) {
+      if (!promptText.trim()) return;
+
+      // Use active HEAD's code as baseline for modifications
+      const activeCommit = versionStore.commits[versionStore.currentHeadIndex];
+      const currentCode = activeCommit ? activeCommit.code : (document.getElementById('game-logic')?.textContent || '');
+
+      setGenerating(true);
+
+      const userContent = `Here is the current Three.js engine code:\n\n\`\`\`javascript\n${currentCode}\n\`\`\`\n\nRequested modification:\n${promptText}\n\nReturn the complete updated runnable JavaScript code including window.__cleanupGame.`;
+
+      const payload = {
+        contents: [{ parts: [{ text: userContent }] }],
+        systemInstruction: {
+          parts: [{ text: SYSTEM_PROMPT }]
+        }
+      };
+
+      try {
+        const data = await callGemini(payload);
+        const rawCode = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (!rawCode) {
+          throw new Error("No code returned from model.");
+        }
+
+        // Clean any markdown formatting or conversational prefix
+        const generatedCode = extractExecutableCode(rawCode);
+
+        // Pre-validate syntax before injecting to prevent breaking the engine
+        const syntaxErr = testSyntax(generatedCode);
+        if (syntaxErr) {
+          throw new Error(`Generated script syntax error: ${syntaxErr.message}`);
+        }
+
+        // 1. Hot replace live script
+        executeEngineCode(generatedCode);
+
+        // 2. Commit this version
+        recordCommit(generatedCode, promptText, 'prompt');
+
+        input.value = '';
+        showToast("Engine updated & committed to history");
+      } catch (err) {
+        console.error("Engine update failed:", err);
+        showToast(err.message || "Failed to update scene", true);
+        statusDot.className = "w-2.5 h-2.5 rounded-full bg-rose-500 ml-2";
+      } finally {
+        setGenerating(false);
+      }
+    }
+
+    // Input Submissions
+    submitBtn.addEventListener('click', () => applyUserPrompt(input.value));
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        applyUserPrompt(input.value);
+      }
+    });
+
+    // Drawer triggers
+    toggleHistoryBtn.addEventListener('click', openHistoryDrawer);
+    closeHistoryBtn.addEventListener('click', closeHistoryDrawer);
+    historyBackdrop.addEventListener('click', closeHistoryDrawer);
+
+    // Quick Undo / Redo
+    quickUndoBtn.addEventListener('click', () => {
+      if (versionStore.currentHeadIndex > 0) {
+        checkoutCommit(versionStore.currentHeadIndex - 1);
+      }
+    });
+
+    quickRedoBtn.addEventListener('click', () => {
+      if (versionStore.currentHeadIndex < versionStore.commits.length - 1) {
+        checkoutCommit(versionStore.currentHeadIndex + 1);
+      }
+    });
+
+    // Code Modal
+    closeCodeModalBtn.addEventListener('click', closeCodeModal);
+    codeModal.addEventListener('click', (e) => {
+      if (e.target === codeModal) closeCodeModal();
+    });
+
+    copyCodeBtn.addEventListener('click', () => {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(viewedCodeString)
+          .then(() => showToast("Code copied to clipboard!"))
+          .catch(() => {
+            document.execCommand('copy');
+            showToast("Code copied!");
+          });
+      } else {
+        document.execCommand('copy');
+        showToast("Code copied!");
+      }
+    });
+
+    // Export Version Log as JSON file
+    exportHistoryBtn.addEventListener('click', () => {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(versionStore.commits, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `threejs-engine-history-${Date.now()}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      showToast("History exported as JSON");
+    });
+
+    // Export clean standalone HTML file (scene & gameplay only, zero editor/version overhead)
+    exportStandaloneBtn.addEventListener('click', () => {
+      const activeCommit = versionStore.commits[versionStore.currentHeadIndex];
+      const gameCode = activeCommit ? activeCommit.code : (document.getElementById('game-logic')?.textContent || '');
+
+      const standaloneHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Three.js Game</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"><\/script>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #0b0d13;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    #canvas-container {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div id="canvas-container"></div>
+  <script>
+${gameCode}
+  <\/script>
+</body>
+</html>`;
+
+      const blob = new Blob([standaloneHtml], { type: 'text/html;charset=utf-8' });
+      const blobUrl = URL.createObjectURL(blob);
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.href = blobUrl;
+      const fileId = activeCommit ? activeCommit.id : 'v1';
+      downloadAnchor.download = `threejs-game-${fileId}.html`;
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      URL.revokeObjectURL(blobUrl);
+      showToast("Standalone game exported as .html");
+    });
+
+    // Keyboard shortcuts (Cmd/Ctrl + Z, Cmd/Ctrl + Shift + Z / Y)
+    window.addEventListener('keydown', (e) => {
+      // Ignore if typing inside input
+      if (document.activeElement === input) return;
+
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          // Redo
+          if (versionStore.currentHeadIndex < versionStore.commits.length - 1) {
+            checkoutCommit(versionStore.currentHeadIndex + 1);
+          }
+        } else {
+          // Undo
+          if (versionStore.currentHeadIndex > 0) {
+            checkoutCommit(versionStore.currentHeadIndex - 1);
+          }
+        }
+      } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'y') {
+        e.preventDefault();
+        // Redo
+        if (versionStore.currentHeadIndex < versionStore.commits.length - 1) {
+          checkoutCommit(versionStore.currentHeadIndex + 1);
+        }
+      } else if (e.key === 'Escape') {
+        closeHistoryDrawer();
+        closeCodeModal();
+      }
+    });
+
+    // Initialize initial scene as version v1
+    window.addEventListener('load', () => {
+      const initialScript = document.getElementById('game-logic');
+      const initialCode = initialScript ? initialScript.textContent : '';
+      recordCommit(initialCode, "Initial Scene (Red Cube & Lighting)", "init");
+    });
+  </script>
+</body>
+</html>
