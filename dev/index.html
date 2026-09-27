@@ -969,7 +969,7 @@ Rules:
     }
 
     /* OpenAI Chat Completions caller targeting gpt-6-astra */
-    async function callOpenAI({ systemPrompt, userPrompt, temperature = 0.7 }) {
+    async function callOpenAI({ systemPrompt, userPrompt }) {
       const apiKey = getApiKey();
       if (!apiKey) {
         openApiModalBtn.click();
@@ -987,8 +987,7 @@ Rules:
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: userPrompt }
-          ],
-          temperature: temperature
+          ]
         })
       });
 
@@ -1018,8 +1017,7 @@ Rules:
 
         const thinkingBlock = await callOpenAI({
           systemPrompt: REASONING_SYSTEM_PROMPT,
-          userPrompt: reasoningPrompt,
-          temperature: 0.4
+          userPrompt: reasoningPrompt
         });
 
         if (!thinkingBlock) {
@@ -1035,8 +1033,7 @@ Rules:
 
         const rawCode = await callOpenAI({
           systemPrompt: CODE_SYSTEM_PROMPT,
-          userPrompt: synthesisPrompt,
-          temperature: 0.2
+          userPrompt: synthesisPrompt
         });
 
         if (!rawCode) {
@@ -1227,4 +1224,3 @@ ${gameCode}
 </body>
 
 </html>
-
