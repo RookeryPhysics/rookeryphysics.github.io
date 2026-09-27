@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
-  <title>Three.js Engine Studio</title>
+  <title>Three.js Engine Studio - GPT-6 Astra</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -124,10 +124,26 @@
         <i class="fa-solid fa-file-arrow-down text-slate-400 text-xs"></i>
         <span>Export</span>
       </button>
+
+      <!-- Model Badge -->
+      <div class="hidden md:flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-800/60 border border-slate-700 text-[11px] font-mono text-indigo-300">
+        <i class="fa-solid fa-microchip text-[10px]"></i>
+        <span>gpt-6-astra</span>
+      </div>
     </div>
 
-    <!-- Top Right: Undo/Redo & History Drawer Trigger -->
+    <!-- Top Right: API Key, Undo/Redo & History -->
     <div class="flex items-center gap-1.5">
+      <!-- API Key Modal Trigger -->
+      <button id="open-api-modal-btn" title="Configure OpenAI API Key"
+        class="h-8 px-2.5 sm:px-3 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 hover:border-slate-700 active:scale-95 text-xs font-medium transition flex items-center gap-1.5 shadow-sm">
+        <i class="fa-solid fa-key text-amber-400 text-xs"></i>
+        <span class="hidden sm:inline">OpenAI Key</span>
+        <span id="api-status-badge" class="w-2 h-2 rounded-full bg-rose-500"></span>
+      </button>
+
+      <div class="w-px h-4 bg-slate-800 mx-0.5"></div>
+
       <button id="quick-undo-btn" title="Revert to previous version (Ctrl+Z)"
         class="h-8 w-8 rounded-lg flex items-center justify-center bg-slate-900/80 text-slate-300 hover:text-white hover:bg-slate-800 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition border border-slate-800 hover:border-slate-700">
         <i class="fa-solid fa-arrow-rotate-left text-xs"></i>
@@ -164,7 +180,7 @@
           <span id="status-text" class="hidden sm:inline">Ready</span>
         </div>
 
-        <input id="prompt-input" type="text" placeholder="Describe changes..."
+        <input id="prompt-input" type="text" placeholder="Describe changes to the Three.js scene..."
           class="flex-1 bg-transparent px-2.5 py-1 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none"
           autocomplete="off" />
 
@@ -181,6 +197,39 @@
       </div>
     </div>
   </footer>
+
+  <!-- API Key Modal -->
+  <div id="api-modal"
+    class="fixed inset-0 bg-black/70 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-200 z-50 flex items-center justify-center p-4">
+    <div class="bg-[#111520] border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl p-5">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-key text-amber-400"></i>
+          <h3 class="font-semibold text-sm text-white">OpenAI API Key</h3>
+        </div>
+        <button id="close-api-modal-btn" class="text-slate-400 hover:text-white text-sm">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="py-4 space-y-3">
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Inference runs with model <strong class="text-indigo-400 font-mono">gpt-6-astra</strong> on the OpenAI API. Your key is stored only in your local browser's <code class="text-indigo-300">localStorage</code>.
+        </p>
+        <div>
+          <label class="block text-[11px] font-mono text-slate-400 mb-1">API Key</label>
+          <input id="api-key-input" type="password" placeholder="sk-..."
+            class="w-full bg-[#0a0d14] border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" />
+        </div>
+      </div>
+      <div class="flex items-center justify-between pt-3 border-t border-slate-800">
+        <button id="clear-api-key-btn" class="text-xs text-rose-400 hover:text-rose-300 font-medium">Clear Key</button>
+        <div class="flex gap-2">
+          <button id="cancel-api-key-btn" class="px-3 py-1.5 text-xs text-slate-400 hover:text-white rounded-lg bg-slate-900 border border-slate-800">Cancel</button>
+          <button id="save-api-key-btn" class="px-3.5 py-1.5 text-xs text-white rounded-lg bg-indigo-600 hover:bg-indigo-500 font-medium">Save Key</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Slide-out History Drawer -->
   <div id="history-backdrop"
@@ -492,9 +541,10 @@
   </script>
 
   <script>
-    /* Two-Phase AI Generation Engine & Version Control */
+    /* Two-Phase AI Generation Engine & Version Control (OpenAI gpt-6-astra) */
 
-    // System prompt for Phase 1: Architectural Reasoning & Planning
+    const TARGET_OPENAI_MODEL = "gpt-6-astra";
+
     const REASONING_SYSTEM_PROMPT = `You are an elite 3D WebGL and Three.js engine architect.
 Your job is to analyze the user's requested modification to the existing Three.js game code and produce a rigorous, structured internal thinking and architectural plan.
 
@@ -508,7 +558,6 @@ In your thinking block:
 
 Output ONLY your analytical thinking and architectural plan. Do not output raw runnable code fences in this phase.`;
 
-    // System prompt for Phase 2: Code Synthesis using the Thinking Block Context
     const CODE_SYSTEM_PROMPT = `You are an expert Three.js and WebGL game engine programmer.
 Your task is to produce the final, complete JavaScript Three.js game code using the provided architectural reasoning plan.
 
@@ -539,6 +588,7 @@ Rules:
       return date.toLocaleDateString();
     }
 
+    // DOM Elements
     const input = document.getElementById('prompt-input');
     const submitBtn = document.getElementById('submit-btn');
     const btnText = document.getElementById('btn-text');
@@ -570,9 +620,41 @@ Rules:
     const copyCodeBtn = document.getElementById('copy-code-btn');
     const closeCodeModalBtn = document.getElementById('close-code-modal-btn');
 
+    // API Key Modal Elements
+    const apiModal = document.getElementById('api-modal');
+    const openApiModalBtn = document.getElementById('open-api-modal-btn');
+    const closeApiModalBtn = document.getElementById('close-api-modal-btn');
+    const cancelApiKeyBtn = document.getElementById('cancel-api-key-btn');
+    const saveApiKeyBtn = document.getElementById('save-api-key-btn');
+    const clearApiKeyBtn = document.getElementById('clear-api-key-btn');
+    const apiKeyInput = document.getElementById('api-key-input');
+    const apiStatusBadge = document.getElementById('api-status-badge');
+
     let viewedCodeString = '';
     let viewedReasoningString = '';
     let currentModalTab = 'code';
+
+    function getApiKey() {
+      return localStorage.getItem('openai_api_key') || '';
+    }
+
+    function setApiKey(key) {
+      if (key && key.trim()) {
+        localStorage.setItem('openai_api_key', key.trim());
+      } else {
+        localStorage.removeItem('openai_api_key');
+      }
+      refreshApiStatus();
+    }
+
+    function refreshApiStatus() {
+      const key = getApiKey();
+      if (key) {
+        apiStatusBadge.className = "w-2 h-2 rounded-full bg-emerald-400";
+      } else {
+        apiStatusBadge.className = "w-2 h-2 rounded-full bg-rose-500";
+      }
+    }
 
     function showToast(msg, isError = false) {
       toast.textContent = msg;
@@ -807,7 +889,7 @@ Rules:
 
       modalCodeTitle.textContent = `${commit.id} (${commit.hash}) - ${commit.message}`;
       viewedCodeString = commit.code;
-      viewedReasoningString = commit.thinking || "No reasoning plan logged for this snapshot (initial or direct checkout).";
+      viewedReasoningString = commit.thinking || "No reasoning plan logged for this snapshot.";
       
       modalCodeContent.textContent = viewedCodeString;
       modalReasoningContent.textContent = viewedReasoningString;
@@ -819,6 +901,33 @@ Rules:
     function closeCodeModal() {
       codeModal.classList.add('opacity-0', 'pointer-events-none');
     }
+
+    // Modal Events
+    openApiModalBtn.addEventListener('click', () => {
+      apiKeyInput.value = getApiKey();
+      apiModal.classList.remove('opacity-0', 'pointer-events-none');
+      apiKeyInput.focus();
+    });
+
+    function closeApiModal() {
+      apiModal.classList.add('opacity-0', 'pointer-events-none');
+    }
+
+    closeApiModalBtn.addEventListener('click', closeApiModal);
+    cancelApiKeyBtn.addEventListener('click', closeApiModal);
+
+    saveApiKeyBtn.addEventListener('click', () => {
+      setApiKey(apiKeyInput.value);
+      closeApiModal();
+      showToast("API key saved");
+    });
+
+    clearApiKeyBtn.addEventListener('click', () => {
+      apiKeyInput.value = '';
+      setApiKey('');
+      closeApiModal();
+      showToast("API key removed");
+    });
 
     tabCodeBtn.addEventListener('click', () => switchModalTab('code'));
     tabReasoningBtn.addEventListener('click', () => switchModalTab('reasoning'));
@@ -859,34 +968,40 @@ Rules:
       }
     }
 
-    async function callGemini(payload, maxRetries = 3, initialDelay = 1000) {
-      const apiKey = "";
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
-      let delay = initialDelay;
-
-      for (let attempt = 0; attempt < maxRetries; attempt++) {
-        try {
-          const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-
-          if (!response.ok) {
-            const errJson = await response.json().catch(() => ({}));
-            throw new Error(errJson.error?.message || `API error: ${response.status} ${response.statusText}`);
-          }
-
-          return await response.json();
-        } catch (error) {
-          if (attempt === maxRetries - 1) throw error;
-          await new Promise(resolve => setTimeout(resolve, delay));
-          delay *= 2;
-        }
+    /* OpenAI Chat Completions caller targeting gpt-6-astra */
+    async function callOpenAI({ systemPrompt, userPrompt, temperature = 0.7 }) {
+      const apiKey = getApiKey();
+      if (!apiKey) {
+        openApiModalBtn.click();
+        throw new Error("Please enter your OpenAI API Key first.");
       }
+
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: TARGET_OPENAI_MODEL,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt }
+          ],
+          temperature: temperature
+        })
+      });
+
+      if (!response.ok) {
+        const errJson = await response.json().catch(() => ({}));
+        throw new Error(errJson.error?.message || `OpenAI error ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data.choices?.[0]?.message?.content || "";
     }
 
-    /* Two-Phase Execution Pipeline: Hidden Reasoning -> Synthesis with Reasoning Context */
+    /* Two-Phase Execution Pipeline: Architectural Reasoning -> Synthesis */
     async function applyUserPrompt(promptText) {
       if (!promptText.trim()) return;
 
@@ -895,42 +1010,34 @@ Rules:
 
       try {
         // ==========================================
-        // PHASE 1: Hidden Architectural Reasoning
+        // PHASE 1: Architectural Reasoning
         // ==========================================
-        setEngineStage('reasoning', 'Reasoning');
+        setEngineStage('reasoning', 'Planning');
 
         const reasoningPrompt = `Current Three.js engine code:\n\`\`\`javascript\n${currentCode}\n\`\`\`\n\nUser's requested modification:\n"${promptText}"\n\nProduce your architectural thinking block and implementation strategy.`;
 
-        const reasoningPayload = {
-          contents: [{ parts: [{ text: reasoningPrompt }] }],
-          systemInstruction: {
-            parts: [{ text: REASONING_SYSTEM_PROMPT }]
-          }
-        };
-
-        const reasoningData = await callGemini(reasoningPayload);
-        const thinkingBlock = reasoningData.candidates?.[0]?.content?.parts?.[0]?.text;
+        const thinkingBlock = await callOpenAI({
+          systemPrompt: REASONING_SYSTEM_PROMPT,
+          userPrompt: reasoningPrompt,
+          temperature: 0.4
+        });
 
         if (!thinkingBlock) {
           throw new Error("Reasoning phase failed to generate a plan.");
         }
 
         // ==========================================
-        // PHASE 2: Code Synthesis with Thinking Context
+        // PHASE 2: Code Synthesis
         // ==========================================
-        setEngineStage('coding', 'Writing Code');
+        setEngineStage('coding', 'Synthesizing');
 
         const synthesisPrompt = `Current Three.js engine code:\n\`\`\`javascript\n${currentCode}\n\`\`\`\n\nUser Request:\n"${promptText}"\n\n[ARCHITECTURAL REASONING & EXECUTION PLAN]:\n${thinkingBlock}\n\nExecute the above architectural plan and return the complete updated runnable JavaScript code including window.__cleanupGame.`;
 
-        const codePayload = {
-          contents: [{ parts: [{ text: synthesisPrompt }] }],
-          systemInstruction: {
-            parts: [{ text: CODE_SYSTEM_PROMPT }]
-          }
-        };
-
-        const codeData = await callGemini(codePayload);
-        const rawCode = codeData.candidates?.[0]?.content?.parts?.[0]?.text;
+        const rawCode = await callOpenAI({
+          systemPrompt: CODE_SYSTEM_PROMPT,
+          userPrompt: synthesisPrompt,
+          temperature: 0.2
+        });
 
         if (!rawCode) {
           throw new Error("Synthesis phase failed to return runnable code.");
@@ -949,7 +1056,7 @@ Rules:
         recordCommit(generatedCode, promptText, 'prompt', thinkingBlock);
 
         input.value = '';
-        showToast("Engine updated via reasoned plan");
+        showToast("Engine updated via gpt-6-astra");
         setEngineStage('ready');
       } catch (err) {
         console.error("Engine pipeline failed:", err);
@@ -1069,7 +1176,7 @@ ${gameCode}
     });
 
     window.addEventListener('keydown', (e) => {
-      if (document.activeElement === input) return;
+      if (document.activeElement === input || document.activeElement === apiKeyInput) return;
 
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') {
         e.preventDefault();
@@ -1090,6 +1197,7 @@ ${gameCode}
       } else if (e.key === 'Escape') {
         closeHistoryDrawer();
         closeCodeModal();
+        closeApiModal();
       }
     });
 
@@ -1110,6 +1218,7 @@ ${gameCode}
 
     window.addEventListener('load', () => {
       updateAppHeight();
+      refreshApiStatus();
       const initialScript = document.getElementById('game-logic');
       const initialCode = initialScript ? initialScript.textContent : '';
       recordCommit(initialCode, "Initial Scene (Red Cube & Voxel Palm Tree)", "init", "Initial base scene setup.");
@@ -1118,3 +1227,4 @@ ${gameCode}
 </body>
 
 </html>
+
