@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
-  <title>Three.js Engine Studio - GPT-6 Astra</title>
+  <title>Three.js Engine Studio - GPT-6.1 Sol</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -128,7 +128,7 @@
       <!-- Model Badge -->
       <div class="hidden md:flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-800/60 border border-slate-700 text-[11px] font-mono text-indigo-300">
         <i class="fa-solid fa-microchip text-[10px]"></i>
-        <span>gpt-6-astra</span>
+        <span>gpt-6.1-sol</span>
       </div>
     </div>
 
@@ -213,7 +213,7 @@
       </div>
       <div class="py-4 space-y-3">
         <p class="text-xs text-slate-300 leading-relaxed">
-          Inference runs with model <strong class="text-indigo-400 font-mono">gpt-6-astra</strong> on the OpenAI API. Your key is stored only in your local browser's <code class="text-indigo-300">localStorage</code>.
+          Inference runs with model <strong class="text-indigo-400 font-mono">gpt-6.1-sol</strong> on the OpenAI API. Your key is stored only in your local browser's <code class="text-indigo-300">localStorage</code>.
         </p>
         <div>
           <label class="block text-[11px] font-mono text-slate-400 mb-1">API Key</label>
@@ -541,9 +541,9 @@
   </script>
 
   <script>
-    /* Two-Phase AI Generation Engine & Version Control (OpenAI gpt-6-astra) */
+    /* Two-Phase AI Generation Engine & Version Control (OpenAI gpt-6.1-sol) */
 
-    const TARGET_OPENAI_MODEL = "gpt-6-astra";
+    const TARGET_OPENAI_MODEL = "gpt-6.1-sol";
 
     const REASONING_SYSTEM_PROMPT = `You are an elite 3D WebGL and Three.js engine architect.
 Your job is to analyze the user's requested modification to the existing Three.js game code and produce a rigorous, structured internal thinking and architectural plan.
@@ -968,7 +968,7 @@ Rules:
       }
     }
 
-    /* OpenAI Chat Completions caller targeting gpt-6-astra */
+    /* OpenAI Chat Completions caller targeting gpt-6.1-sol */
     async function callOpenAI({ systemPrompt, userPrompt }) {
       const apiKey = getApiKey();
       if (!apiKey) {
@@ -1053,7 +1053,7 @@ Rules:
         recordCommit(generatedCode, promptText, 'prompt', thinkingBlock);
 
         input.value = '';
-        showToast("Engine updated via gpt-6-astra");
+        showToast("Engine updated via gpt-6.1-sol");
         setEngineStage('ready');
       } catch (err) {
         console.error("Engine pipeline failed:", err);
