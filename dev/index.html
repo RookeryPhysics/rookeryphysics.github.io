@@ -12,7 +12,9 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
   <style>
     :root {
       --app-height: 100dvh;
@@ -92,6 +94,7 @@
     .no-scrollbar::-webkit-scrollbar {
       display: none;
     }
+
     .no-scrollbar {
       -ms-overflow-style: none;
       scrollbar-width: none;
@@ -100,20 +103,23 @@
 </head>
 
 <body class="select-none text-slate-200 flex flex-col app-viewport w-screen overflow-hidden bg-[#090c12]">
-  
+
   <!-- Ambient line -->
   <div class="h-[2px] w-full bg-gradient-to-r from-indigo-500 via-indigo-400 to-indigo-600 shrink-0 opacity-80"></div>
 
   <!-- Top App Header -->
-  <header class="h-14 px-3 sm:px-4 shrink-0 bg-[#0f131c]/95 backdrop-blur-md border-b border-slate-800/80 flex items-center justify-between z-20">
-    
+  <header
+    class="h-14 px-3 sm:px-4 shrink-0 bg-[#0f131c]/95 backdrop-blur-md border-b border-slate-800/80 flex items-center justify-between z-20">
+
     <!-- Top Left: App Mark & Export -->
     <div class="flex items-center gap-2.5 sm:gap-3">
       <div class="flex items-center gap-2">
-        <div class="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-sm shadow-indigo-600/30">
+        <div
+          class="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-sm shadow-indigo-600/30">
           <i class="fa-solid fa-cube text-xs"></i>
         </div>
-        <span class="font-bold text-xs sm:text-sm tracking-tight text-white hidden xs:inline">Engine<span class="text-indigo-400">Lab</span></span>
+        <span class="font-bold text-xs sm:text-sm tracking-tight text-white hidden xs:inline">Engine<span
+            class="text-indigo-400">Lab</span></span>
       </div>
 
       <div class="h-4 w-px bg-slate-800 hidden sm:block"></div>
@@ -125,11 +131,13 @@
         <span>Export</span>
       </button>
 
-      <!-- Model Badge -->
-      <div class="hidden md:flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-800/60 border border-slate-700 text-[11px] font-mono text-indigo-300">
-        <i class="fa-solid fa-microchip text-[10px]"></i>
-        <span>gpt-6.1-sol</span>
-      </div>
+      <!-- Import Button -->
+      <button id="import-standalone-btn" title="Import a .html game file"
+        class="h-8 px-2.5 sm:px-3 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 hover:border-slate-700 active:scale-95 text-xs font-medium transition flex items-center gap-1.5 shadow-sm">
+        <i class="fa-solid fa-file-arrow-up text-slate-400 text-xs"></i>
+        <span>Import</span>
+      </button>
+      <input type="file" id="import-file-input" accept=".html,text/html" class="hidden" />
     </div>
 
     <!-- Top Right: API Key, Undo/Redo & History -->
@@ -138,7 +146,7 @@
       <button id="open-api-modal-btn" title="Configure OpenAI API Key"
         class="h-8 px-2.5 sm:px-3 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 hover:border-slate-700 active:scale-95 text-xs font-medium transition flex items-center gap-1.5 shadow-sm">
         <i class="fa-solid fa-key text-amber-400 text-xs"></i>
-        <span class="hidden sm:inline">OpenAI Key</span>
+        <span class="hidden sm:inline">API Key</span>
         <span id="api-status-badge" class="w-2 h-2 rounded-full bg-rose-500"></span>
       </button>
 
@@ -172,10 +180,13 @@
   <!-- Bottom Workspace Toolbar & Prompt Dock -->
   <footer class="chat-footer shrink-0 bg-[#0f131c]/95 backdrop-blur-md border-t border-slate-800/80 py-2.5 z-20">
     <div class="max-w-3xl mx-auto">
-      <div class="flex items-center gap-2 bg-[#131824] border border-slate-800 rounded-xl p-1.5 transition-all focus-within:border-indigo-500/70 focus-within:ring-2 focus-within:ring-indigo-500/20 shadow-lg">
+      <div
+        class="flex items-center gap-2 bg-[#131824] border border-slate-800 rounded-xl p-1.5 transition-all focus-within:border-indigo-500/70 focus-within:ring-2 focus-within:ring-indigo-500/20 shadow-lg">
 
         <!-- Status Indicator Pill -->
-        <div id="status-badge" class="flex items-center gap-1.5 h-7 px-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-[10px] font-mono font-medium shrink-0" title="Engine Status">
+        <div id="status-badge"
+          class="flex items-center gap-1.5 h-7 px-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-[10px] font-mono font-medium shrink-0"
+          title="Engine Status">
           <div id="status-indicator" class="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
           <span id="status-text" class="hidden sm:inline">Ready</span>
         </div>
@@ -213,7 +224,8 @@
       </div>
       <div class="py-4 space-y-3">
         <p class="text-xs text-slate-300 leading-relaxed">
-          Inference runs with model <strong class="text-indigo-400 font-mono">gpt-6.1-sol</strong> on the OpenAI API. Your key is stored only in your local browser's <code class="text-indigo-300">localStorage</code>.
+          Inference runs with model <strong class="text-indigo-400 font-mono">gpt-6.1-sol</strong> on the OpenAI API.
+          Your key is stored only in your local browser's <code class="text-indigo-300">localStorage</code>.
         </p>
         <div>
           <label class="block text-[11px] font-mono text-slate-400 mb-1">API Key</label>
@@ -224,8 +236,11 @@
       <div class="flex items-center justify-between pt-3 border-t border-slate-800">
         <button id="clear-api-key-btn" class="text-xs text-rose-400 hover:text-rose-300 font-medium">Clear Key</button>
         <div class="flex gap-2">
-          <button id="cancel-api-key-btn" class="px-3 py-1.5 text-xs text-slate-400 hover:text-white rounded-lg bg-slate-900 border border-slate-800">Cancel</button>
-          <button id="save-api-key-btn" class="px-3.5 py-1.5 text-xs text-white rounded-lg bg-indigo-600 hover:bg-indigo-500 font-medium">Save Key</button>
+          <button id="cancel-api-key-btn"
+            class="px-3 py-1.5 text-xs text-slate-400 hover:text-white rounded-lg bg-slate-900 border border-slate-800">Cancel</button>
+          <button id="save-api-key-btn"
+            class="px-3.5 py-1.5 text-xs text-white rounded-lg bg-indigo-600 hover:bg-indigo-500 font-medium">Save
+            Key</button>
         </div>
       </div>
     </div>
@@ -238,11 +253,12 @@
 
   <aside id="history-drawer"
     class="fixed top-0 right-0 h-full w-full max-w-md bg-[#0f131c]/98 backdrop-blur-2xl border-l border-slate-800 shadow-2xl z-50 transform translate-x-full transition-transform duration-250 ease-out flex flex-col">
-    
+
     <!-- History Drawer Header -->
     <div class="h-14 px-4 border-b border-slate-800 flex items-center justify-between">
       <div class="flex items-center gap-2.5">
-        <div class="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 text-xs">
+        <div
+          class="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 text-xs">
           <i class="fa-solid fa-clock-rotate-left"></i>
         </div>
         <div>
@@ -276,18 +292,21 @@
     class="fixed inset-0 bg-black/70 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-200 z-50 flex items-center justify-center p-4">
     <div
       class="bg-[#111520] border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
-      
+
       <div class="p-3.5 bg-[#0e121a] border-b border-slate-800 flex items-center justify-between">
         <div class="flex items-center gap-3">
           <div class="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-lg p-0.5 text-xs">
             <button id="tab-code-btn" class="px-2.5 py-1 rounded bg-indigo-600 text-white font-medium transition">
               <i class="fa-solid fa-code text-[10px] mr-1"></i> Code
             </button>
-            <button id="tab-reasoning-btn" class="px-2.5 py-1 rounded text-slate-400 hover:text-slate-200 font-medium transition">
+            <button id="tab-reasoning-btn"
+              class="px-2.5 py-1 rounded text-slate-400 hover:text-slate-200 font-medium transition">
               <i class="fa-solid fa-brain text-[10px] mr-1"></i> Reasoning
             </button>
           </div>
-          <span id="modal-code-title" class="text-xs font-semibold text-slate-300 font-mono truncate max-w-[200px] sm:max-w-xs">Version Info</span>
+          <span id="modal-code-title"
+            class="text-xs font-semibold text-slate-300 font-mono truncate max-w-[200px] sm:max-w-xs">Version
+            Info</span>
         </div>
 
         <div class="flex items-center gap-2">
@@ -305,7 +324,8 @@
       <!-- Tab Contents -->
       <div class="flex-1 overflow-auto p-4 bg-[#090c12] font-mono text-xs text-slate-200 leading-relaxed whitespace-pre"
         id="modal-code-content"></div>
-      <div class="hidden flex-1 overflow-auto p-4 bg-[#090c12] text-xs text-slate-300 leading-relaxed whitespace-pre-wrap font-sans"
+      <div
+        class="hidden flex-1 overflow-auto p-4 bg-[#090c12] text-xs text-slate-300 leading-relaxed whitespace-pre-wrap font-sans"
         id="modal-reasoning-content"></div>
     </div>
   </div>
@@ -439,14 +459,14 @@
         const zOffset = Math.sin(progress * Math.PI) * 0.6;
         const yPos = 0.25 + i * 0.45;
         const matIdx = i % 3;
-        
+
         if (i === 0) {
           addVoxel(treeGroup, xOffset + 0.35, yPos, zOffset, 0, 0.9);
           addVoxel(treeGroup, xOffset - 0.35, yPos, zOffset, 1, 0.9);
           addVoxel(treeGroup, xOffset, yPos, zOffset + 0.35, 2, 0.9);
           addVoxel(treeGroup, xOffset, yPos, zOffset - 0.35, 0, 0.9);
         }
-        
+
         addVoxel(treeGroup, xOffset, yPos, zOffset, matIdx, 1.05 - progress * 0.2);
         topX = xOffset;
         topY = yPos + 0.3;
@@ -607,9 +627,10 @@ Rules:
     const toggleHistoryBtn = document.getElementById('toggle-history-btn');
     const closeHistoryBtn = document.getElementById('close-history-btn');
     const timelineList = document.getElementById('timeline-list');
-    const historySummary = document.getElementById('history-summary');
     const exportHistoryBtn = document.getElementById('export-history-btn');
     const exportStandaloneBtn = document.getElementById('export-standalone-btn');
+    const importStandaloneBtn = document.getElementById('import-standalone-btn');
+    const importFileInput = document.getElementById('import-file-input');
 
     const codeModal = document.getElementById('code-modal');
     const modalCodeTitle = document.getElementById('modal-code-title');
@@ -658,11 +679,10 @@ Rules:
 
     function showToast(msg, isError = false) {
       toast.textContent = msg;
-      toast.className = `fixed top-4 left-1/2 -translate-x-1/2 px-3.5 py-1.5 rounded-xl text-xs backdrop-blur-md transition-all duration-200 pointer-events-none z-50 opacity-100 shadow-xl border ${
-        isError
+      toast.className = `fixed top-4 left-1/2 -translate-x-1/2 px-3.5 py-1.5 rounded-xl text-xs backdrop-blur-md transition-all duration-200 pointer-events-none z-50 opacity-100 shadow-xl border ${isError
           ? 'bg-rose-950/90 text-rose-200 border-rose-500/30 shadow-rose-950/40'
           : 'bg-slate-900/95 text-slate-200 border-slate-700/80 shadow-slate-950/50'
-      }`;
+        }`;
       setTimeout(() => {
         toast.classList.replace('opacity-100', 'opacity-0');
       }, 2600);
@@ -772,13 +792,12 @@ Rules:
         const isHead = (i === versionStore.currentHeadIndex);
 
         const item = document.createElement('div');
-        item.className = `relative pl-5 pb-3 border-l-2 transition-colors ${
-          isHead ? 'border-indigo-500' : 'border-slate-800'
-        }`;
+        item.className = `relative pl-5 pb-3 border-l-2 transition-colors ${isHead ? 'border-indigo-500' : 'border-slate-800'
+          }`;
 
         let typeBadgeClass = 'bg-slate-800/80 border-slate-700 text-slate-300';
         let typeIcon = '<i class="fa-solid fa-wand-magic-sparkles text-[9px]"></i>';
-        
+
         if (commit.type === 'init') {
           typeBadgeClass = 'bg-slate-800/80 border-slate-700 text-slate-300';
           typeIcon = '<i class="fa-solid fa-cube text-[9px]"></i>';
@@ -794,8 +813,7 @@ Rules:
             ${isHead ? '<div class="w-1.5 h-1.5 rounded-full bg-slate-950"></div>' : ''}
           </div>
 
-          <div class="bg-[#121622] hover:bg-[#151a28] border ${
-            isHead ? 'border-indigo-500/50 shadow-md shadow-indigo-950/20' : 'border-slate-800'
+          <div class="bg-[#121622] hover:bg-[#151a28] border ${isHead ? 'border-indigo-500/50 shadow-md shadow-indigo-950/20' : 'border-slate-800'
           } rounded-xl p-3 transition">
             
             <div class="flex items-center justify-between gap-2 mb-1.5">
@@ -890,7 +908,7 @@ Rules:
       modalCodeTitle.textContent = `${commit.id} (${commit.hash}) - ${commit.message}`;
       viewedCodeString = commit.code;
       viewedReasoningString = commit.thinking || "No reasoning plan logged for this snapshot.";
-      
+
       modalCodeContent.textContent = viewedCodeString;
       modalReasoningContent.textContent = viewedReasoningString;
 
@@ -1170,6 +1188,72 @@ ${gameCode}
       downloadAnchor.remove();
       URL.revokeObjectURL(blobUrl);
       showToast("Game exported as .html");
+    });
+
+    importStandaloneBtn.addEventListener('click', () => {
+      importFileInput.value = '';
+      importFileInput.click();
+    });
+
+    importFileInput.addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const content = event.target?.result;
+          if (typeof content !== 'string') {
+            throw new Error("Unable to read file content.");
+          }
+
+          let extractedCode = '';
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(content, 'text/html');
+          const scriptTags = Array.from(doc.querySelectorAll('script'));
+
+          // Exclude external CDN scripts (three.js, orbitcontrols, tailwind, etc.)
+          const inlineScripts = scriptTags.filter(s => !s.src && s.textContent.trim());
+
+          if (inlineScripts.length > 0) {
+            // Find script containing THREE or OrbitControls if possible, or fallback to the last inline script
+            const threeScript = inlineScripts.find(s => s.textContent.includes('THREE') || s.id === 'game-logic');
+            extractedCode = threeScript ? threeScript.textContent : inlineScripts[inlineScripts.length - 1].textContent;
+          } else {
+            // Fallback: check regex in raw string
+            const scriptMatch = content.match(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/i);
+            if (scriptMatch && scriptMatch[1]) {
+              extractedCode = scriptMatch[1];
+            } else {
+              extractedCode = content;
+            }
+          }
+
+          extractedCode = extractExecutableCode(extractedCode);
+
+          if (!extractedCode.trim()) {
+            throw new Error("No JavaScript game code found in the selected file.");
+          }
+
+          const syntaxErr = testSyntax(extractedCode);
+          if (syntaxErr) {
+            throw new Error(`Imported code syntax error: ${syntaxErr.message}`);
+          }
+
+          executeEngineCode(extractedCode);
+          recordCommit(extractedCode, `Imported: ${file.name}`, 'import', `Imported from local HTML file: ${file.name}`);
+          showToast(`Imported ${file.name}`);
+        } catch (err) {
+          console.error("Import error:", err);
+          showToast(err.message || "Failed to import .html file", true);
+        }
+      };
+
+      reader.onerror = () => {
+        showToast("Error reading file", true);
+      };
+
+      reader.readAsText(file);
     });
 
     window.addEventListener('keydown', (e) => {
