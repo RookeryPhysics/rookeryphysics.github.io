@@ -112,71 +112,71 @@
     class="h-14 px-3 sm:px-4 shrink-0 bg-[#0f131c]/95 backdrop-blur-md border-b border-slate-800/80 flex items-center justify-between z-20">
 
     <!-- Top Left: App Mark & Export -->
-    <div class="flex items-center gap-2.5 sm:gap-3">
-      <div class="flex items-center gap-2">
+    <div class="flex items-center gap-1 sm:gap-2">
+      <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
         <div
           class="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-sm shadow-indigo-600/30">
           <i class="fa-solid fa-cube text-xs"></i>
         </div>
-        <span class="font-bold text-xs sm:text-sm tracking-tight text-white hidden xs:inline">Engine<span
+        <span class="font-bold text-xs sm:text-sm tracking-tight text-white hidden md:inline">Engine<span
             class="text-indigo-400">Lab</span></span>
       </div>
 
       <div class="h-4 w-px bg-slate-800 hidden sm:block"></div>
 
-      <!-- Export Button -->
+      <!-- Export Button (Icon only on mobile, text on desktop) -->
       <button id="export-standalone-btn" title="Export clean standalone .html game"
-        class="h-8 px-2.5 sm:px-3 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 hover:border-slate-700 active:scale-95 text-xs font-medium transition flex items-center gap-1.5 shadow-sm">
+        class="h-7 w-7 sm:h-8 sm:w-auto sm:px-2.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 hover:border-slate-700 active:scale-95 text-xs font-medium transition flex items-center justify-center gap-1.5 shadow-sm">
         <i class="fa-solid fa-file-arrow-down text-slate-400 text-xs"></i>
-        <span>Export</span>
+        <span class="hidden md:inline">Export</span>
       </button>
 
-      <!-- Import Button -->
+      <!-- Import Button (Icon only on mobile, text on desktop) -->
       <button id="import-standalone-btn" title="Import a .html game file"
-        class="h-8 px-2.5 sm:px-3 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 hover:border-slate-700 active:scale-95 text-xs font-medium transition flex items-center gap-1.5 shadow-sm">
+        class="h-7 w-7 sm:h-8 sm:w-auto sm:px-2.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 hover:border-slate-700 active:scale-95 text-xs font-medium transition flex items-center justify-center gap-1.5 shadow-sm">
         <i class="fa-solid fa-file-arrow-up text-slate-400 text-xs"></i>
-        <span>Import</span>
+        <span class="hidden md:inline">Import</span>
       </button>
       <input type="file" id="import-file-input" accept=".html,text/html" class="hidden" />
 
       <!-- View Code Button -->
       <button id="view-code-btn" title="View Current Code"
-        class="h-8 px-2.5 sm:px-3 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 hover:border-slate-700 active:scale-95 text-xs font-medium transition flex items-center gap-1.5 shadow-sm">
+        class="h-7 px-2 sm:h-8 sm:px-2.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 hover:border-slate-700 active:scale-95 text-xs font-medium transition flex items-center gap-1 sm:gap-1.5 shadow-sm">
         <i class="fa-solid fa-code text-indigo-400 text-xs"></i>
-        <span>Code</span>
+        <span class="hidden xs:inline sm:inline">Code</span>
       </button>
     </div>
 
     <!-- Top Right: API Key, Undo/Redo & History -->
-    <div class="flex items-center gap-1.5">
+    <div class="flex items-center gap-1 sm:gap-1.5">
       <!-- API Key Modal Trigger -->
       <button id="open-api-modal-btn" title="Configure OpenAI API Key"
-        class="h-8 px-2.5 sm:px-3 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 hover:border-slate-700 active:scale-95 text-xs font-medium transition flex items-center gap-1.5 shadow-sm">
+        class="h-7 px-1.5 sm:h-8 sm:px-2.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 hover:border-slate-700 active:scale-95 text-xs font-medium transition flex items-center gap-1 sm:gap-1.5 shadow-sm">
         <i class="fa-solid fa-key text-amber-400 text-xs"></i>
-        <span class="hidden sm:inline">API Key</span>
+        <span class="hidden md:inline">API Key</span>
         <span id="api-status-badge" class="w-2 h-2 rounded-full bg-rose-500"></span>
       </button>
 
-      <div class="w-px h-4 bg-slate-800 mx-0.5"></div>
+      <div class="w-px h-3.5 sm:h-4 bg-slate-800 mx-0.5"></div>
 
       <button id="quick-undo-btn" title="Revert to previous version (Ctrl+Z)"
-        class="h-8 w-8 rounded-lg flex items-center justify-center bg-slate-900/80 text-slate-300 hover:text-white hover:bg-slate-800 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition border border-slate-800 hover:border-slate-700">
+        class="h-7 w-7 sm:h-8 sm:w-8 rounded-lg flex items-center justify-center bg-slate-900/80 text-slate-300 hover:text-white hover:bg-slate-800 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition border border-slate-800 hover:border-slate-700">
         <i class="fa-solid fa-arrow-rotate-left text-xs"></i>
       </button>
 
       <button id="quick-redo-btn" title="Forward to next version (Ctrl+Y)"
-        class="h-8 w-8 rounded-lg flex items-center justify-center bg-slate-900/80 text-slate-300 hover:text-white hover:bg-slate-800 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition border border-slate-800 hover:border-slate-700">
+        class="h-7 w-7 sm:h-8 sm:w-8 rounded-lg flex items-center justify-center bg-slate-900/80 text-slate-300 hover:text-white hover:bg-slate-800 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition border border-slate-800 hover:border-slate-700">
         <i class="fa-solid fa-arrow-rotate-right text-xs"></i>
       </button>
 
-      <div class="w-px h-4 bg-slate-800 mx-0.5"></div>
+      <div class="w-px h-3.5 sm:h-4 bg-slate-800 mx-0.5"></div>
 
       <button id="toggle-history-btn"
-        class="h-8 px-2.5 sm:px-3 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 hover:border-slate-700 active:scale-95 text-xs font-medium transition flex items-center gap-1.5 shadow-sm">
+        class="h-7 px-2 sm:h-8 sm:px-2.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 hover:border-slate-700 active:scale-95 text-xs font-medium transition flex items-center gap-1 sm:gap-1.5 shadow-sm shrink-0">
         <i class="fa-solid fa-clock-rotate-left text-indigo-400 text-xs"></i>
-        <span>History</span>
+        <span class="hidden xs:inline">History</span>
         <span id="version-count-badge"
-          class="ml-0.5 px-1.5 py-0.2 bg-indigo-600/80 text-indigo-100 font-mono text-[10px] font-semibold rounded">1</span>
+          class="ml-0.5 px-1 sm:px-1.5 py-0.2 bg-indigo-600/80 text-indigo-100 font-mono text-[10px] font-semibold rounded">1</span>
       </button>
     </div>
   </header>
