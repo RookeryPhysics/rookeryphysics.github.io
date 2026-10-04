@@ -561,32 +561,20 @@
   </script>
 
   <script>
-    /* Two-Phase AI Generation Engine & Version Control (OpenAI gpt-6.1-sol) */
+    /* Single-Pass AI Generation Engine & Version Control (OpenAI gpt-6.1-sol) */
 
     const TARGET_OPENAI_MODEL = "gpt-6.1-sol";
 
-    const REASONING_SYSTEM_PROMPT = `You are an elite 3D WebGL and Three.js engine architect.
-Your job is to analyze the user's requested modification to the existing Three.js game code and produce a rigorous, structured internal thinking and architectural plan.
+    const SYSTEM_PROMPT = `You are an expert Three.js and WebGL engine programmer and architect.
+When given the current Three.js code and a user request:
+1. Conduct a brief architectural planning phase outlining key requirements, geometry/material/light changes, physics/animation loop updates, and teardown logic. Keep this concise.
+2. Provide the complete updated runnable JavaScript Three.js game code inside an explicit <code>...</code> tag.
 
-In your thinking block:
-1. Deconstruct the user's request into precise technical requirements.
-2. Formulate the architectural changes:
-   - Identify which Three.js geometries, materials, meshes, lights, or physics variables are needed.
-   - Outline the mathematical logic, event listeners, or animation loop updates.
-   - Plan proper disposal in window.__cleanupGame to avoid WebGL memory leaks.
-3. Formulate step-by-step implementation instructions.
-
-Output ONLY your analytical thinking and architectural plan. Do not output raw runnable code fences in this phase.`;
-
-    const CODE_SYSTEM_PROMPT = `You are an expert Three.js and WebGL game engine programmer.
-Your task is to produce the final, complete JavaScript Three.js game code using the provided architectural reasoning plan.
-
-Rules:
-1. Return ONLY pure, runnable JavaScript code. Do not include markdown fences (no \`\`\`javascript or \`\`\`), commentary, or conversational filler.
-2. The code will execute in a live browser context with THREE and OrbitControls globally available.
-3. Always implement proper teardown: define \`window.__cleanupGame = function() { ... }\` that cancels active \`requestAnimationFrame\`, removes all window event listeners (keydown, resize, etc.), and disposes of materials/geometries.
-4. Target '#canvas-container'. Always size renderer and camera aspect using container.clientWidth and container.clientHeight.
-5. Strictly adhere to the plan laid out in the architectural thinking block.`;
+Rules for the <code> tag:
+- Put ONLY raw runnable JavaScript code inside <code>...</code>. Do NOT wrap it in markdown code fences (\`\`\`) inside the tag.
+- The code runs directly in browser context with THREE and OrbitControls globally available.
+- Always provide proper teardown: define \`window.__cleanupGame = function() { ... }\` cancelling requestAnimationFrame, removing window event listeners, and disposing of geometries/materials.
+- Target '#canvas-container', sizing renderer and camera using container.clientWidth and container.clientHeight.`;
 
     const versionStore = {
       commits: [],
@@ -690,11 +678,41 @@ Rules:
 
     function extractExecutableCode(rawText) {
       if (!rawText) return '';
+      // 1. Check for structured <code>...</code> tag
+      const codeTagMatch = rawText.match(/<code>([\s\S]*?)<\/code>/i);
+      if (codeTagMatch && codeTagMatch[1]) {
+        return cleanFences(codeTagMatch[1]);
+      }
+      // 2. Check for markdown code fences
       const blockMatch = rawText.match(/```(?:javascript|js)?\s*([\s\S]*?)```/i);
       if (blockMatch && blockMatch[1]) {
         return blockMatch[1].trim();
       }
-      return rawText.replace(/^```(?:javascript|js)?\n?/i, '').replace(/\n?```$/i, '').trim();
+      return cleanFences(rawText);
+    }
+
+    function cleanFences(str) {
+      return str.replace(/^```(?:javascript|js)?\n?/i, '').replace(/\n?```$/i, '').trim();
+    }
+
+    function parseResponsePlanAndCode(responseContent) {
+      if (!responseContent) return { plan: '', code: '' };
+
+      const codeTagMatch = responseContent.match(/<code>([\s\S]*?)<\/code>/i);
+      if (codeTagMatch) {
+        const plan = responseContent.substring(0, codeTagMatch.index).trim();
+        const code = cleanFences(codeTagMatch[1]);
+        return { plan, code };
+      }
+
+      const fenceMatch = responseContent.match(/```(?:javascript|js)?\s*([\s\S]*?)```/i);
+      if (fenceMatch) {
+        const plan = responseContent.substring(0, fenceMatch.index).trim();
+        const code = fenceMatch[1].trim();
+        return { plan, code };
+      }
+
+      return { plan: 'Single-pass generation', code: cleanFences(responseContent) };
     }
 
     function testSyntax(code) {
@@ -1018,7 +1036,7 @@ Rules:
       return data.choices?.[0]?.message?.content || "";
     }
 
-    /* Two-Phase Execution Pipeline: Architectural Reasoning -> Synthesis */
+    /* Single-Pass AI Generation Pipeline: Short Planning -> Structured <code> Block */
     async function applyUserPrompt(promptText) {
       if (!promptText.trim()) return;
 
@@ -1026,49 +1044,43 @@ Rules:
       const currentCode = activeCommit ? activeCommit.code : (document.getElementById('game-logic')?.textContent || '');
 
       try {
-        // ==========================================
-        // PHASE 1: Architectural Reasoning
-        // ==========================================
-        setEngineStage('reasoning', 'Planning');
+        setEngineStage('coding', 'Generating');
 
-        const reasoningPrompt = `Current Three.js engine code:\n\`\`\`javascript\n${currentCode}\n\`\`\`\n\nUser's requested modification:\n"${promptText}"\n\nProduce your architectural thinking block and implementation strategy.`;
+        const userPrompt = `Current Three.js engine code:
+\`\`\`javascript
+${currentCode}
+\`\`\`
 
-        const thinkingBlock = await callOpenAI({
-          systemPrompt: REASONING_SYSTEM_PROMPT,
-          userPrompt: reasoningPrompt
+User Request: "${promptText}"
+
+Remember:
+1. First, write a brief architectural planning and reasoning phase outlining modifications and cleanup.
+2. Then, enclose the complete updated runnable JavaScript Three.js game code inside an explicit <code>...</code> tag without markdown code fences inside the tag.`;
+
+        const rawResponse = await callOpenAI({
+          systemPrompt: SYSTEM_PROMPT,
+          userPrompt: userPrompt
         });
 
-        if (!thinkingBlock) {
-          throw new Error("Reasoning phase failed to generate a plan.");
+        if (!rawResponse) {
+          throw new Error("AI failed to return a response.");
         }
 
-        // ==========================================
-        // PHASE 2: Code Synthesis
-        // ==========================================
-        setEngineStage('coding', 'Synthesizing');
+        const { plan, code } = parseResponsePlanAndCode(rawResponse);
 
-        const synthesisPrompt = `Current Three.js engine code:\n\`\`\`javascript\n${currentCode}\n\`\`\`\n\nUser Request:\n"${promptText}"\n\n[ARCHITECTURAL REASONING & EXECUTION PLAN]:\n${thinkingBlock}\n\nExecute the above architectural plan and return the complete updated runnable JavaScript code including window.__cleanupGame.`;
-
-        const rawCode = await callOpenAI({
-          systemPrompt: CODE_SYSTEM_PROMPT,
-          userPrompt: synthesisPrompt
-        });
-
-        if (!rawCode) {
-          throw new Error("Synthesis phase failed to return runnable code.");
+        if (!code) {
+          throw new Error("Failed to extract code from <code> tag or markdown block.");
         }
-
-        const generatedCode = extractExecutableCode(rawCode);
 
         // Pre-validate syntax
-        const syntaxErr = testSyntax(generatedCode);
+        const syntaxErr = testSyntax(code);
         if (syntaxErr) {
           throw new Error(`Generated code syntax error: ${syntaxErr.message}`);
         }
 
         // Apply and commit
-        executeEngineCode(generatedCode);
-        recordCommit(generatedCode, promptText, 'prompt', thinkingBlock);
+        executeEngineCode(code);
+        recordCommit(code, promptText, 'prompt', plan || 'Executed in single pass.');
 
         input.value = '';
         showToast("Engine updated via gpt-6.1-sol");
