@@ -147,14 +147,14 @@
       </button>
     </div>
 
-    <!-- Top Right: API Key, Undo/Redo & History -->
+    <!-- Top Right: Settings, Undo/Redo & History -->
     <div class="flex items-center gap-1 sm:gap-1.5">
-      <!-- API Key Modal Trigger -->
-      <button id="open-api-modal-btn" title="Configure OpenAI API Key"
+      <!-- Settings Modal Trigger -->
+      <button id="open-settings-modal-btn" title="Settings & API Key"
         class="h-7 px-1.5 sm:h-8 sm:px-2.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 hover:border-slate-700 active:scale-95 text-xs font-medium transition flex items-center gap-1 sm:gap-1.5 shadow-sm">
-        <i class="fa-solid fa-key text-amber-400 text-xs"></i>
-        <span class="hidden md:inline">API Key</span>
-        <span id="api-status-badge" class="w-2 h-2 rounded-full bg-rose-500"></span>
+        <i class="fa-solid fa-gear text-slate-400 text-xs"></i>
+        <span class="hidden md:inline">Settings</span>
+        <span id="api-status-badge" class="w-2 h-2 rounded-full bg-rose-500" title="API Key Status"></span>
       </button>
 
       <div class="w-px h-3.5 sm:h-4 bg-slate-800 mx-0.5"></div>
@@ -216,38 +216,54 @@
     </div>
   </footer>
 
-  <!-- API Key Modal -->
-  <div id="api-modal"
+  <!-- Settings Modal -->
+  <div id="settings-modal"
     class="fixed inset-0 bg-black/70 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-200 z-50 flex items-center justify-center p-4">
     <div class="bg-[#111520] border border-slate-800 rounded-2xl w-full max-w-md shadow-2xl p-5">
       <div class="flex items-center justify-between pb-3 border-b border-slate-800">
         <div class="flex items-center gap-2">
-          <i class="fa-solid fa-key text-amber-400"></i>
-          <h3 class="font-semibold text-sm text-white">OpenAI API Key</h3>
+          <i class="fa-solid fa-gear text-indigo-400"></i>
+          <h3 class="font-semibold text-sm text-white">Engine Settings</h3>
         </div>
-        <button id="close-api-modal-btn" class="text-slate-400 hover:text-white text-sm">
+        <button id="close-settings-modal-btn" class="text-slate-400 hover:text-white text-sm">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
-      <div class="py-4 space-y-3">
-        <p class="text-xs text-slate-300 leading-relaxed">
-          Inference runs with model <strong class="text-indigo-400 font-mono">gpt-6.1-sol</strong> on the OpenAI API.
-          Your key is stored only in your local browser's <code class="text-indigo-300">localStorage</code>.
-        </p>
+      
+      <div class="py-4 space-y-4 max-h-[75vh] overflow-y-auto">
+        <!-- Game Configuration Section -->
         <div>
-          <label class="block text-[11px] font-mono text-slate-400 mb-1">API Key</label>
+          <label class="block text-[11px] font-mono font-medium text-slate-300 mb-1">Game Name</label>
+          <input id="game-name-input" type="text" placeholder="threejs-game"
+            class="w-full bg-[#0a0d14] border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" />
+          <p class="text-[10px] text-slate-500 mt-1">Exported standalone file will be named: <span id="game-name-preview" class="text-indigo-400 font-mono">threejs-game.html</span></p>
+        </div>
+
+        <div class="h-px bg-slate-800/80"></div>
+
+        <!-- OpenAI API Key Section -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="block text-[11px] font-mono font-medium text-slate-300">OpenAI API Key</label>
+            <span id="settings-key-status" class="text-[10px] font-mono text-rose-400 flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Not configured
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-400 leading-relaxed">
+            Inference runs with model <strong class="text-indigo-400 font-mono">gpt-6.1-sol</strong>. Stored locally in your browser's <code class="text-indigo-300">localStorage</code>.
+          </p>
           <input id="api-key-input" type="password" placeholder="sk-..."
             class="w-full bg-[#0a0d14] border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" />
         </div>
       </div>
+
       <div class="flex items-center justify-between pt-3 border-t border-slate-800">
         <button id="clear-api-key-btn" class="text-xs text-rose-400 hover:text-rose-300 font-medium">Clear Key</button>
         <div class="flex gap-2">
-          <button id="cancel-api-key-btn"
+          <button id="cancel-settings-btn"
             class="px-3 py-1.5 text-xs text-slate-400 hover:text-white rounded-lg bg-slate-900 border border-slate-800">Cancel</button>
-          <button id="save-api-key-btn"
-            class="px-3.5 py-1.5 text-xs text-white rounded-lg bg-indigo-600 hover:bg-indigo-500 font-medium">Save
-            Key</button>
+          <button id="save-settings-btn"
+            class="px-3.5 py-1.5 text-xs text-white rounded-lg bg-indigo-600 hover:bg-indigo-500 font-medium shadow-sm">Save Settings</button>
         </div>
       </div>
     </div>
@@ -637,19 +653,48 @@ Rules for the <code> tag:
     const copyCodeBtn = document.getElementById('copy-code-btn');
     const closeCodeModalBtn = document.getElementById('close-code-modal-btn');
 
-    // API Key Modal Elements
-    const apiModal = document.getElementById('api-modal');
-    const openApiModalBtn = document.getElementById('open-api-modal-btn');
-    const closeApiModalBtn = document.getElementById('close-api-modal-btn');
-    const cancelApiKeyBtn = document.getElementById('cancel-api-key-btn');
-    const saveApiKeyBtn = document.getElementById('save-api-key-btn');
+    // Settings Modal Elements
+    const settingsModal = document.getElementById('settings-modal');
+    const openSettingsModalBtn = document.getElementById('open-settings-modal-btn');
+    const closeSettingsModalBtn = document.getElementById('close-settings-modal-btn');
+    const cancelSettingsBtn = document.getElementById('cancel-settings-btn');
+    const saveSettingsBtn = document.getElementById('save-settings-btn');
     const clearApiKeyBtn = document.getElementById('clear-api-key-btn');
+    const gameNameInput = document.getElementById('game-name-input');
+    const gameNamePreview = document.getElementById('game-name-preview');
     const apiKeyInput = document.getElementById('api-key-input');
     const apiStatusBadge = document.getElementById('api-status-badge');
+    const settingsKeyStatus = document.getElementById('settings-key-status');
 
     let viewedCodeString = '';
     let viewedReasoningString = '';
     let currentModalTab = 'code';
+
+    function sanitizeGameName(name) {
+      if (!name || typeof name !== 'string') return '';
+      // Remove extension if user entered .html
+      let clean = name.trim().replace(/\.html?$/i, '');
+      // Sanitize special filesystem characters
+      clean = clean.replace(/[/\\?%*:|"<>]/g, '-').trim();
+      return clean;
+    }
+
+    function getGameName() {
+      return localStorage.getItem('threejs_game_name') || 'threejs-game';
+    }
+
+    function setGameName(name) {
+      const sanitized = sanitizeGameName(name) || 'threejs-game';
+      localStorage.setItem('threejs_game_name', sanitized);
+      return sanitized;
+    }
+
+    function updateGameNamePreview() {
+      if (!gameNamePreview || !gameNameInput) return;
+      const rawVal = gameNameInput.value;
+      const sanitized = sanitizeGameName(rawVal) || 'threejs-game';
+      gameNamePreview.textContent = `${sanitized}.html`;
+    }
 
     function getApiKey() {
       return localStorage.getItem('openai_api_key') || '';
@@ -667,9 +712,17 @@ Rules for the <code> tag:
     function refreshApiStatus() {
       const key = getApiKey();
       if (key) {
-        apiStatusBadge.className = "w-2 h-2 rounded-full bg-emerald-400";
+        if (apiStatusBadge) apiStatusBadge.className = "w-2 h-2 rounded-full bg-emerald-400";
+        if (settingsKeyStatus) {
+          settingsKeyStatus.className = "text-[10px] font-mono text-emerald-400 flex items-center gap-1";
+          settingsKeyStatus.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Configured';
+        }
       } else {
-        apiStatusBadge.className = "w-2 h-2 rounded-full bg-rose-500";
+        if (apiStatusBadge) apiStatusBadge.className = "w-2 h-2 rounded-full bg-rose-500";
+        if (settingsKeyStatus) {
+          settingsKeyStatus.className = "text-[10px] font-mono text-rose-400 flex items-center gap-1";
+          settingsKeyStatus.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Not configured';
+        }
       }
     }
 
@@ -963,29 +1016,61 @@ Rules for the <code> tag:
     }
 
     // Modal Events
-    openApiModalBtn.addEventListener('click', () => {
+    function openSettingsModal(focusTarget = 'gameName') {
+      gameNameInput.value = getGameName();
       apiKeyInput.value = getApiKey();
-      apiModal.classList.remove('opacity-0', 'pointer-events-none');
-      apiKeyInput.focus();
-    });
-
-    function closeApiModal() {
-      apiModal.classList.add('opacity-0', 'pointer-events-none');
+      updateGameNamePreview();
+      refreshApiStatus();
+      settingsModal.classList.remove('opacity-0', 'pointer-events-none');
+      if (focusTarget === 'apiKey') {
+        apiKeyInput.focus();
+        apiKeyInput.select();
+      } else {
+        gameNameInput.focus();
+        gameNameInput.select();
+      }
     }
 
-    closeApiModalBtn.addEventListener('click', closeApiModal);
-    cancelApiKeyBtn.addEventListener('click', closeApiModal);
+    function closeSettingsModal() {
+      settingsModal.classList.add('opacity-0', 'pointer-events-none');
+    }
 
-    saveApiKeyBtn.addEventListener('click', () => {
+    function saveSettings() {
+      const savedName = setGameName(gameNameInput.value);
+      gameNameInput.value = savedName;
       setApiKey(apiKeyInput.value);
-      closeApiModal();
-      showToast("API key saved");
+      updateGameNamePreview();
+      refreshApiStatus();
+      closeSettingsModal();
+      showToast("Settings saved");
+    }
+
+    openSettingsModalBtn.addEventListener('click', () => openSettingsModal('gameName'));
+    closeSettingsModalBtn.addEventListener('click', closeSettingsModal);
+    cancelSettingsBtn.addEventListener('click', closeSettingsModal);
+    settingsModal.addEventListener('click', (e) => {
+      if (e.target === settingsModal) closeSettingsModal();
     });
+
+    gameNameInput.addEventListener('input', updateGameNamePreview);
+    gameNameInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        saveSettings();
+      }
+    });
+
+    apiKeyInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        saveSettings();
+      }
+    });
+
+    saveSettingsBtn.addEventListener('click', saveSettings);
 
     clearApiKeyBtn.addEventListener('click', () => {
       apiKeyInput.value = '';
       setApiKey('');
-      closeApiModal();
+      refreshApiStatus();
       showToast("API key removed");
     });
 
@@ -1032,7 +1117,7 @@ Rules for the <code> tag:
     async function callOpenAI({ systemPrompt, userPrompt }) {
       const apiKey = getApiKey();
       if (!apiKey) {
-        openApiModalBtn.click();
+        openSettingsModal('apiKey');
         throw new Error("Please enter your OpenAI API Key first.");
       }
 
@@ -1177,13 +1262,14 @@ Remember:
     exportStandaloneBtn.addEventListener('click', () => {
       const activeCommit = versionStore.commits[versionStore.currentHeadIndex];
       const gameCode = activeCommit ? activeCommit.code : (document.getElementById('game-logic')?.textContent || '');
+      const gameName = getGameName();
 
       const standaloneHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Three.js Game</title>
+  <title>${gameName}</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"><\/script>
   <style>
@@ -1221,13 +1307,13 @@ ${gameCode}
       const blobUrl = URL.createObjectURL(blob);
       const downloadAnchor = document.createElement('a');
       downloadAnchor.href = blobUrl;
-      const fileId = activeCommit ? activeCommit.id : 'v1';
-      downloadAnchor.download = `threejs-game-${fileId}.html`;
+      const exportFilename = `${gameName}.html`;
+      downloadAnchor.download = exportFilename;
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();
       URL.revokeObjectURL(blobUrl);
-      showToast("Game exported as .html");
+      showToast(`Exported as ${exportFilename}`);
     });
 
     importStandaloneBtn.addEventListener('click', () => {
@@ -1238,6 +1324,16 @@ ${gameCode}
     importFileInput.addEventListener('change', (e) => {
       const file = e.target.files?.[0];
       if (!file) return;
+
+      // Update game name from imported file
+      const importedGameName = sanitizeGameName(file.name);
+      if (importedGameName) {
+        setGameName(importedGameName);
+        if (gameNameInput) {
+          gameNameInput.value = importedGameName;
+          updateGameNamePreview();
+        }
+      }
 
       const reader = new FileReader();
       reader.onload = (event) => {
@@ -1297,7 +1393,7 @@ ${gameCode}
     });
 
     window.addEventListener('keydown', (e) => {
-      if (document.activeElement === input || document.activeElement === apiKeyInput) return;
+      if (document.activeElement === input || document.activeElement === apiKeyInput || document.activeElement === gameNameInput) return;
 
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') {
         e.preventDefault();
@@ -1319,6 +1415,7 @@ ${gameCode}
         closeHistoryDrawer();
         closeCodeModal();
         closeApiModal();
+        closeSettingsModal();
       }
     });
 
