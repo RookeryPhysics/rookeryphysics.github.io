@@ -124,20 +124,43 @@
 
       <div class="h-4 w-px bg-slate-800 hidden sm:block"></div>
 
-      <!-- Export Button (Icon only on mobile, text on desktop) -->
-      <button id="export-standalone-btn" title="Export clean standalone .html game"
-        class="h-7 w-7 sm:h-8 sm:w-auto sm:px-2.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 hover:border-slate-700 active:scale-95 text-xs font-medium transition flex items-center justify-center gap-1.5 shadow-sm">
-        <i class="fa-solid fa-file-arrow-down text-slate-400 text-xs"></i>
-        <span class="hidden md:inline">Export</span>
-      </button>
+      <!-- Export Dropdown -->
+      <div class="relative inline-block text-left" id="export-dropdown-container">
+        <button id="export-dropdown-btn" title="Export options"
+          class="h-7 w-7 sm:h-8 sm:w-auto sm:px-2.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 hover:border-slate-700 active:scale-95 text-xs font-medium transition flex items-center justify-center gap-1.5 shadow-sm">
+          <i class="fa-solid fa-file-arrow-down text-slate-400 text-xs"></i>
+          <span class="hidden md:inline">Export</span>
+          <i class="fa-solid fa-chevron-down text-[9px] text-slate-400 hidden md:inline ml-0.5"></i>
+        </button>
+
+        <div id="export-dropdown-menu"
+          class="hidden absolute left-0 mt-1.5 w-48 rounded-xl bg-[#111520] border border-slate-800 shadow-2xl py-1.5 z-50 text-xs focus:outline-none">
+          <button id="export-html-btn"
+            class="w-full text-left px-3 py-2 text-slate-200 hover:bg-indigo-600/20 hover:text-white flex items-center gap-2.5 transition">
+            <i class="fa-solid fa-file-code text-indigo-400 text-xs w-4 text-center"></i>
+            <div>
+              <div class="font-medium text-xs">Export .html</div>
+              <div class="text-[10px] text-slate-400">Standalone game file</div>
+            </div>
+          </button>
+          <button id="export-dev-btn"
+            class="w-full text-left px-3 py-2 text-slate-200 hover:bg-indigo-600/20 hover:text-white flex items-center gap-2.5 transition">
+            <i class="fa-solid fa-code-branch text-emerald-400 text-xs w-4 text-center"></i>
+            <div>
+              <div class="font-medium text-xs">Export .dev</div>
+              <div class="text-[10px] text-slate-400">Game code + full history</div>
+            </div>
+          </button>
+        </div>
+      </div>
 
       <!-- Import Button (Icon only on mobile, text on desktop) -->
-      <button id="import-standalone-btn" title="Import a .html game file"
+      <button id="import-standalone-btn" title="Import a .html or .dev file"
         class="h-7 w-7 sm:h-8 sm:w-auto sm:px-2.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 hover:border-slate-700 active:scale-95 text-xs font-medium transition flex items-center justify-center gap-1.5 shadow-sm">
         <i class="fa-solid fa-file-arrow-up text-slate-400 text-xs"></i>
         <span class="hidden md:inline">Import</span>
       </button>
-      <input type="file" id="import-file-input" accept=".html,text/html" class="hidden" />
+      <input type="file" id="import-file-input" accept=".html,.dev,text/html,application/json" class="hidden" />
 
       <!-- View Code Button -->
       <button id="view-code-btn" title="View Current Code"
@@ -147,7 +170,7 @@
       </button>
     </div>
 
-    <!-- Top Right: Settings, Undo/Redo & History -->
+    <!-- Top Right: Settings & History -->
     <div class="flex items-center gap-1 sm:gap-1.5">
       <!-- Settings Modal Trigger -->
       <button id="open-settings-modal-btn" title="Settings & API Key"
@@ -155,18 +178,6 @@
         <i class="fa-solid fa-gear text-slate-400 text-xs"></i>
         <span class="hidden md:inline">Settings</span>
         <span id="api-status-badge" class="w-2 h-2 rounded-full bg-rose-500" title="API Key Status"></span>
-      </button>
-
-      <div class="w-px h-3.5 sm:h-4 bg-slate-800 mx-0.5"></div>
-
-      <button id="quick-undo-btn" title="Revert to previous version (Ctrl+Z)"
-        class="h-7 w-7 sm:h-8 sm:w-8 rounded-lg flex items-center justify-center bg-slate-900/80 text-slate-300 hover:text-white hover:bg-slate-800 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition border border-slate-800 hover:border-slate-700">
-        <i class="fa-solid fa-arrow-rotate-left text-xs"></i>
-      </button>
-
-      <button id="quick-redo-btn" title="Forward to next version (Ctrl+Y)"
-        class="h-7 w-7 sm:h-8 sm:w-8 rounded-lg flex items-center justify-center bg-slate-900/80 text-slate-300 hover:text-white hover:bg-slate-800 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition border border-slate-800 hover:border-slate-700">
-        <i class="fa-solid fa-arrow-rotate-right text-xs"></i>
       </button>
 
       <div class="w-px h-3.5 sm:h-4 bg-slate-800 mx-0.5"></div>
@@ -298,38 +309,25 @@
     <!-- History Drawer Toolbar -->
     <div class="px-4 py-2 bg-[#0a0d14] border-b border-slate-800/80 flex items-center justify-between text-xs">
       <span id="history-summary" class="text-slate-400 font-mono text-[11px]">1 version saved</span>
-      <div class="flex items-center gap-2">
-        <button id="export-history-btn"
-          class="h-6 text-[11px] text-slate-300 hover:text-white font-medium transition flex items-center gap-1.5 px-2 rounded-lg bg-slate-900 border border-slate-800 hover:border-slate-700">
-          <i class="fa-solid fa-file-arrow-down text-[10px] text-slate-400"></i> Export Log (JSON)
-        </button>
-      </div>
     </div>
 
     <!-- History List Container -->
     <div id="timeline-list" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
   </aside>
 
-  <!-- Code & Reasoning Viewer Modal -->
+  <!-- Code Viewer Modal -->
   <div id="code-modal"
     class="fixed inset-0 bg-black/70 backdrop-blur-md md:backdrop-blur-none opacity-0 pointer-events-none transition-opacity duration-200 z-50 flex items-center justify-center md:justify-end p-2 sm:p-4 md:p-6">
     <div
       class="bg-[#111520] border border-slate-800 rounded-2xl w-full h-[92dvh] max-h-[94dvh] md:h-[84vh] md:max-h-[85vh] md:w-[480px] lg:w-[540px] flex flex-col shadow-2xl overflow-hidden transition-all duration-200">
 
       <div class="p-3 sm:p-3.5 bg-[#0e121a] border-b border-slate-800 flex items-center justify-between shrink-0">
-        <div class="flex items-center gap-2 sm:gap-3 min-w-0">
-          <div class="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-lg p-0.5 text-xs shrink-0">
-            <button id="tab-code-btn" class="px-2.5 py-1 rounded bg-indigo-600 text-white font-medium transition">
-              <i class="fa-solid fa-code text-[10px] mr-1"></i> Code
-            </button>
-            <button id="tab-reasoning-btn"
-              class="px-2.5 py-1 rounded text-slate-400 hover:text-slate-200 font-medium transition">
-              <i class="fa-solid fa-brain text-[10px] mr-1"></i> Reasoning
-            </button>
+        <div class="flex items-center gap-2 sm:gap-2.5 min-w-0">
+          <div class="w-6 h-6 rounded-md bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 text-xs shrink-0">
+            <i class="fa-solid fa-code text-[11px]"></i>
           </div>
           <span id="modal-code-title"
-            class="text-xs font-semibold text-slate-300 font-mono truncate max-w-[120px] xs:max-w-[180px] sm:max-w-xs">Version
-            Info</span>
+            class="text-xs font-semibold text-slate-300 font-mono truncate max-w-[160px] xs:max-w-[220px] sm:max-w-xs">Version Code</span>
         </div>
 
         <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
@@ -344,12 +342,9 @@
         </div>
       </div>
 
-      <!-- Tab Contents -->
+      <!-- Code Content -->
       <div class="flex-1 overflow-auto p-4 bg-[#090c12] font-mono text-xs text-slate-200 leading-relaxed whitespace-pre"
         id="modal-code-content"></div>
-      <div
-        class="hidden flex-1 overflow-auto p-4 bg-[#090c12] text-xs text-slate-300 leading-relaxed whitespace-pre-wrap font-sans"
-        id="modal-reasoning-content"></div>
     </div>
   </div>
 
@@ -630,16 +625,17 @@ Rules for the <code> tag:
     const toast = document.getElementById('toast');
 
     const versionCountBadge = document.getElementById('version-count-badge');
-    const quickUndoBtn = document.getElementById('quick-undo-btn');
-    const quickRedoBtn = document.getElementById('quick-redo-btn');
 
     const historyDrawer = document.getElementById('history-drawer');
     const historyBackdrop = document.getElementById('history-backdrop');
     const toggleHistoryBtn = document.getElementById('toggle-history-btn');
     const closeHistoryBtn = document.getElementById('close-history-btn');
     const timelineList = document.getElementById('timeline-list');
-    const exportHistoryBtn = document.getElementById('export-history-btn');
-    const exportStandaloneBtn = document.getElementById('export-standalone-btn');
+    const exportDropdownContainer = document.getElementById('export-dropdown-container');
+    const exportDropdownBtn = document.getElementById('export-dropdown-btn');
+    const exportDropdownMenu = document.getElementById('export-dropdown-menu');
+    const exportHtmlBtn = document.getElementById('export-html-btn');
+    const exportDevBtn = document.getElementById('export-dev-btn');
     const importStandaloneBtn = document.getElementById('import-standalone-btn');
     const importFileInput = document.getElementById('import-file-input');
     const viewCodeBtn = document.getElementById('view-code-btn');
@@ -647,9 +643,6 @@ Rules for the <code> tag:
     const codeModal = document.getElementById('code-modal');
     const modalCodeTitle = document.getElementById('modal-code-title');
     const modalCodeContent = document.getElementById('modal-code-content');
-    const modalReasoningContent = document.getElementById('modal-reasoning-content');
-    const tabCodeBtn = document.getElementById('tab-code-btn');
-    const tabReasoningBtn = document.getElementById('tab-reasoning-btn');
     const copyCodeBtn = document.getElementById('copy-code-btn');
     const closeCodeModalBtn = document.getElementById('close-code-modal-btn');
 
@@ -667,8 +660,6 @@ Rules for the <code> tag:
     const settingsKeyStatus = document.getElementById('settings-key-status');
 
     let viewedCodeString = '';
-    let viewedReasoningString = '';
-    let currentModalTab = 'code';
 
     function sanitizeGameName(name) {
       if (!name || typeof name !== 'string') return '';
@@ -857,9 +848,6 @@ Rules for the <code> tag:
       versionCountBadge.textContent = total;
       historySummary.textContent = `${total} version${total === 1 ? '' : 's'} recorded`;
 
-      quickUndoBtn.disabled = versionStore.currentHeadIndex <= 0;
-      quickRedoBtn.disabled = versionStore.currentHeadIndex >= total - 1;
-
       renderHistoryList();
     }
 
@@ -916,7 +904,7 @@ Rules for the <code> tag:
                   data-view-index="${i}"
                   class="view-code-btn h-6 px-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white text-[11px] font-medium transition flex items-center gap-1 border border-slate-800 hover:border-slate-700"
                 >
-                  <i class="fa-solid fa-code text-[10px] text-slate-400"></i> Code & Plan
+                  <i class="fa-solid fa-code text-[10px] text-slate-400"></i> View Code
                 </button>
               </div>
 
@@ -965,33 +953,13 @@ Rules for the <code> tag:
       historyBackdrop.classList.add('opacity-0', 'pointer-events-none');
     }
 
-    function switchModalTab(tab) {
-      currentModalTab = tab;
-      if (tab === 'code') {
-        tabCodeBtn.className = "px-2.5 py-1 rounded bg-indigo-600 text-white font-medium transition";
-        tabReasoningBtn.className = "px-2.5 py-1 rounded text-slate-400 hover:text-slate-200 font-medium transition";
-        modalCodeContent.classList.remove('hidden');
-        modalReasoningContent.classList.add('hidden');
-      } else {
-        tabReasoningBtn.className = "px-2.5 py-1 rounded bg-indigo-600 text-white font-medium transition";
-        tabCodeBtn.className = "px-2.5 py-1 rounded text-slate-400 hover:text-slate-200 font-medium transition";
-        modalReasoningContent.classList.remove('hidden');
-        modalCodeContent.classList.add('hidden');
-      }
-    }
-
     function openCodeModal(index) {
       const commit = versionStore.commits[index];
       if (!commit) return;
 
       modalCodeTitle.textContent = `${commit.id} (${commit.hash}) - ${commit.message}`;
       viewedCodeString = commit.code;
-      viewedReasoningString = commit.thinking || "No reasoning plan logged for this snapshot.";
-
       modalCodeContent.textContent = viewedCodeString;
-      modalReasoningContent.textContent = viewedReasoningString;
-
-      switchModalTab('code');
       codeModal.classList.remove('opacity-0', 'pointer-events-none');
     }
 
@@ -1007,10 +975,7 @@ Rules for the <code> tag:
         const code = currentScript ? currentScript.textContent : '';
         modalCodeTitle.textContent = "Current Engine Code";
         viewedCodeString = code;
-        viewedReasoningString = "Active engine script";
         modalCodeContent.textContent = viewedCodeString;
-        modalReasoningContent.textContent = viewedReasoningString;
-        switchModalTab('code');
         codeModal.classList.remove('opacity-0', 'pointer-events-none');
       }
     }
@@ -1073,9 +1038,6 @@ Rules for the <code> tag:
       refreshApiStatus();
       showToast("API key removed");
     });
-
-    tabCodeBtn.addEventListener('click', () => switchModalTab('code'));
-    tabReasoningBtn.addEventListener('click', () => switchModalTab('reasoning'));
 
     function setEngineStage(stage, label) {
       if (stage === 'reasoning') {
@@ -1212,18 +1174,6 @@ Remember:
     closeHistoryBtn.addEventListener('click', closeHistoryDrawer);
     historyBackdrop.addEventListener('click', closeHistoryDrawer);
 
-    quickUndoBtn.addEventListener('click', () => {
-      if (versionStore.currentHeadIndex > 0) {
-        checkoutCommit(versionStore.currentHeadIndex - 1);
-      }
-    });
-
-    quickRedoBtn.addEventListener('click', () => {
-      if (versionStore.currentHeadIndex < versionStore.commits.length - 1) {
-        checkoutCommit(versionStore.currentHeadIndex + 1);
-      }
-    });
-
     if (viewCodeBtn) {
       viewCodeBtn.addEventListener('click', openCurrentCodeModal);
     }
@@ -1234,10 +1184,10 @@ Remember:
     });
 
     copyCodeBtn.addEventListener('click', () => {
-      const textToCopy = currentModalTab === 'code' ? viewedCodeString : viewedReasoningString;
+      const textToCopy = viewedCodeString;
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(textToCopy)
-          .then(() => showToast(currentModalTab === 'code' ? "Code copied" : "Reasoning copied"))
+          .then(() => showToast("Code copied"))
           .catch(() => {
             document.execCommand('copy');
             showToast("Copied to clipboard");
@@ -1248,23 +1198,35 @@ Remember:
       }
     });
 
-    exportHistoryBtn.addEventListener('click', () => {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(versionStore.commits, null, 2));
-      const downloadAnchor = document.createElement('a');
-      downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `threejs-engine-history-${Date.now()}.json`);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
-      showToast("History exported as JSON");
-    });
+    // Export dropdown toggle & click outside
+    function closeExportDropdown() {
+      if (exportDropdownMenu) {
+        exportDropdownMenu.classList.add('hidden');
+      }
+    }
 
-    exportStandaloneBtn.addEventListener('click', () => {
-      const activeCommit = versionStore.commits[versionStore.currentHeadIndex];
-      const gameCode = activeCommit ? activeCommit.code : (document.getElementById('game-logic')?.textContent || '');
-      const gameName = getGameName();
+    if (exportDropdownBtn && exportDropdownMenu) {
+      exportDropdownBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        exportDropdownMenu.classList.toggle('hidden');
+      });
 
-      const standaloneHtml = `<!DOCTYPE html>
+      document.addEventListener('click', (e) => {
+        if (!exportDropdownContainer.contains(e.target)) {
+          closeExportDropdown();
+        }
+      });
+    }
+
+    // Export .html Standalone Game File
+    if (exportHtmlBtn) {
+      exportHtmlBtn.addEventListener('click', () => {
+        closeExportDropdown();
+        const activeCommit = versionStore.commits[versionStore.currentHeadIndex];
+        const gameCode = activeCommit ? activeCommit.code : (document.getElementById('game-logic')?.textContent || '');
+        const gameName = getGameName();
+
+        const standaloneHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -1303,18 +1265,52 @@ ${gameCode}
 </body>
 </html>`;
 
-      const blob = new Blob([standaloneHtml], { type: 'text/html;charset=utf-8' });
-      const blobUrl = URL.createObjectURL(blob);
-      const downloadAnchor = document.createElement('a');
-      downloadAnchor.href = blobUrl;
-      const exportFilename = `${gameName}.html`;
-      downloadAnchor.download = exportFilename;
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
-      URL.revokeObjectURL(blobUrl);
-      showToast(`Exported as ${exportFilename}`);
-    });
+        const blob = new Blob([standaloneHtml], { type: 'text/html;charset=utf-8' });
+        const blobUrl = URL.createObjectURL(blob);
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.href = blobUrl;
+        const exportFilename = `${gameName}.html`;
+        downloadAnchor.download = exportFilename;
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+        URL.revokeObjectURL(blobUrl);
+        showToast(`Exported ${exportFilename}`);
+      });
+    }
+
+    // Export .dev Development File (Game Code + Full History)
+    if (exportDevBtn) {
+      exportDevBtn.addEventListener('click', () => {
+        closeExportDropdown();
+        const activeCommit = versionStore.commits[versionStore.currentHeadIndex];
+        const gameCode = activeCommit ? activeCommit.code : (document.getElementById('game-logic')?.textContent || '');
+        const gameName = getGameName();
+
+        const devPayload = {
+          fileType: "threejs-engine-dev",
+          version: 1,
+          gameName: gameName,
+          exportedAt: new Date().toISOString(),
+          currentHeadIndex: versionStore.currentHeadIndex,
+          code: gameCode,
+          history: versionStore.commits
+        };
+
+        const devJson = JSON.stringify(devPayload, null, 2);
+        const blob = new Blob([devJson], { type: 'application/json;charset=utf-8' });
+        const blobUrl = URL.createObjectURL(blob);
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.href = blobUrl;
+        const exportFilename = `${gameName}.dev`;
+        downloadAnchor.download = exportFilename;
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+        URL.revokeObjectURL(blobUrl);
+        showToast(`Exported ${exportFilename}`);
+      });
+    }
 
     importStandaloneBtn.addEventListener('click', () => {
       importFileInput.value = '';
@@ -1324,6 +1320,8 @@ ${gameCode}
     importFileInput.addEventListener('change', (e) => {
       const file = e.target.files?.[0];
       if (!file) return;
+
+      const isDevFile = file.name.toLowerCase().endsWith('.dev');
 
       // Update game name from imported file
       const importedGameName = sanitizeGameName(file.name);
@@ -1343,6 +1341,59 @@ ${gameCode}
             throw new Error("Unable to read file content.");
           }
 
+          if (isDevFile) {
+            // Parse .dev JSON bundle
+            let devData;
+            try {
+              devData = JSON.parse(content);
+            } catch (err) {
+              throw new Error("Invalid .dev file format: JSON parsing failed.");
+            }
+
+            if (!devData || typeof devData !== 'object') {
+              throw new Error("Invalid .dev file structure.");
+            }
+
+            const codeToExecute = devData.code || (Array.isArray(devData.history) && devData.history[devData.history.length - 1]?.code) || '';
+            if (!codeToExecute.trim()) {
+              throw new Error("No engine code found in .dev file.");
+            }
+
+            const syntaxErr = testSyntax(codeToExecute);
+            if (syntaxErr) {
+              throw new Error(`Code syntax error in .dev file: ${syntaxErr.message}`);
+            }
+
+            // Restore history commits if present
+            if (Array.isArray(devData.history) && devData.history.length > 0) {
+              versionStore.commits = devData.history.map(commit => ({
+                ...commit,
+                timestamp: commit.timestamp ? new Date(commit.timestamp) : new Date()
+              }));
+              const headIdx = (typeof devData.currentHeadIndex === 'number' && devData.currentHeadIndex >= 0 && devData.currentHeadIndex < versionStore.commits.length)
+                ? devData.currentHeadIndex
+                : versionStore.commits.length - 1;
+              versionStore.currentHeadIndex = headIdx;
+            } else {
+              versionStore.commits = [];
+              recordCommit(codeToExecute, `Imported: ${file.name}`, 'import', `Loaded from .dev file: ${file.name}`);
+            }
+
+            if (devData.gameName) {
+              setGameName(devData.gameName);
+              if (gameNameInput) {
+                gameNameInput.value = devData.gameName;
+                updateGameNamePreview();
+              }
+            }
+
+            executeEngineCode(codeToExecute);
+            updateUI();
+            showToast(`Imported dev project: ${file.name}`);
+            return;
+          }
+
+          // HTML import handler
           let extractedCode = '';
           const parser = new DOMParser();
           const doc = parser.parseFromString(content, 'text/html');
@@ -1381,7 +1432,7 @@ ${gameCode}
           showToast(`Imported ${file.name}`);
         } catch (err) {
           console.error("Import error:", err);
-          showToast(err.message || "Failed to import .html file", true);
+          showToast(err.message || "Failed to import file", true);
         }
       };
 
