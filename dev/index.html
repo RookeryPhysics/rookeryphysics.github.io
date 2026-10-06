@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
-  <title>Three.js Engine Studio - GPT-6.1 Sol</title>
+  <title>Three.js Engine Studio - GPT-6 Luna</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -261,7 +261,7 @@
             </span>
           </div>
           <p class="text-[11px] text-slate-400 leading-relaxed">
-            Inference runs with model <strong class="text-indigo-400 font-mono">gpt-6.1-sol</strong>. Stored locally in your browser's <code class="text-indigo-300">localStorage</code>.
+            Inference runs with model <strong class="text-indigo-400 font-mono">gpt-6-luna</strong>. Stored locally in your browser's <code class="text-indigo-300">localStorage</code>.
           </p>
           <input id="api-key-input" type="password" placeholder="sk-..."
             class="w-full bg-[#0a0d14] border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" />
@@ -579,9 +579,9 @@
   </script>
 
   <script>
-    /* Single-Pass AI Generation Engine & Version Control (OpenAI gpt-6.1-sol) */
+    /* Single-Pass AI Generation Engine & Version Control (OpenAI gpt-6-luna) */
 
-    const TARGET_OPENAI_MODEL = "gpt-6.1-sol";
+    const TARGET_OPENAI_MODEL = "gpt-6-luna";
 
     const SYSTEM_PROMPT = `You are an expert Three.js and WebGL engine programmer and architect.
 When given the current Three.js code and a user request:
@@ -1075,7 +1075,7 @@ Rules for the <code> tag:
       }
     }
 
-    /* OpenAI Chat Completions caller targeting gpt-6.1-sol */
+    /* OpenAI Chat Completions caller targeting gpt-6-luna */
     async function callOpenAI({ systemPrompt, userPrompt }) {
       const apiKey = getApiKey();
       if (!apiKey) {
@@ -1154,7 +1154,7 @@ Remember:
         recordCommit(code, promptText, 'prompt', plan || 'Executed in single pass.');
 
         input.value = '';
-        showToast("Engine updated via gpt-6.1-sol");
+        showToast("Engine updated via gpt-6-luna");
         setEngineStage('ready');
       } catch (err) {
         console.error("Engine pipeline failed:", err);
