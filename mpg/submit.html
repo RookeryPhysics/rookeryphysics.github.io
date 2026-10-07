@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Golf Ball Submission Form</title>
+    <title>Contact Us - MULTIPLAYED</title>
     <!-- Modern Typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -241,13 +241,12 @@
 
     <main class="container">
         <!-- Three.js Golf Ball Canvas Container -->
-        <!-- Three.js Golf Ball Canvas Container -->
         <div class="logo-wrapper" title="Drag to rotate golf ball">
             <canvas id="golfBallCanvas"></canvas>
         </div>
 
         <h1>Get in Touch</h1>
-        <p class="subtitle">Desccribe the issue and submit a report.</p>
+        <p class="subtitle">Send us a message, feedback, or inquiry.</p>
 
         <form id="submissionForm" onsubmit="handleFormSubmit(event)">
             <div class="form-group">
@@ -492,7 +491,7 @@
                 status.style.background = 'rgba(16, 185, 129, 0.15)';
                 status.style.border = '1px solid rgba(16, 185, 129, 0.3)';
                 status.style.color = '#34d399';
-                status.innerHTML = '✓ Thank you! Your report has been submitted.';
+                status.innerHTML = '✓ Thank you! Your message has been sent.';
                 document.getElementById('submissionForm').reset();
 
                 // Fun spin on submission!

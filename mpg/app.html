@@ -335,10 +335,10 @@
                     <span>Home</span>
                 </a>
 
-                <!-- Report -->
-                <a href="#" id="report-btn" class="nav-item hover:text-gray-900 transition-colors">
-                    <i data-lucide="flag" class="nav-icon"></i>
-                    <span>Report</span>
+                <!-- Contact -->
+                <a href="#" id="contact-btn" class="nav-item hover:text-gray-900 transition-colors">
+                    <i data-lucide="mail" class="nav-icon"></i>
+                    <span>Contact</span>
                 </a>
 
                 <!-- Courses (Center Prominent Button) -->
@@ -403,7 +403,7 @@
         // Modal & Navigation Controls
         const modal = document.getElementById('modal');
         const modalBody = document.getElementById('modal-body');
-        const reportBtn = document.getElementById('report-btn');
+        const contactBtn = document.getElementById('contact-btn');
         const scanBtn = document.getElementById('scan-btn');
         const closeModalBtn = document.getElementById('close-modal-btn');
         const accountBtn = document.getElementById('account-btn');
@@ -1182,19 +1182,19 @@
         }
 
         // Event Bindings
-        if (reportBtn) {
-            reportBtn.addEventListener('click', (e) => {
+        if (contactBtn) {
+            contactBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 openModal(`
                     <div class="text-center w-full py-2">
                         <div class="w-14 h-14 mx-auto rounded-full bg-amber-100 border-2 border-amber-400 flex items-center justify-center text-amber-600 mb-3 shadow-inner">
-                            <i data-lucide="flag" class="w-7 h-7"></i>
+                            <i data-lucide="mail" class="w-7 h-7"></i>
                         </div>
-                        <h3 class="text-lg font-black text-gray-900">Course Report</h3>
-                        <p class="text-xs text-gray-500 mt-1 mb-4 px-2">Report a lost ball, course maintenance issue, or feedback.</p>
+                        <h3 class="text-lg font-black text-gray-900">Contact Us</h3>
+                        <p class="text-xs text-gray-500 mt-1 mb-4 px-2">Have a question, feedback, or need assistance? Get in touch with our team.</p>
                         <div class="space-y-2">
                             <a href="submit.html" class="block w-full py-2.5 bg-[#1b4332] hover:bg-[#143326] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors shadow-md text-center">
-                                Open Submission Form
+                                Open Contact Form
                             </a>
                             <button onclick="closeModal()" class="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors">
                                 Cancel
