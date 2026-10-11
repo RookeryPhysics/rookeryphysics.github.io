@@ -549,8 +549,8 @@
 
     const SYSTEM_PROMPT = `You are an expert Three.js and WebGL engine programmer and architect.
 When given the current Three.js code and a user request:
-1. Conduct a brief architectural planning phase outlining key requirements, geometry/material/light changes, physics/animation loop updates, and teardown logic. Keep this concise.
-2. Provide the complete updated runnable JavaScript Three.js game code inside an explicit <code>...</code> tag.
+1. Conduct an ultra-concise architectural plan (maximum 2-3 brief bullet points, under 40 words total) outlining geometry/material/logic changes and teardown. Do not write lengthy essays.
+2. Immediately provide the complete updated runnable JavaScript Three.js game code inside an explicit <code>...</code> tag.
 
 Rules for the <code> tag:
 - Put ONLY raw runnable JavaScript code inside <code>...</code>. Do NOT wrap it in markdown code fences (\`\`\`) inside the tag.
@@ -709,6 +709,51 @@ Rules for the <code> tag:
 
       chatMessagesContainer.appendChild(msgDiv);
       scrollChatToBottom();
+      return msgDiv;
+    }
+
+    function createStreamingAssistantMessage() {
+      if (!chatMessagesContainer) return null;
+
+      const welcome = document.getElementById('chat-welcome-msg');
+      if (welcome) {
+        welcome.remove();
+      }
+
+      const msgDiv = document.createElement('div');
+      msgDiv.className = 'flex flex-col gap-1 py-1 border-b border-slate-800/50 last:border-b-0';
+
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+      msgDiv.innerHTML = `
+        <div class="flex items-center gap-1.5 text-[10px] text-slate-500 font-mono">
+          <span class="text-emerald-400 font-semibold">&#9679; LUNA ENGINE</span>
+          <span class="commit-badge-placeholder"></span>
+          <span>&bull;</span>
+          <span>${timeStr}</span>
+        </div>
+        <div class="assistant-content text-xs text-slate-300 pl-3 border-l-2 border-emerald-500/70 whitespace-pre-wrap break-words font-mono leading-relaxed"><span class="italic text-slate-500">Streaming response...</span></div>
+      `;
+
+      chatMessagesContainer.appendChild(msgDiv);
+      scrollChatToBottom();
+
+      return {
+        element: msgDiv,
+        update: (text, commitId) => {
+          const contentDiv = msgDiv.querySelector('.assistant-content');
+          if (contentDiv) {
+            contentDiv.textContent = text || '';
+          }
+          if (commitId) {
+            const badgePlaceholder = msgDiv.querySelector('.commit-badge-placeholder');
+            if (badgePlaceholder) {
+              badgePlaceholder.innerHTML = `<span class="text-[9px] bg-slate-800 px-1 py-0.2 rounded border border-slate-700 text-slate-400">${escapeHtml(commitId)}</span>`;
+            }
+          }
+          scrollChatToBottom();
+        }
+      };
     }
 
     function showInferenceIndicator() {
@@ -1376,8 +1421,8 @@ Rules for the <code> tag:
       }
     }
 
-    /* OpenAI Chat Completions caller targeting gpt-6-luna with full conversation messages */
-    async function callOpenAI(messagesPayload) {
+    /* OpenAI Chat Completions caller supporting SSE streaming */
+    async function callOpenAI(messagesPayload, onChunk) {
       const apiKey = getApiKey();
       if (!apiKey) {
         openSettingsModal('apiKey');
@@ -1392,7 +1437,8 @@ Rules for the <code> tag:
         },
         body: JSON.stringify({
           model: TARGET_OPENAI_MODEL,
-          messages: messagesPayload
+          messages: messagesPayload,
+          stream: true
         })
       });
 
@@ -1401,8 +1447,47 @@ Rules for the <code> tag:
         throw new Error(errJson.error?.message || `OpenAI error ${response.status}: ${response.statusText}`);
       }
 
-      const data = await response.json();
-      return data.choices?.[0]?.message?.content || "";
+      // If streaming response body is not readable for any reason, fallback to json
+      if (!response.body) {
+        const data = await response.json();
+        return data.choices?.[0]?.message?.content || "";
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let fullContent = "";
+      let buffer = "";
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || ""; // keep incomplete line in buffer
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || !trimmed.startsWith("data:")) continue;
+          const dataStr = trimmed.slice(5).trim();
+          if (dataStr === "[DONE]") continue;
+
+          try {
+            const parsed = JSON.parse(dataStr);
+            const delta = parsed.choices?.[0]?.delta?.content || "";
+            if (delta) {
+              fullContent += delta;
+              if (typeof onChunk === 'function') {
+                onChunk(delta, fullContent);
+              }
+            }
+          } catch (e) {
+            // Incomplete JSON chunk, ignore and continue
+          }
+        }
+      }
+
+      return fullContent;
     }
 
     /* Single-Pass AI Generation Pipeline with Continuous Console Session Context */
@@ -1419,6 +1504,8 @@ Rules for the <code> tag:
 
       const activeCommit = versionStore.commits[versionStore.currentHeadIndex];
       const currentCode = activeCommit ? activeCommit.code : (document.getElementById('game-logic')?.textContent || '');
+
+      let streamAssistant = null;
 
       try {
         setEngineStage('coding', 'Generating');
@@ -1450,15 +1537,31 @@ ${currentCode}
 User Request: "${trimmedText}"
 
 Remember:
-1. First, write a brief architectural planning and reasoning phase outlining modifications and cleanup.
-2. Then, enclose the complete updated runnable JavaScript Three.js game code inside an explicit <code>...</code> tag without markdown code fences inside the tag.`;
+1. First, write an ultra-concise architectural plan (maximum 2-3 brief bullet points, under 40 words total).
+2. Immediately enclose the complete updated runnable JavaScript Three.js game code inside an explicit <code>...</code> tag without markdown code fences inside the tag.`;
 
         messages.push({
           role: "user",
           content: currentTurnUserContent
         });
 
-        const rawResponse = await callOpenAI(messages);
+        // Initialize streaming assistant container in chat
+        streamAssistant = createStreamingAssistantMessage();
+
+        const rawResponse = await callOpenAI(messages, (delta, accumulated) => {
+          // As tokens arrive in real-time:
+          // Check if code tag has started
+          const codeTagIndex = accumulated.indexOf('<code>');
+          if (codeTagIndex === -1) {
+            // Still in reasoning/planning phase: stream plan directly
+            streamAssistant?.update(accumulated.trimStart());
+          } else {
+            // We entered code generation phase: display clean plan and indicator that code is streaming
+            const planText = accumulated.substring(0, codeTagIndex).trim();
+            const displayText = planText ? `${planText}\n\n⚡ Generating code...` : '⚡ Generating engine code...';
+            streamAssistant?.update(displayText);
+          }
+        });
 
         if (!rawResponse) {
           throw new Error("AI failed to return a response.");
@@ -1492,16 +1595,20 @@ Remember:
         });
         updateChatCountBadge();
 
-        // Render non-code portion of response in console chat
-        const displayText = plan && plan.trim()
+        // Finalize streaming bubble with commit badge and formatted plan
+        const finalText = plan && plan.trim()
           ? plan.trim()
           : "Scene updated successfully. JavaScript engine compiled.";
-        appendChatMessage('assistant', displayText, { commitId: commit.id });
+        streamAssistant?.update(finalText, commit.id);
 
         showToast("Engine updated via gpt-6-luna");
         setEngineStage('ready');
       } catch (err) {
         console.error("Engine pipeline failed:", err);
+        // If streaming message was created, remove it or replace with error
+        if (streamAssistant?.element) {
+          streamAssistant.element.remove();
+        }
         appendChatMessage('error', err.message || "Failed to update scene");
         showToast(err.message || "Failed to update scene", true);
         setEngineStage('error');
