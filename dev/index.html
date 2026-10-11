@@ -170,8 +170,15 @@
       </button>
     </div>
 
-    <!-- Top Right: Settings & History -->
-    <div class="flex items-center gap-1 sm:gap-1.5">
+      <!-- Console Modal Trigger Button in Header -->
+      <button id="toggle-console-btn" title="Toggle Console Session Window"
+        class="h-7 px-2 sm:h-8 sm:px-2.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 hover:text-white border border-indigo-500/30 hover:border-indigo-500/50 active:scale-95 text-xs font-medium transition flex items-center gap-1.5 shadow-sm">
+        <i class="fa-solid fa-terminal text-indigo-400 text-xs"></i>
+        <span class="hidden xs:inline">Console</span>
+      </button>
+
+      <div class="w-px h-3.5 sm:h-4 bg-slate-800 mx-0.5"></div>
+
       <!-- Settings Modal Trigger -->
       <button id="open-settings-modal-btn" title="Settings & API Key"
         class="h-7 px-1.5 sm:h-8 sm:px-2.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 hover:border-slate-700 active:scale-95 text-xs font-medium transition flex items-center gap-1 sm:gap-1.5 shadow-sm">
@@ -195,55 +202,73 @@
   <!-- Dedicated Game Canvas Viewport -->
   <main id="canvas-container" class="relative flex-1 w-full h-full min-h-0 bg-[#0c1017]"></main>
 
-  <!-- Console-styled Chat Interface Dock -->
-  <footer class="chat-footer shrink-0 bg-[#0c1017]/95 backdrop-blur-md border-t border-slate-800/80 z-20 font-mono flex flex-col">
-    <div class="w-full max-w-4xl mx-auto px-2 sm:px-3 pt-2 pb-1.5 flex flex-col">
-      <!-- Console Header Bar -->
-      <div class="flex items-center justify-between px-2.5 py-1 bg-[#101522] border border-slate-800/90 rounded-t-lg text-[11px] text-slate-400 select-none">
-        <div class="flex items-center gap-2">
-          <i class="fa-solid fa-terminal text-indigo-400 text-[10px]"></i>
-          <span class="font-medium text-slate-300">CONSOLE SESSION</span>
-          <span id="chat-count-badge" class="text-[9px] px-1 py-0.2 rounded bg-slate-800/80 text-slate-400 border border-slate-700/50">0 turns</span>
-        </div>
-
-        <div class="flex items-center gap-2">
-          <!-- Status Indicator Pill -->
-          <div id="status-badge"
-            class="flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-[10px] font-medium"
-            title="Engine Status">
-            <div id="status-indicator" class="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
-            <span id="status-text">Ready</span>
-          </div>
-
-          <!-- New Chat Button -->
-          <button id="new-chat-btn" title="Clear chat context and start fresh conversation"
-            class="h-6 px-2 rounded bg-slate-900 hover:bg-slate-800 active:scale-95 text-slate-300 hover:text-white border border-slate-700/80 transition flex items-center gap-1.5 text-[10px]">
-            <i class="fa-solid fa-plus text-indigo-400 text-[9px]"></i>
-            <span>New Chat</span>
-          </button>
-        </div>
+  <!-- Draggable Console Session Modal Window -->
+  <div id="console-modal"
+    style="left: 20px; bottom: 20px;"
+    class="fixed z-40 w-[92vw] sm:w-[500px] md:w-[560px] max-w-[96vw] bg-[#0c1017]/95 backdrop-blur-xl border border-slate-700/80 rounded-xl shadow-2xl font-mono flex flex-col overflow-hidden transition-[opacity,transform] duration-150">
+    
+    <!-- Drag Handle / Console Modal Titlebar -->
+    <div id="console-drag-handle"
+      class="cursor-grab active:cursor-grabbing flex items-center justify-between px-3 py-2 bg-[#101522] border-b border-slate-800/90 select-none text-[11px] text-slate-300 touch-none">
+      <div class="flex items-center gap-2 pointer-events-none">
+        <i class="fa-solid fa-grip-vertical text-slate-500 text-xs"></i>
+        <i class="fa-solid fa-terminal text-indigo-400 text-xs"></i>
+        <span class="font-semibold text-white tracking-tight">CONSOLE SESSION</span>
+        <span id="chat-count-badge" class="text-[9px] px-1.5 py-0.2 rounded bg-slate-800/80 text-slate-400 border border-slate-700/50">0 turns</span>
       </div>
 
+      <div class="flex items-center gap-1.5" onclick="event.stopPropagation()">
+        <!-- Status Indicator Pill -->
+        <div id="status-badge"
+          class="flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-[10px] font-medium"
+          title="Engine Status">
+          <div id="status-indicator" class="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
+          <span id="status-text">Ready</span>
+        </div>
+
+        <!-- New Chat Button -->
+        <button id="new-chat-btn" title="Clear chat context and start fresh conversation"
+          class="h-6 px-2 rounded bg-slate-900 hover:bg-slate-800 active:scale-95 text-slate-300 hover:text-white border border-slate-700/80 transition flex items-center gap-1 text-[10px]">
+          <i class="fa-solid fa-plus text-indigo-400 text-[9px]"></i>
+          <span>New</span>
+        </button>
+
+        <!-- Minimize / Collapse Body Toggle -->
+        <button id="minimize-console-btn" title="Minimize / Expand Console"
+          class="w-6 h-6 rounded hover:bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition">
+          <i id="minimize-icon" class="fa-solid fa-chevron-down text-[10px]"></i>
+        </button>
+
+        <!-- Close / Hide Console Button -->
+        <button id="close-console-btn" title="Hide Console"
+          class="w-6 h-6 rounded hover:bg-slate-800 text-slate-400 hover:text-rose-400 flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark text-xs"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Console Modal Collapsible Body -->
+    <div id="console-modal-body" class="flex flex-col transition-all duration-200">
       <!-- Console Chat Messages Output Log -->
       <div id="chat-messages-container"
-        class="h-32 sm:h-40 max-h-48 overflow-y-auto p-2.5 bg-[#080b11] border-x border-slate-800/90 text-xs text-slate-300 space-y-2 select-text font-mono leading-relaxed">
+        class="h-44 sm:h-56 max-h-[60vh] overflow-y-auto p-3 bg-[#080b11] text-xs text-slate-300 space-y-2 select-text font-mono leading-relaxed border-b border-slate-800/80">
         <div id="chat-welcome-msg" class="text-[11px] text-slate-500 italic py-1 border-b border-slate-800/40">
-          [session initialized] gpt-6-luna console ready. Enter prompt commands below.
+          [session initialized] Drag titlebar to move window. Enter prompt commands below.
         </div>
       </div>
 
       <!-- Console Command Input Box -->
       <div
-        class="flex items-center gap-2 bg-[#0e131e] border border-slate-800/90 rounded-b-lg p-1.5 transition-all focus-within:border-indigo-500/70 focus-within:ring-1 focus-within:ring-indigo-500/30">
+        class="flex items-center gap-2 bg-[#0e131e] p-2 transition-all focus-within:bg-[#111726]">
         
-        <span class="text-indigo-400 pl-2 font-bold select-none text-xs">&gt;</span>
+        <span class="text-indigo-400 pl-1.5 font-bold select-none text-xs">&gt;</span>
 
         <input id="prompt-input" type="text" placeholder="Send prompt command to engine..."
           class="flex-1 bg-transparent px-1.5 py-1 text-xs text-slate-100 placeholder-slate-500 focus:outline-none font-mono"
           autocomplete="off" spellcheck="false" />
 
         <button id="submit-btn"
-          class="h-7 shrink-0 flex items-center justify-center gap-1.5 px-3 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-xs font-semibold rounded transition duration-150 shadow-sm disabled:opacity-40 disabled:pointer-events-none font-mono">
+          class="h-7 shrink-0 flex items-center justify-center gap-1.5 px-3 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-xs font-semibold rounded-lg transition duration-150 shadow-sm disabled:opacity-40 disabled:pointer-events-none font-mono">
           <span id="btn-text">Send</span>
           <svg id="btn-spinner" class="hidden animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -254,7 +279,7 @@
         </button>
       </div>
     </div>
-  </footer>
+  </div>
 
   <!-- Settings Modal -->
   <div id="settings-modal"
@@ -677,9 +702,138 @@ Rules for the <code> tag:
       showToast("Started new chat session");
     }
 
+    const consoleModal = document.getElementById('console-modal');
+    const consoleDragHandle = document.getElementById('console-drag-handle');
+    const consoleModalBody = document.getElementById('console-modal-body');
+    const toggleConsoleBtn = document.getElementById('toggle-console-btn');
+    const minimizeConsoleBtn = document.getElementById('minimize-console-btn');
+    const closeConsoleBtn = document.getElementById('close-console-btn');
+    const minimizeIcon = document.getElementById('minimize-icon');
+
     if (newChatBtn) {
       newChatBtn.addEventListener('click', startNewChat);
     }
+
+    // Draggable Console Modal Logic
+    (function initDraggableConsoleModal() {
+      if (!consoleModal || !consoleDragHandle) return;
+
+      let isDragging = false;
+      let startMouseX = 0;
+      let startMouseY = 0;
+      let startLeft = 0;
+      let startTop = 0;
+
+      function onPointerDown(e) {
+        // Only trigger on drag handle, ignoring buttons inside handle
+        if (e.target.closest('button') || e.target.closest('input')) return;
+
+        isDragging = true;
+        const clientX = e.type.startsWith('touch') ? e.touches[0].clientX : e.clientX;
+        const clientY = e.type.startsWith('touch') ? e.touches[0].clientY : e.clientY;
+
+        const rect = consoleModal.getBoundingClientRect();
+        startLeft = rect.left;
+        startTop = rect.top;
+        startMouseX = clientX;
+        startMouseY = clientY;
+
+        // Switch positioning from bottom/right relative styling to absolute top/left
+        consoleModal.style.bottom = 'auto';
+        consoleModal.style.right = 'auto';
+        consoleModal.style.left = `${startLeft}px`;
+        consoleModal.style.top = `${startTop}px`;
+
+        document.addEventListener('mousemove', onPointerMove);
+        document.addEventListener('mouseup', onPointerUp);
+        document.addEventListener('touchmove', onPointerMove, { passive: false });
+        document.addEventListener('touchend', onPointerUp);
+      }
+
+      function onPointerMove(e) {
+        if (!isDragging) return;
+        if (e.cancelable && e.type.startsWith('touch')) {
+          e.preventDefault();
+        }
+
+        const clientX = e.type.startsWith('touch') ? e.touches[0].clientX : e.clientX;
+        const clientY = e.type.startsWith('touch') ? e.touches[0].clientY : e.clientY;
+
+        const deltaX = clientX - startMouseX;
+        const deltaY = clientY - startMouseY;
+
+        let newLeft = startLeft + deltaX;
+        let newTop = startTop + deltaY;
+
+        // Keep within viewport boundaries
+        const modalWidth = consoleModal.offsetWidth;
+        const modalHeight = consoleModal.offsetHeight;
+        const maxX = window.innerWidth - modalWidth - 5;
+        const maxY = window.innerHeight - modalHeight - 5;
+
+        newLeft = Math.max(5, Math.min(newLeft, maxX));
+        newTop = Math.max(5, Math.min(newTop, maxY));
+
+        consoleModal.style.left = `${newLeft}px`;
+        consoleModal.style.top = `${newTop}px`;
+      }
+
+      function onPointerUp() {
+        isDragging = false;
+        document.removeEventListener('mousemove', onPointerMove);
+        document.removeEventListener('mouseup', onPointerUp);
+        document.removeEventListener('touchmove', onPointerMove);
+        document.removeEventListener('touchend', onPointerUp);
+      }
+
+      consoleDragHandle.addEventListener('mousedown', onPointerDown);
+      consoleDragHandle.addEventListener('touchstart', onPointerDown, { passive: true });
+
+      // Minimize / Collapse
+      let isMinimized = false;
+      if (minimizeConsoleBtn && consoleModalBody && minimizeIcon) {
+        minimizeConsoleBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          isMinimized = !isMinimized;
+          if (isMinimized) {
+            consoleModalBody.classList.add('hidden');
+            minimizeIcon.classList.replace('fa-chevron-down', 'fa-chevron-up');
+            minimizeConsoleBtn.title = "Expand Console";
+          } else {
+            consoleModalBody.classList.remove('hidden');
+            minimizeIcon.classList.replace('fa-chevron-up', 'fa-chevron-down');
+            minimizeConsoleBtn.title = "Minimize Console";
+          }
+        });
+      }
+
+      // Hide / Close
+      if (closeConsoleBtn) {
+        closeConsoleBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          consoleModal.classList.add('opacity-0', 'pointer-events-none', 'scale-95');
+        });
+      }
+
+      // Header Toggle Button
+      if (toggleConsoleBtn) {
+        toggleConsoleBtn.addEventListener('click', () => {
+          const isHidden = consoleModal.classList.contains('opacity-0');
+          if (isHidden) {
+            consoleModal.classList.remove('opacity-0', 'pointer-events-none', 'scale-95');
+            // If body was minimized, expand it
+            if (isMinimized && consoleModalBody) {
+              isMinimized = false;
+              consoleModalBody.classList.remove('hidden');
+              if (minimizeIcon) minimizeIcon.classList.replace('fa-chevron-up', 'fa-chevron-down');
+            }
+            if (input) input.focus();
+          } else {
+            consoleModal.classList.add('opacity-0', 'pointer-events-none', 'scale-95');
+          }
+        });
+      }
+    })();
 
     function sanitizeGameName(name) {
       if (!name || typeof name !== 'string') return '';
