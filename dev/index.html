@@ -721,7 +721,7 @@ Rules for the <code> tag:
       }
 
       const msgDiv = document.createElement('div');
-      msgDiv.className = 'flex flex-col gap-1 py-1 border-b border-slate-800/50 last:border-b-0';
+      msgDiv.className = 'flex flex-col gap-1 py-1 border-b border-slate-800/50 last:border-b-0 hidden';
 
       const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
@@ -732,15 +732,25 @@ Rules for the <code> tag:
           <span>&bull;</span>
           <span>${timeStr}</span>
         </div>
-        <div class="assistant-content text-xs text-slate-300 pl-3 border-l-2 border-emerald-500/70 whitespace-pre-wrap break-words font-mono leading-relaxed"><span class="italic text-slate-500">Streaming response...</span></div>
+        <div class="assistant-content text-xs text-slate-300 pl-3 border-l-2 border-emerald-500/70 whitespace-pre-wrap break-words font-mono leading-relaxed"></div>
       `;
 
-      chatMessagesContainer.appendChild(msgDiv);
+      // Always place the assistant message before any inference indicator if one exists,
+      // so the three-dot "inferring scene changes" indicator stays below the latest model response.
+      const indicator = document.getElementById('chat-inference-indicator');
+      if (indicator) {
+        chatMessagesContainer.insertBefore(msgDiv, indicator);
+      } else {
+        chatMessagesContainer.appendChild(msgDiv);
+      }
       scrollChatToBottom();
 
       return {
         element: msgDiv,
         update: (text, commitId) => {
+          if (text) {
+            msgDiv.classList.remove('hidden');
+          }
           const contentDiv = msgDiv.querySelector('.assistant-content');
           if (contentDiv) {
             contentDiv.textContent = text || '';
@@ -750,6 +760,11 @@ Rules for the <code> tag:
             if (badgePlaceholder) {
               badgePlaceholder.innerHTML = `<span class="text-[9px] bg-slate-800 px-1 py-0.2 rounded border border-slate-700 text-slate-400">${escapeHtml(commitId)}</span>`;
             }
+          }
+          // Ensure inference indicator stays at the very bottom
+          const currentIndicator = document.getElementById('chat-inference-indicator');
+          if (currentIndicator && currentIndicator.previousElementSibling !== msgDiv && chatMessagesContainer.lastElementChild !== currentIndicator) {
+            chatMessagesContainer.appendChild(currentIndicator);
           }
           scrollChatToBottom();
         }
@@ -1554,12 +1569,17 @@ Remember:
           const codeTagIndex = accumulated.indexOf('<code>');
           if (codeTagIndex === -1) {
             // Still in reasoning/planning phase: stream plan directly
-            streamAssistant?.update(accumulated.trimStart());
+            const streamedPlan = accumulated.trimStart();
+            if (streamedPlan) {
+              streamAssistant?.update(streamedPlan);
+            }
           } else {
-            // We entered code generation phase: display clean plan and indicator that code is streaming
+            // Once code tag begins, finalize the plan text in the assistant bubble;
+            // the bottom inference indicator already handles the loading animation
             const planText = accumulated.substring(0, codeTagIndex).trim();
-            const displayText = planText ? `${planText}\n\n⚡ Generating code...` : '⚡ Generating engine code...';
-            streamAssistant?.update(displayText);
+            if (planText) {
+              streamAssistant?.update(planText);
+            }
           }
         });
 
