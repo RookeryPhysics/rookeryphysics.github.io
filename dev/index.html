@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
-  <title>Three.js Engine Studio - GPT-6 Luna</title>
+  <title>LEAH</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -18,6 +18,7 @@
   <style>
     :root {
       --app-height: 100dvh;
+      --keyboard-offset: 0px;
     }
 
     * {
@@ -50,6 +51,20 @@
       height: var(--app-height, 100dvh);
       max-height: 100dvh;
       max-height: var(--app-height, 100dvh);
+    }
+
+    /* On mobile viewports when the chatbar/keyboard is active, elevate console modal above popup keyboard */
+    @media (max-width: 640px) {
+      body.keyboard-visible #console-modal {
+        bottom: calc(var(--keyboard-offset, 0px) + 12px) !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        max-height: calc(var(--app-height, 100dvh) - 24px) !important;
+      }
+
+      body.keyboard-visible #console-modal #chat-messages-container {
+        max-height: 28vh !important;
+      }
     }
 
     .chat-footer {
@@ -741,9 +756,12 @@ Rules for the <code> tag:
     const toggleHistoryBtn = document.getElementById('toggle-history-btn');
     const closeHistoryBtn = document.getElementById('close-history-btn');
     const timelineList = document.getElementById('timeline-list');
-    const exportDropdownContainer = document.getElementById('export-dropdown-container');
-    const exportDropdownBtn = document.getElementById('export-dropdown-btn');
-    const exportDropdownMenu = document.getElementById('export-dropdown-menu');
+    const fileDropdownContainer = document.getElementById('file-dropdown-container');
+    const fileDropdownBtn = document.getElementById('file-dropdown-btn');
+    const fileDropdownMenu = document.getElementById('file-dropdown-menu');
+    const exportDropdownContainer = document.getElementById('file-dropdown-container'); // alias for safety
+    const exportDropdownBtn = document.getElementById('file-dropdown-btn');
+    const exportDropdownMenu = document.getElementById('file-dropdown-menu');
     const exportHtmlBtn = document.getElementById('export-html-btn');
     const exportDevBtn = document.getElementById('export-dev-btn');
     const importStandaloneBtn = document.getElementById('import-standalone-btn');
@@ -1508,6 +1526,54 @@ Rules for the <code> tag:
         });
       }
 
+      // Dynamic mobile positioning when keyboard pops up
+      let savedDesktopStyles = null;
+      window.adjustMobileConsolePosition = function (isKeyboardUp) {
+        if (!consoleModal) return;
+        const isMobile = window.innerWidth <= 640;
+        if (!isMobile) return;
+
+        if (isKeyboardUp) {
+          if (!savedDesktopStyles) {
+            savedDesktopStyles = {
+              top: consoleModal.style.top,
+              bottom: consoleModal.style.bottom,
+              left: consoleModal.style.left,
+              right: consoleModal.style.right,
+              transform: consoleModal.style.transform
+            };
+          }
+          const vv = window.visualViewport;
+          const kbOffset = vv ? Math.max(0, window.innerHeight - (vv.offsetTop + vv.height)) : 0;
+          const bottomVal = kbOffset > 0 ? (kbOffset + 10) : 10;
+          consoleModal.style.top = 'auto';
+          consoleModal.style.bottom = `${bottomVal}px`;
+          consoleModal.style.left = '50%';
+          consoleModal.style.right = 'auto';
+          consoleModal.style.transform = 'translateX(-50%)';
+
+          // Ensure messages scroll to bottom so latest conversation is clearly visible
+          if (chatMessagesContainer) {
+            chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+          }
+        } else {
+          if (savedDesktopStyles) {
+            consoleModal.style.top = savedDesktopStyles.top || 'auto';
+            consoleModal.style.bottom = savedDesktopStyles.bottom || '20px';
+            consoleModal.style.left = savedDesktopStyles.left || '20px';
+            consoleModal.style.right = savedDesktopStyles.right || 'auto';
+            consoleModal.style.transform = savedDesktopStyles.transform || 'none';
+            savedDesktopStyles = null;
+          } else {
+            consoleModal.style.bottom = '20px';
+            consoleModal.style.top = 'auto';
+            consoleModal.style.left = '20px';
+            consoleModal.style.right = 'auto';
+            consoleModal.style.transform = 'none';
+          }
+        }
+      };
+
       // Focus management: track whether console or any of its inputs are active
       window.__isConsoleFocused = false;
 
@@ -1516,6 +1582,10 @@ Rules for the <code> tag:
         const isConsoleElement = consoleModal && !consoleModal.classList.contains('opacity-0') && (consoleModal.contains(active) || active === consoleModal);
         const isInputActive = active === input || active === gameNameInput;
         window.__isConsoleFocused = !!(isConsoleElement || isInputActive);
+
+        if (typeof updateAppHeight === 'function') {
+          updateAppHeight();
+        }
       }
 
       function releaseConsoleFocus() {
@@ -1525,6 +1595,33 @@ Rules for the <code> tag:
         if (active && (consoleModal?.contains(active) || active === input || active === gameNameInput)) {
           active.blur();
         }
+        if (typeof updateAppHeight === 'function') {
+          setTimeout(updateAppHeight, 50);
+        }
+      }
+
+      if (input) {
+        input.addEventListener('focus', () => {
+          window.__isConsoleFocused = true;
+          if (window.innerWidth <= 640) {
+            setTimeout(() => {
+              if (typeof updateAppHeight === 'function') updateAppHeight();
+              if (typeof adjustMobileConsolePosition === 'function') adjustMobileConsolePosition(true);
+            }, 50);
+            setTimeout(() => {
+              if (typeof updateAppHeight === 'function') updateAppHeight();
+              if (typeof adjustMobileConsolePosition === 'function') adjustMobileConsolePosition(true);
+            }, 300);
+          }
+        });
+        input.addEventListener('blur', () => {
+          setTimeout(() => {
+            if (document.activeElement !== input) {
+              if (typeof updateAppHeight === 'function') updateAppHeight();
+              if (typeof adjustMobileConsolePosition === 'function') adjustMobileConsolePosition(false);
+            }
+          }, 100);
+        });
       }
 
       if (consoleModal) {
@@ -2253,22 +2350,23 @@ Remember:
       }
     });
 
-    // Export dropdown toggle & click outside
-    function closeExportDropdown() {
-      if (exportDropdownMenu) {
-        exportDropdownMenu.classList.add('hidden');
+    // File dropdown toggle & click outside
+    function closeFileDropdown() {
+      if (fileDropdownMenu) {
+        fileDropdownMenu.classList.add('hidden');
       }
     }
+    const closeExportDropdown = closeFileDropdown;
 
-    if (exportDropdownBtn && exportDropdownMenu) {
-      exportDropdownBtn.addEventListener('click', (e) => {
+    if (fileDropdownBtn && fileDropdownMenu) {
+      fileDropdownBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        exportDropdownMenu.classList.toggle('hidden');
+        fileDropdownMenu.classList.toggle('hidden');
       });
 
       document.addEventListener('click', (e) => {
-        if (!exportDropdownContainer.contains(e.target)) {
-          closeExportDropdown();
+        if (fileDropdownContainer && !fileDropdownContainer.contains(e.target)) {
+          closeFileDropdown();
         }
       });
     }
@@ -2367,10 +2465,15 @@ ${gameCode}
       });
     }
 
-    importStandaloneBtn.addEventListener('click', () => {
-      importFileInput.value = '';
-      importFileInput.click();
-    });
+    if (importStandaloneBtn) {
+      importStandaloneBtn.addEventListener('click', () => {
+        closeFileDropdown();
+        if (importFileInput) {
+          importFileInput.value = '';
+          importFileInput.click();
+        }
+      });
+    }
 
     importFileInput.addEventListener('change', (e) => {
       const file = e.target.files?.[0];
@@ -2518,6 +2621,7 @@ ${gameCode}
           checkoutCommit(versionStore.currentHeadIndex + 1);
         }
       } else if (e.key === 'Escape') {
+        closeFileDropdown();
         closeHistoryDrawer();
         closeCodeModal();
         closeApiModal();
@@ -2526,8 +2630,29 @@ ${gameCode}
     });
 
     function updateAppHeight() {
-      const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      const vv = window.visualViewport;
+      const h = vv ? vv.height : window.innerHeight;
       document.documentElement.style.setProperty('--app-height', `${h}px`);
+
+      // Mobile keyboard detection & keyboard offset calculation
+      const isMobile = window.innerWidth <= 640;
+      const isInputActive = document.activeElement === input;
+      const rawOffset = vv ? Math.max(0, window.innerHeight - (vv.offsetTop + vv.height)) : 0;
+      const isKeyboardOpen = isMobile && isInputActive && (rawOffset > 50 || h < window.innerHeight * 0.75);
+
+      if (isKeyboardOpen) {
+        document.body.classList.add('keyboard-visible');
+        document.documentElement.style.setProperty('--keyboard-offset', `${rawOffset}px`);
+        if (typeof adjustMobileConsolePosition === 'function') {
+          adjustMobileConsolePosition(true);
+        }
+      } else if (!isInputActive) {
+        document.body.classList.remove('keyboard-visible');
+        document.documentElement.style.setProperty('--keyboard-offset', '0px');
+        if (typeof adjustMobileConsolePosition === 'function') {
+          adjustMobileConsolePosition(false);
+        }
+      }
     }
 
     if (window.visualViewport) {
