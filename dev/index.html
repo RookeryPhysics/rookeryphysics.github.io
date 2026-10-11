@@ -1514,7 +1514,7 @@ Rules for the <code> tag:
       function updateConsoleFocus() {
         const active = document.activeElement;
         const isConsoleElement = consoleModal && !consoleModal.classList.contains('opacity-0') && (consoleModal.contains(active) || active === consoleModal);
-        const isInputActive = active === input || active === apiKeyInput || active === gameNameInput;
+        const isInputActive = active === input || active === gameNameInput;
         window.__isConsoleFocused = !!(isConsoleElement || isInputActive);
       }
 
@@ -1522,7 +1522,7 @@ Rules for the <code> tag:
         window.__isConsoleFocused = false;
         const active = document.activeElement;
         // Blur any input or console element if currently active
-        if (active && (consoleModal?.contains(active) || active === input || active === apiKeyInput || active === gameNameInput)) {
+        if (active && (consoleModal?.contains(active) || active === input || active === gameNameInput)) {
           active.blur();
         }
       }
@@ -1572,7 +1572,7 @@ Rules for the <code> tag:
         if (window.__isConsoleFocused || (inConsole && isInput)) {
           // If Enter is pressed while console has focus, submit the prompt
           if (e.key === 'Enter' && e.type === 'keydown') {
-            const isOtherInput = active === apiKeyInput || active === gameNameInput;
+            const isOtherInput = active === gameNameInput;
             if (!isOtherInput && typeof applyUserPrompt === 'function' && input) {
               e.preventDefault();
               applyUserPrompt(input.value);
@@ -2218,7 +2218,7 @@ Remember:
     consoleModal?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         const active = document.activeElement;
-        if (active !== apiKeyInput && active !== gameNameInput) {
+        if (active !== gameNameInput) {
           e.preventDefault();
           submitCurrentPrompt();
         }
@@ -2499,7 +2499,7 @@ ${gameCode}
     });
 
     window.addEventListener('keydown', (e) => {
-      if (document.activeElement === input || document.activeElement === apiKeyInput || document.activeElement === gameNameInput) return;
+      if (document.activeElement === input || document.activeElement === gameNameInput) return;
 
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') {
         e.preventDefault();
