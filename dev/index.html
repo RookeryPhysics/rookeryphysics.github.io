@@ -202,10 +202,9 @@
   <main id="canvas-container" class="relative flex-1 w-full h-full min-h-0 bg-[#0c1017]"></main>
 
   <!-- Draggable Console Session Modal Window -->
-  <div id="console-modal"
-    style="left: 20px; bottom: 20px;"
+  <div id="console-modal" style="left: 20px; bottom: 20px;"
     class="fixed z-40 w-[92vw] sm:w-[500px] md:w-[560px] max-w-[96vw] bg-[#0c1017]/95 backdrop-blur-xl border border-slate-700/80 rounded-xl shadow-2xl font-mono flex flex-col overflow-hidden transition-[opacity,transform] duration-150">
-    
+
     <!-- Drag Handle / Console Modal Titlebar -->
     <div id="console-drag-handle"
       class="cursor-grab active:cursor-grabbing flex items-center justify-between px-3 py-2 bg-[#101522] border-b border-slate-800/90 select-none text-[11px] text-slate-300 touch-none">
@@ -213,7 +212,9 @@
         <i class="fa-solid fa-grip-vertical text-slate-500 text-xs"></i>
         <i class="fa-solid fa-terminal text-indigo-400 text-xs"></i>
         <span class="font-semibold text-white tracking-tight">CONSOLE SESSION</span>
-        <span id="chat-count-badge" class="text-[9px] px-1.5 py-0.2 rounded bg-slate-800/80 text-slate-400 border border-slate-700/50">0 turns</span>
+        <span id="chat-count-badge"
+          class="text-[9px] px-1.5 py-0.2 rounded bg-slate-800/80 text-slate-400 border border-slate-700/50">0
+          turns</span>
       </div>
 
       <div class="flex items-center gap-1.5" onclick="event.stopPropagation()">
@@ -257,9 +258,8 @@
       </div>
 
       <!-- Console Command Input Box -->
-      <div
-        class="flex items-center gap-2 bg-[#0e131e] p-2 transition-all focus-within:bg-[#111726]">
-        
+      <div class="flex items-center gap-2 bg-[#0e131e] p-2 transition-all focus-within:bg-[#111726]">
+
         <span class="text-indigo-400 pl-1.5 font-bold select-none text-xs">&gt;</span>
 
         <input id="prompt-input" type="text" placeholder="Send prompt command to engine..."
@@ -293,14 +293,15 @@
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
-      
+
       <div class="py-4 space-y-4 max-h-[75vh] overflow-y-auto">
         <!-- Game Configuration Section -->
         <div>
           <label class="block text-[11px] font-mono font-medium text-slate-300 mb-1">Game Name</label>
           <input id="game-name-input" type="text" placeholder="threejs-game"
             class="w-full bg-[#0a0d14] border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" />
-          <p class="text-[10px] text-slate-500 mt-1">Exported standalone file will be named: <span id="game-name-preview" class="text-indigo-400 font-mono">threejs-game.html</span></p>
+          <p class="text-[10px] text-slate-500 mt-1">Exported standalone file will be named: <span
+              id="game-name-preview" class="text-indigo-400 font-mono">threejs-game.html</span></p>
         </div>
 
         <div class="h-px bg-slate-800/80"></div>
@@ -314,7 +315,8 @@
             </span>
           </div>
           <p class="text-[11px] text-slate-400 leading-relaxed">
-            Inference runs with model <strong class="text-indigo-400 font-mono">gpt-6-luna</strong>. Stored locally in your browser's <code class="text-indigo-300">localStorage</code>.
+            Inference runs with model <strong class="text-indigo-400 font-mono">gpt-6-luna</strong>. Stored locally in
+            your browser's <code class="text-indigo-300">localStorage</code>.
           </p>
           <input id="api-key-input" type="password" placeholder="sk-..."
             class="w-full bg-[#0a0d14] border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" />
@@ -327,7 +329,8 @@
           <button id="cancel-settings-btn"
             class="px-3 py-1.5 text-xs text-slate-400 hover:text-white rounded-lg bg-slate-900 border border-slate-800">Cancel</button>
           <button id="save-settings-btn"
-            class="px-3.5 py-1.5 text-xs text-white rounded-lg bg-indigo-600 hover:bg-indigo-500 font-medium shadow-sm">Save Settings</button>
+            class="px-3.5 py-1.5 text-xs text-white rounded-lg bg-indigo-600 hover:bg-indigo-500 font-medium shadow-sm">Save
+            Settings</button>
         </div>
       </div>
     </div>
@@ -376,11 +379,13 @@
 
       <div class="p-3 sm:p-3.5 bg-[#0e121a] border-b border-slate-800 flex items-center justify-between shrink-0">
         <div class="flex items-center gap-2 sm:gap-2.5 min-w-0">
-          <div class="w-6 h-6 rounded-md bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 text-xs shrink-0">
+          <div
+            class="w-6 h-6 rounded-md bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 text-xs shrink-0">
             <i class="fa-solid fa-code text-[11px]"></i>
           </div>
           <span id="modal-code-title"
-            class="text-xs font-semibold text-slate-300 font-mono truncate max-w-[160px] xs:max-w-[220px] sm:max-w-xs">Version Code</span>
+            class="text-xs font-semibold text-slate-300 font-mono truncate max-w-[160px] xs:max-w-[220px] sm:max-w-xs">Version
+            Code</span>
         </div>
 
         <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
@@ -635,7 +640,7 @@ Rules for the <code> tag:
 
     function appendChatMessage(role, text, meta = {}) {
       if (!chatMessagesContainer) return;
-      
+
       const welcome = document.getElementById('chat-welcome-msg');
       if (welcome) {
         welcome.remove();
@@ -840,12 +845,18 @@ Rules for the <code> tag:
 
       function updateConsoleFocus() {
         const active = document.activeElement;
-        window.__isConsoleFocused = !!(
-          (consoleModal && !consoleModal.classList.contains('opacity-0') && (consoleModal.contains(active) || active === consoleModal)) ||
-          active === input ||
-          active === apiKeyInput ||
-          active === gameNameInput
-        );
+        const isConsoleElement = consoleModal && !consoleModal.classList.contains('opacity-0') && (consoleModal.contains(active) || active === consoleModal);
+        const isInputActive = active === input || active === apiKeyInput || active === gameNameInput;
+        window.__isConsoleFocused = !!(isConsoleElement || isInputActive);
+      }
+
+      function releaseConsoleFocus() {
+        window.__isConsoleFocused = false;
+        const active = document.activeElement;
+        // Blur any input or console element if currently active
+        if (active && (consoleModal?.contains(active) || active === input || active === apiKeyInput || active === gameNameInput)) {
+          active.blur();
+        }
       }
 
       if (consoleModal) {
@@ -866,24 +877,39 @@ Rules for the <code> tag:
         });
       }
 
-      // If user clicks on canvas or outside console, clear console focus state
+      // When user clicks anywhere on the game canvas / main viewport or outside the console modal, release focus
       const canvasContainer = document.getElementById('canvas-container');
       if (canvasContainer) {
-        canvasContainer.addEventListener('mousedown', () => {
-          window.__isConsoleFocused = false;
-        });
+        canvasContainer.addEventListener('mousedown', releaseConsoleFocus, true);
+        canvasContainer.addEventListener('pointerdown', releaseConsoleFocus, true);
+        canvasContainer.addEventListener('touchstart', releaseConsoleFocus, true);
       }
+
+      // Also listen on document for clicks outside the console modal to release console focus
+      document.addEventListener('pointerdown', (e) => {
+        if (consoleModal && !consoleModal.contains(e.target) && e.target !== toggleConsoleBtn) {
+          releaseConsoleFocus();
+        }
+      }, true);
 
       window.addEventListener('blur', updateConsoleFocus);
       document.addEventListener('selectionchange', updateConsoleFocus);
 
-      // Stop keyboard events from propagating to game canvas/window listeners when console is focused or active element is within console/inputs
+      // Stop keyboard events from propagating to game canvas/window listeners ONLY when console is focused
       const blockGameKeys = (e) => {
         const active = document.activeElement;
         const isInput = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
         const inConsole = consoleModal && consoleModal.contains(active);
-        
-        if (window.__isConsoleFocused || isInput || inConsole) {
+
+        if (window.__isConsoleFocused || (inConsole && isInput)) {
+          // If Enter is pressed while console has focus, submit the prompt
+          if (e.key === 'Enter' && e.type === 'keydown') {
+            const isOtherInput = active === apiKeyInput || active === gameNameInput;
+            if (!isOtherInput && typeof applyUserPrompt === 'function' && input) {
+              e.preventDefault();
+              applyUserPrompt(input.value);
+            }
+          }
           // Allow keys to reach the input/console, but stop immediate propagation to other window/document listeners attached by the game
           e.stopImmediatePropagation();
         }
@@ -957,8 +983,8 @@ Rules for the <code> tag:
     function showToast(msg, isError = false) {
       toast.textContent = msg;
       toast.className = `fixed top-4 left-1/2 -translate-x-1/2 px-3.5 py-1.5 rounded-xl text-xs backdrop-blur-md transition-all duration-200 pointer-events-none z-50 opacity-100 shadow-xl border ${isError
-          ? 'bg-rose-950/90 text-rose-200 border-rose-500/30 shadow-rose-950/40'
-          : 'bg-slate-900/95 text-slate-200 border-slate-700/80 shadow-slate-950/50'
+        ? 'bg-rose-950/90 text-rose-200 border-rose-500/30 shadow-rose-950/40'
+        : 'bg-slate-900/95 text-slate-200 border-slate-700/80 shadow-slate-950/50'
         }`;
       setTimeout(() => {
         toast.classList.replace('opacity-100', 'opacity-0');
@@ -1346,7 +1372,7 @@ Rules for the <code> tag:
       if (!promptText || !promptText.trim()) return;
 
       const trimmedText = promptText.trim();
-      
+
       // Clear input immediately as user sends request
       input.value = '';
 
@@ -1429,8 +1455,8 @@ Remember:
         updateChatCountBadge();
 
         // Render non-code portion of response in console chat
-        const displayText = plan && plan.trim() 
-          ? plan.trim() 
+        const displayText = plan && plan.trim()
+          ? plan.trim()
           : "Scene updated successfully. JavaScript engine compiled.";
         appendChatMessage('assistant', displayText, { commitId: commit.id });
 
@@ -1444,10 +1470,30 @@ Remember:
       }
     }
 
-    submitBtn.addEventListener('click', () => applyUserPrompt(input.value));
+    function submitCurrentPrompt() {
+      if (input && input.value.trim()) {
+        applyUserPrompt(input.value);
+      }
+    }
+
+    submitBtn.addEventListener('click', submitCurrentPrompt);
+
+    // Send prompt on Enter when prompt input is focused
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
-        applyUserPrompt(input.value);
+        e.preventDefault();
+        submitCurrentPrompt();
+      }
+    });
+
+    // Also send prompt on Enter if user has console focused (e.g. clicked anywhere in console modal)
+    consoleModal?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const active = document.activeElement;
+        if (active !== apiKeyInput && active !== gameNameInput) {
+          e.preventDefault();
+          submitCurrentPrompt();
+        }
       }
     });
 
