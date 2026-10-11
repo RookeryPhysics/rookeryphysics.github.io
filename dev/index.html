@@ -532,7 +532,8 @@ Rules for the <code> tag:
 - Put ONLY raw runnable JavaScript code inside <code>...</code>. Do NOT wrap it in markdown code fences (\`\`\`) inside the tag.
 - The code runs directly in browser context with THREE and OrbitControls globally available.
 - Always provide proper teardown: define \`window.__cleanupGame = function() { ... }\` cancelling requestAnimationFrame, removing window event listeners, and disposing of geometries/materials.
-- Target '#canvas-container', sizing renderer and camera using container.clientWidth and container.clientHeight.`;
+- Target '#canvas-container', sizing renderer and camera using container.clientWidth and container.clientHeight.
+- For keyboard controls: always ignore key events if \`window.__isConsoleFocused\` is true or if \`['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)\` or if \`document.activeElement?.closest('#console-modal')\`.`;
 
     const versionStore = {
       commits: [],
@@ -833,6 +834,68 @@ Rules for the <code> tag:
           }
         });
       }
+
+      // Focus management: track whether console or any of its inputs are active
+      window.__isConsoleFocused = false;
+
+      function updateConsoleFocus() {
+        const active = document.activeElement;
+        window.__isConsoleFocused = !!(
+          (consoleModal && !consoleModal.classList.contains('opacity-0') && (consoleModal.contains(active) || active === consoleModal)) ||
+          active === input ||
+          active === apiKeyInput ||
+          active === gameNameInput
+        );
+      }
+
+      if (consoleModal) {
+        consoleModal.addEventListener('focusin', () => {
+          window.__isConsoleFocused = true;
+        });
+        consoleModal.addEventListener('focusout', () => {
+          setTimeout(updateConsoleFocus, 0);
+        });
+        consoleModal.addEventListener('mousedown', (e) => {
+          window.__isConsoleFocused = true;
+          // Focus input if click was on empty area in console
+          if (e.target === consoleModal || e.target === consoleModalBody || e.target === chatMessagesContainer) {
+            if (input && document.activeElement !== input) {
+              input.focus();
+            }
+          }
+        });
+      }
+
+      // If user clicks on canvas or outside console, clear console focus state
+      const canvasContainer = document.getElementById('canvas-container');
+      if (canvasContainer) {
+        canvasContainer.addEventListener('mousedown', () => {
+          window.__isConsoleFocused = false;
+        });
+      }
+
+      window.addEventListener('blur', updateConsoleFocus);
+      document.addEventListener('selectionchange', updateConsoleFocus);
+
+      // Stop keyboard events from propagating to game canvas/window listeners when console is focused or active element is within console/inputs
+      const blockGameKeys = (e) => {
+        const active = document.activeElement;
+        const isInput = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
+        const inConsole = consoleModal && consoleModal.contains(active);
+        
+        if (window.__isConsoleFocused || isInput || inConsole) {
+          // Allow keys to reach the input/console, but stop immediate propagation to other window/document listeners attached by the game
+          e.stopImmediatePropagation();
+        }
+      };
+
+      // Add high-priority capture phase listeners on window and document
+      window.addEventListener('keydown', blockGameKeys, true);
+      window.addEventListener('keyup', blockGameKeys, true);
+      window.addEventListener('keypress', blockGameKeys, true);
+      document.addEventListener('keydown', blockGameKeys, true);
+      document.addEventListener('keyup', blockGameKeys, true);
+      document.addEventListener('keypress', blockGameKeys, true);
     })();
 
     function sanitizeGameName(name) {
