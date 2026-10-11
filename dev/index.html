@@ -307,43 +307,64 @@
 
       <div class="h-4 w-px bg-slate-800 hidden sm:block"></div>
 
-      <!-- Export Dropdown -->
-      <div class="relative inline-block text-left" id="export-dropdown-container">
-        <button id="export-dropdown-btn" title="Export options"
-          class="h-7 w-7 sm:h-8 sm:w-auto sm:px-2.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 hover:border-slate-700 active:scale-95 text-xs font-medium transition flex items-center justify-center gap-1.5 shadow-sm">
-          <i class="fa-solid fa-file-arrow-down text-slate-400 text-xs"></i>
-          <span class="hidden md:inline">Export</span>
-          <i class="fa-solid fa-chevron-down text-[9px] text-slate-400 hidden md:inline ml-0.5"></i>
+      <!-- Consolidated File Menu Dropdown (Import & horizontal Export options on PC & mobile) -->
+      <div class="relative inline-block text-left" id="file-dropdown-container">
+        <button id="file-dropdown-btn" title="File options (Import, Export)"
+          class="h-7 px-2 sm:h-8 sm:px-2.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 hover:border-slate-700 active:scale-95 text-xs font-medium transition flex items-center justify-center gap-1.5 shadow-sm">
+          <i class="fa-regular fa-folder-open text-indigo-400 text-xs"></i>
+          <span>File</span>
+          <i class="fa-solid fa-chevron-down text-[9px] text-slate-400 ml-0.5"></i>
         </button>
 
-        <div id="export-dropdown-menu"
-          class="hidden absolute left-0 mt-1.5 w-48 rounded-xl bg-[#111520] border border-slate-800 shadow-2xl py-1.5 z-50 text-xs focus:outline-none">
-          <button id="export-html-btn"
-            class="w-full text-left px-3 py-2 text-slate-200 hover:bg-indigo-600/20 hover:text-white flex items-center gap-2.5 transition">
-            <i class="fa-solid fa-file-code text-indigo-400 text-xs w-4 text-center"></i>
-            <div>
-              <div class="font-medium text-xs">Export .html</div>
-              <div class="text-[10px] text-slate-400">Standalone game file</div>
+        <!-- Integrated Dropdown Menu -->
+        <div id="file-dropdown-menu"
+          class="hidden absolute left-0 mt-1.5 w-72 sm:w-80 max-w-[90vw] rounded-xl bg-[#111520]/95 backdrop-blur-xl border border-slate-800 shadow-2xl p-2.5 z-50 text-xs focus:outline-none space-y-2">
+          
+          <!-- Import Section -->
+          <div>
+            <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider px-1 pb-1">Import</div>
+            <button id="import-standalone-btn" title="Import a .html or .dev file"
+              class="w-full text-left px-2.5 py-2 rounded-lg text-slate-200 hover:bg-indigo-600/20 hover:text-white flex items-center gap-2.5 transition group">
+              <div class="w-7 h-7 rounded bg-slate-800/80 group-hover:bg-indigo-600/30 flex items-center justify-center shrink-0 transition">
+                <i class="fa-solid fa-file-arrow-up text-indigo-400 text-xs"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="font-medium text-xs text-white">Import File</div>
+                <div class="text-[10px] text-slate-400">Load a standalone .html or .dev project</div>
+              </div>
+            </button>
+            <input type="file" id="import-file-input" accept=".html,.dev,text/html,application/json" class="hidden" />
+          </div>
+
+          <div class="h-px bg-slate-800/80 my-1"></div>
+
+          <!-- Export Section with Horizontal Options -->
+          <div>
+            <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider px-1 pb-1">Export</div>
+            <div class="grid grid-cols-2 gap-2 pt-0.5">
+              <!-- Export .html (Horizontal button) -->
+              <button id="export-html-btn"
+                class="flex flex-col items-start gap-1 p-2 rounded-lg bg-slate-900/90 hover:bg-indigo-600/25 border border-slate-800 hover:border-indigo-500/50 text-slate-200 hover:text-white transition group text-left">
+                <div class="flex items-center gap-1.5 text-xs font-medium text-white">
+                  <i class="fa-solid fa-file-code text-indigo-400 text-xs"></i>
+                  <span>Export .html</span>
+                </div>
+                <span class="text-[9px] text-slate-400 group-hover:text-slate-300 leading-tight">Standalone game file</span>
+              </button>
+
+              <!-- Export .dev (Horizontal button) -->
+              <button id="export-dev-btn"
+                class="flex flex-col items-start gap-1 p-2 rounded-lg bg-slate-900/90 hover:bg-indigo-600/25 border border-slate-800 hover:border-emerald-500/50 text-slate-200 hover:text-white transition group text-left">
+                <div class="flex items-center gap-1.5 text-xs font-medium text-white">
+                  <i class="fa-solid fa-code-branch text-emerald-400 text-xs"></i>
+                  <span>Export .dev</span>
+                </div>
+                <span class="text-[9px] text-slate-400 group-hover:text-slate-300 leading-tight">Game + full history</span>
+              </button>
             </div>
-          </button>
-          <button id="export-dev-btn"
-            class="w-full text-left px-3 py-2 text-slate-200 hover:bg-indigo-600/20 hover:text-white flex items-center gap-2.5 transition">
-            <i class="fa-solid fa-code-branch text-emerald-400 text-xs w-4 text-center"></i>
-            <div>
-              <div class="font-medium text-xs">Export .dev</div>
-              <div class="text-[10px] text-slate-400">Game code + full history</div>
-            </div>
-          </button>
+          </div>
         </div>
       </div>
-
-      <!-- Import Button (Icon only on mobile, text on desktop) -->
-      <button id="import-standalone-btn" title="Import a .html or .dev file"
-        class="h-7 w-7 sm:h-8 sm:w-auto sm:px-2.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 hover:border-slate-700 active:scale-95 text-xs font-medium transition flex items-center justify-center gap-1.5 shadow-sm">
-        <i class="fa-solid fa-file-arrow-up text-slate-400 text-xs"></i>
-        <span class="hidden md:inline">Import</span>
-      </button>
-      <input type="file" id="import-file-input" accept=".html,.dev,text/html,application/json" class="hidden" />
 
       <!-- View Code Button -->
       <button id="view-code-btn" title="View Current Code"
