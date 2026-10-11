@@ -286,11 +286,11 @@
     /* Alchemical / Mystical Branding Styles */
     .alchemical-brand {
       font-family: 'Cinzel Decorative', serif;
-      background: linear-gradient(135deg, #ffd700 0%, #ffae19 25%, #f59e0b 50%, #d97706 75%, #fef08a 100%);
+      background: linear-gradient(135deg, #e0f2fe 0%, #38bdf8 25%, #0284c7 50%, #60a5fa 75%, #bae6fd 100%);
       background-size: 200% auto;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      text-shadow: 0 0 16px rgba(245, 158, 11, 0.45), 0 0 30px rgba(217, 119, 6, 0.25);
+      text-shadow: 0 0 16px rgba(56, 189, 248, 0.5), 0 0 32px rgba(14, 165, 233, 0.3);
       letter-spacing: 0.12em;
       filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
       animation: alchemicalGlow 6s ease-in-out infinite alternate;
@@ -300,23 +300,23 @@
     @keyframes alchemicalGlow {
       0% {
         background-position: 0% 50%;
-        filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.35)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.9));
+        filter: drop-shadow(0 0 5px rgba(56, 189, 248, 0.45)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.9));
       }
       50% {
         background-position: 100% 50%;
-        filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.6)) drop-shadow(0 0 18px rgba(180, 83, 9, 0.4));
+        filter: drop-shadow(0 0 12px rgba(56, 189, 248, 0.75)) drop-shadow(0 0 22px rgba(2, 132, 199, 0.5));
       }
       100% {
         background-position: 0% 50%;
-        filter: drop-shadow(0 0 5px rgba(245, 158, 11, 0.4)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.9));
+        filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.5)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.9));
       }
     }
 
     .alchemical-badge {
-      background: radial-gradient(circle at 30% 30%, #3b2063 0%, #1e1135 60%, #0d0818 100%);
-      border: 1px solid rgba(245, 158, 11, 0.4);
-      box-shadow: 0 0 12px rgba(217, 119, 6, 0.3), inset 0 0 6px rgba(245, 158, 11, 0.25);
-      color: #fbbf24;
+      background: radial-gradient(circle at 30% 30%, #0369a1 0%, #0c2d48 60%, #031525 100%);
+      border: 1px solid rgba(56, 189, 248, 0.45);
+      box-shadow: 0 0 14px rgba(14, 165, 233, 0.4), inset 0 0 7px rgba(56, 189, 248, 0.3);
+      color: #38bdf8;
     }
   </style>
 </head>
@@ -335,7 +335,7 @@
       <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
         <div
           class="w-7 h-7 rounded-lg alchemical-badge flex items-center justify-center shadow-sm">
-          <i class="fa-solid fa-flask text-xs text-amber-400"></i>
+          <i class="fa-solid fa-flask text-xs text-sky-400"></i>
         </div>
         <span class="font-bold text-xs sm:text-sm tracking-wider alchemical-brand hidden md:inline">Paracelsus</span>
       </div>
