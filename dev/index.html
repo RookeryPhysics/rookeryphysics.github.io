@@ -168,29 +168,28 @@
         <i class="fa-solid fa-code text-indigo-400 text-xs"></i>
         <span class="hidden xs:inline sm:inline">Code</span>
       </button>
+
+      <!-- Console Modal Trigger Button -->
+      <button id="toggle-console-btn" title="Toggle Draggable Console Session"
+        class="h-7 px-2 sm:h-8 sm:px-2.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 hover:border-slate-700 active:scale-95 text-xs font-medium transition flex items-center gap-1 sm:gap-1.5 shadow-sm">
+        <i class="fa-solid fa-terminal text-indigo-400 text-xs"></i>
+        <span class="hidden xs:inline sm:inline">Console</span>
+      </button>
     </div>
 
-      <!-- Console Modal Trigger Button in Header -->
-      <button id="toggle-console-btn" title="Toggle Console Session Window"
-        class="h-7 px-2 sm:h-8 sm:px-2.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 hover:text-white border border-indigo-500/30 hover:border-indigo-500/50 active:scale-95 text-xs font-medium transition flex items-center gap-1.5 shadow-sm">
-        <i class="fa-solid fa-terminal text-indigo-400 text-xs"></i>
-        <span class="hidden xs:inline">Console</span>
-      </button>
-
-      <div class="w-px h-3.5 sm:h-4 bg-slate-800 mx-0.5"></div>
-
+    <!-- Top Right: Settings & History right beside each other -->
+    <div class="flex items-center gap-1 sm:gap-1.5">
       <!-- Settings Modal Trigger -->
       <button id="open-settings-modal-btn" title="Settings & API Key"
-        class="h-7 px-1.5 sm:h-8 sm:px-2.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 hover:border-slate-700 active:scale-95 text-xs font-medium transition flex items-center gap-1 sm:gap-1.5 shadow-sm">
+        class="h-7 px-2 sm:h-8 sm:px-2.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 hover:border-slate-700 active:scale-95 text-xs font-medium transition flex items-center gap-1.5 shadow-sm">
         <i class="fa-solid fa-gear text-slate-400 text-xs"></i>
         <span class="hidden md:inline">Settings</span>
         <span id="api-status-badge" class="w-2 h-2 rounded-full bg-rose-500" title="API Key Status"></span>
       </button>
 
-      <div class="w-px h-3.5 sm:h-4 bg-slate-800 mx-0.5"></div>
-
+      <!-- History Modal Trigger -->
       <button id="toggle-history-btn"
-        class="h-7 px-2 sm:h-8 sm:px-2.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 hover:border-slate-700 active:scale-95 text-xs font-medium transition flex items-center gap-1 sm:gap-1.5 shadow-sm shrink-0">
+        class="h-7 px-2 sm:h-8 sm:px-2.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 hover:border-slate-700 active:scale-95 text-xs font-medium transition flex items-center gap-1.5 shadow-sm shrink-0">
         <i class="fa-solid fa-clock-rotate-left text-indigo-400 text-xs"></i>
         <span class="hidden xs:inline">History</span>
         <span id="version-count-badge"
