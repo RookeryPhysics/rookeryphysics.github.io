@@ -195,27 +195,56 @@
   <!-- Dedicated Game Canvas Viewport -->
   <main id="canvas-container" class="relative flex-1 w-full h-full min-h-0 bg-[#0c1017]"></main>
 
-  <!-- Bottom Workspace Toolbar & Prompt Dock -->
-  <footer class="chat-footer shrink-0 bg-[#0f131c]/95 backdrop-blur-md border-t border-slate-800/80 py-2.5 z-20">
-    <div class="max-w-3xl mx-auto">
-      <div
-        class="flex items-center gap-2 bg-[#131824] border border-slate-800 rounded-xl p-1.5 transition-all focus-within:border-indigo-500/70 focus-within:ring-2 focus-within:ring-indigo-500/20 shadow-lg">
-
-        <!-- Status Indicator Pill -->
-        <div id="status-badge"
-          class="flex items-center gap-1.5 h-7 px-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-[10px] font-mono font-medium shrink-0"
-          title="Engine Status">
-          <div id="status-indicator" class="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
-          <span id="status-text" class="hidden sm:inline">Ready</span>
+  <!-- Console-styled Chat Interface Dock -->
+  <footer class="chat-footer shrink-0 bg-[#0c1017]/95 backdrop-blur-md border-t border-slate-800/80 z-20 font-mono flex flex-col">
+    <div class="w-full max-w-4xl mx-auto px-2 sm:px-3 pt-2 pb-1.5 flex flex-col">
+      <!-- Console Header Bar -->
+      <div class="flex items-center justify-between px-2.5 py-1 bg-[#101522] border border-slate-800/90 rounded-t-lg text-[11px] text-slate-400 select-none">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-terminal text-indigo-400 text-[10px]"></i>
+          <span class="font-medium text-slate-300">CONSOLE SESSION</span>
+          <span id="chat-count-badge" class="text-[9px] px-1 py-0.2 rounded bg-slate-800/80 text-slate-400 border border-slate-700/50">0 turns</span>
         </div>
 
-        <input id="prompt-input" type="text" placeholder="Describe changes to the Three.js scene..."
-          class="flex-1 bg-transparent px-2.5 py-1 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none"
-          autocomplete="off" />
+        <div class="flex items-center gap-2">
+          <!-- Status Indicator Pill -->
+          <div id="status-badge"
+            class="flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-[10px] font-medium"
+            title="Engine Status">
+            <div id="status-indicator" class="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
+            <span id="status-text">Ready</span>
+          </div>
+
+          <!-- New Chat Button -->
+          <button id="new-chat-btn" title="Clear chat context and start fresh conversation"
+            class="h-6 px-2 rounded bg-slate-900 hover:bg-slate-800 active:scale-95 text-slate-300 hover:text-white border border-slate-700/80 transition flex items-center gap-1.5 text-[10px]">
+            <i class="fa-solid fa-plus text-indigo-400 text-[9px]"></i>
+            <span>New Chat</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Console Chat Messages Output Log -->
+      <div id="chat-messages-container"
+        class="h-32 sm:h-40 max-h-48 overflow-y-auto p-2.5 bg-[#080b11] border-x border-slate-800/90 text-xs text-slate-300 space-y-2 select-text font-mono leading-relaxed">
+        <div id="chat-welcome-msg" class="text-[11px] text-slate-500 italic py-1 border-b border-slate-800/40">
+          [session initialized] gpt-6-luna console ready. Enter prompt commands below.
+        </div>
+      </div>
+
+      <!-- Console Command Input Box -->
+      <div
+        class="flex items-center gap-2 bg-[#0e131e] border border-slate-800/90 rounded-b-lg p-1.5 transition-all focus-within:border-indigo-500/70 focus-within:ring-1 focus-within:ring-indigo-500/30">
+        
+        <span class="text-indigo-400 pl-2 font-bold select-none text-xs">&gt;</span>
+
+        <input id="prompt-input" type="text" placeholder="Send prompt command to engine..."
+          class="flex-1 bg-transparent px-1.5 py-1 text-xs text-slate-100 placeholder-slate-500 focus:outline-none font-mono"
+          autocomplete="off" spellcheck="false" />
 
         <button id="submit-btn"
-          class="h-7 shrink-0 flex items-center justify-center gap-1.5 px-3 sm:px-3.5 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-xs font-semibold rounded-lg transition duration-150 shadow-sm disabled:opacity-40 disabled:pointer-events-none">
-          <span id="btn-text">Apply</span>
+          class="h-7 shrink-0 flex items-center justify-center gap-1.5 px-3 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-xs font-semibold rounded transition duration-150 shadow-sm disabled:opacity-40 disabled:pointer-events-none font-mono">
+          <span id="btn-text">Send</span>
           <svg id="btn-spinner" class="hidden animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor"
@@ -501,6 +530,10 @@ Rules for the <code> tag:
       return date.toLocaleDateString();
     }
 
+    // Chat Session History State
+    // Format: Array of { role: 'user' | 'assistant', content: string, plan?: string }
+    const chatSession = [];
+
     // DOM Elements
     const input = document.getElementById('prompt-input');
     const submitBtn = document.getElementById('submit-btn');
@@ -510,6 +543,10 @@ Rules for the <code> tag:
     const statusBadge = document.getElementById('status-badge');
     const statusText = document.getElementById('status-text');
     const toast = document.getElementById('toast');
+
+    const chatMessagesContainer = document.getElementById('chat-messages-container');
+    const newChatBtn = document.getElementById('new-chat-btn');
+    const chatCountBadge = document.getElementById('chat-count-badge');
 
     const versionCountBadge = document.getElementById('version-count-badge');
 
@@ -547,6 +584,102 @@ Rules for the <code> tag:
     const settingsKeyStatus = document.getElementById('settings-key-status');
 
     let viewedCodeString = '';
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function updateChatCountBadge() {
+      if (!chatCountBadge) return;
+      const userCount = chatSession.filter(m => m.role === 'user').length;
+      chatCountBadge.textContent = `${userCount} turn${userCount === 1 ? '' : 's'}`;
+    }
+
+    function scrollChatToBottom() {
+      if (chatMessagesContainer) {
+        chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+      }
+    }
+
+    function appendChatMessage(role, text, meta = {}) {
+      if (!chatMessagesContainer) return;
+      
+      const welcome = document.getElementById('chat-welcome-msg');
+      if (welcome) {
+        welcome.remove();
+      }
+
+      const msgDiv = document.createElement('div');
+      msgDiv.className = 'flex flex-col gap-1 py-1 border-b border-slate-800/50 last:border-b-0';
+
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+      if (role === 'user') {
+        msgDiv.innerHTML = `
+          <div class="flex items-center gap-1.5 text-[10px] text-slate-500 font-mono">
+            <span class="text-indigo-400 font-semibold">&gt; USER</span>
+            <span>&bull;</span>
+            <span>${timeStr}</span>
+          </div>
+          <div class="text-xs text-slate-100 pl-3 border-l-2 border-indigo-500/70 whitespace-pre-wrap break-words font-mono font-medium">${escapeHtml(text)}</div>
+        `;
+      } else if (role === 'system') {
+        msgDiv.innerHTML = `
+          <div class="text-[11px] text-slate-500 italic py-0.5 font-mono">
+            [system] ${escapeHtml(text)}
+          </div>
+        `;
+      } else if (role === 'error') {
+        msgDiv.innerHTML = `
+          <div class="flex items-center gap-1.5 text-[10px] text-rose-400 font-mono">
+            <i class="fa-solid fa-triangle-exclamation text-[9px]"></i>
+            <span class="font-semibold">ERROR</span>
+            <span>&bull;</span>
+            <span>${timeStr}</span>
+          </div>
+          <div class="text-xs text-rose-300 pl-3 border-l-2 border-rose-500/70 whitespace-pre-wrap break-words font-mono">${escapeHtml(text)}</div>
+        `;
+      } else {
+        // Assistant
+        const safePlan = escapeHtml(text || 'Code changes generated and compiled.');
+        const commitInfo = meta.commitId ? `<span class="text-[9px] bg-slate-800 px-1 py-0.2 rounded border border-slate-700 text-slate-400">${escapeHtml(meta.commitId)}</span>` : '';
+        msgDiv.innerHTML = `
+          <div class="flex items-center gap-1.5 text-[10px] text-slate-500 font-mono">
+            <span class="text-emerald-400 font-semibold">&#9679; LUNA ENGINE</span>
+            ${commitInfo}
+            <span>&bull;</span>
+            <span>${timeStr}</span>
+          </div>
+          <div class="text-xs text-slate-300 pl-3 border-l-2 border-emerald-500/70 whitespace-pre-wrap break-words font-mono leading-relaxed">${safePlan}</div>
+        `;
+      }
+
+      chatMessagesContainer.appendChild(msgDiv);
+      scrollChatToBottom();
+    }
+
+    function startNewChat() {
+      chatSession.length = 0;
+      if (chatMessagesContainer) {
+        chatMessagesContainer.innerHTML = `
+          <div id="chat-welcome-msg" class="text-[11px] text-slate-500 italic py-1 border-b border-slate-800/40">
+            [new session] Chat context reset. Ready for next prompt commands.
+          </div>
+        `;
+      }
+      updateChatCountBadge();
+      showToast("Started new chat session");
+    }
+
+    if (newChatBtn) {
+      newChatBtn.addEventListener('click', startNewChat);
+    }
 
     function sanitizeGameName(name) {
       if (!name || typeof name !== 'string') return '';
@@ -962,8 +1095,8 @@ Rules for the <code> tag:
       }
     }
 
-    /* OpenAI Chat Completions caller targeting gpt-6-luna */
-    async function callOpenAI({ systemPrompt, userPrompt }) {
+    /* OpenAI Chat Completions caller targeting gpt-6-luna with full conversation messages */
+    async function callOpenAI(messagesPayload) {
       const apiKey = getApiKey();
       if (!apiKey) {
         openSettingsModal('apiKey');
@@ -978,10 +1111,7 @@ Rules for the <code> tag:
         },
         body: JSON.stringify({
           model: TARGET_OPENAI_MODEL,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt }
-          ]
+          messages: messagesPayload
         })
       });
 
@@ -994,9 +1124,17 @@ Rules for the <code> tag:
       return data.choices?.[0]?.message?.content || "";
     }
 
-    /* Single-Pass AI Generation Pipeline: Short Planning -> Structured <code> Block */
+    /* Single-Pass AI Generation Pipeline with Continuous Console Session Context */
     async function applyUserPrompt(promptText) {
-      if (!promptText.trim()) return;
+      if (!promptText || !promptText.trim()) return;
+
+      const trimmedText = promptText.trim();
+      
+      // Clear input immediately as user sends request
+      input.value = '';
+
+      // Append user prompt to console chat
+      appendChatMessage('user', trimmedText);
 
       const activeCommit = versionStore.commits[versionStore.currentHeadIndex];
       const currentCode = activeCommit ? activeCommit.code : (document.getElementById('game-logic')?.textContent || '');
@@ -1004,21 +1142,42 @@ Rules for the <code> tag:
       try {
         setEngineStage('coding', 'Generating');
 
-        const userPrompt = `Current Three.js engine code:
+        // Build messages payload:
+        // 1. System Prompt
+        // 2. Prior chat history turns (if any)
+        // 3. Current user request with latest game engine code context
+        const messages = [
+          { role: "system", content: SYSTEM_PROMPT }
+        ];
+
+        // Include prior conversation turns for multi-turn conversational context
+        for (const item of chatSession) {
+          if (item.role === 'user') {
+            messages.push({ role: 'user', content: item.content });
+          } else if (item.role === 'assistant') {
+            // Include assistant plan and code from earlier turns
+            messages.push({ role: 'assistant', content: item.content });
+          }
+        }
+
+        // Current turn user message containing current state + request
+        const currentTurnUserContent = `Current Three.js engine code:
 \`\`\`javascript
 ${currentCode}
 \`\`\`
 
-User Request: "${promptText}"
+User Request: "${trimmedText}"
 
 Remember:
 1. First, write a brief architectural planning and reasoning phase outlining modifications and cleanup.
 2. Then, enclose the complete updated runnable JavaScript Three.js game code inside an explicit <code>...</code> tag without markdown code fences inside the tag.`;
 
-        const rawResponse = await callOpenAI({
-          systemPrompt: SYSTEM_PROMPT,
-          userPrompt: userPrompt
+        messages.push({
+          role: "user",
+          content: currentTurnUserContent
         });
+
+        const rawResponse = await callOpenAI(messages);
 
         if (!rawResponse) {
           throw new Error("AI failed to return a response.");
@@ -1038,13 +1197,31 @@ Remember:
 
         // Apply and commit
         executeEngineCode(code);
-        recordCommit(code, promptText, 'prompt', plan || 'Executed in single pass.');
+        const commit = recordCommit(code, trimmedText, 'prompt', plan || 'Executed in single pass.');
 
-        input.value = '';
+        // Save turns into active chat session context
+        chatSession.push({
+          role: 'user',
+          content: trimmedText
+        });
+        chatSession.push({
+          role: 'assistant',
+          content: rawResponse,
+          plan: plan || ''
+        });
+        updateChatCountBadge();
+
+        // Render non-code portion of response in console chat
+        const displayText = plan && plan.trim() 
+          ? plan.trim() 
+          : "Scene updated successfully. JavaScript engine compiled.";
+        appendChatMessage('assistant', displayText, { commitId: commit.id });
+
         showToast("Engine updated via gpt-6-luna");
         setEngineStage('ready');
       } catch (err) {
         console.error("Engine pipeline failed:", err);
+        appendChatMessage('error', err.message || "Failed to update scene");
         showToast(err.message || "Failed to update scene", true);
         setEngineStage('error');
       }
