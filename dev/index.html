@@ -302,10 +302,12 @@
         background-position: 0% 50%;
         filter: drop-shadow(0 0 5px rgba(56, 189, 248, 0.45)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.9));
       }
+
       50% {
         background-position: 100% 50%;
         filter: drop-shadow(0 0 12px rgba(56, 189, 248, 0.75)) drop-shadow(0 0 22px rgba(2, 132, 199, 0.5));
       }
+
       100% {
         background-position: 0% 50%;
         filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.5)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.9));
@@ -333,8 +335,7 @@
     <!-- Top Left: App Mark & Export -->
     <div class="flex items-center gap-1 sm:gap-2">
       <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
-        <div
-          class="w-7 h-7 rounded-lg alchemical-badge flex items-center justify-center shadow-sm">
+        <div class="w-7 h-7 rounded-lg alchemical-badge flex items-center justify-center shadow-sm">
           <i class="fa-solid fa-flask text-xs text-sky-400"></i>
         </div>
         <span class="font-bold text-xs sm:text-sm tracking-wider alchemical-brand hidden md:inline">Paracelsus</span>
@@ -354,13 +355,14 @@
         <!-- Integrated Dropdown Menu -->
         <div id="file-dropdown-menu"
           class="hidden absolute left-0 mt-1.5 w-72 sm:w-80 max-w-[90vw] rounded-xl bg-[#111520]/95 backdrop-blur-xl border border-slate-800 shadow-2xl p-2.5 z-50 text-xs focus:outline-none space-y-2">
-          
+
           <!-- Import Section -->
           <div>
             <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider px-1 pb-1">Import</div>
             <button id="import-standalone-btn" title="Import a .html or .dev file"
               class="w-full text-left px-2.5 py-2 rounded-lg text-slate-200 hover:bg-indigo-600/20 hover:text-white flex items-center gap-2.5 transition group">
-              <div class="w-7 h-7 rounded bg-slate-800/80 group-hover:bg-indigo-600/30 flex items-center justify-center shrink-0 transition">
+              <div
+                class="w-7 h-7 rounded bg-slate-800/80 group-hover:bg-indigo-600/30 flex items-center justify-center shrink-0 transition">
                 <i class="fa-solid fa-file-arrow-up text-indigo-400 text-xs"></i>
               </div>
               <div class="flex-1 min-w-0">
@@ -384,7 +386,8 @@
                   <i class="fa-solid fa-file-code text-indigo-400 text-xs"></i>
                   <span>Export .html</span>
                 </div>
-                <span class="text-[9px] text-slate-400 group-hover:text-slate-300 leading-tight">Standalone game file</span>
+                <span class="text-[9px] text-slate-400 group-hover:text-slate-300 leading-tight">Standalone game
+                  file</span>
               </button>
 
               <!-- Export .dev (Horizontal button) -->
@@ -394,7 +397,8 @@
                   <i class="fa-solid fa-code-branch text-emerald-400 text-xs"></i>
                   <span>Export .dev</span>
                 </div>
-                <span class="text-[9px] text-slate-400 group-hover:text-slate-300 leading-tight">Game + full history</span>
+                <span class="text-[9px] text-slate-400 group-hover:text-slate-300 leading-tight">Game + full
+                  history</span>
               </button>
             </div>
           </div>
@@ -755,7 +759,7 @@
     /* Single-Pass AI Generation Engine & Version Control (Cloudflare Proxy / OpenAI) */
 
     const TARGET_OPENAI_MODEL = "gpt-6-luna";
-    const DEFAULT_WORKER_ENDPOINT = "https://inference.mikedangermcgee.workers.dev/";
+    const DEFAULT_WORKER_ENDPOINT = "https://test.mikedangermcgee.workers.dev/";
 
     const SYSTEM_PROMPT = `You are an expert Three.js and WebGL engine programmer and architect.
 When given the current Three.js code and a user request:
