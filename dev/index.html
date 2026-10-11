@@ -1201,11 +1201,75 @@ Rules for the <code> tag:
 
     let inferenceCycleInterval = null;
     const INFERENCE_MESSAGES = [
+      // Original core prompts
       "Inferring scene changes...",
       "Untangling it from the matrix...",
       "Draining rivers for cooling water...",
       "Consulting with other agents...",
-      "Preparing code..."
+      "Preparing code...",
+      // Competent physics / engine operations
+      "Resolving rigid body constraints...",
+      "Calculating contact manifolds...",
+      "Integrating symplectic Euler steps...",
+      "Verifying momentum conservation...",
+      "Optimizing spatial hash grids...",
+      "Balancing kinetic energy tensors...",
+      "Refactoring Three.js geometry...",
+      "Synthesizing animation keyframes...",
+      "Running continuous collision tests...",
+      "Parsing scene graph hierarchy...",
+      "Rebuilding vertex buffer arrays...",
+      "Computing angular velocity vectors...",
+      "Normalizing restitution coefficients...",
+      "Calibrating gravitational field...",
+      "Tracing raycast intersections...",
+      "Refining torque integrals...",
+      "Validating delta time bounds...",
+      "Synchronizing rendering loop...",
+      "Solving joint limit equations...",
+      // Humorous / witty tech humor
+      "Spinning up hamster wheels...",
+      "Bribing the GPU scheduler...",
+      "Counting floating point infinities...",
+      "Whispering to the garbage collector...",
+      "Defying third law of thermodynamics...",
+      "Negotiating with rogue photons...",
+      "Warming up the quantum flux capacitor...",
+      "Extracting wisdom from stack traces...",
+      "Feeding treats to the neural network...",
+      "Polishing shiny metallic polygons...",
+      "Reticulating 3D splines...",
+      "Asking rubber duck for architecture advice...",
+      "Unrolling infinite recursion loops...",
+      "Convincing physics engine gravity is real...",
+      "Aligning cosmic memory addresses...",
+      "Debugging parallel universe simulations...",
+      "Searching for dropped semicolon in vacuum...",
+      "Teaching particles how to collide politely...",
+      "Calibrating tea-to-code converter...",
+      // Competent code / compilation & AST tasks
+      "Generating reactive state hooks...",
+      "Minifying inline shader routines...",
+      "Validating AST syntax nodes...",
+      "Typechecking runtime interfaces...",
+      "Resolving asynchronous promises...",
+      "Allocating low-overhead typed arrays...",
+      "Pruning redundant scene branches...",
+      "Benchmarking draw call efficiency...",
+      "Compiling WebGL fragment routines...",
+      "Injecting deterministic seed values...",
+      "Inspecting boundary conditions...",
+      "Profiling microsecond frame budgets...",
+      // Playful agent / sci-fi prompts
+      "Consulting the oracle of latency...",
+      "Defragmenting synthetic memories...",
+      "Compressing entropy into bytes...",
+      "Calibrating digital gyro sensors...",
+      "Summoning linear algebra spirits...",
+      "Polishing the event dispatch queue...",
+      "Checking Schrödinger's cat velocity...",
+      "Aligning multi-threaded chakras...",
+      "Stabilizing tachyon emitter grid..."
     ];
 
     function showInferenceIndicator() {
@@ -1221,6 +1285,7 @@ Rules for the <code> tag:
       indicatorDiv.className = 'flex flex-col gap-1.5 py-1.5 border-b border-slate-800/50';
 
       const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      let msgIndex = Math.floor(Math.random() * INFERENCE_MESSAGES.length);
 
       indicatorDiv.innerHTML = `
         <div class="flex items-center gap-1.5 text-[10px] text-slate-500 font-mono">
@@ -1234,14 +1299,13 @@ Rules for the <code> tag:
             <span class="inference-dot inline-block w-1.5 h-1.5 rounded-full bg-indigo-300 shadow-sm shadow-indigo-300/50"></span>
             <span class="inference-dot inline-block w-1.5 h-1.5 rounded-full bg-indigo-200 shadow-sm shadow-indigo-200/50"></span>
           </div>
-          <span id="chat-inference-text" class="text-[11px] text-indigo-300/90 font-mono italic tracking-wide transition-opacity duration-300">${INFERENCE_MESSAGES[0]}</span>
+          <span id="chat-inference-text" class="text-[11px] text-indigo-300/90 font-mono italic tracking-wide transition-opacity duration-300">${INFERENCE_MESSAGES[msgIndex]}</span>
         </div>
       `;
 
       chatMessagesContainer.appendChild(indicatorDiv);
       scrollChatToBottom();
 
-      let msgIndex = 0;
       inferenceCycleInterval = setInterval(() => {
         const textEl = document.getElementById('chat-inference-text');
         if (!textEl) {
@@ -1249,7 +1313,13 @@ Rules for the <code> tag:
           inferenceCycleInterval = null;
           return;
         }
-        msgIndex = (msgIndex + 1) % INFERENCE_MESSAGES.length;
+        if (INFERENCE_MESSAGES.length > 1) {
+          let nextIndex;
+          do {
+            nextIndex = Math.floor(Math.random() * INFERENCE_MESSAGES.length);
+          } while (nextIndex === msgIndex);
+          msgIndex = nextIndex;
+        }
         textEl.style.opacity = '0';
         setTimeout(() => {
           if (textEl && document.getElementById('chat-inference-indicator')) {
@@ -1257,7 +1327,7 @@ Rules for the <code> tag:
             textEl.style.opacity = '1';
           }
         }, 150);
-      }, 2400);
+      }, 4800);
     }
 
     function hideInferenceIndicator() {
