@@ -642,6 +642,24 @@ Rules for the <code> tag:
         .replace(/'/g, '&#039;');
     }
 
+    /**
+     * Minifies JavaScript engine code for LLM prompt context to reduce token count and speed up inference.
+     * Safely strips block comments and line comments while preserving code structure and collapsing multiple empty lines.
+     */
+    function compactCodeForPrompt(rawCode) {
+      if (!rawCode || typeof rawCode !== 'string') return '';
+      return rawCode
+        // Remove multi-line block comments (/* ... */)
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        // Remove single-line comments (// ...) but avoid stripping http:// or https:// URLs
+        .replace(/(^|[^:])\/\/[^\r\n]*/g, '$1')
+        // Trim trailing whitespace from each line
+        .replace(/[ \t]+$/gm, '')
+        // Collapse 3 or more consecutive newlines into a single empty line
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+    }
+
     function updateChatCountBadge() {
       if (!chatCountBadge) return;
       const userCount = chatSession.filter(m => m.role === 'user').length;
@@ -1543,10 +1561,13 @@ Rules for the <code> tag:
           }
         }
 
+        // Minify and strip redundant comments & whitespace to minimize prompt tokens and maximize inference speed
+        const promptContextCode = compactCodeForPrompt(currentCode);
+
         // Current turn user message containing current state + request
         const currentTurnUserContent = `Current Three.js engine code:
 \`\`\`javascript
-${currentCode}
+${promptContextCode}
 \`\`\`
 
 User Request: "${trimmedText}"
