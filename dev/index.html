@@ -442,31 +442,6 @@
       cube.receiveShadow = true;
       scene.add(cube);
 
-      // Palm Tree (Stylized Low-Poly)
-      const treeGroup = new THREE.Group();
-      treeGroup.position.set(8.5, 0, -7.5);
-      scene.add(treeGroup);
-
-      const trunkGeo = new THREE.CylinderGeometry(0.3, 0.5, 5, 6);
-      const trunkMat = new THREE.MeshStandardMaterial({ color: 0x8b5a2b, roughness: 0.85 });
-      const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-      trunk.position.set(-0.6, 2.5, 0.2);
-      trunk.rotation.z = 0.2;
-      trunk.castShadow = true;
-      treeGroup.add(trunk);
-
-      const leafGeo = new THREE.ConeGeometry(0.6, 2.6, 4);
-      const leafMat = new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.6 });
-      const leaves = new THREE.Group();
-      leaves.position.set(-1.1, 4.9, 0.4);
-      for (let i = 0; i < 5; i++) {
-        const leaf = new THREE.Mesh(leafGeo, leafMat);
-        leaf.rotation.z = 1.1;
-        leaf.rotation.y = (i * Math.PI * 2) / 5;
-        leaf.castShadow = true;
-        leaves.add(leaf);
-      }
-      treeGroup.add(leaves);
 
       // Animation Loop
       let animId;
