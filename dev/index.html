@@ -1117,7 +1117,7 @@ Rules for the <code> tag:
         const commitInfo = meta.commitId ? `<span class="text-[9px] bg-slate-800 px-1 py-0.2 rounded border border-slate-700 text-slate-400">${escapeHtml(meta.commitId)}</span>` : '';
         msgDiv.innerHTML = `
           <div class="flex items-center gap-1.5 text-[10px] text-slate-500 font-mono">
-            <span class="text-emerald-400 font-semibold">&#9679; LUNA ENGINE</span>
+            <span class="text-emerald-400 font-semibold">&#9679; AGENT</span>
             ${commitInfo}
             <span>&bull;</span>
             <span>${timeStr}</span>
@@ -1215,7 +1215,7 @@ Rules for the <code> tag:
 
       indicatorDiv.innerHTML = `
         <div class="flex items-center gap-1.5 text-[10px] text-slate-500 font-mono">
-          <span class="text-indigo-400 font-semibold">&#9679; LUNA INFERENCE</span>
+          <span class="text-indigo-400 font-semibold">&#9679; AGENT</span>
           <span>&bull;</span>
           <span>${timeStr}</span>
         </div>
@@ -1784,7 +1784,7 @@ Rules for the <code> tag:
 
       modalCodeTitle.textContent = `${commit.id} (${commit.hash}) - ${commit.message}`;
       viewedCodeString = commit.code;
-      modalCodeContent.textContent = viewedCodeString;
+      modalCodeContent.innerHTML = highlightJavaScriptCode(viewedCodeString);
       codeModal.classList.remove('opacity-0', 'pointer-events-none');
     }
 
@@ -1800,7 +1800,7 @@ Rules for the <code> tag:
         const code = currentScript ? currentScript.textContent : '';
         modalCodeTitle.textContent = "Current Engine Code";
         viewedCodeString = code;
-        modalCodeContent.textContent = viewedCodeString;
+        modalCodeContent.innerHTML = highlightJavaScriptCode(viewedCodeString);
         codeModal.classList.remove('opacity-0', 'pointer-events-none');
       }
     }
