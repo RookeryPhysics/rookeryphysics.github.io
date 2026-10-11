@@ -1436,8 +1436,8 @@ Rules for the <code> tag:
           if (item.role === 'user') {
             messages.push({ role: 'user', content: item.content });
           } else if (item.role === 'assistant') {
-            // Include assistant plan and code from earlier turns
-            messages.push({ role: 'assistant', content: item.content });
+            // Include assistant plan/summary only (strip redundant code block to keep prompt tokens small and inference fast)
+            messages.push({ role: 'assistant', content: item.plan || "Code updated." });
           }
         }
 
