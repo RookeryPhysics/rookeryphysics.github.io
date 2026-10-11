@@ -1102,15 +1102,35 @@ Rules for the <code> tag:
           </div>
         `;
       } else if (role === 'error') {
+        const errorText = text || 'An error occurred';
         msgDiv.innerHTML = `
-          <div class="flex items-center gap-1.5 text-[10px] text-rose-400 font-mono">
-            <i class="fa-solid fa-triangle-exclamation text-[9px]"></i>
-            <span class="font-semibold">ERROR</span>
-            <span>&bull;</span>
-            <span>${timeStr}</span>
+          <div class="flex items-center justify-between gap-1.5 text-[10px] text-rose-400 font-mono">
+            <div class="flex items-center gap-1.5">
+              <i class="fa-solid fa-triangle-exclamation text-[9px]"></i>
+              <span class="font-semibold">ERROR</span>
+              <span>&bull;</span>
+              <span>${timeStr}</span>
+            </div>
+            <button type="button" class="fix-error-btn inline-flex items-center gap-1 px-2 py-0.5 rounded bg-rose-500/20 hover:bg-rose-500/35 active:scale-95 text-rose-200 hover:text-white border border-rose-500/40 text-[10px] font-mono font-medium transition cursor-pointer shadow-sm" title="Send error back into console to automatically fix">
+              <i class="fa-solid fa-wrench text-[9px]"></i>
+              <span>Fix</span>
+            </button>
           </div>
-          <div class="text-xs text-rose-300 pl-3 border-l-2 border-rose-500/70 whitespace-pre-wrap break-words font-mono">${escapeHtml(text)}</div>
+          <div class="text-xs text-rose-300 pl-3 border-l-2 border-rose-500/70 whitespace-pre-wrap break-words font-mono">${escapeHtml(errorText)}</div>
         `;
+        const fixBtn = msgDiv.querySelector('.fix-error-btn');
+        if (fixBtn) {
+          fixBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const fixPrompt = `Fix error: ${errorText}`;
+            if (input) {
+              input.value = fixPrompt;
+            }
+            if (typeof applyUserPrompt === 'function') {
+              applyUserPrompt(fixPrompt);
+            }
+          });
+        }
       } else {
         // Assistant
         const safePlan = escapeHtml(text || 'Code changes generated and compiled.');
@@ -1206,6 +1226,7 @@ Rules for the <code> tag:
       "Untangling it from the matrix...",
       "Draining rivers for cooling water...",
       "Consulting with other agents...",
+      "Borrowing proprietary data from the cloud...",
       "Preparing code...",
       // Competent physics / engine operations
       "Resolving rigid body constraints...",
@@ -2518,6 +2539,18 @@ ${gameCode}
       setTimeout(updateAppHeight, 150);
     });
     updateAppHeight();
+
+    // Global runtime error monitor: surface script crashes directly to the console with the Fix button
+    window.addEventListener('error', (event) => {
+      // Only report errors originating from game script execution or general runtime
+      const errorMsg = event.message || (event.error && event.error.message) || 'Uncaught runtime script error';
+      appendChatMessage('error', `Runtime Error: ${errorMsg}`);
+    });
+
+    window.addEventListener('unhandledrejection', (event) => {
+      const reasonMsg = event.reason ? (event.reason.message || String(event.reason)) : 'Unhandled promise rejection';
+      appendChatMessage('error', `Promise Rejection: ${reasonMsg}`);
+    });
 
     window.addEventListener('load', () => {
       updateAppHeight();
