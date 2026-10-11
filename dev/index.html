@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
-  <title>LEAH</title>
+  <title>Paracelsus</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
     rel="stylesheet">
   <style>
     :root {
@@ -282,6 +282,42 @@
     .hl-punct {
       color: #94a3b8;
     }
+
+    /* Alchemical / Mystical Branding Styles */
+    .alchemical-brand {
+      font-family: 'Cinzel Decorative', serif;
+      background: linear-gradient(135deg, #ffd700 0%, #ffae19 25%, #f59e0b 50%, #d97706 75%, #fef08a 100%);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 16px rgba(245, 158, 11, 0.45), 0 0 30px rgba(217, 119, 6, 0.25);
+      letter-spacing: 0.12em;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
+      animation: alchemicalGlow 6s ease-in-out infinite alternate;
+      position: relative;
+    }
+
+    @keyframes alchemicalGlow {
+      0% {
+        background-position: 0% 50%;
+        filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.35)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.9));
+      }
+      50% {
+        background-position: 100% 50%;
+        filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.6)) drop-shadow(0 0 18px rgba(180, 83, 9, 0.4));
+      }
+      100% {
+        background-position: 0% 50%;
+        filter: drop-shadow(0 0 5px rgba(245, 158, 11, 0.4)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.9));
+      }
+    }
+
+    .alchemical-badge {
+      background: radial-gradient(circle at 30% 30%, #3b2063 0%, #1e1135 60%, #0d0818 100%);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      box-shadow: 0 0 12px rgba(217, 119, 6, 0.3), inset 0 0 6px rgba(245, 158, 11, 0.25);
+      color: #fbbf24;
+    }
   </style>
 </head>
 
@@ -298,10 +334,10 @@
     <div class="flex items-center gap-1 sm:gap-2">
       <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
         <div
-          class="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-sm shadow-indigo-600/30">
-          <i class="fa-solid fa-cube text-xs"></i>
+          class="w-7 h-7 rounded-lg alchemical-badge flex items-center justify-center shadow-sm">
+          <i class="fa-solid fa-flask text-xs text-amber-400"></i>
         </div>
-        <span class="font-bold text-xs sm:text-sm tracking-tight text-white hidden md:inline">LEAH</span>
+        <span class="font-bold text-xs sm:text-sm tracking-wider alchemical-brand hidden md:inline">Paracelsus</span>
       </div>
 
       <div class="h-4 w-px bg-slate-800 hidden sm:block"></div>
