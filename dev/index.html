@@ -1199,6 +1199,15 @@ Rules for the <code> tag:
       };
     }
 
+    let inferenceCycleInterval = null;
+    const INFERENCE_MESSAGES = [
+      "Inferring scene changes...",
+      "Untangling it from the matrix...",
+      "Draining rivers for cooling water...",
+      "Consulting with other agents...",
+      "Preparing code..."
+    ];
+
     function showInferenceIndicator() {
       if (!chatMessagesContainer) return;
       // Remove any existing indicator first
@@ -1225,15 +1234,37 @@ Rules for the <code> tag:
             <span class="inference-dot inline-block w-1.5 h-1.5 rounded-full bg-indigo-300 shadow-sm shadow-indigo-300/50"></span>
             <span class="inference-dot inline-block w-1.5 h-1.5 rounded-full bg-indigo-200 shadow-sm shadow-indigo-200/50"></span>
           </div>
-          <span class="text-[11px] text-indigo-300/90 font-mono italic tracking-wide">Inferring scene changes...</span>
+          <span id="chat-inference-text" class="text-[11px] text-indigo-300/90 font-mono italic tracking-wide transition-opacity duration-300">${INFERENCE_MESSAGES[0]}</span>
         </div>
       `;
 
       chatMessagesContainer.appendChild(indicatorDiv);
       scrollChatToBottom();
+
+      let msgIndex = 0;
+      inferenceCycleInterval = setInterval(() => {
+        const textEl = document.getElementById('chat-inference-text');
+        if (!textEl) {
+          clearInterval(inferenceCycleInterval);
+          inferenceCycleInterval = null;
+          return;
+        }
+        msgIndex = (msgIndex + 1) % INFERENCE_MESSAGES.length;
+        textEl.style.opacity = '0';
+        setTimeout(() => {
+          if (textEl && document.getElementById('chat-inference-indicator')) {
+            textEl.textContent = INFERENCE_MESSAGES[msgIndex];
+            textEl.style.opacity = '1';
+          }
+        }, 150);
+      }, 2400);
     }
 
     function hideInferenceIndicator() {
+      if (inferenceCycleInterval) {
+        clearInterval(inferenceCycleInterval);
+        inferenceCycleInterval = null;
+      }
       const existing = document.getElementById('chat-inference-indicator');
       if (existing) {
         existing.remove();
