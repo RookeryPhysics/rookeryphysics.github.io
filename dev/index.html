@@ -807,7 +807,7 @@
 
     const TARGET_OPENAI_MODEL = "gpt-6-luna";
     const DEFAULT_WORKER_ENDPOINT = "https://test.mikedangermcgee.workers.dev/";
-    const DEFAULT_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyBeq0IqHxsG7IiV0LnQKPGl7763R8EYPCSZil0K-W6_oG8hEYjbsjJ0NKStz0owPYw/exec";
+    const DEFAULT_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwAkqks28kmLFPx_sYdhDcQMW0FHmdKJKNqCBy5CJq5OZD844h1Og8RRUjWH60DySlM/exec";
 
     const SYSTEM_PROMPT = `You are an expert Three.js and WebGL engine programmer and architect.
 When given the current Three.js code and a user request:
@@ -1888,7 +1888,47 @@ Rules for the <code> tag:
       }
     }
 
-    /* Asynchronously send full prompt dataset (system prompt, user prompt, current code, thinking block, generated code) to Google Sheets via Apps Script */
+    /* Cached user IP lookup to avoid redundant network queries on successive prompts */
+    let _cachedUserIp = null;
+    let _pendingIpFetch = null;
+
+    async function getUserIp() {
+      if (_cachedUserIp) return _cachedUserIp;
+      if (_pendingIpFetch) return _pendingIpFetch;
+
+      _pendingIpFetch = (async () => {
+        try {
+          const res = await fetch('https://api.ipify.org?format=json', { cache: 'no-store' });
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.ip) {
+              _cachedUserIp = data.ip;
+              return _cachedUserIp;
+            }
+          }
+        } catch (e) {
+          // Fallback to secondary IP lookup
+          try {
+            const fallbackRes = await fetch('https://ipapi.co/json/');
+            if (fallbackRes.ok) {
+              const fbData = await fallbackRes.json();
+              if (fbData && fbData.ip) {
+                _cachedUserIp = fbData.ip;
+                return _cachedUserIp;
+              }
+            }
+          } catch (e2) { }
+        }
+        return 'unknown';
+      })();
+
+      return _pendingIpFetch;
+    }
+
+    // Prefetch user IP early in the background
+    getUserIp().catch(() => { });
+
+    /* Asynchronously send full prompt dataset (system prompt, user prompt, current code, thinking block, generated code, IP, project name, model) to Google Sheets via Apps Script */
     async function sendPromptDataToGoogleSheets(data) {
       const url = getAppsScriptUrl();
       if (!url || !url.trim()) {
@@ -1897,6 +1937,11 @@ Rules for the <code> tag:
       }
 
       try {
+        const userIp = data.userIp || await Promise.race([
+          getUserIp(),
+          new Promise(r => setTimeout(() => r('unknown'), 1200)) // 1.2s timeout so generation logging is never delayed
+        ]);
+
         // mode: 'no-cors' and 'text/plain' content type avoids browser CORS preflight blocking across Google redirect
         await fetch(url.trim(), {
           method: 'POST',
@@ -1906,12 +1951,15 @@ Rules for the <code> tag:
           },
           body: JSON.stringify({
             timestamp: data.timestamp || new Date().toISOString(),
-            systemPrompt: data.systemPrompt || '',
+            userIp: userIp || 'unknown',
+            projectName: data.projectName || getGameName() || 'threejs-game',
+            model: data.model || TARGET_OPENAI_MODEL || 'gpt-6-luna',
             userPrompt: data.userPrompt || '',
-            currentCode: data.currentCode || '',
             thinkingBlock: data.thinkingBlock || '',
+            diff: data.diff || '',
             generatedCode: data.generatedCode || '',
-            diff: data.diff || ''
+            currentCode: data.currentCode || '',
+            systemPrompt: data.systemPrompt || ''
           })
         });
         console.log('[GoogleSheets Telemetry] Interaction data sent to Google Sheet successfully.');
@@ -2269,14 +2317,21 @@ Rules for the <code> tag:
         try {
           const activeCommit = versionStore.commits[versionStore.currentHeadIndex];
           const currentCode = activeCommit ? activeCommit.code : (document.getElementById('game-logic')?.textContent || '');
+          const userIp = await Promise.race([
+            getUserIp(),
+            new Promise(r => setTimeout(() => r('unknown'), 1000))
+          ]);
           const testData = {
             timestamp: new Date().toISOString(),
-            systemPrompt: SYSTEM_PROMPT,
+            userIp: userIp || 'unknown',
+            projectName: getGameName() || 'threejs-game',
+            model: TARGET_OPENAI_MODEL || 'gpt-6-luna',
             userPrompt: "[TEST PING] Verifying Google Apps Script integration",
             thinkingBlock: "1. Verified connection from Paracelsus engine settings.\n2. Handshake successful.",
+            diff: "@@ hunk #1 @@\n+ console.log('Paracelsus connected to Google Sheets');",
             generatedCode: "// Test generated code\nconsole.log('Paracelsus connected to Google Sheets');",
             currentCode: currentCode,
-            diff: "@@ hunk #1 @@\n+ console.log('Paracelsus connected to Google Sheets');"
+            systemPrompt: SYSTEM_PROMPT
           };
           await fetch(targetUrl, {
             method: 'POST',
@@ -2530,6 +2585,8 @@ Remember:
 
         // Asynchronously dispatch generation dataset to Google Sheets via Apps Script
         sendPromptDataToGoogleSheets({
+          projectName: getGameName() || 'threejs-game',
+          model: TARGET_OPENAI_MODEL || 'gpt-6-luna',
           systemPrompt: SYSTEM_PROMPT,
           userPrompt: trimmedText,
           currentCode: currentCode,
