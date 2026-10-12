@@ -1842,25 +1842,11 @@ Rules for the <code> tag:
       refreshApiStatus();
     }
 
-    function getApiKey() {
-      return localStorage.getItem('openai_api_key') || '';
-    }
-
-    function setApiKey(key) {
-      if (key && key.trim()) {
-        localStorage.setItem('openai_api_key', key.trim());
-      } else {
-        localStorage.removeItem('openai_api_key');
-      }
-      refreshApiStatus();
-    }
-
     function refreshApiStatus() {
-      const key = getApiKey();
       const workerUrl = getWorkerUrl();
 
-      // Inference is ready out of the box via Cloudflare worker proxy, or via custom user key
-      if (workerUrl || key) {
+      // Inference runs via Cloudflare worker proxy
+      if (workerUrl) {
         if (apiStatusBadge) apiStatusBadge.className = "w-2 h-2 rounded-full bg-emerald-400";
         if (settingsKeyStatus) {
           settingsKeyStatus.className = "text-[10px] font-mono text-emerald-400 flex items-center gap-1";
@@ -2193,27 +2179,19 @@ Rules for the <code> tag:
       }
     }
 
-    /* Inference caller supporting Cloudflare Worker proxy and direct OpenAI SSE streaming */
+    /* Inference caller supporting Cloudflare Worker proxy SSE streaming */
     async function callOpenAI(messagesPayload, onChunk) {
-      const apiKey = getApiKey();
       const workerUrl = getWorkerUrl();
 
-      let targetUrl = "https://api.openai.com/v1/chat/completions";
-      const headers = {
-        "Content-Type": "application/json"
-      };
-
-      if (apiKey) {
-        // User provided custom API key: direct call to OpenAI
-        targetUrl = "https://api.openai.com/v1/chat/completions";
-        headers["Authorization"] = `Bearer ${apiKey}`;
-      } else if (workerUrl) {
-        // Keyless inference via Cloudflare Worker proxy
-        targetUrl = workerUrl;
-      } else {
+      if (!workerUrl) {
         openSettingsModal();
         throw new Error("No inference endpoint configured.");
       }
+
+      const targetUrl = workerUrl;
+      const headers = {
+        "Content-Type": "application/json"
+      };
 
       // Helper to execute fetch with timeout
       async function doFetch(streamMode) {
@@ -2785,7 +2763,6 @@ ${gameCode}
         closeFileDropdown();
         closeHistoryDrawer();
         closeCodeModal();
-        closeApiModal();
         closeSettingsModal();
       }
     });
