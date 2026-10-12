@@ -339,7 +339,6 @@
       box-shadow: 0 0 14px rgba(14, 165, 233, 0.4), inset 0 0 7px rgba(56, 189, 248, 0.3);
       color: #38bdf8;
     }
-
   </style>
 </head>
 
@@ -358,7 +357,8 @@
         <div class="w-7 h-7 rounded-lg alchemical-badge flex items-center justify-center shadow-sm">
           <i class="fa-solid fa-flask text-xs text-sky-400"></i>
         </div>
-        <span class="font-bold text-sm sm:text-base tracking-wider alchemical-brand text-white hidden sm:inline-block">PARACELSUS</span>
+        <span
+          class="font-bold text-sm sm:text-base tracking-wider alchemical-brand text-white hidden sm:inline-block">PARACELSUS</span>
       </div>
 
       <div class="h-4 w-px bg-slate-800 hidden sm:block"></div>
@@ -557,6 +557,32 @@
             class="w-full bg-[#0a0d14] border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" />
           <p class="text-[10px] text-slate-500 mt-1">Exported standalone file will be named: <span
               id="game-name-preview" class="text-indigo-400 font-mono">threejs-game.html</span></p>
+        </div>
+
+        <div class="h-px bg-slate-800/80"></div>
+
+        <!-- Google Sheets Telemetry Section -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="block text-[11px] font-mono font-medium text-slate-300">Google Sheets Webhook (Apps
+              Script)</label>
+            <span id="apps-script-status" class="text-[10px] font-mono text-slate-400 flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span> Not Configured
+            </span>
+          </div>
+          <input id="apps-script-url-input" type="url" placeholder="https://script.google.com/macros/s/.../exec"
+            class="w-full bg-[#0a0d14] border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" />
+          <p class="text-[10px] text-slate-500 leading-normal">
+            Logs system prompt, user prompt, current code, thinking block, & generated code on each submit.
+          </p>
+          <div class="flex items-center justify-between pt-1">
+            <span class="text-[10px] text-slate-500">Auto-appends row per prompt</span>
+            <button id="test-apps-script-btn" type="button"
+              class="px-2.5 py-1 text-[10px] font-mono font-medium text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 rounded-md transition active:scale-95 flex items-center gap-1.5">
+              <i class="fa-solid fa-paper-plane text-[9px]"></i>
+              <span>Test Ping</span>
+            </button>
+          </div>
         </div>
 
         <div class="h-px bg-slate-800/80"></div>
@@ -781,6 +807,7 @@
 
     const TARGET_OPENAI_MODEL = "gpt-6-luna";
     const DEFAULT_WORKER_ENDPOINT = "https://test.mikedangermcgee.workers.dev/";
+    const DEFAULT_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyBeq0IqHxsG7IiV0LnQKPGl7763R8EYPCSZil0K-W6_oG8hEYjbsjJ0NKStz0owPYw/exec";
 
     const SYSTEM_PROMPT = `You are an expert Three.js and WebGL engine programmer and architect.
 When given the current Three.js code and a user request:
@@ -865,6 +892,9 @@ Rules for the <code> tag:
     const gameNamePreview = document.getElementById('game-name-preview');
     const apiStatusBadge = document.getElementById('api-status-badge');
     const settingsKeyStatus = document.getElementById('settings-key-status');
+    const appsScriptUrlInput = document.getElementById('apps-script-url-input');
+    const appsScriptStatus = document.getElementById('apps-script-status');
+    const testAppsScriptBtn = document.getElementById('test-apps-script-btn');
 
     let viewedCodeString = '';
 
@@ -1044,6 +1074,25 @@ Rules for the <code> tag:
         deletions,
         hunks
       };
+    }
+
+    /**
+     * Generates a plain-text unified diff representation with stats and hunk headers.
+     */
+    function generateDiffText(oldCode, newCode, filename = 'game-logic.js') {
+      const diff = computeLineDiff(oldCode, newCode, 2);
+      if (!diff.hunks.length || (diff.additions === 0 && diff.deletions === 0)) {
+        return 'No code changes detected';
+      }
+      let out = `--- a/${filename}\n+++ b/${filename} (+${diff.additions}, -${diff.deletions})\n`;
+      diff.hunks.forEach((hunk, hunkIdx) => {
+        out += `@@ hunk #${hunkIdx + 1} @@\n`;
+        for (const op of hunk) {
+          const prefix = op.type === 'add' ? '+' : (op.type === 'del' ? '-' : ' ');
+          out += `${prefix} ${op.text}\n`;
+        }
+      });
+      return out.trim();
     }
 
     /**
@@ -1809,6 +1858,70 @@ Rules for the <code> tag:
       refreshApiStatus();
     }
 
+    function getAppsScriptUrl() {
+      const stored = localStorage.getItem('apps_script_url');
+      return (stored && stored.trim()) ? stored.trim() : DEFAULT_APPS_SCRIPT_URL;
+    }
+
+    function setAppsScriptUrl(url) {
+      if (url && url.trim()) {
+        localStorage.setItem('apps_script_url', url.trim());
+      } else {
+        localStorage.removeItem('apps_script_url');
+      }
+      refreshAppsScriptStatus();
+    }
+
+    function refreshAppsScriptStatus() {
+      const url = getAppsScriptUrl();
+      if (appsScriptStatus) {
+        if (url && url.trim().startsWith('https://script.google.com/')) {
+          appsScriptStatus.className = "text-[10px] font-mono text-emerald-400 flex items-center gap-1";
+          appsScriptStatus.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Connected';
+        } else if (url && url.trim()) {
+          appsScriptStatus.className = "text-[10px] font-mono text-amber-400 flex items-center gap-1";
+          appsScriptStatus.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Configured';
+        } else {
+          appsScriptStatus.className = "text-[10px] font-mono text-slate-400 flex items-center gap-1";
+          appsScriptStatus.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span> Not Configured';
+        }
+      }
+    }
+
+    /* Asynchronously send full prompt dataset (system prompt, user prompt, current code, thinking block, generated code) to Google Sheets via Apps Script */
+    async function sendPromptDataToGoogleSheets(data) {
+      const url = getAppsScriptUrl();
+      if (!url || !url.trim()) {
+        console.log('[GoogleSheets Telemetry] No Apps Script webhook URL configured.');
+        return false;
+      }
+
+      try {
+        // mode: 'no-cors' and 'text/plain' content type avoids browser CORS preflight blocking across Google redirect
+        await fetch(url.trim(), {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: {
+            'Content-Type': 'text/plain;charset=utf-8'
+          },
+          body: JSON.stringify({
+            timestamp: data.timestamp || new Date().toISOString(),
+            systemPrompt: data.systemPrompt || '',
+            userPrompt: data.userPrompt || '',
+            currentCode: data.currentCode || '',
+            thinkingBlock: data.thinkingBlock || '',
+            generatedCode: data.generatedCode || '',
+            diff: data.diff || ''
+          })
+        });
+        console.log('[GoogleSheets Telemetry] Interaction data sent to Google Sheet successfully.');
+        return true;
+      } catch (err) {
+        console.warn('[GoogleSheets Telemetry] Failed to send interaction data to Google Sheet:', err);
+        return false;
+      }
+    }
+
     function refreshApiStatus() {
       const workerUrl = getWorkerUrl();
 
@@ -2094,8 +2207,12 @@ Rules for the <code> tag:
     // Modal Events
     function openSettingsModal() {
       gameNameInput.value = getGameName();
+      if (appsScriptUrlInput) {
+        appsScriptUrlInput.value = getAppsScriptUrl();
+      }
       updateGameNamePreview();
       refreshApiStatus();
+      refreshAppsScriptStatus();
       settingsModal.classList.remove('opacity-0', 'pointer-events-none');
       gameNameInput.focus();
       gameNameInput.select();
@@ -2108,8 +2225,12 @@ Rules for the <code> tag:
     function saveSettings() {
       const savedName = setGameName(gameNameInput.value);
       gameNameInput.value = savedName;
+      if (appsScriptUrlInput) {
+        setAppsScriptUrl(appsScriptUrlInput.value);
+      }
       updateGameNamePreview();
       refreshApiStatus();
+      refreshAppsScriptStatus();
       closeSettingsModal();
       showToast("Settings saved");
     }
@@ -2127,6 +2248,54 @@ Rules for the <code> tag:
         saveSettings();
       }
     });
+
+    if (appsScriptUrlInput) {
+      appsScriptUrlInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          saveSettings();
+        }
+      });
+    }
+
+    if (testAppsScriptBtn) {
+      testAppsScriptBtn.addEventListener('click', async () => {
+        const targetUrl = appsScriptUrlInput ? appsScriptUrlInput.value.trim() : getAppsScriptUrl();
+        if (!targetUrl) {
+          showToast("Enter a Google Apps Script URL first", true);
+          return;
+        }
+        testAppsScriptBtn.disabled = true;
+        testAppsScriptBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-[9px]"></i><span>Pinging...</span>';
+        try {
+          const activeCommit = versionStore.commits[versionStore.currentHeadIndex];
+          const currentCode = activeCommit ? activeCommit.code : (document.getElementById('game-logic')?.textContent || '');
+          const testData = {
+            timestamp: new Date().toISOString(),
+            systemPrompt: SYSTEM_PROMPT,
+            userPrompt: "[TEST PING] Verifying Google Apps Script integration",
+            thinkingBlock: "1. Verified connection from Paracelsus engine settings.\n2. Handshake successful.",
+            generatedCode: "// Test generated code\nconsole.log('Paracelsus connected to Google Sheets');",
+            currentCode: currentCode,
+            diff: "@@ hunk #1 @@\n+ console.log('Paracelsus connected to Google Sheets');"
+          };
+          await fetch(targetUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: {
+              'Content-Type': 'text/plain;charset=utf-8'
+            },
+            body: JSON.stringify(testData)
+          });
+          showToast("Test ping sent to Google Sheet!");
+          refreshAppsScriptStatus();
+        } catch (err) {
+          showToast("Ping failed: " + err.message, true);
+        } finally {
+          testAppsScriptBtn.disabled = false;
+          testAppsScriptBtn.innerHTML = '<i class="fa-solid fa-paper-plane text-[9px]"></i><span>Test Ping</span>';
+        }
+      });
+    }
 
     saveSettingsBtn.addEventListener('click', saveSettings);
 
@@ -2355,6 +2524,20 @@ Remember:
         if (!code) {
           throw new Error("Failed to extract code from <code> tag or markdown block.");
         }
+
+        // Generate plain-text diff alongside the DOM diff block
+        const diffText = generateDiffText(currentCode, code, 'game-logic.js');
+
+        // Asynchronously dispatch generation dataset to Google Sheets via Apps Script
+        sendPromptDataToGoogleSheets({
+          systemPrompt: SYSTEM_PROMPT,
+          userPrompt: trimmedText,
+          currentCode: currentCode,
+          thinkingBlock: plan || '',
+          generatedCode: code,
+          diff: diffText,
+          timestamp: new Date().toISOString()
+        }).catch(e => console.warn('[GoogleSheets Telemetry] Background sync error:', e));
 
         // Pre-validate syntax
         const syntaxErr = testSyntax(code);
@@ -2782,8 +2965,10 @@ ${gameCode}
       appendChatMessage('error', `Promise Rejection: ${reasonMsg}`);
     });
 
+    window.addEventListener('DOMContentLoaded', () => {
       updateAppHeight();
       refreshApiStatus();
+      refreshAppsScriptStatus();
       const initialScript = document.getElementById('game-logic');
       const initialCode = initialScript ? initialScript.textContent : '';
       recordCommit(initialCode, "Initial Scene (Blue Cube)", "init", "Initial base scene setup.");
