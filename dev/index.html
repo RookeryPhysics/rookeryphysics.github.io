@@ -376,20 +376,30 @@
         <div id="file-dropdown-menu"
           class="hidden absolute left-0 mt-1.5 w-72 sm:w-80 max-w-[90vw] rounded-xl bg-[#111520]/95 backdrop-blur-xl border border-slate-800 shadow-2xl p-2.5 z-50 text-xs focus:outline-none space-y-2">
 
-          <!-- Import Section -->
+          <!-- Project Actions Section (New & Import) -->
           <div>
-            <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider px-1 pb-1">Import</div>
-            <button id="import-standalone-btn" title="Import a .html or .dev file"
-              class="w-full text-left px-2.5 py-2 rounded-lg text-slate-200 hover:bg-indigo-600/20 hover:text-white flex items-center gap-2.5 transition group">
-              <div
-                class="w-7 h-7 rounded bg-slate-800/80 group-hover:bg-indigo-600/30 flex items-center justify-center shrink-0 transition">
-                <i class="fa-solid fa-file-arrow-up text-indigo-400 text-xs"></i>
-              </div>
-              <div class="flex-1 min-w-0">
-                <div class="font-medium text-xs text-white">Import File</div>
-                <div class="text-[10px] text-slate-400">Load a standalone .html or .dev project</div>
-              </div>
-            </button>
+            <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider px-1 pb-1">Project</div>
+            <div class="grid grid-cols-2 gap-2 pt-0.5">
+              <!-- New File Button -->
+              <button id="new-file-btn" title="Reset everything back to default scene"
+                class="flex flex-col items-start gap-1 p-2 rounded-lg bg-slate-900/90 hover:bg-rose-500/20 border border-slate-800 hover:border-rose-500/50 text-slate-200 hover:text-white transition group text-left">
+                <div class="flex items-center gap-1.5 text-xs font-medium text-white">
+                  <i class="fa-solid fa-file-circle-plus text-rose-400 text-xs"></i>
+                  <span>New File</span>
+                </div>
+                <span class="text-[9px] text-slate-400 group-hover:text-slate-300 leading-tight">Reset to default scene</span>
+              </button>
+
+              <!-- Import File Button -->
+              <button id="import-standalone-btn" title="Import a .html or .dev file"
+                class="flex flex-col items-start gap-1 p-2 rounded-lg bg-slate-900/90 hover:bg-indigo-600/25 border border-slate-800 hover:border-indigo-500/50 text-slate-200 hover:text-white transition group text-left">
+                <div class="flex items-center gap-1.5 text-xs font-medium text-white">
+                  <i class="fa-solid fa-file-arrow-up text-indigo-400 text-xs"></i>
+                  <span>Import File</span>
+                </div>
+                <span class="text-[9px] text-slate-400 group-hover:text-slate-300 leading-tight">Load .html or .dev file</span>
+              </button>
+            </div>
             <input type="file" id="import-file-input" accept=".html,.dev,text/html,application/json" class="hidden" />
           </div>
 
@@ -830,6 +840,7 @@ Rules for the <code> tag:
     const exportDropdownMenu = document.getElementById('file-dropdown-menu');
     const exportHtmlBtn = document.getElementById('export-html-btn');
     const exportDevBtn = document.getElementById('export-dev-btn');
+    const newFileBtn = document.getElementById('new-file-btn');
     const importStandaloneBtn = document.getElementById('import-standalone-btn');
     const importFileInput = document.getElementById('import-file-input');
     const viewCodeBtn = document.getElementById('view-code-btn');
@@ -2811,6 +2822,50 @@ ${gameCode}
       });
     }
 
+    // Default baseline scene code reference
+    let initialDefaultCode = '';
+
+    function resetToDefaults() {
+      if (versionStore.commits.length > 1) {
+        const confirmReset = window.confirm("Reset everything back to defaults? All unsaved project history and current changes will be cleared.");
+        if (!confirmReset) return;
+      }
+
+      // 1. Reset Game Name
+      setGameName('threejs-game');
+      if (gameNameInput) {
+        gameNameInput.value = 'threejs-game';
+        updateGameNamePreview();
+      }
+
+      // 2. Clear version history and record default scene commit
+      versionStore.commits = [];
+      versionStore.currentHeadIndex = 0;
+      const codeToRun = initialDefaultCode || (document.getElementById('game-logic')?.textContent || '');
+      recordCommit(codeToRun, "Initial Scene (Blue Cube)", "init", "Reset to default scene.");
+
+      // 3. Re-execute default engine code
+      executeEngineCode(codeToRun);
+      updateUI();
+
+      // 4. Reset chat session
+      startNewChat();
+
+      // 5. Clear prompt input
+      if (input) {
+        input.value = '';
+      }
+
+      showToast("Reset to defaults");
+    }
+
+    if (newFileBtn) {
+      newFileBtn.addEventListener('click', () => {
+        closeFileDropdown();
+        resetToDefaults();
+      });
+    }
+
     if (importStandaloneBtn) {
       importStandaloneBtn.addEventListener('click', () => {
         closeFileDropdown();
@@ -3028,6 +3083,7 @@ ${gameCode}
       refreshAppsScriptStatus();
       const initialScript = document.getElementById('game-logic');
       const initialCode = initialScript ? initialScript.textContent : '';
+      initialDefaultCode = initialCode;
       recordCommit(initialCode, "Initial Scene (Blue Cube)", "init", "Initial base scene setup.");
     });
   </script>
