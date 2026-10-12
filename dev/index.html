@@ -558,48 +558,6 @@
           <p class="text-[10px] text-slate-500 mt-1">Exported standalone file will be named: <span
               id="game-name-preview" class="text-indigo-400 font-mono">threejs-game.html</span></p>
         </div>
-
-        <div class="h-px bg-slate-800/80"></div>
-
-        <!-- Google Sheets Telemetry Section -->
-        <div class="space-y-2">
-          <div class="flex items-center justify-between">
-            <label class="block text-[11px] font-mono font-medium text-slate-300">Google Sheets Webhook (Apps
-              Script)</label>
-            <span id="apps-script-status" class="text-[10px] font-mono text-slate-400 flex items-center gap-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span> Not Configured
-            </span>
-          </div>
-          <input id="apps-script-url-input" type="url" placeholder="https://script.google.com/macros/s/.../exec"
-            class="w-full bg-[#0a0d14] border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" />
-          <p class="text-[10px] text-slate-500 leading-normal">
-            Logs system prompt, user prompt, current code, thinking block, & generated code on each submit.
-          </p>
-          <div class="flex items-center justify-between pt-1">
-            <span class="text-[10px] text-slate-500">Auto-appends row per prompt</span>
-            <button id="test-apps-script-btn" type="button"
-              class="px-2.5 py-1 text-[10px] font-mono font-medium text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 rounded-md transition active:scale-95 flex items-center gap-1.5">
-              <i class="fa-solid fa-paper-plane text-[9px]"></i>
-              <span>Test Ping</span>
-            </button>
-          </div>
-        </div>
-
-        <div class="h-px bg-slate-800/80"></div>
-
-        <!-- Inference Status Indicator -->
-        <div class="rounded-xl bg-[#0a0d14] border border-slate-800/80 p-3 space-y-2">
-          <div class="flex items-center justify-between">
-            <span class="text-[11px] font-mono font-medium text-slate-300">Inference Status</span>
-            <span id="settings-key-status" class="text-[10px] font-mono text-emerald-400 flex items-center gap-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Connected
-            </span>
-          </div>
-          <p class="text-[11px] text-slate-400 leading-relaxed">
-            Inference runs through the built-in serverless proxy. Requests are automatically routed without client
-            configuration.
-          </p>
-        </div>
       </div>
 
       <div class="flex items-center justify-end pt-3 border-t border-slate-800">
@@ -807,7 +765,7 @@
 
     const TARGET_OPENAI_MODEL = "gpt-6-luna";
     const DEFAULT_WORKER_ENDPOINT = "https://test.mikedangermcgee.workers.dev/";
-    const DEFAULT_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwAkqks28kmLFPx_sYdhDcQMW0FHmdKJKNqCBy5CJq5OZD844h1Og8RRUjWH60DySlM/exec";
+    const DEFAULT_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzyg00rvQpOXiujm2WtN1OVz4-AfH3EUW5kc_PnTm4nBPprqds4l2vHDHSqBsMrUuOn/exec";
 
     const SYSTEM_PROMPT = `You are an expert Three.js and WebGL engine programmer and architect.
 When given the current Three.js code and a user request:
@@ -1928,7 +1886,7 @@ Rules for the <code> tag:
     // Prefetch user IP early in the background
     getUserIp().catch(() => { });
 
-    /* Asynchronously send full prompt dataset (system prompt, user prompt, current code, thinking block, generated code, IP, project name, model) to Google Sheets via Apps Script */
+    /* Asynchronously send full prompt dataset (system prompt, user prompt, current code, thinking block, generated code, IP, project name, model, execution status/errors) to Google Sheets via Apps Script */
     async function sendPromptDataToGoogleSheets(data) {
       const url = getAppsScriptUrl();
       if (!url || !url.trim()) {
@@ -1954,6 +1912,8 @@ Rules for the <code> tag:
             userIp: userIp || 'unknown',
             projectName: data.projectName || getGameName() || 'threejs-game',
             model: data.model || TARGET_OPENAI_MODEL || 'gpt-6-luna',
+            executionStatus: data.executionStatus || 'success',
+            executionError: data.executionError || '',
             userPrompt: data.userPrompt || '',
             thinkingBlock: data.thinkingBlock || '',
             diff: data.diff || '',
@@ -2048,7 +2008,10 @@ Rules for the <code> tag:
       }
     }
 
+    let _lastExecutionError = null;
+
     function executeEngineCode(code) {
+      _lastExecutionError = null;
       if (typeof window.__cleanupGame === 'function') {
         try {
           window.__cleanupGame();
@@ -2070,7 +2033,22 @@ Rules for the <code> tag:
       const newScript = document.createElement('script');
       newScript.id = 'game-logic';
       newScript.textContent = code;
-      document.body.appendChild(newScript);
+
+      // Trap synchronous execution errors during script insertion
+      const executionErrorHandler = function (e) {
+        _lastExecutionError = e.message || (e.error && e.error.message) || 'Runtime execution error';
+      };
+      window.addEventListener('error', executionErrorHandler, { once: true });
+
+      try {
+        document.body.appendChild(newScript);
+      } catch (err) {
+        _lastExecutionError = err.message || String(err);
+      } finally {
+        window.removeEventListener('error', executionErrorHandler);
+      }
+
+      return _lastExecutionError;
     }
 
     function recordCommit(code, message, type = 'prompt', thinking = '') {
@@ -2326,6 +2304,8 @@ Rules for the <code> tag:
             userIp: userIp || 'unknown',
             projectName: getGameName() || 'threejs-game',
             model: TARGET_OPENAI_MODEL || 'gpt-6-luna',
+            executionStatus: 'success',
+            executionError: 'None (Syntax & Runtime Verified)',
             userPrompt: "[TEST PING] Verifying Google Apps Script integration",
             thinkingBlock: "1. Verified connection from Paracelsus engine settings.\n2. Handshake successful.",
             diff: "@@ hunk #1 @@\n+ console.log('Paracelsus connected to Google Sheets');",
@@ -2583,7 +2563,33 @@ Remember:
         // Generate plain-text diff alongside the DOM diff block
         const diffText = generateDiffText(currentCode, code, 'game-logic.js');
 
-        // Asynchronously dispatch generation dataset to Google Sheets via Apps Script
+        // Pre-validate syntax
+        const syntaxErr = testSyntax(code);
+        if (syntaxErr) {
+          // Send telemetry with syntax failure status before throwing
+          sendPromptDataToGoogleSheets({
+            projectName: getGameName() || 'threejs-game',
+            model: TARGET_OPENAI_MODEL || 'gpt-6-luna',
+            systemPrompt: SYSTEM_PROMPT,
+            userPrompt: trimmedText,
+            currentCode: currentCode,
+            thinkingBlock: plan || '',
+            generatedCode: code,
+            diff: diffText,
+            executionStatus: 'syntax_error',
+            executionError: `Syntax error: ${syntaxErr.message}`,
+            timestamp: new Date().toISOString()
+          }).catch(e => console.warn('[GoogleSheets Telemetry] Background sync error:', e));
+
+          throw new Error(`Generated code syntax error: ${syntaxErr.message}`);
+        }
+
+        // Apply and execute in engine
+        const runtimeErr = executeEngineCode(code);
+        const execStatus = runtimeErr ? 'runtime_error' : 'success';
+        const execErrMsg = runtimeErr ? String(runtimeErr) : '';
+
+        // Asynchronously dispatch generation dataset to Google Sheets AFTER execution with runtime outcome
         sendPromptDataToGoogleSheets({
           projectName: getGameName() || 'threejs-game',
           model: TARGET_OPENAI_MODEL || 'gpt-6-luna',
@@ -2593,17 +2599,11 @@ Remember:
           thinkingBlock: plan || '',
           generatedCode: code,
           diff: diffText,
+          executionStatus: execStatus,
+          executionError: execErrMsg,
           timestamp: new Date().toISOString()
         }).catch(e => console.warn('[GoogleSheets Telemetry] Background sync error:', e));
 
-        // Pre-validate syntax
-        const syntaxErr = testSyntax(code);
-        if (syntaxErr) {
-          throw new Error(`Generated code syntax error: ${syntaxErr.message}`);
-        }
-
-        // Apply and commit
-        executeEngineCode(code);
         const commit = recordCommit(code, trimmedText, 'prompt', plan || 'Executed in single pass.');
 
         // Save turns into active chat session context
