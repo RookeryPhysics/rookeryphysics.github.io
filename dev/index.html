@@ -356,7 +356,7 @@
         <div class="w-7 h-7 rounded-lg alchemical-badge flex items-center justify-center shadow-sm">
           <i class="fa-solid fa-flask text-xs text-sky-400"></i>
         </div>
-        <span class="font-bold text-xs sm:text-sm tracking-wider alchemical-brand hidden md:inline">Paracelsus</span>
+        <span class="font-bold text-sm sm:text-base tracking-wider alchemical-brand text-white inline-block">PARACELSUS</span>
       </div>
 
       <div class="h-4 w-px bg-slate-800 hidden sm:block"></div>
@@ -665,7 +665,7 @@
     <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(14,165,233,0.12)_0%,rgba(3,7,18,0.75)_65%,rgba(3,7,18,0.95)_100%)]"></div>
 
     <!-- Floating HUD Elements on top of the 3D Flask -->
-    <div class="relative z-10 flex flex-col items-center pointer-events-none text-center px-4 max-w-md mt-auto mb-10 sm:mb-12">
+    <div class="relative z-10 flex flex-col items-center pointer-events-none text-center px-4 max-w-md mt-auto mb-7 sm:mb-9">
       <!-- Title & Branding -->
       <div class="flex items-center gap-2 mb-2">
         <div class="w-7 h-7 rounded-lg alchemical-badge flex items-center justify-center shadow-lg">
@@ -676,7 +676,7 @@
 
       <div class="font-mono text-[11px] sm:text-xs text-sky-300/80 uppercase tracking-widest mb-4 flex items-center gap-2">
         <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping"></span>
-        <span id="loading-status-text">Synthesizing Laboratory Environment...</span>
+        <span id="loading-status-text">Initializing Laboratory Environment...</span>
       </div>
 
       <!-- Sleek Glowing Progress Bar -->
@@ -2865,7 +2865,7 @@ ${gameCode}
       const width = window.innerWidth;
       const height = window.innerHeight;
       const camera = new THREE.PerspectiveCamera(38, width / height, 0.1, 500);
-      camera.position.set(22, 22, 34);
+      camera.position.set(23.5, 20.5, 36.5);
 
       const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance", alpha: true });
       renderer.setSize(width, height);
@@ -2880,7 +2880,7 @@ ${gameCode}
       controls.minDistance = 18;
       controls.maxDistance = 65;
       controls.maxPolarAngle = Math.PI / 2 + 0.05;
-      controls.target.set(0, 8.5, 0);
+      controls.target.set(0, 7.2, 0);
       controls.autoRotate = true;
       controls.autoRotateSpeed = 0.8;
 
@@ -3229,11 +3229,9 @@ ${gameCode}
       let lastReportedPct = -1;
 
       const stages = [
-        { threshold: 0, text: 'Initializing Voxel Environment...' },
-        { threshold: 25, text: 'Calibrating Voxel Matrices...' },
-        { threshold: 55, text: 'Compiling Shaders & Materials...' },
-        { threshold: 82, text: 'Finalizing Laboratory Scene...' },
-        { threshold: 99, text: 'Code Lab Ready.' }
+        { threshold: 0, text: 'Initializing Laboratory Environment...' },
+        { threshold: 45, text: 'Artificially delaying to justify this 3D flask...' },
+        { threshold: 95, text: 'Code Lab Ready.' }
       ];
 
       function easeOutCubic(t) {
