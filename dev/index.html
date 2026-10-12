@@ -813,6 +813,128 @@ Rules for the <code> tag:
     // Format: Array of { role: 'user' | 'assistant', content: string, plan?: string }
     const chatSession = [];
 
+    // Full Chat Console Log for IndexedDB Persistence & UI Restoration
+    // Format: Array of { role: 'user' | 'assistant' | 'system' | 'error', text: string, meta?: object, timestamp?: string }
+    const chatDisplayLog = [];
+
+    /* ==========================================================================
+       IndexedDB Storage Engine for Project Code, Version History & Chat Session
+       ========================================================================== */
+    const DB_NAME = 'ParacelsusDevDB';
+    const DB_VERSION = 1;
+    const DB_STORE = 'projectData';
+    const DB_KEY = 'current_project';
+
+    let _dbPromise = null;
+    function getIndexedDB() {
+      if (!_dbPromise) {
+        _dbPromise = new Promise((resolve, reject) => {
+          if (!window.indexedDB) {
+            console.warn('[IndexedDB] IndexedDB is not supported in this browser.');
+            resolve(null);
+            return;
+          }
+          const request = window.indexedDB.open(DB_NAME, DB_VERSION);
+          request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains(DB_STORE)) {
+              db.createObjectStore(DB_STORE);
+            }
+          };
+          request.onsuccess = (event) => {
+            resolve(event.target.result);
+          };
+          request.onerror = (event) => {
+            console.warn('[IndexedDB] Open error:', event.target.error);
+            resolve(null);
+          };
+        });
+      }
+      return _dbPromise;
+    }
+
+    let _saveTimeout = null;
+    function scheduleSaveToIndexedDB() {
+      if (_saveTimeout) clearTimeout(_saveTimeout);
+      _saveTimeout = setTimeout(() => {
+        saveProjectToIndexedDB().catch(err => {
+          console.warn('[IndexedDB] Autosave warning:', err);
+        });
+      }, 150);
+    }
+
+    async function saveProjectToIndexedDB() {
+      try {
+        const db = await getIndexedDB();
+        if (!db) return;
+
+        const activeCommit = versionStore.commits[versionStore.currentHeadIndex];
+        const currentCode = activeCommit ? activeCommit.code : (document.getElementById('game-logic')?.textContent || '');
+
+        const projectPayload = {
+          code: currentCode,
+          currentHeadIndex: versionStore.currentHeadIndex,
+          commits: versionStore.commits.map(c => ({
+            id: c.id,
+            hash: c.hash,
+            versionNumber: c.versionNumber,
+            timestamp: c.timestamp instanceof Date ? c.timestamp.toISOString() : c.timestamp,
+            message: c.message,
+            code: c.code,
+            thinking: c.thinking,
+            type: c.type
+          })),
+          chatSession: chatSession.slice(),
+          chatDisplayLog: chatDisplayLog.slice(),
+          gameName: (typeof getGameName === 'function') ? getGameName() : 'threejs-game',
+          updatedAt: new Date().toISOString()
+        };
+
+        return new Promise((resolve, reject) => {
+          const transaction = db.transaction([DB_STORE], 'readwrite');
+          const store = transaction.objectStore(DB_STORE);
+          const putRequest = store.put(projectPayload, DB_KEY);
+          putRequest.onsuccess = () => resolve(true);
+          putRequest.onerror = (e) => reject(e.target.error);
+        });
+      } catch (err) {
+        console.warn('[IndexedDB] Save failure:', err);
+      }
+    }
+
+    async function loadProjectFromIndexedDB() {
+      try {
+        const db = await getIndexedDB();
+        if (!db) return null;
+        return new Promise((resolve, reject) => {
+          const transaction = db.transaction([DB_STORE], 'readonly');
+          const store = transaction.objectStore(DB_STORE);
+          const getRequest = store.get(DB_KEY);
+          getRequest.onsuccess = () => resolve(getRequest.result || null);
+          getRequest.onerror = (e) => reject(e.target.error);
+        });
+      } catch (err) {
+        console.warn('[IndexedDB] Load failure:', err);
+        return null;
+      }
+    }
+
+    async function clearProjectInIndexedDB() {
+      try {
+        const db = await getIndexedDB();
+        if (!db) return;
+        return new Promise((resolve, reject) => {
+          const transaction = db.transaction([DB_STORE], 'readwrite');
+          const store = transaction.objectStore(DB_STORE);
+          const delRequest = store.delete(DB_KEY);
+          delRequest.onsuccess = () => resolve(true);
+          delRequest.onerror = (e) => reject(e.target.error);
+        });
+      } catch (err) {
+        console.warn('[IndexedDB] Clear failure:', err);
+      }
+    }
+
     // DOM Elements
     const input = document.getElementById('prompt-input');
     const submitBtn = document.getElementById('submit-btn');
@@ -1190,7 +1312,7 @@ Rules for the <code> tag:
       }
     }
 
-    function appendChatMessage(role, text, meta = {}) {
+    function appendChatMessage(role, text, meta = {}, skipPersistence = false) {
       if (!chatMessagesContainer) return;
 
       const welcome = document.getElementById('chat-welcome-msg');
@@ -1201,7 +1323,7 @@ Rules for the <code> tag:
       const msgDiv = document.createElement('div');
       msgDiv.className = 'flex flex-col gap-1 py-1 border-b border-slate-800/50 last:border-b-0';
 
-      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const timeStr = meta.timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
       if (role === 'user') {
         msgDiv.innerHTML = `
@@ -1264,6 +1386,21 @@ Rules for the <code> tag:
         if (meta.diffElement) {
           msgDiv.appendChild(meta.diffElement);
         }
+      }
+
+      if (!skipPersistence) {
+        chatDisplayLog.push({
+          role,
+          text,
+          timestamp: timeStr,
+          meta: {
+            commitId: meta.commitId || null,
+            oldCode: meta.oldCode || null,
+            newCode: meta.newCode || null,
+            filename: meta.filename || null
+          }
+        });
+        scheduleSaveToIndexedDB();
       }
 
       chatMessagesContainer.appendChild(msgDiv);
@@ -1482,6 +1619,7 @@ Rules for the <code> tag:
     function startNewChat() {
       hideInferenceIndicator();
       chatSession.length = 0;
+      chatDisplayLog.length = 0;
       if (chatMessagesContainer) {
         chatMessagesContainer.innerHTML = `
           <div id="chat-welcome-msg" class="text-[11px] text-slate-500 italic py-1 border-b border-slate-800/40">
@@ -1490,6 +1628,7 @@ Rules for the <code> tag:
         `;
       }
       updateChatCountBadge();
+      scheduleSaveToIndexedDB();
       showToast("Started new chat session");
     }
 
@@ -2078,6 +2217,7 @@ Rules for the <code> tag:
       versionStore.commits.push(newCommit);
       versionStore.currentHeadIndex = versionStore.commits.length - 1;
       updateUI();
+      scheduleSaveToIndexedDB();
       return newCommit;
     }
 
@@ -2098,6 +2238,7 @@ Rules for the <code> tag:
       }
 
       updateUI();
+      scheduleSaveToIndexedDB();
     }
 
     function updateUI() {
@@ -2269,6 +2410,7 @@ Rules for the <code> tag:
       refreshApiStatus();
       refreshAppsScriptStatus();
       closeSettingsModal();
+      scheduleSaveToIndexedDB();
       showToast("Settings saved");
     }
 
@@ -2638,6 +2780,20 @@ Remember:
           : "Scene updated successfully. JavaScript engine compiled.";
         streamAssistant?.update(finalText, commit.id, diffBlock);
 
+        // Record assistant turn in chatDisplayLog for complete console session restoration
+        chatDisplayLog.push({
+          role: 'assistant',
+          text: finalText,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+          meta: {
+            commitId: commit.id,
+            oldCode: currentCode,
+            newCode: code,
+            filename: 'game-logic.js'
+          }
+        });
+        scheduleSaveToIndexedDB();
+
         showToast("Engine updated via gpt-6-luna");
         setEngineStage('ready');
       } catch (err) {
@@ -2856,6 +3012,9 @@ ${gameCode}
         input.value = '';
       }
 
+      // 6. Reset IndexedDB storage and store fresh default baseline
+      scheduleSaveToIndexedDB();
+
       showToast("Reset to defaults");
     }
 
@@ -2948,6 +3107,7 @@ ${gameCode}
 
             executeEngineCode(codeToExecute);
             updateUI();
+            scheduleSaveToIndexedDB();
             showToast(`Imported dev project: ${file.name}`);
             return;
           }
@@ -3077,14 +3237,80 @@ ${gameCode}
       appendChatMessage('error', `Promise Rejection: ${reasonMsg}`);
     });
 
-    window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', async () => {
       updateAppHeight();
       refreshApiStatus();
       refreshAppsScriptStatus();
+
       const initialScript = document.getElementById('game-logic');
-      const initialCode = initialScript ? initialScript.textContent : '';
-      initialDefaultCode = initialCode;
-      recordCommit(initialCode, "Initial Scene (Blue Cube)", "init", "Initial base scene setup.");
+      const fallbackCode = initialScript ? initialScript.textContent : '';
+      initialDefaultCode = fallbackCode;
+
+      try {
+        const savedProject = await loadProjectFromIndexedDB();
+        if (savedProject && Array.isArray(savedProject.commits) && savedProject.commits.length > 0) {
+          // 1. Restore version history
+          versionStore.commits = savedProject.commits.map(c => ({
+            ...c,
+            timestamp: c.timestamp ? new Date(c.timestamp) : new Date()
+          }));
+
+          const headIdx = (typeof savedProject.currentHeadIndex === 'number' &&
+            savedProject.currentHeadIndex >= 0 &&
+            savedProject.currentHeadIndex < versionStore.commits.length)
+            ? savedProject.currentHeadIndex
+            : versionStore.commits.length - 1;
+          versionStore.currentHeadIndex = headIdx;
+
+          // 2. Restore game name if saved
+          if (savedProject.gameName) {
+            setGameName(savedProject.gameName);
+            if (gameNameInput) {
+              gameNameInput.value = savedProject.gameName;
+              updateGameNamePreview();
+            }
+          }
+
+          // 3. Restore chat session context (for LLM continuity)
+          chatSession.length = 0;
+          if (Array.isArray(savedProject.chatSession)) {
+            savedProject.chatSession.forEach(msg => chatSession.push(msg));
+          }
+
+          // 4. Restore chat messages console UI
+          chatDisplayLog.length = 0;
+          if (Array.isArray(savedProject.chatDisplayLog) && savedProject.chatDisplayLog.length > 0) {
+            if (chatMessagesContainer) {
+              chatMessagesContainer.innerHTML = '';
+            }
+            savedProject.chatDisplayLog.forEach(logItem => {
+              chatDisplayLog.push(logItem);
+              let diffElement = null;
+              if (logItem.meta && logItem.meta.oldCode && logItem.meta.newCode) {
+                diffElement = renderDiffBlock(logItem.meta.oldCode, logItem.meta.newCode, logItem.meta.filename || 'game-logic.js');
+              }
+              appendChatMessage(logItem.role, logItem.text, {
+                commitId: logItem.meta?.commitId,
+                timestamp: logItem.timestamp,
+                diffElement: diffElement
+              }, true);
+            });
+          }
+          updateChatCountBadge();
+
+          // 5. Execute engine code
+          const codeToExecute = savedProject.code || versionStore.commits[headIdx].code || fallbackCode;
+          executeEngineCode(codeToExecute);
+          updateUI();
+          showToast("Restored session from local storage");
+          return;
+        }
+      } catch (loadErr) {
+        console.warn("[IndexedDB] Error restoring project state:", loadErr);
+      }
+
+      // Default initial setup if no existing IndexedDB state
+      recordCommit(fallbackCode, "Initial Scene (Blue Cube)", "init", "Initial base scene setup.");
     });
   </script>
 </body>
