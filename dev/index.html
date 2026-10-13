@@ -578,6 +578,18 @@
           <p class="text-[10px] text-slate-500 mt-1">Exported standalone file will be named: <span
               id="game-name-preview" class="text-indigo-400 font-mono">threejs-game.html</span></p>
         </div>
+
+        <!-- Model Selection Section -->
+        <div>
+          <label for="model-select" class="block text-[11px] font-mono font-medium text-slate-300 mb-1">Target Model</label>
+          <select id="model-select"
+            class="w-full bg-[#0a0d14] border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 appearance-none cursor-pointer"
+            style="background-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\"); background-repeat: no-repeat; background-position: right 0.75rem center;">
+            <option value="gpt-6-luna">gpt-6-luna</option>
+            <option value="gpt-6.1-sol">gpt-6.1-sol</option>
+          </select>
+          <p class="text-[10px] text-slate-500 mt-1">OpenAI model used for code generation</p>
+        </div>
       </div>
 
       <div class="flex items-center justify-end pt-3 border-t border-slate-800">
@@ -783,7 +795,7 @@
   <script>
     /* Single-Pass AI Generation Engine & Version Control (Cloudflare Proxy / OpenAI) */
 
-    const TARGET_OPENAI_MODEL = "gpt-6-luna";
+    let TARGET_OPENAI_MODEL = "gpt-6-luna";
     const DEFAULT_WORKER_ENDPOINT = "https://test.mikedangermcgee.workers.dev/";
     const DEFAULT_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzyg00rvQpOXiujm2WtN1OVz4-AfH3EUW5kc_PnTm4nBPprqds4l2vHDHSqBsMrUuOn/exec";
 
@@ -991,6 +1003,7 @@ Rules for the <code> tag:
     const saveSettingsBtn = document.getElementById('save-settings-btn');
     const gameNameInput = document.getElementById('game-name-input');
     const gameNamePreview = document.getElementById('game-name-preview');
+    const modelSelect = document.getElementById('model-select');
     const apiStatusBadge = document.getElementById('api-status-badge');
     const settingsKeyStatus = document.getElementById('settings-key-status');
     const appsScriptUrlInput = document.getElementById('apps-script-url-input');
@@ -1963,6 +1976,17 @@ Rules for the <code> tag:
       gameNamePreview.textContent = `${sanitized}.html`;
     }
 
+    function getSelectedModel() {
+      return TARGET_OPENAI_MODEL;
+    }
+
+    function setSelectedModel(model) {
+      const allowed = ['gpt-6-luna', 'gpt-6.1-sol'];
+      const validated = allowed.includes(model) ? model : 'gpt-6-luna';
+      TARGET_OPENAI_MODEL = validated;
+      return validated;
+    }
+
     function getWorkerUrl() {
       return localStorage.getItem('cf_worker_url') || DEFAULT_WORKER_ENDPOINT;
     }
@@ -2398,6 +2422,9 @@ Rules for the <code> tag:
       if (appsScriptUrlInput) {
         appsScriptUrlInput.value = getAppsScriptUrl();
       }
+      if (modelSelect) {
+        modelSelect.value = getSelectedModel();
+      }
       updateGameNamePreview();
       refreshApiStatus();
       refreshAppsScriptStatus();
@@ -2415,6 +2442,9 @@ Rules for the <code> tag:
       gameNameInput.value = savedName;
       if (appsScriptUrlInput) {
         setAppsScriptUrl(appsScriptUrlInput.value);
+      }
+      if (modelSelect) {
+        setSelectedModel(modelSelect.value);
       }
       updateGameNamePreview();
       refreshApiStatus();
